@@ -1,2 +1,2 @@
 # SingleCellProjections.jl
-Analysis of Single Cell Expression data in Julia
+This is a placeholder. The source for SingleCellProjections.jl will move here soon.
