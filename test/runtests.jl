@@ -1,6 +1,15 @@
 using SingleCellProjections
 using Test
+using StableRNGs
+using StaticArrays
+using Statistics
+
+import SingleCellProjections: BarnesHutTree, build!
+
+
+include("MatrixExpressions/runtests.jl")
+
 
 @testset "SingleCellProjections.jl" begin
-    # Write your tests here.
+    include("test_barnes_hut.jl")
 end
