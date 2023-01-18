@@ -194,6 +194,17 @@ Defaults to only using "Gene Expression" features.
 * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
 * `kwargs...` - Additional `kwargs` are passed on to `SCTransform.scparams`.
 
+# Examples
+Setup `SCTransformModel` (Gene Expression features):
+```
+julia> SCTransformModel(counts)
+```
+
+Setup `SCTransformModel` (Antibody Capture features):
+```
+julia> SCTransformModel(counts; var_filter = :feature_type => isequal("Antibody Capture"))
+```
+
 See also: [`sctransform`](@ref), [`SCTransform.scparams`](@ref), [`DataFrames.filter`](@ref)
 """
 function SCTransformModel(counts::DataMatrix;
@@ -299,6 +310,17 @@ The result is stored as a Matrix Expression with the sum of a sparse and a low-r
 I.e. no large dense matrix is created.
 
 See `SCTransformModel` for description of `kwargs...`.
+
+# Examples
+Compute SCTransform (Gene Expression features):
+```
+julia> sctransform(counts)
+```
+
+Compute SCTransform (Antibody Capture features):
+```
+julia> sctransform(counts; var_filter = :feature_type => isequal("Antibody Capture"))
+```
 
 See also: [`SCTransformModel`](@ref), [`SCTransform.scparams`](@ref)
 """
