@@ -29,6 +29,7 @@ export
 	svd,
 	update_matrix,
 	logtransform,
+	sctransform,
 	tf_idf_transform,
 	knn_adjacency_matrix,
 	force_layout,

@@ -173,8 +173,31 @@ struct SCTransformModel <: ProjectionModel
 	annotate::Bool
 	post_filter::FilterModel
 end
+
+"""
+	SCTransformModel(counts::DataMatrix;
+	                 var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
+	                 rtol=1e-3, atol=0.0, annotate=true,
+	                 post_var_filter=:, post_obs_filter=:,
+	                 obs=:copy,
+	                 kwargs...)
+
+Computes the `SCTransform` parameter estimates for `counts` and creates a SCTransformModel that can be applied to the same or another data set.
+Defaults to only using "Gene Expression" features.
+
+* `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `:feature_type => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See `DataFrames.filter` for how to specify filters.
+* `rtol` - Relative tolerance when constructing low rank approximation.
+* `atol` - Absolute tolerance when constructing low rank approximation.
+* `annotate` - Set to true to include SCTransform parameter estimates as feature annotations.
+* `post_var_filter` - Equivalent to applying variable (feature) filtering after sctransform, but computationally more efficient.
+* `post_obs_filter` - Equivalent to applying observation (cell) filtering after sctransform, but computationally more efficient.
+* `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
+* `kwargs...` - Additional `kwargs` are passed on to `SCTransform.scparams`.
+
+See also: [`sctransform`](@ref), [`SCTransform.scparams`](@ref), [`DataFrames.filter`](@ref)
+"""
 function SCTransformModel(counts::DataMatrix;
-                          var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing, # passed to filter for DataFrames, or Nothing
+                          var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
                           rtol=1e-3, atol=0.0, annotate=true,
                           post_var_filter=:, post_obs_filter=:,
                           obs=:copy,
@@ -268,6 +291,17 @@ function project_impl(counts::DataMatrix, model::SCTransformModel; allow_obs_ind
 end
 
 
+"""
+	sctransform(counts::DataMatrix; verbose=true, kwargs...)
+
+Compute the SCTransform of the DataMatrix `counts`.
+The result is stored as a Matrix Expression with the sum of a sparse and a low-rank term.
+I.e. no large dense matrix is created.
+
+See `SCTransformModel` for description of `kwargs...`.
+
+See also: [`SCTransformModel`](@ref), [`SCTransform.scparams`](@ref)
+"""
 sctransform(counts::DataMatrix; verbose=true, kwargs...) =
 	project_impl(counts, SCTransformModel(counts; verbose, kwargs...); verbose, allow_obs_indexing=true)
 
