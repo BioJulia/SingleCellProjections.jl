@@ -277,7 +277,23 @@ DataMatrix (3 variables and 41095 observations)
   Observations: id, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, lane, ...
   Models: NearestNeighborModel(base="force_layout", k=10), SVD, Filter, Normalization, SCTransform, ...
 ```
+The result looks very similar to the force layout plot above, since the donors "P5" and "P6" are quite similar to donors "P1" and "P2".
 
 ![force_layout_projected](https://user-images.githubusercontent.com/16546530/213479253-6616d052-e3d9-4e47-9c82-9ef63f966c07.svg)
 
 [Download interactive Force Layout projection plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/10457993/force_layout_projected.zip).
+
+Under the hood, `SingleCellProjections` recorded a `ProjectionModel` for every step of the analysis leading up to the Force Layout.
+Let's take a look:
+```julia
+julia> fl.models
+6-element Vector{ProjectionModel}:
+ VarCountsFractionModel(subset_size=13, total_size=33538, col="fraction_mt")
+ SCTransformModel(nvar=20239, clip=34.32)
+ NormalizationModel(rank=2, ~1+num(fraction_mt))
+ FilterModel(:, "celltype.l1"=>#97)
+ SVDModel(nsv=20)
+ NearestNeighborModel(base="force_layout", k=10)
+```
+When projecting, these models are applied one by one (C.f. output from `project` above), ensuring that the projected data is processed correctly.
+In most cases, projecting is **not** the same as running the same analysis independently, since information about the data set is recorded in the model.
