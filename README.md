@@ -75,6 +75,7 @@ Note how the new `obs` annotation `fraction_mt` appears in the output.
 We will also load some more cell annotations from the provided file.
 ```julia
 julia> cell_annotations = CSV.read(joinpath(base_path, "GSE164378_RNA_ADT_3P.csv.gz"), DataFrame);
+
 julia> leftjoin!(counts.obs, cell_annotations; on=:barcode);
 ```
 Note how we used the `DataFrames` function `leftjoin!`, since it takes care of matching the cells in `counts` to the cells in `cell_annotations` based on the `:barcode` column.
@@ -160,7 +161,7 @@ Use `obs_coordinates` to get the coordinates for each cell, and `data.obs` to ac
 using PlotlyJS
 function plot_categorical_3d(data, annotation)
 	points = obs_coordinates(data)
-	traces = []
+	traces = GenericTrace[]
 	for sub in groupby(data.obs, annotation; sort=true)
 		value = sub[1,annotation]
 		ind = parentindices(sub)[1]
