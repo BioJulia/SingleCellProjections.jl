@@ -204,7 +204,7 @@ DataMatrix (3 variables and 34639 observations)
 
 
 #### UMAP
-`SingleCellProjections.jl` can be used together with [UMAP.jl](https://github.com/dillondaudert/UMAP.jl):
+`SingleCellProjections` can be used together with [UMAP.jl](https://github.com/dillondaudert/UMAP.jl):
 ```julia
 julia> using UMAP
 
@@ -242,3 +242,38 @@ DataMatrix (3 variables and 3464 observations)
 It is of course possible to use your own favorite dimension reduction method/package.
 The natural input for most cases are the coordinates after dimension reduction by PCA (`obs_coordinates(reduced)`).
 
+
+### Projections
+`SingleCellProjections` is build to make it very easy to project one dataset onto another.
+
+Let's load count data for two more samples:
+```julia
+julia> sample_paths_proj = joinpath.(base_path, ["GSE164378_RNA_ADT_3P_P5.h5", "GSE164378_RNA_ADT_3P_P6.h5"]);
+
+julia> counts_proj = load_counts(sample_paths_proj; sample_names=["P5","P6"]);
+
+julia> leftjoin!(counts_proj.obs, cell_annotations; on=:barcode);
+
+julia> counts_proj
+DataMatrix (33766 variables and 42553 observations)
+  SparseArrays.SparseMatrixCSC{Int64, Int32}
+  Variables: id, feature_type, name, genome, read, pattern, sequence
+  Observations: id, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, lane, ...
+```
+
+And project them onto the Force Layout we created above:
+```julia
+julia> fl_proj = project(counts_proj, fl)
+[ Info: Projecting onto VarCountsFractionModel(subset_size=13, total_size=33538, col="fraction_mt")
+[ Info: Projecting onto SCTransformModel(nvar=20239, clip=34.32)
+[ Info: - Removed 13527 variables that where not found in Model
+[ Info: Projecting onto NormalizationModel(rank=2, ~1+num(fraction_mt))
+[ Info: Projecting onto FilterModel(:, "celltype.l1"=>#97)
+[ Info: Projecting onto SVDModel(nsv=20)
+[ Info: Projecting onto NearestNeighborModel(base="force_layout", k=10)
+DataMatrix (3 variables and 41095 observations)
+  Matrix{Float64}
+  Variables: id
+  Observations: id, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, lane, ...
+  Models: NearestNeighborModel(base="force_layout", k=10), SVD, Filter, Normalization, SCTransform, ...
+```
