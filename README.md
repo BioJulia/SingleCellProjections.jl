@@ -277,7 +277,7 @@ DataMatrix (3 variables and 41095 observations)
   Observations: id, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, lane, ...
   Models: NearestNeighborModel(base="force_layout", k=10), SVD, Filter, Normalization, SCTransform, ...
 ```
-The result looks very similar to the force layout plot above, since the donors "P5" and "P6" are quite similar to donors "P1" and "P2".
+The result looks similar to the force layout plot above, since the donors "P5" and "P6" are similar to donors "P1" and "P2".
 
 ![force_layout_projected](https://user-images.githubusercontent.com/16546530/213479253-6616d052-e3d9-4e47-9c82-9ef63f966c07.svg)
 
