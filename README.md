@@ -98,7 +98,7 @@ julia> counts.obs[1:6,["id","sampleName","barcode","fraction_mt","celltype.l1"]]
 ### Transformation
 The raw counts data is not suitable for analyses like PCA, since the data is far from normally distributed.
 A common strategy to handle this is to transform the data.
-Here we will use SCTransform.
+Here we will use [SCTransform](https://github.com/rasmushenningsson/SCTransform.jl) (see also [original sctransform implementation in R](https://github.com/satijalab/sctransform)).
 ```
 julia> transformed = sctransform(counts)
 DataMatrix (20239 variables and 35340 observations)
