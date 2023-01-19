@@ -30,6 +30,7 @@ _randinit(::Val{ndim}, rng, N::Int, scale) where ndim = scale.*randn(rng, SVecto
 
 
 # inefficient reference implementation O(N²)
+# This function is based on d3-force: https://github.com/d3/d3-force, also see LICENSE.md.
 function charge_forces_reference!(vel::AbstractVector, pos::AbstractVector; charge, charge_min_distance, alpha)
     N = length(pos)
     charge_min_distance2 = charge_min_distance^2
@@ -47,7 +48,7 @@ function charge_forces_reference!(vel::AbstractVector, pos::AbstractVector; char
 end
 
 
-
+# This function is based on d3-force: https://github.com/d3/d3-force, also see LICENSE.md.
 function charge_forces_rec!(vel::AbstractVector, pos::AbstractVector, pointInd, tree::BarnesHutTree{N1,N2}, depth, nodeInd, firstPointInd, nodeDiameter2, charge, charge_min_distance2, alpha, theta2) where {N1,N2}
     node = tree.nodes[nodeInd]
     # for each child
@@ -91,6 +92,7 @@ function charge_forces_rec!(vel::AbstractVector, pos::AbstractVector, pointInd, 
 end
 
 # Barnes-Hut implementation
+# This function is based on d3-force: https://github.com/d3/d3-force, also see LICENSE.md.
 function charge_forces!(vel::AbstractVector, pos::AbstractVector, tree::BarnesHutTree; charge, charge_min_distance, alpha, theta)
     build!(tree, pos)
 
@@ -109,7 +111,7 @@ function charge_forces!(vel::AbstractVector, pos::AbstractVector, tree::BarnesHu
 end
 
 
-
+# This function is based on d3-force: https://github.com/d3/d3-force, also see LICENSE.md.
 function link_forces!(vel::AbstractVector, pos::AbstractVector, adj; link_distance, link_strength, alpha)
     N = length(pos)
     adjR = rowvals(adj)
@@ -129,7 +131,7 @@ function link_forces!(vel::AbstractVector, pos::AbstractVector, adj; link_distan
 end
 
 
-# d3 inspired force layout
+# This function is based on d3-force: https://github.com/d3/d3-force, also see LICENSE.md.
 function force_layout(::Val{ndim}, adj::AbstractMatrix;
                       niter=100,
                       link_distance=4, link_strength=2,
