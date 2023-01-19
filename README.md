@@ -55,7 +55,7 @@ Data sets in `SingleCellProjections` are represented as `DataMatrix` objects, wh
 Above, `counts` is a `DataMatrix` where the counts are stored in a sparse matrix.
 You can also see the available annotations for variables and observations.
 To access the different parts, use:
-* `counts.matrix` - For the matrix.
+* `counts.matrix` - For the matrix
 * `counts.var` - Variable annotations (`DataFrame`)
 * `counts.obs` - Observation annotations (`DataFrame`)
 
@@ -70,7 +70,7 @@ DataMatrix (33766 variables and 35340 observations)
   Observations: id, sampleName, barcode, fraction_mt
   Models: VarCountsFractionModel(subset_size=13, total_size=33538, col="fraction_mt")
 ```
-Note how the new `obs` annotation `fraction_mt` appears in the output.
+Note that the new annotation `fraction_mt` is present in the output.
 
 We will also load some more cell annotations from the provided file.
 ```julia
@@ -78,7 +78,7 @@ julia> cell_annotations = CSV.read(joinpath(base_path, "GSE164378_RNA_ADT_3P.csv
 
 julia> leftjoin!(counts.obs, cell_annotations; on=:barcode);
 ```
-Note how we used the `DataFrames` function `leftjoin!`, since it takes care of matching the cells in `counts` to the cells in `cell_annotations` based on the `:barcode` column.
+To merge, we use the `DataFrames` function `leftjoin!`, since it takes care of matching the cells in `counts` to the cells in `cell_annotations` based on the `:barcode` column.
 
 Let's look at some annotations for the first few cells:
 ```julia
@@ -131,14 +131,15 @@ The first two terms are reused to make sure memory is not wasted.
 
 ### Filtering
 It is possible to filter variables and observations.
-Here we remove all cells labeled as `"other"`.
+Here we keep all cells that are not labeled as `"other"`.
 ```julia
 julia> filtered = filter_obs("celltype.l1"=>!isequal("other"), normalized);
 ```
 
 ### Principal Component Analysis (PCA)
 Now we are ready to perform Principal Component Analysis (PCA).
-This is computed by the Singular Value Decomposition (SVD), so we should call the `svd` function, using the `nsv` parameter for specifying the number of dimensions.
+This is computed by the Singular Value Decomposition (SVD), so we should call the `svd` function.
+The number of dimensions is specified using the `nsv` parameter.
 ```julia
 julia> reduced = svd(filtered; nsv=20)
 DataMatrix (20239 variables and 34639 observations)
@@ -182,7 +183,7 @@ For visualization purposes, it is often useful to further reduce the dimension a
 
 
 #### Force Layout
-Force Layout plots (also known as SPRING Plots) can be created in `SingleCellProjections`:
+Force Layout plots (also known as SPRING Plots) are created like this:
 ```julia
 julia> fl = force_layout(reduced; ndim=3, k=100)
 DataMatrix (3 variables and 34639 observations)
@@ -193,7 +194,7 @@ DataMatrix (3 variables and 34639 observations)
 ```
 
 #### UMAP
-`SingleCellProjections.jl` can be used together with [UMAP.jl](https://github.com/dillondaudert/UMAP.jl).
+`SingleCellProjections.jl` can be used together with [UMAP.jl](https://github.com/dillondaudert/UMAP.jl):
 ```julia
 julia> using UMAP
 
@@ -207,7 +208,7 @@ DataMatrix (3 variables and 34639 observations)
 
 #### t-SNE
 Similarly, t-SNE plots are supported using [TSne.jl](https://github.com/lejon/TSne.jl).
-In this example, we just run it one every 10ᵗʰ cell, because t-SNE doesn't scale very well with the number of cells.
+In this example, we just run it one every 10ᵗʰ cell, because t-SNE doesn't scale very well with the number of cells:
 ```julia
 julia> using TSne
 
