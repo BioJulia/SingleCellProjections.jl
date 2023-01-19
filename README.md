@@ -151,6 +151,11 @@ DataMatrix (20239 variables and 34639 observations)
 The matrix is now stored as an `SVD` object, which includes low dimensional representations of the observations and variables.
 To retrieve the low dimensional coordinates, use `obs_coordinates` and `var_coordinates` respectively.
 
+![Principal Component Analysis](https://user-images.githubusercontent.com/16546530/213447197-b417b050-8d17-490b-9d2c-7acff684a67d.svg)
+
+[Download interactive PCA plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/10456817/svd.zip).
+
+
 ### Visualization
 <details>
 <summary>Expand this to show some example PlotlyJS plotting code.</summary>
@@ -192,6 +197,11 @@ DataMatrix (3 variables and 34639 observations)
   Observations: id, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, lane, ...
   Models: NearestNeighborModel(base="force_layout", k=10), SVD, Filter, Normalization, SCTransform, ...
 ```
+![force_layout](https://user-images.githubusercontent.com/16546530/213448020-ec2e8e14-90b7-4be7-88be-a9ab87d86c2c.svg)
+
+[Download interactive Force Layout plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/10456840/force_layout.zip).
+
+
 
 #### UMAP
 `SingleCellProjections.jl` can be used together with [UMAP.jl](https://github.com/dillondaudert/UMAP.jl):
@@ -205,6 +215,10 @@ DataMatrix (3 variables and 34639 observations)
   Observations: id, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, lane, ...
   Models: UMAP(n_components=3), SVD, Filter, Normalization, SCTransform, ...
 ```
+![umap](https://user-images.githubusercontent.com/16546530/213448139-beb04732-3836-4392-b9c1-32f4e04d9a65.svg)
+
+[Download interactive UMAP plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/10456847/umap.zip).
+
 
 #### t-SNE
 Similarly, t-SNE plots are supported using [TSne.jl](https://github.com/lejon/TSne.jl).
@@ -219,7 +233,12 @@ DataMatrix (3 variables and 3464 observations)
   Observations: id, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, lane, ...
   Models: NearestNeighborModel(base="tsne", k=10), Filter, SVD, Filter, Normalization, ...
 ```
+![t-SNE](https://user-images.githubusercontent.com/16546530/213448219-397f9c16-cd47-4020-b959-729e59efe73c.svg)
+
+[Download interactive t-SNE plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/10456849/t-SNE.zip).
+
 
 #### Other
 It is of course possible to use your own favorite dimension reduction method/package.
 The natural input for most cases are the coordinates after dimension reduction by PCA (`obs_coordinates(reduced)`).
+
