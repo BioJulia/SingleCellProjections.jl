@@ -159,15 +159,15 @@ Use `obs_coordinates` to get the coordinates for each cell, and `data.obs` to ac
 
 ```julia
 using PlotlyJS
-function plot_categorical_3d(data, annotation)
-	points = obs_coordinates(data)
-	traces = GenericTrace[]
-	for sub in groupby(data.obs, annotation; sort=true)
-		value = sub[1,annotation]
-		ind = parentindices(sub)[1]
-		push!(traces, scatter3d(;x=points[1,ind], y=points[2,ind], z=points[3,ind], mode="markers", marker_size=3, name=value))
-	end
-	plot(traces)
+function plot_categorical_3d(data, annotation; marker_size=3)
+    points = obs_coordinates(data)
+    traces = GenericTrace[]
+    for sub in groupby(data.obs, annotation; sort=true)
+        value = sub[1,annotation]
+        ind = parentindices(sub)[1]
+        push!(traces, scatter3d(;x=points[1,ind], y=points[2,ind], z=points[3,ind], mode="markers", marker_size, name=value))
+    end
+    plot(traces, Layout(;legend=attr(itemsizing="constant")))
 end
 ```
 
@@ -207,11 +207,16 @@ DataMatrix (3 variables and 34639 observations)
 
 #### t-SNE
 Similarly, t-SNE plots are supported using [TSne.jl](https://github.com/lejon/TSne.jl).
+In this example, we just run it one every 10ᵗʰ cell, because t-SNE doesn't scale very well with the number of cells.
 ```julia
 julia> using TSne
 
-julia> t = tsne(reduced, 3)
-
+julia> t = tsne(reduced[:,1:10:end], 3)
+DataMatrix (3 variables and 3464 observations)
+  Matrix{Float64}
+  Variables: id
+  Observations: id, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, lane, ...
+  Models: NearestNeighborModel(base="tsne", k=10), Filter, SVD, Filter, Normalization, ...
 ```
 
 #### Other
