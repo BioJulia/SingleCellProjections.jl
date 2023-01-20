@@ -147,6 +147,34 @@ function designmatrix(data::DataMatrix, covariates::AbstractVector{<:AbstractCov
 
 	DesignMatrix(A, covariates, select(data.obs, data.obs_id_cols))
 end
+
+"""
+	designmatrix(data::DataMatrix, [covariates...]; center=true, max_categories=100)
+
+Creates a design matrix from `data.obs` and the given `covariates`.
+Covariates can be specied using strings (column name in data.obs), with autodetection of whether the covariate is numerical or categorical, or using the `covariate` function for more control.
+
+* `center` - If `true`, an intercept is added to the design matrix. (Should only be set to `false` in very rare circumstances.)
+* `max_categories` - Safety parameter, an error will be thrown if there are too many categories. In this case, it is likely a mistake that the covariate was used as a categorical covariate. Using a very large number of categories is also bad for performance and memory consumption.
+
+# Examples
+Centering only:
+```julia
+julia> designmatrix(data)
+```
+
+Regression model with intercept (centering) and "fraction_mt" (numerical annotation):
+```julia
+julia> designmatrix(data, "fraction_mt")
+```
+
+As above, but also including "batch" (categorical annotation):
+```julia
+julia> designmatrix(data, "fraction_mt", "batch")
+```
+
+See also: [`normalize_matrix`](@ref), [`NormalizationModel`](@ref), [`covariate`](@ref)
+"""
 function designmatrix(data::DataMatrix, args...; center=true, kwargs...)
 	covariates = setup_covariates(data, args...; center)
 	designmatrix(data, covariates; kwargs...)
@@ -203,6 +231,23 @@ function _setscaling!(model::NormalizationModel, data::DataMatrix, ::DesignMatri
 	model
 end
 
+
+"""
+	NormalizationModel(data::DataMatrix, design::DesignMatrix;
+	                   scale=false, min_std=1e-6, annotate=true,
+	                   rtol=sqrt(eps()), var=:copy, obs=:copy)
+
+Create a NormalizationModel based on `data` and a `design` matrix.
+
+* `scale` - Set to true to normalize variables to unit standard deviation. Can also be set to a vector with a scaling factor for each variable.
+* `min_std` - If `scale==true`, the `scale` vector is set to `1.0 ./ max.(std, min_std)`. That is, `min_std` is used to suppress variables that are very small (and any fluctuations can be assumed to be noise).
+* `annotate` - Only used if `scale!=false`. With `annotate=true`, the `scale` vector is added as a var annotation.
+* `rtol` - Singular values of the design matrix that are `≤rtol` are discarded. Needed for numerical stability.
+* `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
+* `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
+
+See also: [`normalize_matrix`](@ref), [`designmatrix`](@ref)
+"""
 function NormalizationModel(data::DataMatrix, design::DesignMatrix;
                             scale=false, # can also be a vector
                             min_std=1e-6,
@@ -296,10 +341,47 @@ end
 project_impl(data::DataMatrix, model::NormalizationModel; kwargs...) = project_impl(data, model, designmatrix(data, model.covariates); kwargs...)
 
 
+"""
+	normalize_matrix(data::DataMatrix, design::DesignMatrix; scale=false, kwargs...)
+
+Normalize `data` using the specified `design` matrix.
+
+See also: [`NormalizationModel`](@ref), [`designmatrix`](@ref)
+"""
 function normalize_matrix(data::DataMatrix, design::DesignMatrix; kwargs...)
 	model = NormalizationModel(data, design; kwargs...)
 	project_impl(data, model, design)
 end
+
+"""
+	normalize_matrix(data::DataMatrix, [covariates...]; center=true, scale=false, kwargs...)
+
+Normalize `data`. By default, the matrix is centered.
+Any `covariates` specified (using column names of `data.obs`) will be regressed out.
+
+* `center` - Set to true to center the data matrix.
+* `scale` - Set to true to scale the variables in the data matrix to unit standard deviation.
+
+For other `kwargs` and more detailed descriptions, see `NormalizationModel` and `designmatrix`.
+
+# Examples
+Centering only:
+```julia
+julia> normalize_matrix(data)
+```
+
+Regression model with intercept (centering) and "fraction_mt" (numerical annotation):
+```julia
+julia> normalize_matrix(data, "fraction_mt")
+```
+
+As above, but also including "batch" (categorical annotation):
+```julia
+julia> normalize_matrix(data, "fraction_mt", "batch")
+```
+
+See also: [`NormalizationModel`](@ref), [`designmatrix`](@ref)
+"""
 function normalize_matrix(data::DataMatrix, args...; center=true, max_categories=nothing, kwargs...)
 	design = designmatrix(data, args...; center, max_categories)
 	normalize_matrix(data, design; kwargs...)
