@@ -13,7 +13,20 @@ projection_isequal(m1::SVDModel, m2::SVDModel) = m1.F === m2.F && m1.var_match =
 update_model(m::SVDModel; var=m.var, obs=m.obs, kwargs...) = (SVDModel(m.F, m.var_match, var, obs), kwargs)
 
 
+"""
+	svd(data::DataMatrix; nsv=3, var=:copy, obs=:copy, kwargs...)
 
+Compute the Singular Value Decomposition (SVD) of `data` using the Random Subspace SVD algorithm from [Halko et al. "Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions"].
+SVD is often used to perform Principal Component Analysis (PCA), which assumes that the data is centered.
+
+* `nsv` - The number of singular values.
+* `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
+* `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
+
+Additional kwargs related to numerical precision are passed to `SingleCellProjections.implicitsvd`.
+
+See also: [`SingleCellProjections.implicitsvd`](@ref)
+"""
 function LinearAlgebra.svd(data::DataMatrix; nsv=3, var=:copy, obs=:copy, kwargs...)
 	F = implicitsvd(data.matrix; nsv=nsv, kwargs...)
 	model = SVDModel(F, select(data.var,data.var_id_cols), var, obs)

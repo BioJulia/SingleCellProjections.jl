@@ -9,9 +9,6 @@ function svdbyeigen(A; nsv::Integer=3)
 	N<=P ? SVD(A*V./S',S,V') : SVD(V,S,V'A./S)
 end
 
-"""
-	implicitsvd([T], A; nsv=3, subspacedims=4nsv, niter=2)
-"""
 function implicitsvd(::Type{T}, P, N, A, AT; nsv::Integer=3, subspacedims::Integer=4nsv, niter::Integer=2,
                      rng = Random.default_rng()) where T
 	P*N==0 && return SVD(zeros(0,0),zeros(0),zeros(0,0))
@@ -48,4 +45,15 @@ end
 _floattype(::Type{T}) where T<:AbstractFloat = T
 _floattype(::Type{T}) where T = promote_type(T,Float64)
 
+"""
+	implicitsvd(A; nsv=3, subspacedims=4nsv, niter=2, rng)
+
+Compute the SVD of `A` using Random Subspace SVD. [Halko et al. "Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions"]
+
+* `nsv` - Number of singular values/vectors to compute
+* `subspacedims` - Number of dimensions used for the subspace approximating the action of `A`.
+* `niter` - Number of iterations. In each iteration, one multiplication of `A` with a matrix and one multiplication of `A'` with a matrix will be performed.
+* `rng` - Specify a custom RNG.
+
+"""
 implicitsvd(A; kwargs...) = implicitsvd(_floattype(eltype(A)), size(A)..., A, A'; kwargs...)
