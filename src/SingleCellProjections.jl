@@ -24,7 +24,6 @@ export
 	filter_obs,
 	covariate,
 	designmatrix,
-	normalization_model,
 	normalize_matrix,
 	svd,
 	update_matrix,
