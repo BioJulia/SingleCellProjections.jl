@@ -1,3 +1,11 @@
+"""
+	SVDModel <: ProjectionModel
+
+A model used for projecting onto an `SVD` object.
+Normally created using `svd(::DataMatrix)`.
+
+See also: [`svd`](@ref)
+"""
 struct SVDModel <: ProjectionModel
 	F::SVD
 	var_match::DataFrame
