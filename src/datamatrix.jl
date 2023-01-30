@@ -115,7 +115,7 @@ function project_from(data::DataMatrix, base::DataMatrix, ::Nothing, args...; kw
 	project(data, (@view base.models[ind+1:end]), args...; kwargs...)
 end
 
-function project(data::DataMatrix, models::AbstractVector, args...; verbose=true, kwargs...)
+function project(data::DataMatrix, models::AbstractVector{<:ProjectionModel}, args...; verbose=true, kwargs...)
 	foldl(models; init=data) do d,m
 		verbose && @info "Projecting onto $m"
 		project(d,m,args...;verbose, kwargs...)
