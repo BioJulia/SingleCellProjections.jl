@@ -9,7 +9,6 @@ In the meantime, you can install it directly from GitHub:
 
 ```julia
 using Pkg;
-Pkg.add(url="https://github.com/rasmushenningsson/SCTransform.jl.git")
 Pkg.add(url="https://github.com/rasmushenningsson/SingleCellProjections.jl.git")
 ```
 
