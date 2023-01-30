@@ -132,6 +132,7 @@ end
 
 
 # This function is based on d3-force: https://github.com/d3/d3-force, also see LICENSE.md.
+# NB: If we change default values of kwargs here, documentation should be updated in reduce.jl as well.
 function force_layout(::Val{ndim}, adj::AbstractMatrix;
                       niter=100,
                       link_distance=4, link_strength=2,
