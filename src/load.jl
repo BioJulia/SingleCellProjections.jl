@@ -51,7 +51,21 @@ getmatrix(matrix::Lazy10xMatrix{Tv,Ti}) where {Tv,Ti} = read10x_matrix(matrix.fi
 
 
 load_counts(data::DataMatrix; callback=nothing) = data
+
+"""
+	load_counts(data::DataMatrix{Lazy10xMatrix})
+
+Load counts for a lazily loaded 10x DataMatrix.
+
+See also: [`load10x`](@ref)
+"""
 load_counts(data::DataMatrix{Lazy10xMatrix}; callback=nothing) = DataMatrix(getmatrix(data.matrix), data.var, data.obs)
+
+"""
+	load_counts(data::DataMatrix{LazyMergedMatrix})
+
+Merge/load counts for a lazily merged DataMatrix.
+"""
 function load_counts(data::DataMatrix{LazyMergedMatrix{Tv,Ti}}; callback=nothing) where {Tv,Ti}
 	lazy_matrix = data.matrix
 
@@ -118,12 +132,51 @@ function load10x(filename; lazy=false, copy_obs_col="barcode"=>"id", kwargs...)
 	DataMatrix(matrix, features, cells; kwargs...)
 end
 
+
+"""
+	load_counts([loadfun=load10x], filenames;
+                sample_names,
+                sample_name_col,
+                merged_obs_id_col = "id",
+                lazy,
+                lazy_merge = false,
+                var_id_cols=nothing,
+                merged_obs_id_delim = '_',
+                callback=nothing)
+
+Load and merge multiple samples efficiently.
+
+Defaults to loading 10x CellRanger files.
+The files are first loaded lazily, then the merged count matrix is allocated and finally each sample is loaded directly into the merged count matrix.
+(This strategy greatly reduces memory usage, since only one copy of data is needed instead of two.)
+
+The vector `filenames` specifies which files to load.
+For each file, `loadfun` is called.
+
+* `sample_names` - Specify the sample names. Should be a vector of the same length as `filenames`. Set to `nothing` to not create a sample name annotation.
+* `sample_name_col` - Column for sample names in `obs`, defaults to "sampleName".
+* `merged_obs_id_col` - Colum for merged `id`s in `obs`.
+* `lazy` - Enable lazy loading. Defaults to true if `load10x` is used, and `false` otherwise.
+* `lazy_merge` - Enable lazy merging, i.e. `var` and `obs` are created, but the count matrix merging is postponed until a second call to `load_counts`.
+* `var_id_cols` - Specify variable id columns. Defaults to `nothing`, i.e. autodetecting from the samples.
+* `merged_obs_id_delim` - Delimiter used when creating merged `obs` IDs.
+* `callback` - Experimental callback functionality. The callback function is called between samples during merging. Return `true` to abort loading and `false` to continue.
+
+# Examples
+
+Load and name samples:
+```julia
+julia> counts = load_counts(["s1.h5", "s2.h5"]; sample_names=["Sample A", "Sample B"])
+```
+
+See also: [`load10x`](@ref)
+"""
 function load_counts(loadfun, filenames;
-                     lazy=loadfun==load10x,
-                     lazy_merge=false,
-                     var_id_cols=nothing,#["id","feature_type"], # nothing means merge from samples
                      sample_names=samplenamesfromfilenames(filenames),
                      sample_name_col = sample_names===nothing ? nothing : "sampleName",
+                     lazy=loadfun==load10x,
+                     lazy_merge=false,
+                     var_id_cols=nothing,
                      merged_obs_id_col = "id",
                      merged_obs_id_delim = '_',
                      callback=nothing)
