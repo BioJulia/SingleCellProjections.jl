@@ -126,7 +126,7 @@ function load10x(filename; lazy=false, copy_obs_col="barcode"=>"id", kwargs...)
 	end
 
 	if copy_obs_col !== nothing
-		cells = hcat(select(cells, copy_obs_cols), cells)
+		cells = hcat(select(cells, copy_obs_col), cells)
 	end
 
 	DataMatrix(matrix, features, cells; kwargs...)
