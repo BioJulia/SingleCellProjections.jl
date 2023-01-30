@@ -90,9 +90,9 @@ function project_impl(data::DataMatrix, model::FilterModel; allow_obs_indexing=f
 end
 
 
-filter_matrix(data::DataMatrix, fvar, fobs) = project(data, FilterModel(data,fvar,fobs); allow_obs_indexing=true)
-filter_var(f, data::DataMatrix) = filter_matrix(data, f, :)
-filter_obs(f, data::DataMatrix) = filter_matrix(data, :, f)
+filter_matrix(fvar, fobs, data::DataMatrix) = project(data, FilterModel(data,fvar,fobs); allow_obs_indexing=true)
+filter_var(f, data::DataMatrix) = filter_matrix(f, :, data)
+filter_obs(f, data::DataMatrix) = filter_matrix(:, f, data)
 
 # - show -
 _show_filter(io, f::Colon) = print(io, ':')

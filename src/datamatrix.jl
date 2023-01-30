@@ -93,7 +93,7 @@ obs_coordinates(data::DataMatrix{<:Union{SVD,LowRank}}) = obs_coordinates(data.m
 obs_coordinates(data::DataMatrix{<:AbstractMatrix}) = data.matrix
 
 
-Base.getindex(data::DataMatrix, I::Index, J::Index) = filter_matrix(data, I, J)
+Base.getindex(data::DataMatrix, I::Index, J::Index) = filter_matrix(I, J, data)
 
 
 _startswith(a::AbstractVector, b::AbstractVector) = length(a)>=length(b) && view(a,1:length(b)) == b
