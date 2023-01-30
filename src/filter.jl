@@ -90,9 +90,93 @@ function project_impl(data::DataMatrix, model::FilterModel; allow_obs_indexing=f
 end
 
 
+"""
+	filter_matrix(fvar, fobs, data::DataMatrix)
+
+Return a new DataMatrix, containing only the variables and observations passing the filters.
+
+`fvar`/`fobs` can be:
+* An `AbstractVector` of indices to keep.
+* A `AbstractVector` of booleans (true to keep, false to discard).
+* `:` indicating that all variables/observations should be kept.
+* Anything you can pass on to `DataFrames.filter` (see DataFrames documentation for details).
+
+Also note that indexing of a DataMatrix supports `AbstractVector`s of indices/booleans and `:`, and is otherwise identical to `filter_matrix`.
+
+# Examples
+
+Keep every 10th variable and 3rd observation:
+```julia
+julia> filter_matrix(1:10:size(data,1), 1:3:size(data,2), data)
+```
+
+Or, using indexing syntax:
+```julia
+julia> data[1:10:end, 1:3:end]
+```
+
+For more examples, see `filter_var` and `filter_obs`.
+
+See also: [`filter_var`](@ref), [`filter_obs`](@ref), [`DataFrames.filter`](@ref)
+"""
 filter_matrix(fvar, fobs, data::DataMatrix) = project(data, FilterModel(data,fvar,fobs); allow_obs_indexing=true)
+
+
+"""
+	filter_var(f, data::DataMatrix)
+
+Return a new DataMatrix, containing only the variables passing the filter.
+
+`f` can be:
+* An `AbstractVector` of indices to keep.
+* A `AbstractVector` of booleans (true to keep, false to discard).
+* `:` indicating that all variables should be kept.
+* Anything you can pass on to `DataFrames.filter` (see DataFrames documentation for details).
+
+# Examples
+
+Keep every 10th variable:
+```julia
+julia> filter_var(1:10:size(data,1), data)
+```
+
+Keep only variables of the type "Gene Expression":
+```julia
+julia> filter_var("feature_type"=>isequal("Gene Expression"), data)
+```
+
+See also: [`filter_matrix`](@ref), [`filter_obs`](@ref), [`DataFrames.filter`](@ref)
+"""
 filter_var(f, data::DataMatrix) = filter_matrix(f, :, data)
+
+
+"""
+	filter_obs(f, data::DataMatrix)
+
+Return a new DataMatrix, containing only the observations passing the filter.
+
+`f` can be:
+* An `AbstractVector` of indices to keep.
+* A `AbstractVector` of booleans (true to keep, false to discard).
+* `:` indicating that all observations should be kept.
+* Anything you can pass on to `DataFrames.filter` (see DataFrames documentation for details).
+
+# Examples
+
+Keep every 10th observation:
+```julia
+julia> filter_obs(1:10:size(data,2), data)
+```
+
+Remove observations where "celltype" equals "other":
+```julia
+julia> filter_obs("celltype"=>!isequal("other"), data)
+```
+
+See also: [`filter_matrix`](@ref), [`filter_var`](@ref), [`DataFrames.filter`](@ref)
+"""
 filter_obs(f, data::DataMatrix) = filter_matrix(:, f, data)
+
 
 # - show -
 _show_filter(io, f::Colon) = print(io, ':')
