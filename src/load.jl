@@ -71,7 +71,35 @@ function _load10x_metadata(io)
 	P,N,nz,features,cells
 end
 
-function load10x(filename; lazy=false, copy_obs_cols="barcode"=>"id", kwargs...)
+"""
+	load10x(filename; lazy=false, copy_obs_col="barcode"=>"id", kwargs...)
+
+Load a CellRanger ".h5" or ".mtx[.gz]" file as a DataMatrix.
+
+* `lazy` - If `true`, the count matrix itself will not be loaded, only features and barcodes. This is used internally in `load_counts` to merge samples more efficiently. Use `load_counts` to later load the count data.
+* `copy_obs_col` - Set to nothing to disable. Defaults to a pair `"barcode"=>"id"`, which copies the `obs` annotation `barcode` to a new column `id`.
+* Additional `kwargs...` are passed to the DataMatrix constructor.
+
+# Examples
+Load counts from a CellRanger ".h5" file. (Recommended.)
+```julia
+julia> counts = load10x("filtered_feature_bc_matrix.h5")
+```
+
+Load counts from a CellRanger ".mtx" file. Tries to find barcode and feature annotation files in the same folder.
+```julia
+julia> counts = load10x("matrix.mtx.gz")
+```
+
+Lazy loading followed by loading.
+```julia
+julia> counts = load10x("filtered_feature_bc_matrix.h5");
+julia> counts = load_counts(counts)
+```
+
+See also: [`load_counts`](@ref)
+"""
+function load10x(filename; lazy=false, copy_obs_col="barcode"=>"id", kwargs...)
 	if lazy
 		if lowercase(splitext(filename)[2]) == ".h5"
 			P,N,nz,features,cells = h5open(_load10x_metadata, filename)
@@ -83,7 +111,7 @@ function load10x(filename; lazy=false, copy_obs_cols="barcode"=>"id", kwargs...)
 		matrix, features, cells = read10x(filename, SparseMatrixCSC{Int,Int32}, DataFrame, DataFrame)
 	end
 
-	if copy_obs_cols !== nothing
+	if copy_obs_col !== nothing
 		cells = hcat(select(cells, copy_obs_cols), cells)
 	end
 
