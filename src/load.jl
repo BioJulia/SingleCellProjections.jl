@@ -169,7 +169,7 @@ Load and name samples:
 julia> counts = load_counts(["s1.h5", "s2.h5"]; sample_names=["Sample A", "Sample B"])
 ```
 
-See also: [`load10x`](@ref)
+See also: [`load10x`](@ref), [`merge_counts`](@ref)
 """
 function load_counts(loadfun, filenames;
                      sample_names=samplenamesfromfilenames(filenames),
@@ -295,9 +295,33 @@ end
 
 # If sample_names are provided, they *will* be used to create the new IDs, either merging or adding to obs_id_cols.
 # merged_obs_id_col = nothing, the current obs_id_cols will be reused (+ sampleNames if provided).
+
+"""
+	merge_counts(samples, sample_names;
+	             lazy=false,
+	             var_id_cols=nothing,
+	             sample_name_col = sample_names===nothing ? nothing : "sampleName",
+	             merged_obs_id_col = "id",
+	             merged_obs_id_delim = '_',
+	             callback=nothing)
+
+Merge `samples` to create one large DataMatrix, by concatenating the `obs`.
+The union of the variables from the samples is used, and if a variable is not present in a sample, the count will be set to zero.
+
+The `obs` IDs are created by concatenating the current `obs` ID columns, together with the `sample_names` (if provided).
+
+* `lazy` - Lazy merging. Use `load_counts` to actually perform the merging.
+* `var_id_cols` - Set to `nothing` to autodetect from the samples.
+* `sample_name_col` - Column in which the `sample_names` are stored.
+* `merged_obs_id_col` - `obs` ID column after merging. Set to `nothing` to keep current ID cols (will add `sampleName` as a separate ID column, if provided.)
+* `merged_obs_id_delim` - Delimiter used when merging `obs` IDs.
+* `callback` - Experimental callback functionality. The callback function is called between samples during merging. Return `true` to abort loading and `false` to continue.
+
+See also: [`load_counts`](@ref)
+"""
 function merge_counts(samples, sample_names;
                       lazy=false,
-                      var_id_cols=nothing, #["id","feature_type"], # nothing means autodetect
+                      var_id_cols=nothing,
                       sample_name_col = sample_names===nothing ? nothing : "sampleName",
                       merged_obs_id_col = "id",
                       merged_obs_id_delim = '_',
