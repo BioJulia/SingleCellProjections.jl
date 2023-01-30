@@ -4,18 +4,18 @@ _subsetmatrix(X::AbstractMatrix, I::Index, J::Index) = X[I,J]
 _filter_indices(::DataFrame, I::Index) = I
 _filter_indices(df::DataFrame, f) = first(parentindices(filter(f,df;view=true)))
 
-struct FilterModel{Tv<:Index,Ts} <: ProjectionModel
+struct FilterModel{Tv<:Index,To} <: ProjectionModel
 	var_filter::Tv
-	obs_filter::Ts
+	obs_filter::To
 	var_match::DataFrame
 	var::Symbol
 	obs::Symbol
 
-    function FilterModel(var_filter::Tv, obs_filter::Ts, var_match, var, obs) where {Tv<:Index,Ts}
+    function FilterModel(var_filter::Tv, obs_filter::To, var_match, var, obs) where {Tv<:Index,To}
 		# :keep only possible when indexing with :
 		var_filter != Colon() && var == :keep && throw(ArgumentError("var = :keep is only allowed when indexing with :"))
 		obs_filter != Colon() && obs == :keep && throw(ArgumentError("obs = :keep is only allowed when indexing with :"))
-        new{Tv,Ts}(var_filter, obs_filter, var_match, var, obs)
+        new{Tv,To}(var_filter, obs_filter, var_match, var, obs)
     end
 end
 FilterModel(var_annots::Tv, var_id_cols, var_filter, obs_filter; var=:copy, obs=:copy) where Tv=

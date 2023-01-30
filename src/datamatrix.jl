@@ -16,14 +16,28 @@ function _detect_obs_id_cols(obs)
 end
 
 
-struct DataMatrix{T,Tv,Ts}
+"""
+	struct DataMatrix{T,Tv,To}
+
+A `DataMatrix` represents a matrix together with annotations for variables and observations.
+
+Fields:
+* `matrix::T` - The matrix.
+* `var::Tv` - Variable annotations.
+* `obs::To` - Observation annotations.
+* `var_id_cols::Vector{String}` - Which column(s) to use as IDs.
+* `obs_id_cols::Vector{String}` - Which column(s) to use as IDs.
+
+The rows of the `var` and `obs` tables must be unique, considering only the `var_id_cols`/`obs_id_cols`.
+"""
+struct DataMatrix{T,Tv,To}
 	matrix::T
 	var::Tv
-	obs::Ts
+	obs::To
 	var_id_cols::Vector{String}
 	obs_id_cols::Vector{String}
 	models::Vector{ProjectionModel}
-	function DataMatrix(matrix::T, var::Tv, obs::Ts, var_id_cols, obs_id_cols, models) where {T,Tv,Ts}
+	function DataMatrix(matrix::T, var::Tv, obs::To, var_id_cols, obs_id_cols, models) where {T,Tv,To}
 		P,N = size(matrix)
 		p = size(var,1)
 		n = size(obs,1)
@@ -38,15 +52,32 @@ struct DataMatrix{T,Tv,Ts}
 		table_validatecols(obs, obs_id_cols)
 		table_validateunique(var, var_id_cols)
 		table_validateunique(obs, obs_id_cols)
-		new{T,Tv,Ts}(matrix, var, obs, var_id_cols, obs_id_cols, models)
+		new{T,Tv,To}(matrix, var, obs, var_id_cols, obs_id_cols, models)
 	end
 end
+
+
+"""
+	DataMatrix(matrix, var, obs; var_id_cols=nothing, obs_id_cols=nothing)
+
+Create a `DataMatrix` with the given `matrix`, `var` and `obs`.
+
+Columns to use for `var`/`obs` IDs can be explicitly set with `var_id_cols`/`obs_id_cols`.
+Otherwise, an attempt will be made to autodetect the ID columns.
+"""
 DataMatrix(matrix, var, obs; var_id_cols=nothing, obs_id_cols=nothing) =
 	DataMatrix(matrix, var, obs, var_id_cols, obs_id_cols, ProjectionModel[])
+
+
+"""
+	DataMatrix()
+
+Create an empty DataMatrix{Matrix{Float64},DataFrame,DataFrame}.
+"""
 DataMatrix() = DataMatrix(zeros(0,0),DataFrame(id=String[]),DataFrame(id=String[]))
 
 Base.:(==)(a::DataMatrix, b::DataMatrix) = false
-function Base.:(==)(a::DataMatrix{T,Tv,Ts}, b::DataMatrix{T,Tv,Ts}) where {T,Tv,Ts}
+function Base.:(==)(a::DataMatrix{T,Tv,To}, b::DataMatrix{T,Tv,To}) where {T,Tv,To}
 	all(i->getfield(a,i)==getfield(b,i), 1:nfields(a))
 end
 
