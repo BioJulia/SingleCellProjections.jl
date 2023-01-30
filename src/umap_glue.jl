@@ -9,6 +9,18 @@ projection_isequal(m1::UMAPModel, m2::UMAPModel) = m1.m === m2.m && m1.var_match
 update_model(m::UMAPModel; obs=m.obs, kwargs...) = (UMAPModel(m.m, m.var_match, obs), kwargs)
 
 
+"""
+	umap(data::DataMatrix, args...; obs=:copy, kwargs...)
+
+Create a UMAP embedding of `data`.
+Usually, `data` is a DataMatrix after reduction to `10-100` dimensions by `svd`.
+
+* `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
+
+The other `args...` and `kwargs...` are forwarded to `UMAP.umap`. See `UMAP` documentation for more details.
+
+See also: [`UMAP.umap`](@ref)
+"""
 function UMAP.umap(data::DataMatrix, args...; obs=:copy, kwargs...)
 	model = UMAPModel(UMAP.UMAP_(obs_coordinates(data), args...; kwargs...), select(data.var,data.var_id_cols), obs)
 	update_matrix(data, model.m.embedding, model; var="UMAP", model.obs)
