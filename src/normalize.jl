@@ -64,6 +64,17 @@ struct CovariateDesc
 		new(name,type)
 	end
 end
+
+"""
+	covariate(name::String, type=:auto)
+
+Create a `covariate` referring to column `name`.
+`type` must be one of `:auto`, `:numerical`, `:categorical` and `:intercept`.
+`:auto` means auto-detection by checking if the values in the column are numerical or categorical.
+`type==:intercept` adds an intercept to the model (in which case the `name` parameter is ignored).
+
+See also: [`designmatrix`](@ref)
+"""
 covariate(name::String, type=:auto) = CovariateDesc(name, type)
 
 

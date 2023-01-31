@@ -211,7 +211,7 @@ Defaults to only using "Gene Expression" features.
 * `post_var_filter` - Equivalent to applying variable (feature) filtering after sctransform, but computationally more efficient.
 * `post_obs_filter` - Equivalent to applying observation (cell) filtering after sctransform, but computationally more efficient.
 * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
-* `kwargs...` - Additional `kwargs` are passed on to `SCTransform.scparams`.
+* `kwargs...` - Additional `kwargs` are passed on to [`SCTransform.scparams`](https://github.com/rasmushenningsson/SCTransform.jl).
 
 # Examples
 Setup `SCTransformModel` (Gene Expression features):
@@ -224,7 +224,7 @@ Setup `SCTransformModel` (Antibody Capture features):
 julia> SCTransformModel(counts; var_filter = :feature_type => isequal("Antibody Capture"))
 ```
 
-See also: [`sctransform`](@ref), [`SCTransform.scparams`](@ref), [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter)
+See also: [`sctransform`](@ref), [`SCTransform.scparams`](https://github.com/rasmushenningsson/SCTransform.jl), [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter)
 """
 function SCTransformModel(counts::DataMatrix;
                           var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
@@ -341,7 +341,7 @@ Compute SCTransform (Antibody Capture features):
 julia> sctransform(counts; var_filter = :feature_type => isequal("Antibody Capture"))
 ```
 
-See also: [`SCTransformModel`](@ref), [`SCTransform.scparams`](@ref)
+See also: [`SCTransformModel`](@ref), [`SCTransform.scparams`](https://github.com/rasmushenningsson/SCTransform.jl)
 """
 sctransform(counts::DataMatrix; verbose=true, kwargs...) =
 	project_impl(counts, SCTransformModel(counts; verbose, kwargs...); verbose, allow_obs_indexing=true)
