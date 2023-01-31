@@ -99,7 +99,7 @@ Return a new DataMatrix, containing only the variables and observations passing 
 * An `AbstractVector` of indices to keep.
 * A `AbstractVector` of booleans (true to keep, false to discard).
 * `:` indicating that all variables/observations should be kept.
-* Anything you can pass on to `DataFrames.filter` (see DataFrames documentation for details).
+* Anything you can pass on to `DataFrames.filter` (see [DataFrames documentation](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for details).
 
 Also note that indexing of a DataMatrix supports `AbstractVector`s of indices/booleans and `:`, and is otherwise identical to `filter_matrix`.
 
@@ -117,7 +117,7 @@ julia> data[1:10:end, 1:3:end]
 
 For more examples, see `filter_var` and `filter_obs`.
 
-See also: [`filter_var`](@ref), [`filter_obs`](@ref), [`DataFrames.filter`](@ref)
+See also: [`filter_var`](@ref), [`filter_obs`](@ref), [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter)
 """
 filter_matrix(fvar, fobs, data::DataMatrix) = project(data, FilterModel(data,fvar,fobs); allow_obs_indexing=true)
 
@@ -131,7 +131,7 @@ Return a new DataMatrix, containing only the variables passing the filter.
 * An `AbstractVector` of indices to keep.
 * A `AbstractVector` of booleans (true to keep, false to discard).
 * `:` indicating that all variables should be kept.
-* Anything you can pass on to `DataFrames.filter` (see DataFrames documentation for details).
+* Anything you can pass on to `DataFrames.filter` (see [DataFrames documentation](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for details).
 
 # Examples
 
@@ -145,7 +145,7 @@ Keep only variables of the type "Gene Expression":
 julia> filter_var("feature_type"=>isequal("Gene Expression"), data)
 ```
 
-See also: [`filter_matrix`](@ref), [`filter_obs`](@ref), [`DataFrames.filter`](@ref)
+See also: [`filter_matrix`](@ref), [`filter_obs`](@ref), [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter)
 """
 filter_var(f, data::DataMatrix) = filter_matrix(f, :, data)
 
@@ -173,7 +173,7 @@ Remove observations where "celltype" equals "other":
 julia> filter_obs("celltype"=>!isequal("other"), data)
 ```
 
-See also: [`filter_matrix`](@ref), [`filter_var`](@ref), [`DataFrames.filter`](@ref)
+See also: [`filter_matrix`](@ref), [`filter_var`](@ref), [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter)
 """
 filter_obs(f, data::DataMatrix) = filter_matrix(:, f, data)
 
