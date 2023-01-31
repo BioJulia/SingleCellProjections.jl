@@ -1,0 +1,3 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+SingleCellProjections = "03d38035-ed2f-4a36-82eb-797f1727ab2e"
