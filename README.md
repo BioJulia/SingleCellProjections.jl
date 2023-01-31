@@ -1,5 +1,6 @@
 # SingleCellProjections.jl
 
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://rasmushenningsson.github.io/SingleCellProjections.jl/dev/)
 [![Build Status](https://github.com/rasmushenningsson/SCTransform.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/rasmushenningsson/SCTransform.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
 SingleCellProjections.jl is an easy to use and powerful package for analysis of Single Cell Expression data in Julia.
