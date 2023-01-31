@@ -1,10 +1,13 @@
 # SingleCellProjections.jl
+
+[![Build Status](https://github.com/rasmushenningsson/SCTransform.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/rasmushenningsson/SCTransform.jl/actions/workflows/CI.yml?query=branch%3Amain)
+
 SingleCellProjections.jl is an easy to use and powerful package for analysis of Single Cell Expression data in Julia.
 It is faster and uses less memory than existing solutions since the data is internally represented as expressions of sparse and low rank matrices, instead of storing huge dense matrices.
 In particular, it efficiently performs PCA (Principal Component Analysis), a natural starting point for downstream analysis, and supports both standard workflows and projections onto a base data set.
 
 ## Installation
-SingleCellProjections.jl will soon be registered in the Julia General Registry.
+SingleCellProjections.jl is currently being registered in the Julia General Registry.
 In the meantime, you can install it directly from GitHub:
 
 ```julia
