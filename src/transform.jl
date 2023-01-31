@@ -57,6 +57,25 @@ function project_impl(counts::DataMatrix, model::LogTransformModel; verbose=true
 	matrix = logtransform_impl(matrix, model)
 	update_matrix(counts, matrix, model; var, model.obs)
 end
+
+"""
+	logtransform(counts::DataMatrix; scale_factor=10_000, var=:copy, obs=:copy)
+
+Log-transform `counts` using the formula:
+```
+  log(1 + cᵢⱼ*scale_factor/(∑ᵢcᵢⱼ))
+```
+
+* `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
+* `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
+
+# Examples
+```julia
+julia> transformed = logtransform(counts)
+```
+
+See also: [`sctransform`](@ref)
+"""
 logtransform(counts::DataMatrix; kwargs...) = project(counts, LogTransformModel(counts; kwargs...))
 
 
