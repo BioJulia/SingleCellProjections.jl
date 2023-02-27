@@ -6,6 +6,11 @@ end
 read_matrix(fn,delim=',') = _open(io->readdlm(io,delim,Int), fn)
 read_strings(fn,delim=',') = _open(io->readdlm(io,delim,String), fn)
 
+function simple_logtransform(X, scale_factor)
+	s = sum(X; dims=1)
+	log2.( 1 .+ X.*scale_factor./max.(1,s) )
+end
+
 
 @testset "Basic Workflow" begin
 	pbmc_path = joinpath(pkgdir(SingleCellProjections), "test/data/500_PBMC_3p_LT_Chromium_X_50genes")
@@ -90,16 +95,35 @@ read_strings(fn,delim=',') = _open(io->readdlm(io,delim,String), fn)
 
 	counts = load10x(h5_path)
 
-	# filter
-	# annotation stuff
+	@testset "logtransform scale_factor=$scale_factor" for scale_factor in (10_000, 1_000)
+		kwargs = scale_factor == 10_000 ? (;) : (;scale_factor)
+		l = logtransform(counts; kwargs...)
+		@test l.matrix.matrix ≈ simple_logtransform(expected_mat, scale_factor)
+		@test nnz(l.matrix.matrix) == expected_nnz
+	end
 
-	# sctransform
-	# logtransform
-	# tf_idf_transform
-	# normalize (incl. center, scale, categorical regression, linear regression)
-	# svd
-	# force-layout
+	@testset "sctransform" begin
+		t = sctransform(counts; use_cache=false)
+		params = scparams(counts.matrix, counts.var; use_cache=false)
 
+		@test params.logGeneMean ≈ t.var.logGeneMean
+		@test params.outlier == t.var.outlier
+		@test params.beta0 ≈ t.var.beta0
+		@test params.beta1 ≈ t.var.beta1
+		@test params.theta ≈ t.var.theta
 
+		sct = sctransform(counts.matrix, counts.var, params)
 
+		@test size(t.matrix) == size(sct)
+		@test t.matrix*I(587) ≈ sct rtol=1e-3
+	end
+
+	# TODO: tf_idf_transform
+
+	# TODO: normalize (incl. center, scale, categorical regression, linear regression)
+	# TODO: svd
+	# TODO: force-layout
+
+	# TODO: filter (before/after different steps)
+	# TODO: annotation stuff
 end
