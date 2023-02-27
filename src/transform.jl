@@ -28,7 +28,8 @@ function logtransform_impl(X, model::LogTransformModel)
 		nzval_out[irange] .= log2.(1 .+ (@view nzval[irange]) .* nf[j])
 	end
 
-	SparseMatrixCSC(P, N, copy(X.colptr), copy(X.rowval), nzval_out)
+	A = SparseMatrixCSC(P, N, copy(X.colptr), copy(X.rowval), nzval_out)
+	MatrixRef(:A=>A)
 end
 
 function project_impl(counts::DataMatrix, model::LogTransformModel; verbose=true)
@@ -122,7 +123,8 @@ function tf_idf_transform_impl(X, scale_factor, idf)
 		end
 	end
 
-	SparseMatrixCSC(P, N, copy(X.colptr), copy(X.rowval), nzval_out)
+	A = SparseMatrixCSC(P, N, copy(X.colptr), copy(X.rowval), nzval_out)
+	MatrixRef(:A=>A)
 end
 
 function project_impl(counts::DataMatrix, model::TFIDFTransformModel; verbose=true)
