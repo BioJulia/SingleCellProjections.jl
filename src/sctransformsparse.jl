@@ -131,7 +131,7 @@ function sctransformsparse(X::SparseMatrixCSC, features, params;
 	dividebysigma!(X,logCellCounts,β0,β1,θ; clip=clip)
 
 	Y = matrixproduct((:B₁,B1), (:B₂,B2), (:B₃,B3))
-	Z = matrixsum((:A,ThreadedSparseMatrixCSC(X)), Y)
+	Z = matrixsum((:A,X), Y)
 
 	Z = transpose ? Z' : Z
 	Z, features[feature_ind,:] # TODO: revise this solution

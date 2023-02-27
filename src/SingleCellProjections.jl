@@ -42,7 +42,6 @@ using LinearAlgebra
 import LinearAlgebra: svd
 
 using SparseArrays
-using ThreadedSparseArrays
 using Statistics
 
 using HDF5, H5Zblosc

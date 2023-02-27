@@ -15,6 +15,7 @@ export
 using LinearAlgebra
 using SparseArrays
 using SparseArrays: AbstractSparseMatrixCSC
+using ThreadedSparseArrays
 
 import AbstractTrees # for pretty printing
 
