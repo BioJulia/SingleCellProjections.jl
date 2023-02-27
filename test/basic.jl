@@ -125,43 +125,55 @@ materialize(X::MatrixExpression) = X*I(size(X,2))
 	transformed.obs.group = rand(StableRNG(904), ("A","B","C"), size(transformed,2))
 	transformed.obs.value = 1 .+ randn(StableRNG(905), size(transformed,2))
 
+	X = materialize(transformed.matrix)
+	Xc = (X.-mean(X; dims=2))
+	Xs = Xc ./ std(X; dims=2)
+
+	# categorical
+	Xcat = copy(X)
+	g = transformed.obs.group
+	for c in unique(g)
+		Xcat[:, c.==g] .-= mean(Xcat[:, c.==g]; dims=2)
+	end
+	Xcat_s = Xcat ./ std(Xcat; dims=2)
+
+	# numerical
+	v = transformed.obs.value .- mean(transformed.obs.value)
+	β = Xc/v'
+	Xnum = Xc .- β*v'
+	Xnum_s = Xnum ./ std(Xnum; dims=2)
+
+	# combined
+	D = [g.=="A" g.=="B" g.=="C" v]
+	β = X / D'
+	Xcom = X .- β*D'
+	Xcom_s = Xcom ./ std(Xcom; dims=2)
+
 	@testset "normalize" begin
-		X = materialize(transformed.matrix)
-
-		Xc = (X.-mean(X; dims=2))
-		Xs = Xc ./ std(X; dims=2)
-
 		@test materialize(normalize_matrix(transformed).matrix) ≈ Xc
 		@test materialize(normalize_matrix(transformed; scale=true).matrix) ≈ Xs
 
-		# categorical
-		Xcat = copy(X)
-		g = transformed.obs.group
-		for c in unique(g)
-			Xcat[:, c.==g] .-= mean(Xcat[:, c.==g]; dims=2)
-		end
 		@test materialize(normalize_matrix(transformed, "group").matrix) ≈ Xcat
-		Xcat_s = Xcat ./ std(Xcat; dims=2)
 		@test materialize(normalize_matrix(transformed, "group"; scale=true).matrix) ≈ Xcat_s
 
-		# numerical
-		v = transformed.obs.value .- mean(transformed.obs.value)
-		β = Xc/v'
-		Xnum = Xc .- β*v'
 		@test materialize(normalize_matrix(transformed, "value").matrix) ≈ Xnum
-		Xnum_s = Xnum ./ std(Xnum; dims=2)
 		@test materialize(normalize_matrix(transformed, "value"; scale=true).matrix) ≈ Xnum_s
 
-		# combined
-		D = [g.=="A" g.=="B" g.=="C" v]
-		β = X / D'
-		Xcom = X .- β*D'
 		@test materialize(normalize_matrix(transformed, "group", "value").matrix) ≈ Xcom
-		Xcom_s = Xcom ./ std(Xcom; dims=2)
 		@test materialize(normalize_matrix(transformed, "group", "value"; scale=true).matrix) ≈ Xcom_s
 	end
 
-	# TODO: svd
+	normalized = normalize_matrix(transformed, "group", "value")
+	@testset "svd" begin
+		reduced = svd(normalized; nsv=3)
+		F = svd(Xcom)
+
+		@test reduced.matrix.S ≈ F.S[1:3] rtol=1e-1
+
+		@test abs.(reduced.matrix.U'F.U[:,1:3]) ≈ I(3) rtol=1e-1
+		@test abs.(reduced.matrix.V'F.V[:,1:3]) ≈ I(3) rtol=1e-1
+	end
+
 	# TODO: force-layout
 
 	# TODO: filter (before/after different steps)
