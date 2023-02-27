@@ -11,6 +11,8 @@ function simple_logtransform(X, scale_factor)
 	log2.( 1 .+ X.*scale_factor./max.(1,s) )
 end
 
+materialize(X::MatrixExpression) = X*I(size(X,2))
+
 
 @testset "Basic Workflow" begin
 	pbmc_path = joinpath(pkgdir(SingleCellProjections), "test/data/500_PBMC_3p_LT_Chromium_X_50genes")
@@ -102,25 +104,63 @@ end
 		@test nnz(l.matrix.matrix) == expected_nnz
 	end
 
+	transformed = sctransform(counts; use_cache=false)
 	@testset "sctransform" begin
-		t = sctransform(counts; use_cache=false)
 		params = scparams(counts.matrix, counts.var; use_cache=false)
 
-		@test params.logGeneMean ≈ t.var.logGeneMean
-		@test params.outlier == t.var.outlier
-		@test params.beta0 ≈ t.var.beta0
-		@test params.beta1 ≈ t.var.beta1
-		@test params.theta ≈ t.var.theta
+		@test params.logGeneMean ≈ transformed.var.logGeneMean
+		@test params.outlier == transformed.var.outlier
+		@test params.beta0 ≈ transformed.var.beta0
+		@test params.beta1 ≈ transformed.var.beta1
+		@test params.theta ≈ transformed.var.theta
 
 		sct = sctransform(counts.matrix, counts.var, params)
 
-		@test size(t.matrix) == size(sct)
-		@test t.matrix*I(587) ≈ sct rtol=1e-3
+		@test size(transformed.matrix) == size(sct)
+		@test materialize(transformed.matrix) ≈ sct rtol=1e-3
 	end
 
 	# TODO: tf_idf_transform
 
-	# TODO: normalize (incl. center, scale, categorical regression, linear regression)
+	transformed.obs.group = rand(StableRNG(904), ("A","B","C"), size(transformed,2))
+	transformed.obs.value = 1 .+ randn(StableRNG(905), size(transformed,2))
+
+	@testset "normalize" begin
+		X = materialize(transformed.matrix)
+
+		Xc = (X.-mean(X; dims=2))
+		Xs = Xc ./ std(X; dims=2)
+
+		@test materialize(normalize_matrix(transformed).matrix) ≈ Xc
+		@test materialize(normalize_matrix(transformed; scale=true).matrix) ≈ Xs
+
+		# categorical
+		Xcat = copy(X)
+		g = transformed.obs.group
+		for c in unique(g)
+			Xcat[:, c.==g] .-= mean(Xcat[:, c.==g]; dims=2)
+		end
+		@test materialize(normalize_matrix(transformed, "group").matrix) ≈ Xcat
+		Xcat_s = Xcat ./ std(Xcat; dims=2)
+		@test materialize(normalize_matrix(transformed, "group"; scale=true).matrix) ≈ Xcat_s
+
+		# numerical
+		v = transformed.obs.value .- mean(transformed.obs.value)
+		β = Xc/v'
+		Xnum = Xc .- β*v'
+		@test materialize(normalize_matrix(transformed, "value").matrix) ≈ Xnum
+		Xnum_s = Xnum ./ std(Xnum; dims=2)
+		@test materialize(normalize_matrix(transformed, "value"; scale=true).matrix) ≈ Xnum_s
+
+		# combined
+		D = [g.=="A" g.=="B" g.=="C" v]
+		β = X / D'
+		Xcom = X .- β*D'
+		@test materialize(normalize_matrix(transformed, "group", "value").matrix) ≈ Xcom
+		Xcom_s = Xcom ./ std(Xcom; dims=2)
+		@test materialize(normalize_matrix(transformed, "group", "value"; scale=true).matrix) ≈ Xcom_s
+	end
+
 	# TODO: svd
 	# TODO: force-layout
 
