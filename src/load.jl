@@ -53,20 +53,20 @@ getmatrix(matrix::Lazy10xMatrix{Tv,Ti}) where {Tv,Ti} = read10x_matrix(matrix.fi
 load_counts(data::DataMatrix; callback=nothing) = data
 
 """
-	load_counts(data::DataMatrix{Lazy10xMatrix})
+	load_counts(data::DataMatrix{<:Lazy10xMatrix})
 
 Load counts for a lazily loaded 10x DataMatrix.
 
 See also: [`load10x`](@ref)
 """
-load_counts(data::DataMatrix{Lazy10xMatrix}; callback=nothing) = DataMatrix(getmatrix(data.matrix), data.var, data.obs)
+load_counts(data::DataMatrix{<:Lazy10xMatrix}; callback=nothing) = DataMatrix(getmatrix(data.matrix), data.var, data.obs)
 
 """
-	load_counts(data::DataMatrix{LazyMergedMatrix})
+	load_counts(data::DataMatrix{<:LazyMergedMatrix})
 
 Merge/load counts for a lazily merged DataMatrix.
 """
-function load_counts(data::DataMatrix{LazyMergedMatrix{Tv,Ti}}; callback=nothing) where {Tv,Ti}
+function load_counts(data::DataMatrix{<:LazyMergedMatrix{Tv,Ti}}; callback=nothing) where {Tv,Ti}
 	lazy_matrix = data.matrix
 
 	sample_features = getfield.(lazy_matrix.data,:var)
