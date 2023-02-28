@@ -10,12 +10,11 @@ It is faster and uses less memory than existing solutions since the data is inte
 In particular, it efficiently performs PCA (Principal Component Analysis), a natural starting point for downstream analysis, and supports both standard workflows and projections onto a base data set.
 
 ## Installation
-SingleCellProjections.jl is currently being registered in the Julia General Registry.
-In the meantime, you can install it directly from GitHub:
+Install SingleCellProjections.jl by running the following commands in Julia:
 
 ```julia
-using Pkg;
-Pkg.add(url="https://github.com/rasmushenningsson/SingleCellProjections.jl.git")
+using Pkg
+Pkg.add("SingleCellProjections")
 ```
 
 ## Threading
