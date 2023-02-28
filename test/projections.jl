@@ -14,6 +14,7 @@
 	end
 
 	@testset "models" begin
+		fl = force_layout(reduced; ndim=3, k=10, rng=StableRNG(408))
 		fl_proj = project(counts_proj, fl.models)
 		@test materialize(fl_proj)≈materialize(fl)[:,proj_obs_ind] rtol=1e-5
 	end
