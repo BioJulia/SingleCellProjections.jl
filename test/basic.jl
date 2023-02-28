@@ -11,7 +11,10 @@ function simple_logtransform(X, scale_factor)
 	log2.( 1 .+ X.*scale_factor./max.(1,s) )
 end
 
+materialize(X) = X
 materialize(X::MatrixExpression) = X*I(size(X,2))
+materialize(X::SVD) = convert(Matrix,X)
+materialize(X::SingleCellProjections.LowRank) = X.U*X.Vt
 
 function pairwise_dist(X)
 	K = X'X
@@ -40,19 +43,20 @@ end
 	h5_path = joinpath(pbmc_path, "filtered_feature_bc_matrix.h5")
 	mtx_path = joinpath(pbmc_path, "filtered_feature_bc_matrix/matrix.mtx.gz")
 
+    P,N = (50,587)
+
     expected_mat = read_matrix(joinpath(pbmc_path,"expected_matrix.csv"))
     expected_nnz = count(!iszero, expected_mat)
     expected_feature_ids = vec(read_strings(joinpath(pbmc_path,"expected_feature_ids.csv")))
     expected_barcodes = vec(read_strings(joinpath(pbmc_path,"expected_barcodes.csv")))
 
     expected_feature_names = read_strings(joinpath(pbmc_path,"filtered_feature_bc_matrix/features.tsv.gz"),'\t')[:,2]
-    expected_feature_types = fill("Gene Expression", 50)
-    expected_feature_genome = fill("GRCh38", 50)
-
+    expected_feature_types = fill("Gene Expression", P)
+    expected_feature_genome = fill("GRCh38", P)
 
 	@testset "load10x $(split(basename(p),'.';limit=2)[2]) lazy=$lazy" for p in (h5_path,mtx_path), lazy in (false, true)
 		counts = load10x(p; lazy)
-		@test size(counts)==(50,587)
+		@test size(counts)==(P,N)
 		@test nnz(counts.matrix) == expected_nnz
 
 		@test Set(names(counts.obs)) == Set(("id", "barcode"))
@@ -85,12 +89,12 @@ end
 	@testset "load_counts $(split(basename(p),'.';limit=2)[2]) lazy=$lazy lazy_merge=$lazy_merge" for p in (h5_path,mtx_path), lazy in (false, true), lazy_merge in (false, true)
 		counts = load_counts([p,p]; sample_names=["a","b"], lazy, lazy_merge)
 
-		@test size(counts)==(50,587*2)
+		@test size(counts)==(P,N*2)
 		@test nnz(counts.matrix) == expected_nnz*2
 
 		@test Set(names(counts.obs)) == Set(("id", "sampleName", "barcode"))
 		@test counts.obs.id == [string.("a_",expected_barcodes); string.("b_",expected_barcodes)]
-		@test counts.obs.sampleName == [fill("a",587); fill("b",587)]
+		@test counts.obs.sampleName == [fill("a",N); fill("b",N)]
 		@test counts.obs.barcode == [expected_barcodes; expected_barcodes]
 
 		if p==h5_path
@@ -118,6 +122,10 @@ end
 
 	counts = load10x(h5_path)
 
+	counts.obs.group = rand(StableRNG(904), ("A","B","C"), size(counts,2))
+	counts.obs.value = 1 .+ randn(StableRNG(905), size(counts,2))
+
+
 	@testset "logtransform scale_factor=$scale_factor" for scale_factor in (10_000, 1_000)
 		kwargs = scale_factor == 10_000 ? (;) : (;scale_factor)
 		l = logtransform(counts; kwargs...)
@@ -142,9 +150,6 @@ end
 	end
 
 	# TODO: tf_idf_transform
-
-	transformed.obs.group = rand(StableRNG(904), ("A","B","C"), size(transformed,2))
-	transformed.obs.value = 1 .+ randn(StableRNG(905), size(transformed,2))
 
 	X = materialize(transformed.matrix)
 	Xc = (X.-mean(X; dims=2))
@@ -186,6 +191,7 @@ end
 
 	normalized = normalize_matrix(transformed, "group", "value")
 
+
 	@testset "svd" begin
 		reduced = svd(normalized; nsv=3, subspacedims=24, niter=4, rng=StableRNG(102))
 		F = svd(Xcom)
@@ -196,6 +202,81 @@ end
 	end
 
 	reduced = svd(normalized; nsv=10, niter=4, rng=StableRNG(102))
+
+
+	@testset "filter $name" for (name,data) in (("counts",counts), ("normalized",normalized), ("reduced",reduced))
+		P2 = size(data,1)
+		X = materialize(data.matrix)
+
+		f = filter_var(1:2:P2, data)
+		@test materialize(f.matrix) ≈ X[1:2:P2, :]
+		@test f.obs == data.obs
+		@test f.var == data.var[1:2:P2, :]
+
+		f = data[1:2:end,:]
+		@test materialize(f.matrix) ≈ X[1:2:end, :]
+		@test f.obs == data.obs
+		@test f.var == data.var[1:2:end, :]
+
+		f = filter_obs(1:10:N, data)
+		@test materialize(f.matrix) ≈ X[:, 1:10:N]
+		@test f.obs == data.obs[1:10:N, :]
+		@test f.var == data.var
+
+		f = data[:,1:10:end]
+		@test materialize(f.matrix) ≈ X[:, 1:10:end]
+		@test f.obs == data.obs[1:10:end, :]
+		@test f.var == data.var
+
+		f = filter_matrix(1:2:P2, 1:10:N, data)
+		@test materialize(f.matrix) ≈ X[1:2:P2, 1:10:N]
+		@test f.obs == data.obs[1:10:N, :]
+		@test f.var == data.var[1:2:P2, :]
+
+		f = data[1:2:end,1:10:end]
+		@test materialize(f.matrix) ≈ X[1:2:end, 1:10:end]
+		@test f.obs == data.obs[1:10:end, :]
+		@test f.var == data.var[1:2:end, :]
+
+
+		f = filter_obs("group"=>==("A"), data)
+		@test materialize(f.matrix) ≈ X[:, g.=="A"]
+		@test f.obs == data.obs[g.=="A", :]
+		@test f.var == data.var
+
+		f = filter_obs(row->row.group=="A", data)
+		@test materialize(f.matrix) ≈ X[:, g.=="A"]
+		@test f.obs == data.obs[g.=="A", :]
+		@test f.var == data.var
+
+		f = filter_matrix(1:2:P2, "group"=>==("A"), data)
+		@test materialize(f.matrix) ≈ X[1:2:P2, g.=="A"]
+		@test f.obs == data.obs[g.=="A", :]
+		@test f.var == data.var[1:2:P2, :]
+
+
+		f = filter_var("name"=>>("D"), data)
+		@test materialize(f.matrix) ≈ X[data.var.name.>="D", :]
+		@test f.obs == data.obs
+		@test f.var == data.var[data.var.name.>="D", :]
+
+		f = filter_var(row->row.name>"D", data)
+		@test materialize(f.matrix) ≈ X[data.var.name.>="D", :]
+		@test f.obs == data.obs
+		@test f.var == data.var[data.var.name.>="D", :]
+
+		f = filter_matrix("name"=>>("D"), 1:10:N, data)
+		@test materialize(f.matrix) ≈ X[data.var.name.>="D", 1:10:N]
+		@test f.obs == data.obs[1:10:N, :]
+		@test f.var == data.var[data.var.name.>="D", :]
+
+		f = filter_matrix("name"=>>("D"), "group"=>==("A"), data)
+		@test materialize(f.matrix) ≈ X[data.var.name.>="D", g.=="A"]
+		@test f.obs == data.obs[g.=="A", :]
+		@test f.var == data.var[data.var.name.>="D", :]
+	end
+
+
 	@testset "force layout seed=$seed" for seed in 1:5
 		fl = force_layout(reduced; ndim=3, k=10, rng=StableRNG(seed))
 		# Sanity check output by checking that there is a descent overlap between nearest neighbors
@@ -217,6 +298,6 @@ end
 		@test mean(ncommon) > 9
 	end
 
-	# TODO: filter (before/after different steps)
 	# TODO: annotation stuff
+	# TODO: projections
 end
