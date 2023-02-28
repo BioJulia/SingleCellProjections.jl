@@ -13,6 +13,13 @@ end
 
 materialize(X::MatrixExpression) = X*I(size(X,2))
 
+function pairwise_dist(X)
+	K = X'X
+	d = diag(K)
+	D2 = d .+ d' .- 2.0.*K
+	sqrt.(max.(0.0, D2))
+end
+
 
 @testset "Basic Workflow" begin
 	pbmc_path = joinpath(pkgdir(SingleCellProjections), "test/data/500_PBMC_3p_LT_Chromium_X_50genes")
@@ -168,12 +175,29 @@ materialize(X::MatrixExpression) = X*I(size(X,2))
 	@testset "svd" begin
 		reduced = svd(normalized; nsv=3, subspacedims=24, niter=4, rng=StableRNG(102))
 		F = svd(Xcom)
+		@test size(reduced)==size(transformed)
 		@test reduced.matrix.S ≈ F.S[1:3] rtol=1e-3
 		@test abs.(reduced.matrix.U'F.U[:,1:3]) ≈ I(3) rtol=1e-3
 		@test abs.(reduced.matrix.V'F.V[:,1:3]) ≈ I(3) rtol=1e-3
 	end
 
-	# TODO: force-layout
+	reduced = svd(normalized; nsv=10, niter=4, rng=StableRNG(102))
+	@testset "force layout $seed" for seed in 1:5
+		fl = force_layout(reduced; ndim=3, k=10, rng=StableRNG(seed))
+		@test size(fl)==(3,587)
+
+		# Sanity check output by checking that there is a descent overlap between nearest neighbors
+		Dr = pairwise_dist(obs_coordinates(reduced))
+		Df = pairwise_dist(obs_coordinates(fl))
+		ncommon = zeros(Int,587) # number of common top 20 neighbors in svd and force layout
+		for i in 1:587
+			a = sortperm(Dr[:,i])[1:20]
+			b = sortperm(Df[:,i])[1:20]
+			ncommon[i] = length(intersect(a,b))
+		end
+		@test mean(ncommon) > 8
+
+	end
 
 	# TODO: filter (before/after different steps)
 	# TODO: annotation stuff
