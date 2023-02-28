@@ -238,10 +238,16 @@ end
 		@test abs.(reduced.matrix.U'F.U[:,1:3]) ≈ I(3) rtol=1e-3
 		@test abs.(reduced.matrix.V'F.V[:,1:3]) ≈ I(3) rtol=1e-3
 
+		U = reduced.matrix.U
+		@test all(>(0.0), sum(U;dims=1))
+
 		X = materialize(reduced)
 		reduced_proj = project(normalized_proj, reduced)
 		Xproj = materialize(reduced_proj)
 		@test Xproj ≈ X[:,proj_obs_indices] rtol=1e-3
+
+		U_proj = reduced_proj.matrix.U
+		@test all(>(0.0), sum(U_proj;dims=1))
 	end
 
 	reduced = svd(normalized; nsv=10, niter=4, rng=StableRNG(102))

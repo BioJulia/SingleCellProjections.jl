@@ -9,7 +9,17 @@ function svdbyeigen(A; nsv::Integer=3)
 	N<=P ? SVD(A*V./S',S,V') : SVD(V,S,V'A./S)
 end
 
-function implicitsvd(::Type{T}, P, N, A, AT; nsv::Integer=3, subspacedims::Integer=4nsv, niter::Integer=2,
+function stabilize_sign!(F::SVD)
+	flip = vec(sum(F.U; dims=1).<0)
+	F.U[:,flip] .*= -1
+	F.Vt[flip,:] .*= -1
+	F
+end
+
+
+function implicitsvd(::Type{T}, P, N, A, AT;
+                     nsv::Integer=3, subspacedims::Integer=4nsv, niter::Integer=2,
+                     stabilize_sign = true,
                      rng = Random.default_rng()) where T
 	P*N==0 && return SVD(zeros(0,0),zeros(0),zeros(0,0))
 	nsv = min(nsv,P,N)
@@ -39,20 +49,23 @@ function implicitsvd(::Type{T}, P, N, A, AT; nsv::Integer=3, subspacedims::Integ
 	end
 
 	F = svdbyeigen(B; nsv=nsv)
-	SVD(Q*F.U,F.S,F.Vt)
+	F = SVD(Q*F.U,F.S,F.Vt)
+	stabilize_sign && stabilize_sign!(F)
+	F
 end
 
 _floattype(::Type{T}) where T<:AbstractFloat = T
 _floattype(::Type{T}) where T = promote_type(T,Float64)
 
 """
-	implicitsvd(A; nsv=3, subspacedims=4nsv, niter=2, rng)
+	implicitsvd(A; nsv=3, subspacedims=4nsv, niter=2, stabilize_sign=true, rng)
 
 Compute the SVD of `A` using Random Subspace SVD. [Halko et al. "Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions"]
 
 * `nsv` - Number of singular values/vectors to compute
 * `subspacedims` - Number of dimensions used for the subspace approximating the action of `A`.
 * `niter` - Number of iterations. In each iteration, one multiplication of `A` with a matrix and one multiplication of `A'` with a matrix will be performed.
+* `stabilize_sign` - If true, handles the problem that the SVD is only unique up to the sign of each component (for real matrices), by ensuring that the l1 norm of the positive entires for each column in U is larger than the l1 norm of the negative entries.
 * `rng` - Specify a custom RNG.
 
 """
