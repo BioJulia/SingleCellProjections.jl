@@ -64,7 +64,7 @@ end
 
 
 """
-	var_counts_fraction!(counts::DataMatrix, sub_filter, tot_filter; check=true)
+	var_counts_fraction!(counts::DataMatrix, sub_filter, tot_filter, col; check=true)
 
 For each observation, compute the fraction of counts that match a specific variable pattern.
 * `sub_filter` decides which variables are counted.
@@ -78,16 +78,16 @@ Examples
 
 Compute the fraction of reads in MT- genes, considering only "Gene Expression" features (and not e.g. "Antibody Capture").
 ```
-var_counts_fraction!(counts, "name"=>contains(r"^MT-"), "feature_type"=>isequal("Gene Expression"), col="percent_mt")
+var_counts_fraction!(counts, "name"=>contains(r"^MT-"), "feature_type"=>isequal("Gene Expression"), "fraction_mt")
 ```
 
 Compute the fraction of reads in MT- genes, when there is no `feature_type` annotation (i.e. all variables are genes).
 ```
-var_counts_fraction!(counts, "name"=>contains(r"^MT-"), Returns(true), col="percent_mt")
+var_counts_fraction!(counts, "name"=>contains(r"^MT-"), Returns(true), "fraction_mt")
 ```
 """
-function var_counts_fraction!(counts::DataMatrix{<:AbstractMatrix{<:Integer}}, args...)
-	model = VarCountsFractionModel(counts, args...; var=:keep, obs=:keep, matrix=:keep)
+function var_counts_fraction!(counts::DataMatrix{<:AbstractMatrix{<:Integer}}, args...; kwargs...)
+	model = VarCountsFractionModel(counts, args...; var=:keep, obs=:keep, matrix=:keep, kwargs...)
 	counts.obs[!,model.col] = _var_counts_fraction(counts, model)
 	push!(counts.models, model)
 	counts
