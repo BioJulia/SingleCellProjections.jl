@@ -298,6 +298,27 @@ end
 		@test mean(ncommon) > 9
 	end
 
-	# TODO: annotation stuff
+	@testset "var_counts_fraction" begin
+		X = counts.matrix
+		nA = vec(sum(X[startswith.(counts.var.name,"A"),:]; dims=1))
+		nAC = vec(sum(X[startswith.(counts.var.name,"AC"),:]; dims=1))
+		nTot = vec(sum(X;dims=1))
+
+		c = DataMatrix(counts.matrix, counts.var, counts.obs) # TODO: copy(counts)
+
+		var_counts_fraction!(c, "name"=>startswith("A"), Returns(true), "A")
+		@test c.obs.A == nA ./ nTot
+
+		var_counts_fraction!(c, "name"=>startswith("AC"), "name"=>startswith("A"), "B")
+		@test c.obs.B == nAC ./ max.(1,nA)
+
+		@test_throws ArgumentError var_counts_fraction!(c, "name"=>startswith("NOTAGENE"), Returns(true), "C")
+		@test "C" ∉ names(c.obs)
+
+		var_counts_fraction!(c, "name"=>startswith("NOTAGENE"), Returns(true), "C"; check=false)
+		@test all(iszero, c.obs.C)
+	end
+
+	# TODO: var2obs
 	# TODO: projections
 end
