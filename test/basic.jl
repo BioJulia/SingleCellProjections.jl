@@ -1,92 +1,5 @@
 @testset "Basic Workflow" begin
-	pbmc_path = joinpath(pkgdir(SingleCellProjections), "test/data/500_PBMC_3p_LT_Chromium_X_50genes")
-	h5_path = joinpath(pbmc_path, "filtered_feature_bc_matrix.h5")
-	mtx_path = joinpath(pbmc_path, "filtered_feature_bc_matrix/matrix.mtx.gz")
-
-    P,N = (50,587)
-
-    expected_mat = read_matrix(joinpath(pbmc_path,"expected_matrix.csv"))
-    expected_nnz = count(!iszero, expected_mat)
-    expected_feature_ids = vec(read_strings(joinpath(pbmc_path,"expected_feature_ids.csv")))
-    expected_barcodes = vec(read_strings(joinpath(pbmc_path,"expected_barcodes.csv")))
-
-    expected_feature_names = read_strings(joinpath(pbmc_path,"filtered_feature_bc_matrix/features.tsv.gz"),'\t')[:,2]
-    expected_feature_types = fill("Gene Expression", P)
-    expected_feature_genome = fill("GRCh38", P)
-
-	@testset "load10x $(split(basename(p),'.';limit=2)[2]) lazy=$lazy" for p in (h5_path,mtx_path), lazy in (false, true)
-		counts = load10x(p; lazy)
-		@test size(counts)==(P,N)
-		@test nnz(counts.matrix) == expected_nnz
-
-		@test Set(names(counts.obs)) == Set(("id", "barcode"))
-		@test counts.obs.id == expected_barcodes
-		@test counts.obs.barcode == expected_barcodes
-
-		matrix_name = lazy ? "Lazy10xMatrix" : "SparseMatrixCSC"
-		if p==h5_path
-			@test Set(names(counts.var)) == Set(("id", "name", "feature_type", "genome"))
-			@test counts.var.genome == expected_feature_genome
-			test_show(counts; matrix=matrix_name, var=["id", "feature_type", "name", "genome"], obs=["id", "barcode"], models="")
-		else
-			@test Set(names(counts.var)) == Set(("id", "name", "feature_type"))
-			test_show(counts; matrix=matrix_name, var=["id", "feature_type", "name"], obs=["id", "barcode"], models="")
-		end
-		@test counts.var.id == expected_feature_ids
-		@test counts.var.name == expected_feature_names
-		@test counts.var.feature_type == expected_feature_types
-
-		@test counts.obs_id_cols == ["id"]
-		@test counts.var_id_cols == ["id", "feature_type"]
-
-		if lazy
-			@test counts.matrix.filename == p
-			counts = load_counts(counts)
-		end
-
-		@test counts.matrix == expected_mat
-		@test counts.matrix isa SparseMatrixCSC{Int64,Int32}
-	end
-
-
-	@testset "load_counts $(split(basename(p),'.';limit=2)[2]) lazy=$lazy lazy_merge=$lazy_merge" for p in (h5_path,mtx_path), lazy in (false, true), lazy_merge in (false, true)
-		counts = load_counts([p,p]; sample_names=["a","b"], lazy, lazy_merge)
-
-		@test size(counts)==(P,N*2)
-		@test nnz(counts.matrix) == expected_nnz*2
-
-		@test Set(names(counts.obs)) == Set(("id", "sampleName", "barcode"))
-		@test counts.obs.id == [string.("a_",expected_barcodes); string.("b_",expected_barcodes)]
-		@test counts.obs.sampleName == [fill("a",N); fill("b",N)]
-		@test counts.obs.barcode == [expected_barcodes; expected_barcodes]
-
-		if p==h5_path
-			@test Set(names(counts.var)) == Set(("id", "name", "feature_type", "genome"))
-			@test counts.var.genome == expected_feature_genome
-		else
-			@test Set(names(counts.var)) == Set(("id", "name", "feature_type"))
-		end
-		@test counts.var.id == expected_feature_ids
-		@test counts.var.name == expected_feature_names
-		@test counts.var.feature_type == expected_feature_types
-
-		@test counts.obs_id_cols == ["id"]
-		@test counts.var_id_cols == ["id", "feature_type"]
-
-		if lazy_merge
-			counts = load_counts(counts)
-		end
-
-		@test counts.matrix == [expected_mat expected_mat]
-		@test counts.matrix isa SparseMatrixCSC{Int64,Int32}
-	end
-
-	# TODO: load_counts with user-provided load function
-
-	counts = load10x(h5_path)
-
-	counts.obs.group = rand(StableRNG(904), ("A","B","C"), size(counts,2))
-	counts.obs.value = 1 .+ randn(StableRNG(905), size(counts,2))
+	P,N = (50,587)
 
 	# dataset for projection - by using a subset of the obs in `counts`, we make unit testing simpler while still testing well
 	counts_proj = filter_obs(row->row.group!="B" && row.value>0.6, counts)
@@ -109,10 +22,10 @@
 		test_show(lproj; matrix="SparseMatrixCSC", models="LogTransformModel")
 	end
 
-	transformed = sctransform(counts; use_cache=false)
 	transformed_proj = project(counts_proj, transformed)
 	@testset "sctransform" begin
-		params = scparams(counts.matrix, counts.var; use_cache=false)
+		S = sparse(expected_mat)
+		params = scparams(S, counts.var; use_cache=false)
 
 		@test params.logGeneMean ≈ transformed.var.logGeneMean
 		@test params.outlier == transformed.var.outlier
@@ -120,7 +33,7 @@
 		@test params.beta1 ≈ transformed.var.beta1
 		@test params.theta ≈ transformed.var.theta
 
-		sct = sctransform(counts.matrix, counts.var, params)
+		sct = sctransform(S, counts.var, params)
 
 		@test size(transformed.matrix) == size(sct)
 		@test materialize(transformed) ≈ sct rtol=1e-3
@@ -163,39 +76,38 @@
 	Xcom_s = Xcom ./ std(Xcom; dims=2)
 
 	@testset "normalize" begin
-		normalized = normalize_matrix(transformed)
-		@test materialize(normalized) ≈ Xc
-		@test materialize(project(counts_proj,normalized)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
-		@test materialize(project(transformed_proj,normalized)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
-		test_show(normalized; matrix=r"^A\+B₁B₂B₃\+\(-β\)X'$", models="NormalizationModel")
-		normalized = normalize_matrix(transformed; scale=true)
-		@test materialize(normalized) ≈ Xs
-		@test materialize(project(transformed_proj,normalized)) ≈ Xs[:,proj_obs_indices] rtol=1e-3
-		test_show(normalized; matrix=r"^D\(A\+B₁B₂B₃\+\(-β\)X'\)$", models="NormalizationModel")
+		n = normalize_matrix(transformed)
+		@test materialize(n) ≈ Xc
+		@test materialize(project(counts_proj,n)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
+		@test materialize(project(transformed_proj,n)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
+		test_show(n; matrix=r"^A\+B₁B₂B₃\+\(-β\)X'$", models="NormalizationModel")
+		n = normalize_matrix(transformed; scale=true)
+		@test materialize(n) ≈ Xs
+		@test materialize(project(transformed_proj,n)) ≈ Xs[:,proj_obs_indices] rtol=1e-3
+		test_show(n; matrix=r"^D\(A\+B₁B₂B₃\+\(-β\)X'\)$", models="NormalizationModel")
 
-		normalized = normalize_matrix(transformed, "group")
-		@test materialize(normalized) ≈ Xcat
-		@test materialize(project(transformed_proj,normalized)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
-		normalized = normalize_matrix(transformed, "group"; scale=true)
-		@test materialize(normalized) ≈ Xcat_s
-		@test materialize(project(transformed_proj,normalized)) ≈ Xcat_s[:,proj_obs_indices] rtol=1e-3
+		n = normalize_matrix(transformed, "group")
+		@test materialize(n) ≈ Xcat
+		@test materialize(project(transformed_proj,n)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
+		n = normalize_matrix(transformed, "group"; scale=true)
+		@test materialize(n) ≈ Xcat_s
+		@test materialize(project(transformed_proj,n)) ≈ Xcat_s[:,proj_obs_indices] rtol=1e-3
 
-		normalized = normalize_matrix(transformed, "value")
-		@test materialize(normalized) ≈ Xnum
-		@test materialize(project(transformed_proj,normalized)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
-		normalized = normalize_matrix(transformed, "value"; scale=true)
-		@test materialize(normalized) ≈ Xnum_s
-		@test materialize(project(transformed_proj,normalized)) ≈ Xnum_s[:,proj_obs_indices] rtol=1e-3
+		n = normalize_matrix(transformed, "value")
+		@test materialize(n) ≈ Xnum
+		@test materialize(project(transformed_proj,n)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
+		n = normalize_matrix(transformed, "value"; scale=true)
+		@test materialize(n) ≈ Xnum_s
+		@test materialize(project(transformed_proj,n)) ≈ Xnum_s[:,proj_obs_indices] rtol=1e-3
 
-		normalized = normalize_matrix(transformed, "group", "value")
-		@test materialize(normalized) ≈ Xcom
-		@test materialize(project(transformed_proj,normalized)) ≈ Xcom[:,proj_obs_indices] rtol=1e-3
-		normalized = normalize_matrix(transformed, "group", "value"; scale=true)
-		@test materialize(normalized) ≈ Xcom_s
-		@test materialize(project(transformed_proj,normalized)) ≈ Xcom_s[:,proj_obs_indices] rtol=1e-3
+		n = normalize_matrix(transformed, "group", "value")
+		@test materialize(n) ≈ Xcom
+		@test materialize(project(transformed_proj,n)) ≈ Xcom[:,proj_obs_indices] rtol=1e-3
+		n = normalize_matrix(transformed, "group", "value"; scale=true)
+		@test materialize(n) ≈ Xcom_s
+		@test materialize(project(transformed_proj,n)) ≈ Xcom_s[:,proj_obs_indices] rtol=1e-3
 	end
 
-	normalized = normalize_matrix(transformed, "group", "value")
 	normalized_proj = project(transformed_proj,normalized)
 
 	@testset "svd" begin
@@ -222,7 +134,6 @@
 		test_show(reduced; matrix="SVD (3 dimensions)", models="SVDModel")
 	end
 
-	reduced = svd(normalized; nsv=10, niter=4, rng=StableRNG(102))
 	reduced_proj = project(normalized_proj, reduced)
 
 	@testset "filter $name" for (name,data,data_proj) in (("counts",counts,counts_proj), ("normalized",normalized,normalized_proj), ("reduced",reduced,reduced_proj))
@@ -405,5 +316,4 @@
 	end
 
 	# TODO: var2obs
-	# TODO: projections
 end
