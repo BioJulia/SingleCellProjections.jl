@@ -2,6 +2,8 @@
 
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://rasmushenningsson.github.io/SingleCellProjections.jl/dev/)
 [![Build Status](https://github.com/rasmushenningsson/SCTransform.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/rasmushenningsson/SCTransform.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Coverage](https://codecov.io/gh/rasmushenningsson/SingleCellProjections.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/rasmushenningsson/SingleCellProjections.jl)
+
 
 SingleCellProjections.jl is an easy to use and powerful package for analysis of Single Cell Expression data in Julia.
 It is faster and uses less memory than existing solutions since the data is internally represented as expressions of sparse and low rank matrices, instead of storing huge dense matrices.
