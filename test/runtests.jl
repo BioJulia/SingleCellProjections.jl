@@ -7,6 +7,7 @@ using StableRNGs
 using StaticArrays
 using Statistics
 using DelimitedFiles
+using DataFrames
 using CodecZlib
 using SCTransform
 
@@ -19,7 +20,10 @@ import SingleCellProjections: BarnesHutTree, build!
 include("MatrixExpressions/runtests.jl")
 
 
+include("test_utils.jl")
+
 @testset "SingleCellProjections.jl" begin
+    include("datamatrix.jl")
     include("basic.jl")
     include("test_barnes_hut.jl")
 end
