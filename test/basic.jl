@@ -20,6 +20,20 @@ function pairwise_dist(X)
 	sqrt.(max.(0.0, D2))
 end
 
+function ncommon_neighbors(A,B; k=20)
+	@assert size(A,2)==size(B,2)
+	N = size(A,2)
+	Dr = pairwise_dist(A)
+	Df = pairwise_dist(B)
+	ncommon = zeros(Int,N)
+	for i in 1:N
+		a = sortperm(Dr[:,i])[1:k]
+		b = sortperm(Df[:,i])[1:k]
+		ncommon[i] = length(intersect(a,b))
+	end
+	ncommon
+end
+
 
 @testset "Basic Workflow" begin
 	pbmc_path = joinpath(pkgdir(SingleCellProjections), "test/data/500_PBMC_3p_LT_Chromium_X_50genes")
@@ -182,21 +196,25 @@ end
 	end
 
 	reduced = svd(normalized; nsv=10, niter=4, rng=StableRNG(102))
-	@testset "force layout $seed" for seed in 1:5
+	@testset "force layout seed=$seed" for seed in 1:5
 		fl = force_layout(reduced; ndim=3, k=10, rng=StableRNG(seed))
-		@test size(fl)==(3,587)
-
 		# Sanity check output by checking that there is a descent overlap between nearest neighbors
-		Dr = pairwise_dist(obs_coordinates(reduced))
-		Df = pairwise_dist(obs_coordinates(fl))
-		ncommon = zeros(Int,587) # number of common top 20 neighbors in svd and force layout
-		for i in 1:587
-			a = sortperm(Dr[:,i])[1:20]
-			b = sortperm(Df[:,i])[1:20]
-			ncommon[i] = length(intersect(a,b))
-		end
+		ncommon = ncommon_neighbors(obs_coordinates(fl), obs_coordinates(reduced))
 		@test mean(ncommon) > 8
+	end
 
+	@testset "UMAP" begin
+		umapped = umap(reduced, 3)
+		# Sanity check output by checking that there is a descent overlap between nearest neighbors
+		ncommon = ncommon_neighbors(obs_coordinates(umapped), obs_coordinates(reduced))
+		@test mean(ncommon) > 9
+	end
+
+	@testset "t-SNE" begin
+		t = tsne(reduced, 3)
+		# Sanity check output by checking that there is a descent overlap between nearest neighbors
+		ncommon = ncommon_neighbors(obs_coordinates(t), obs_coordinates(reduced))
+		@test mean(ncommon) > 9
 	end
 
 	# TODO: filter (before/after different steps)

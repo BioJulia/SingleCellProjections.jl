@@ -10,6 +10,9 @@ using DelimitedFiles
 using CodecZlib
 using SCTransform
 
+using UMAP
+using TSne
+
 import SingleCellProjections: BarnesHutTree, build!
 
 
