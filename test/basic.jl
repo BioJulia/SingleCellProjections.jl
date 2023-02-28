@@ -15,6 +15,7 @@ materialize(X) = X
 materialize(X::MatrixExpression) = X*I(size(X,2))
 materialize(X::SVD) = convert(Matrix,X)
 materialize(X::SingleCellProjections.LowRank) = X.U*X.Vt
+materialize(X::DataMatrix) = materialize(X.matrix)
 
 function pairwise_dist(X)
 	K = X'X
@@ -125,15 +126,27 @@ end
 	counts.obs.group = rand(StableRNG(904), ("A","B","C"), size(counts,2))
 	counts.obs.value = 1 .+ randn(StableRNG(905), size(counts,2))
 
+	# dataset for projection - by using a subset of the obs in `counts`, we make unit testing simpler while still testing well
+	counts_proj = filter_obs(row->row.group!="B" && row.value>0.6, counts)
+	empty!(counts_proj.models)
+	counts_proj.obs.id = string.("proj-", counts_proj.obs.id)
+
+	proj_obs_indices = identity.(indexin(counts_proj.obs.barcode, counts.obs.barcode))
+
 
 	@testset "logtransform scale_factor=$scale_factor" for scale_factor in (10_000, 1_000)
+		X = simple_logtransform(expected_mat, scale_factor)
 		kwargs = scale_factor == 10_000 ? (;) : (;scale_factor)
 		l = logtransform(counts; kwargs...)
-		@test l.matrix.matrix ≈ simple_logtransform(expected_mat, scale_factor)
+		@test l.matrix.matrix ≈ X
 		@test nnz(l.matrix.matrix) == expected_nnz
+
+		lproj = project(counts_proj, l)
+		@test lproj.matrix.matrix ≈ X[:,proj_obs_indices]
 	end
 
 	transformed = sctransform(counts; use_cache=false)
+	transformed_proj = project(counts_proj, transformed)
 	@testset "sctransform" begin
 		params = scparams(counts.matrix, counts.var; use_cache=false)
 
@@ -146,12 +159,20 @@ end
 		sct = sctransform(counts.matrix, counts.var, params)
 
 		@test size(transformed.matrix) == size(sct)
-		@test materialize(transformed.matrix) ≈ sct rtol=1e-3
+		@test materialize(transformed) ≈ sct rtol=1e-3
+
+		@test materialize(transformed_proj) ≈ sct[:,proj_obs_indices] rtol=1e-3
+
+		@test params.logGeneMean ≈ transformed_proj.var.logGeneMean
+		@test params.outlier == transformed_proj.var.outlier
+		@test params.beta0 ≈ transformed_proj.var.beta0
+		@test params.beta1 ≈ transformed_proj.var.beta1
+		@test params.theta ≈ transformed_proj.var.theta
 	end
 
 	# TODO: tf_idf_transform
 
-	X = materialize(transformed.matrix)
+	X = materialize(transformed)
 	Xc = (X.-mean(X; dims=2))
 	Xs = Xc ./ std(X; dims=2)
 
@@ -176,21 +197,39 @@ end
 	Xcom_s = Xcom ./ std(Xcom; dims=2)
 
 	@testset "normalize" begin
-		@test materialize(normalize_matrix(transformed).matrix) ≈ Xc
-		@test materialize(normalize_matrix(transformed; scale=true).matrix) ≈ Xs
+		normalized = normalize_matrix(transformed)
+		@test materialize(normalized) ≈ Xc
+		@test materialize(project(counts_proj,normalized)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
+		@test materialize(project(transformed_proj,normalized)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
+		normalized = normalize_matrix(transformed; scale=true)
+		@test materialize(normalized) ≈ Xs
+		@test materialize(project(transformed_proj,normalized)) ≈ Xs[:,proj_obs_indices] rtol=1e-3
 
-		@test materialize(normalize_matrix(transformed, "group").matrix) ≈ Xcat
-		@test materialize(normalize_matrix(transformed, "group"; scale=true).matrix) ≈ Xcat_s
+		normalized = normalize_matrix(transformed, "group")
+		@test materialize(normalized) ≈ Xcat
+		@test materialize(project(transformed_proj,normalized)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
+		normalized = normalize_matrix(transformed, "group"; scale=true)
+		@test materialize(normalized) ≈ Xcat_s
+		@test materialize(project(transformed_proj,normalized)) ≈ Xcat_s[:,proj_obs_indices] rtol=1e-3
 
-		@test materialize(normalize_matrix(transformed, "value").matrix) ≈ Xnum
-		@test materialize(normalize_matrix(transformed, "value"; scale=true).matrix) ≈ Xnum_s
+		normalized = normalize_matrix(transformed, "value")
+		@test materialize(normalized) ≈ Xnum
+		@test materialize(project(transformed_proj,normalized)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
+		normalized = normalize_matrix(transformed, "value"; scale=true)
+		@test materialize(normalized) ≈ Xnum_s
+		@test materialize(project(transformed_proj,normalized)) ≈ Xnum_s[:,proj_obs_indices] rtol=1e-3
 
-		@test materialize(normalize_matrix(transformed, "group", "value").matrix) ≈ Xcom
-		@test materialize(normalize_matrix(transformed, "group", "value"; scale=true).matrix) ≈ Xcom_s
+		normalized = normalize_matrix(transformed, "group", "value")
+		@test materialize(normalized) ≈ Xcom
+		@test materialize(project(transformed_proj,normalized)) ≈ Xcom[:,proj_obs_indices] rtol=1e-3
+		normalized = normalize_matrix(transformed, "group", "value"; scale=true)
+		@test materialize(normalized) ≈ Xcom_s
+		@test materialize(project(transformed_proj,normalized)) ≈ Xcom_s[:,proj_obs_indices] rtol=1e-3
+
 	end
 
 	normalized = normalize_matrix(transformed, "group", "value")
-
+	normalized_proj = project(transformed_proj,normalized)
 
 	@testset "svd" begin
 		reduced = svd(normalized; nsv=3, subspacedims=24, niter=4, rng=StableRNG(102))
@@ -199,79 +238,85 @@ end
 		@test reduced.matrix.S ≈ F.S[1:3] rtol=1e-3
 		@test abs.(reduced.matrix.U'F.U[:,1:3]) ≈ I(3) rtol=1e-3
 		@test abs.(reduced.matrix.V'F.V[:,1:3]) ≈ I(3) rtol=1e-3
+
+		X = materialize(reduced)
+		reduced_proj = project(normalized_proj, reduced)
+		Xproj = materialize(reduced_proj)
+		@test Xproj ≈ X[:,proj_obs_indices] rtol=1e-3
 	end
 
 	reduced = svd(normalized; nsv=10, niter=4, rng=StableRNG(102))
+	reduced_proj = project(normalized_proj, reduced)
 
-
+	# TODO: projections with filter
 	@testset "filter $name" for (name,data) in (("counts",counts), ("normalized",normalized), ("reduced",reduced))
 		P2 = size(data,1)
-		X = materialize(data.matrix)
+		X = materialize(data)
 
 		f = filter_var(1:2:P2, data)
-		@test materialize(f.matrix) ≈ X[1:2:P2, :]
+		@test materialize(f) ≈ X[1:2:P2, :]
 		@test f.obs == data.obs
 		@test f.var == data.var[1:2:P2, :]
 
 		f = data[1:2:end,:]
-		@test materialize(f.matrix) ≈ X[1:2:end, :]
+		@test materialize(f) ≈ X[1:2:end, :]
 		@test f.obs == data.obs
 		@test f.var == data.var[1:2:end, :]
 
 		f = filter_obs(1:10:N, data)
-		@test materialize(f.matrix) ≈ X[:, 1:10:N]
+		@test materialize(f) ≈ X[:, 1:10:N]
 		@test f.obs == data.obs[1:10:N, :]
 		@test f.var == data.var
 
 		f = data[:,1:10:end]
-		@test materialize(f.matrix) ≈ X[:, 1:10:end]
+		@test materialize(f) ≈ X[:, 1:10:end]
 		@test f.obs == data.obs[1:10:end, :]
 		@test f.var == data.var
 
 		f = filter_matrix(1:2:P2, 1:10:N, data)
-		@test materialize(f.matrix) ≈ X[1:2:P2, 1:10:N]
+		@test materialize(f) ≈ X[1:2:P2, 1:10:N]
 		@test f.obs == data.obs[1:10:N, :]
 		@test f.var == data.var[1:2:P2, :]
 
 		f = data[1:2:end,1:10:end]
-		@test materialize(f.matrix) ≈ X[1:2:end, 1:10:end]
+		@test materialize(f) ≈ X[1:2:end, 1:10:end]
 		@test f.obs == data.obs[1:10:end, :]
 		@test f.var == data.var[1:2:end, :]
 
 
 		f = filter_obs("group"=>==("A"), data)
-		@test materialize(f.matrix) ≈ X[:, g.=="A"]
+		@test materialize(f) ≈ X[:, g.=="A"]
 		@test f.obs == data.obs[g.=="A", :]
 		@test f.var == data.var
 
 		f = filter_obs(row->row.group=="A", data)
-		@test materialize(f.matrix) ≈ X[:, g.=="A"]
+		@test materialize(f) ≈ X[:, g.=="A"]
 		@test f.obs == data.obs[g.=="A", :]
 		@test f.var == data.var
 
 		f = filter_matrix(1:2:P2, "group"=>==("A"), data)
-		@test materialize(f.matrix) ≈ X[1:2:P2, g.=="A"]
+		@test materialize(f) ≈ X[1:2:P2, g.=="A"]
 		@test f.obs == data.obs[g.=="A", :]
 		@test f.var == data.var[1:2:P2, :]
 
 
 		f = filter_var("name"=>>("D"), data)
-		@test materialize(f.matrix) ≈ X[data.var.name.>="D", :]
+		@test materialize(f) ≈ X[data.var.name.>="D", :]
 		@test f.obs == data.obs
 		@test f.var == data.var[data.var.name.>="D", :]
 
 		f = filter_var(row->row.name>"D", data)
-		@test materialize(f.matrix) ≈ X[data.var.name.>="D", :]
+		@test materialize(f) ≈ X[data.var.name.>="D", :]
 		@test f.obs == data.obs
 		@test f.var == data.var[data.var.name.>="D", :]
 
 		f = filter_matrix("name"=>>("D"), 1:10:N, data)
-		@test materialize(f.matrix) ≈ X[data.var.name.>="D", 1:10:N]
+		@test materialize(f) ≈ X[data.var.name.>="D", 1:10:N]
 		@test f.obs == data.obs[1:10:N, :]
 		@test f.var == data.var[data.var.name.>="D", :]
 
 		f = filter_matrix("name"=>>("D"), "group"=>==("A"), data)
-		@test materialize(f.matrix) ≈ X[data.var.name.>="D", g.=="A"]
+		@test materialize(f) ≈ X[data.var.name.>="D", g.=="A"]
 		@test f.obs == data.obs[g.=="A", :]
 		@test f.var == data.var[data.var.name.>="D", :]
 	end
@@ -282,6 +327,9 @@ end
 		# Sanity check output by checking that there is a descent overlap between nearest neighbors
 		ncommon = ncommon_neighbors(obs_coordinates(fl), obs_coordinates(reduced))
 		@test mean(ncommon) > 8
+
+		fl_proj = project(reduced_proj, fl)
+		@test materialize(fl_proj)≈materialize(fl)[:,proj_obs_indices] rtol=1e-5
 	end
 
 	@testset "UMAP" begin
@@ -289,6 +337,10 @@ end
 		# Sanity check output by checking that there is a descent overlap between nearest neighbors
 		ncommon = ncommon_neighbors(obs_coordinates(umapped), obs_coordinates(reduced))
 		@test mean(ncommon) > 9
+
+		# TODO: can we check this in a better way? Projection into a UMAP is not very exact.
+		umapped_proj = project(reduced_proj, umapped)
+		@test materialize(umapped_proj)≈materialize(umapped)[:,proj_obs_indices] rtol=1e-1
 	end
 
 	@testset "t-SNE" begin
@@ -296,6 +348,9 @@ end
 		# Sanity check output by checking that there is a descent overlap between nearest neighbors
 		ncommon = ncommon_neighbors(obs_coordinates(t), obs_coordinates(reduced))
 		@test mean(ncommon) > 9
+
+		t_proj = project(reduced_proj, t)
+		@test materialize(t_proj)≈materialize(t)[:,proj_obs_indices] rtol=1e-5
 	end
 
 	@testset "var_counts_fraction" begin
@@ -317,6 +372,11 @@ end
 
 		var_counts_fraction!(c, "name"=>startswith("NOTAGENE"), Returns(true), "C"; check=false)
 		@test all(iszero, c.obs.C)
+
+		c_proj = project(counts_proj, c)
+		@test c_proj.obs.A == c.obs.A[proj_obs_indices]
+		@test c_proj.obs.B == c.obs.B[proj_obs_indices]
+		@test c_proj.obs.C == c.obs.C[proj_obs_indices]
 	end
 
 	# TODO: var2obs
