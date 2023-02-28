@@ -129,7 +129,6 @@ end
 	# dataset for projection - by using a subset of the obs in `counts`, we make unit testing simpler while still testing well
 	counts_proj = filter_obs(row->row.group!="B" && row.value>0.6, counts)
 	empty!(counts_proj.models)
-	counts_proj.obs.id = string.("proj-", counts_proj.obs.id)
 
 	proj_obs_indices = identity.(indexin(counts_proj.obs.barcode, counts.obs.barcode))
 
@@ -248,8 +247,7 @@ end
 	reduced = svd(normalized; nsv=10, niter=4, rng=StableRNG(102))
 	reduced_proj = project(normalized_proj, reduced)
 
-	# TODO: projections with filter
-	@testset "filter $name" for (name,data) in (("counts",counts), ("normalized",normalized), ("reduced",reduced))
+	@testset "filter $name" for (name,data,data_proj) in (("counts",counts,counts_proj), ("normalized",normalized,normalized_proj), ("reduced",reduced,reduced_proj))
 		P2 = size(data,1)
 		X = materialize(data)
 
@@ -257,68 +255,107 @@ end
 		@test materialize(f) ≈ X[1:2:P2, :]
 		@test f.obs == data.obs
 		@test f.var == data.var[1:2:P2, :]
+		f_proj = project(data_proj, f)
+		@test materialize(f_proj) ≈ X[1:2:P2, proj_obs_indices] rtol=1e-3
+		@test f_proj.obs == data.obs[proj_obs_indices, :]
+		@test f_proj.var == data.var[1:2:P2, :]
 
 		f = data[1:2:end,:]
 		@test materialize(f) ≈ X[1:2:end, :]
 		@test f.obs == data.obs
 		@test f.var == data.var[1:2:end, :]
+		f_proj = project(data_proj, f)
+		@test materialize(f_proj) ≈ X[1:2:end, proj_obs_indices] rtol=1e-3
+		@test f_proj.obs == data.obs[proj_obs_indices, :]
+		@test f_proj.var == data.var[1:2:end, :]
 
 		f = filter_obs(1:10:N, data)
 		@test materialize(f) ≈ X[:, 1:10:N]
 		@test f.obs == data.obs[1:10:N, :]
 		@test f.var == data.var
+		@test_throws ArgumentError project(data_proj, f)
 
 		f = data[:,1:10:end]
 		@test materialize(f) ≈ X[:, 1:10:end]
 		@test f.obs == data.obs[1:10:end, :]
 		@test f.var == data.var
+		@test_throws ArgumentError project(data_proj, f)
 
 		f = filter_matrix(1:2:P2, 1:10:N, data)
 		@test materialize(f) ≈ X[1:2:P2, 1:10:N]
 		@test f.obs == data.obs[1:10:N, :]
 		@test f.var == data.var[1:2:P2, :]
+		@test_throws ArgumentError project(data_proj, f)
 
 		f = data[1:2:end,1:10:end]
 		@test materialize(f) ≈ X[1:2:end, 1:10:end]
 		@test f.obs == data.obs[1:10:end, :]
 		@test f.var == data.var[1:2:end, :]
-
+		@test_throws ArgumentError project(data_proj, f)
 
 		f = filter_obs("group"=>==("A"), data)
 		@test materialize(f) ≈ X[:, g.=="A"]
 		@test f.obs == data.obs[g.=="A", :]
 		@test f.var == data.var
+		f_proj = project(data_proj, f)
+		obs_ind = intersect(findall(g.=="A"),proj_obs_indices)
+		@test materialize(f_proj) ≈ X[:, obs_ind] rtol=1e-3
+		@test f_proj.obs == data.obs[obs_ind, :]
+		@test f_proj.var == data.var
 
 		f = filter_obs(row->row.group=="A", data)
 		@test materialize(f) ≈ X[:, g.=="A"]
 		@test f.obs == data.obs[g.=="A", :]
 		@test f.var == data.var
+		f_proj = project(data_proj, f)
+		obs_ind = intersect(findall(g.=="A"),proj_obs_indices)
+		@test materialize(f_proj) ≈ X[:, obs_ind] rtol=1e-3
+		@test f_proj.obs == data.obs[obs_ind, :]
+		@test f_proj.var == data.var
 
 		f = filter_matrix(1:2:P2, "group"=>==("A"), data)
 		@test materialize(f) ≈ X[1:2:P2, g.=="A"]
 		@test f.obs == data.obs[g.=="A", :]
 		@test f.var == data.var[1:2:P2, :]
-
+		f_proj = project(data_proj, f)
+		obs_ind = intersect(findall(g.=="A"),proj_obs_indices)
+		@test materialize(f_proj) ≈ X[1:2:P2, obs_ind] rtol=1e-3
+		@test f_proj.obs == data.obs[obs_ind, :]
+		@test f_proj.var == data.var[1:2:P2, :]
 
 		f = filter_var("name"=>>("D"), data)
 		@test materialize(f) ≈ X[data.var.name.>="D", :]
 		@test f.obs == data.obs
 		@test f.var == data.var[data.var.name.>="D", :]
+		f_proj = project(data_proj, f)
+		@test materialize(f_proj) ≈ X[data.var.name.>="D", proj_obs_indices] rtol=1e-3
+		@test f_proj.obs == data.obs[proj_obs_indices, :]
+		@test f_proj.var == data.var[data.var.name.>="D", :]
 
 		f = filter_var(row->row.name>"D", data)
 		@test materialize(f) ≈ X[data.var.name.>="D", :]
 		@test f.obs == data.obs
 		@test f.var == data.var[data.var.name.>="D", :]
+		f_proj = project(data_proj, f)
+		@test materialize(f_proj) ≈ X[data.var.name.>="D", proj_obs_indices] rtol=1e-3
+		@test f_proj.obs == data.obs[proj_obs_indices, :]
+		@test f_proj.var == data.var[data.var.name.>="D", :]
 
 		f = filter_matrix("name"=>>("D"), 1:10:N, data)
 		@test materialize(f) ≈ X[data.var.name.>="D", 1:10:N]
 		@test f.obs == data.obs[1:10:N, :]
 		@test f.var == data.var[data.var.name.>="D", :]
+		@test_throws ArgumentError project(data_proj, f)
 
 		f = filter_matrix("name"=>>("D"), "group"=>==("A"), data)
 		@test materialize(f) ≈ X[data.var.name.>="D", g.=="A"]
 		@test f.obs == data.obs[g.=="A", :]
 		@test f.var == data.var[data.var.name.>="D", :]
+		f_proj = project(data_proj, f)
+		obs_ind = intersect(findall(g.=="A"),proj_obs_indices)
+		@test materialize(f_proj) ≈ X[data.var.name.>="D", obs_ind] rtol=1e-3
+		@test f_proj.obs == data.obs[obs_ind, :]
+		@test f_proj.var == data.var[data.var.name.>="D", :]
 	end
 
 
