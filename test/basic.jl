@@ -164,14 +164,13 @@ materialize(X::MatrixExpression) = X*I(size(X,2))
 	end
 
 	normalized = normalize_matrix(transformed, "group", "value")
+
 	@testset "svd" begin
-		reduced = svd(normalized; nsv=3)
+		reduced = svd(normalized; nsv=3, subspacedims=24, niter=4, rng=StableRNG(102))
 		F = svd(Xcom)
-
-		@test reduced.matrix.S ≈ F.S[1:3] rtol=1e-1
-
-		@test abs.(reduced.matrix.U'F.U[:,1:3]) ≈ I(3) rtol=1e-1
-		@test abs.(reduced.matrix.V'F.V[:,1:3]) ≈ I(3) rtol=1e-1
+		@test reduced.matrix.S ≈ F.S[1:3] rtol=1e-3
+		@test abs.(reduced.matrix.U'F.U[:,1:3]) ≈ I(3) rtol=1e-3
+		@test abs.(reduced.matrix.V'F.V[:,1:3]) ≈ I(3) rtol=1e-3
 	end
 
 	# TODO: force-layout
