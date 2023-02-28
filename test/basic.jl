@@ -38,6 +38,26 @@ function ncommon_neighbors(A,B; k=20)
 	ncommon
 end
 
+function test_show(data::DataMatrix; matrix=nothing, var=nothing, obs=nothing, models=nothing)
+	io = IOBuffer()
+	show(io, MIME("text/plain"), data)
+	str = String(take!(io))
+	s = split(str, '\n')
+	@test 4<=length(s)<=5
+	@test s[1] == "DataMatrix ($(size(data,1)) variables and $(size(data,2)) observations)"
+	matrix!==nothing && @test contains(s[2][3:end], matrix)
+	@test startswith(s[3],"  Variables: ")
+	var!==nothing && @test sort(split(s[3][14:end], ", "))==sort(var)
+	@test startswith(s[4],"  Observations: ")
+	var!==nothing && @test sort(split(s[4][17:end], ", "))==sort(obs)
+
+	length(s)>4 && @test startswith(s[5],"  Models: ")
+	if models !== nothing
+		m = replace(get(s,5,""),"  Models: "=>"")
+		@test contains(m, models)
+	end
+end
+
 
 @testset "Basic Workflow" begin
 	pbmc_path = joinpath(pkgdir(SingleCellProjections), "test/data/500_PBMC_3p_LT_Chromium_X_50genes")
@@ -64,11 +84,14 @@ end
 		@test counts.obs.id == expected_barcodes
 		@test counts.obs.barcode == expected_barcodes
 
+		matrix_name = lazy ? "Lazy10xMatrix" : "SparseMatrixCSC"
 		if p==h5_path
 			@test Set(names(counts.var)) == Set(("id", "name", "feature_type", "genome"))
 			@test counts.var.genome == expected_feature_genome
+			test_show(counts; matrix=matrix_name, var=["id", "feature_type", "name", "genome"], obs=["id", "barcode"], models="")
 		else
 			@test Set(names(counts.var)) == Set(("id", "name", "feature_type"))
+			test_show(counts; matrix=matrix_name, var=["id", "feature_type", "name"], obs=["id", "barcode"], models="")
 		end
 		@test counts.var.id == expected_feature_ids
 		@test counts.var.name == expected_feature_names
@@ -142,6 +165,9 @@ end
 
 		lproj = project(counts_proj, l)
 		@test lproj.matrix.matrix ≈ X[:,proj_obs_indices]
+
+		test_show(l; matrix="SparseMatrixCSC", models="LogTransformModel")
+		test_show(lproj; matrix="SparseMatrixCSC", models="LogTransformModel")
 	end
 
 	transformed = sctransform(counts; use_cache=false)
@@ -167,6 +193,8 @@ end
 		@test params.beta0 ≈ transformed_proj.var.beta0
 		@test params.beta1 ≈ transformed_proj.var.beta1
 		@test params.theta ≈ transformed_proj.var.theta
+
+		test_show(transformed; matrix=r"^A\+B₁B₂B₃$", models="SCTransformModel")
 	end
 
 	# TODO: tf_idf_transform
@@ -200,9 +228,11 @@ end
 		@test materialize(normalized) ≈ Xc
 		@test materialize(project(counts_proj,normalized)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
 		@test materialize(project(transformed_proj,normalized)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
+		test_show(normalized; matrix=r"^A\+B₁B₂B₃\+\(-β\)X'$", models="NormalizationModel")
 		normalized = normalize_matrix(transformed; scale=true)
 		@test materialize(normalized) ≈ Xs
 		@test materialize(project(transformed_proj,normalized)) ≈ Xs[:,proj_obs_indices] rtol=1e-3
+		test_show(normalized; matrix=r"^D\(A\+B₁B₂B₃\+\(-β\)X'\)$", models="NormalizationModel")
 
 		normalized = normalize_matrix(transformed, "group")
 		@test materialize(normalized) ≈ Xcat
@@ -224,7 +254,6 @@ end
 		normalized = normalize_matrix(transformed, "group", "value"; scale=true)
 		@test materialize(normalized) ≈ Xcom_s
 		@test materialize(project(transformed_proj,normalized)) ≈ Xcom_s[:,proj_obs_indices] rtol=1e-3
-
 	end
 
 	normalized = normalize_matrix(transformed, "group", "value")
@@ -248,6 +277,8 @@ end
 
 		U_proj = reduced_proj.matrix.U
 		@test all(>(0.0), sum(U_proj;dims=1))
+
+		test_show(reduced; matrix="SVD (3 dimensions)", models="SVDModel")
 	end
 
 	reduced = svd(normalized; nsv=10, niter=4, rng=StableRNG(102))
@@ -265,6 +296,8 @@ end
 		@test materialize(f_proj) ≈ X[1:2:P2, proj_obs_indices] rtol=1e-3
 		@test f_proj.obs == data.obs[proj_obs_indices, :]
 		@test f_proj.var == data.var[1:2:P2, :]
+
+		test_show(f, models="FilterModel")
 
 		f = data[1:2:end,:]
 		@test materialize(f) ≈ X[1:2:end, :]
@@ -373,6 +406,8 @@ end
 
 		fl_proj = project(reduced_proj, fl)
 		@test materialize(fl_proj)≈materialize(fl)[:,proj_obs_indices] rtol=1e-5
+
+		test_show(fl; matrix="Matrix{Float64}", models="NearestNeighborModel")
 	end
 
 	@testset "UMAP" begin
@@ -384,6 +419,8 @@ end
 		# TODO: can we check this in a better way? Projection into a UMAP is not very exact.
 		umapped_proj = project(reduced_proj, umapped)
 		@test materialize(umapped_proj)≈materialize(umapped)[:,proj_obs_indices] rtol=1e-1
+
+		test_show(umapped; matrix="Matrix{Float64}", models="UMAPModel")
 	end
 
 	@testset "t-SNE" begin
@@ -394,6 +431,8 @@ end
 
 		t_proj = project(reduced_proj, t)
 		@test materialize(t_proj)≈materialize(t)[:,proj_obs_indices] rtol=1e-5
+
+		test_show(t; matrix="Matrix{Float64}", models="NearestNeighborModel")
 	end
 
 	@testset "var_counts_fraction" begin
@@ -420,6 +459,8 @@ end
 		@test c_proj.obs.A == c.obs.A[proj_obs_indices]
 		@test c_proj.obs.B == c.obs.B[proj_obs_indices]
 		@test c_proj.obs.C == c.obs.C[proj_obs_indices]
+
+		test_show(c; obs=vcat(names(counts.obs), ["A","B","C"]), models="VarCountsFractionModel")
 	end
 
 	# TODO: var2obs

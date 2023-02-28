@@ -35,5 +35,5 @@ end
 
 # - show -
 function Base.show(io::IO, ::MIME"text/plain", model::UMAPModel)
-	print(io, "UMAP(n_components=", size(model.m.embedding,1), ')')
+	print(io, "UMAPModel(n_components=", size(model.m.embedding,1), ')')
 end
