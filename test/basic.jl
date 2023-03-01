@@ -24,16 +24,13 @@
 
 	transformed_proj = project(counts_proj, transformed)
 	@testset "sctransform" begin
-		S = sparse(expected_mat)
-		params = scparams(S, counts.var; use_cache=false)
-
 		@test params.logGeneMean ≈ transformed.var.logGeneMean
 		@test params.outlier == transformed.var.outlier
 		@test params.beta0 ≈ transformed.var.beta0
 		@test params.beta1 ≈ transformed.var.beta1
 		@test params.theta ≈ transformed.var.theta
 
-		sct = sctransform(S, counts.var, params)
+		sct = sctransform(expected_sparse, counts.var, params)
 
 		@test size(transformed.matrix) == size(sct)
 		@test materialize(transformed) ≈ sct rtol=1e-3

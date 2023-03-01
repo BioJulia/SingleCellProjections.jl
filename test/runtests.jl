@@ -3,6 +3,7 @@ using .SingleCellProjections.MatrixExpressions
 using Test
 using LinearAlgebra
 using SparseArrays
+using Random
 using StableRNGs
 using StaticArrays
 using Statistics

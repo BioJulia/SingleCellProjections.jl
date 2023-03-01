@@ -13,6 +13,9 @@ expected_feature_names = read_strings(joinpath(pbmc_path,"filtered_feature_bc_ma
 expected_feature_types = fill("Gene Expression", 50)
 expected_feature_genome = fill("GRCh38", 50)
 
+expected_sparse = sparse(expected_mat)
+params = scparams(expected_sparse, DataFrame(id=expected_feature_ids, name=expected_feature_names, feature_type=expected_feature_types); use_cache=false)
+
 # Data shared between tests
 counts = load10x(h5_path)
 
