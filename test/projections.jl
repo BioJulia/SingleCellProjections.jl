@@ -48,6 +48,74 @@
 			@test materialize(transformed_proj2) ≈ ref_sct rtol=1e-3
 		end
 
+		@testset "normalize" begin
+			X = materialize(transformed)
+			Y0 = materialize(transformed_proj2)
+			missingMask = .!in(transformed_proj2.var.id).(transformed.var.id)
+
+			# expand Y to include all variables from X
+			Y = zeros(size(X,1),size(Y0,2))
+			Y[indexin(transformed_proj2.var.id,transformed.var.id),:] .= Y0
+
+			c = mean(X; dims=2)
+			s = std(X; dims=2)
+
+			# mean-center only
+			Yc = Y .- c
+			Yc[missingMask, :] .= 0
+
+			n = normalize_matrix(transformed)
+			n_proj2 = project(transformed_proj2, n)
+			@test materialize(n_proj2) ≈ Yc
+
+			# mean-center and scale
+			Ys = Yc./s
+			n = normalize_matrix(transformed; scale=true)
+			n_proj2 = project(transformed_proj2, n)
+			@test materialize(n_proj2) ≈ Ys
+
+
+			# regress out
+			gX = transformed.obs.group
+			vm = mean(transformed.obs.value)
+			vX = transformed.obs.value .- vm
+			gY = transformed_proj2.obs.group
+			vY = transformed_proj2.obs.value .- vm # NB: remove mean from reference
+
+			DX = [gX.=="A" gX.=="B" gX.=="C" vX]
+			DY = [gY.=="A" gY.=="B" gY.=="C" vY]
+			β = X / DX'
+			Ycom = Y .- β*DY'
+
+			# zero out reconstructed variables
+			Ycom[missingMask, :] .= 0
+
+			Ycom_s = Ycom ./ std(X .- β*DX'; dims=2)
+
+			n = normalize_matrix(transformed, "group", "value")
+			n_proj2 = project(transformed_proj2, n)
+			@test materialize(n_proj2) ≈ Ycom
+
+			# regress out and scale
+			n = normalize_matrix(transformed, "group", "value"; scale=true)
+			n_proj2 = project(transformed_proj2, n)
+			@test materialize(n_proj2) ≈ Ycom_s
+			a = materialize(n_proj2)
+			b = Ycom_s
+
+			n = normalize_matrix(transformed, "value"; center=false)
+			if subset_genes || rename_genes
+				# we cannot reconstruct missing unless center=true
+				@test_throws AssertionError project(transformed_proj2, n)
+			else
+				project(transformed_proj2, n) # no missing so doesn't throw
+			end
+		end
+
+		# TODO: run normalization with counts - since it needs to reorder (which was otherwise done by transform)
+		# @testset "normalize_raw" begin
+		# end
+
 		@testset "full" begin
 			fl_proj2 = project(counts_proj2, fl)
 			@test size(fl_proj2) == size(fl)
