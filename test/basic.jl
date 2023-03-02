@@ -59,6 +59,9 @@
 		@test params.theta ≈ transformed_proj.var.theta
 
 		test_show(transformed; matrix=r"^A\+B₁B₂B₃$", models="SCTransformModel")
+
+		t2 = sctransform(counts; use_cache=false, var_filter=nothing)
+		@test materialize(t2) ≈ sct rtol=1e-3
 	end
 
 	X = materialize(transformed)
