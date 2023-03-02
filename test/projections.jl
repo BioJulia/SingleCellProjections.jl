@@ -121,9 +121,32 @@
 			end
 		end
 
-		# TODO: run normalization with counts - since it needs to reorder (which was otherwise done by transform)
-		# @testset "normalize_raw" begin
-		# end
+		# Run normalization with counts - since it needs to reorder (which was otherwise done by transform)
+		@testset "normalize_raw" begin
+			n = normalize_matrix(counts)
+			n_proj2 = project(counts_proj2, n)
+
+			X = counts.matrix
+			c = mean(X; dims=2)
+			s = std(X; dims=2)
+
+			Y0 = materialize(counts_proj2)
+
+			# put the matching variables into the right rows of Y
+			Y = zeros(size(X,1),size(Y0,2))
+			Yind = indexin(counts_proj2.var.id, counts.var.id)
+			for (i,i2) in enumerate(Yind)
+				i2 !== nothing && (Y[i2,:] .= Y0[i,:])
+			end
+			missingMask = .!in(counts_proj2.var.id).(counts.var.id)
+
+			Yc = Y .- c
+			Yc[missingMask, :] .= 0.0
+
+			@test materialize(n_proj2) ≈ Yc
+		end
+
+		# TODO: filter
 
 		@testset "full" begin
 			fl_proj2 = project(counts_proj2, fl)
