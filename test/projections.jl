@@ -9,6 +9,9 @@
 		t2 = project(counts_proj, transformed; from=counts)
 		@test materialize(t2) ≈ materialize(transformed)[:,proj_obs_ind] rtol=1e-3
 
+		fl_proj = project(t2, fl) # automatic from
+		@test materialize(fl_proj)≈materialize(fl)[:,proj_obs_ind] rtol=1e-5
+
 		l2 = logtransform(counts_proj)
 		@test_throws ArgumentError project(l2,normalized)
 		n2 = project(l2,normalized; from=transformed)
@@ -39,12 +42,18 @@
 		empty!(counts_proj2.models)
 
 
-		ref_sct = sctransform(ref_mat, ref_var, params[in(ref_var.id).(params.id),:])
+		@testset "logtransform" begin
+			log_mat = simple_logtransform(ref_mat[.!startswith.(ref_var.id,"NEW_"),:], 10_000)
+			l = logtransform(counts)
+			l_proj2 = project(counts_proj2, l)
+			@test materialize(l_proj2) ≈ log_mat
+		end
 
 		transformed_proj2 = project(counts_proj2, transformed) # TODO: use me
 		# transformed_proj2 = project(counts_proj2, transformed; rtol=1e-9)
 
-		@testset "transform" begin
+		@testset "sctransform" begin
+			ref_sct = sctransform(ref_mat, ref_var, params[in(ref_var.id).(params.id),:])
 			@test materialize(transformed_proj2) ≈ ref_sct rtol=1e-3
 		end
 
