@@ -38,7 +38,8 @@ function project_impl(counts::DataMatrix, model::LogTransformModel; verbose=true
 	if !table_cols_equal(counts.var, model.var_match)
 		# variables are not identical, we need to: reorder, skip missing, get rid of extra
 		var_ind = table_indexin(model.var_match, counts.var; cols=names(model.var_match))
-		var_ind2 = Int[i for i in var_ind if i!==nothing] # collect(skipnothing(var_ind))
+		var_mask = var_ind.!==nothing
+		var_ind2 = var_ind[var_mask]
 
 		matrix = matrix[var_ind2,:]
 
@@ -136,10 +137,11 @@ function project_impl(counts::DataMatrix, model::TFIDFTransformModel; verbose=tr
 	if !table_cols_equal(counts.var, model.var_match)
 		# variables are not identical, we need to: reorder, skip missing, get rid of extra
 		var_ind = table_indexin(model.var_match, counts.var; cols=names(model.var_match))
-		var_ind2 = Int[i for i in var_ind if i!==nothing] # collect(skipnothing(var_ind))
+		var_mask = var_ind.!==nothing
+		var_ind2 = var_ind[var_mask]
 
 		matrix = matrix[var_ind2,:]
-		idf = idf[var_ind2,:]
+		idf = idf[var_mask]
 
 		# reordering variable annotations - we have to ignore :keep
 		var = counts.var[var_ind2,:]
