@@ -146,7 +146,18 @@
 			@test materialize(n_proj2) ≈ Yc
 		end
 
-		# TODO: filter
+		@testset "filter" begin
+			f = counts[end:-3:1,:]
+			f_proj2 = project(counts_proj2, f)
+
+			# Intersect set of genes before projection with set of genes after filtering
+			ids = intersect(f.var.id, counts_proj2.var.id)
+			ind1 = indexin(ids, f_proj2.var.id)
+			ind2 = indexin(ids, f.var.id)
+			@test f_proj2.var.id[ind1] == f.var.id[ind2]
+			@test materialize(f_proj2)[ind1,:] == materialize(f)[ind2,:]
+		end
+
 
 		@testset "full" begin
 			fl_proj2 = project(counts_proj2, fl)
