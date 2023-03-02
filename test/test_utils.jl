@@ -11,6 +11,19 @@ function simple_logtransform(X, scale_factor)
 	log2.( 1 .+ X.*scale_factor./max.(1,s) )
 end
 
+function simple_idf(X)
+	df = vec(max.(mean(X; dims=2), 1/size(X,2)))
+	1 ./ df
+end
+
+function simple_tf_idf_transform(X, idf, scale_factor)
+	@assert size(idf) == (size(X,1),)
+	# log( 1 + c*f/s * idf )
+	s = max.(1,sum(X;dims=1))
+	log.(1 .+ X.*scale_factor.*idf./s )
+end
+
+
 materialize(X) = X
 materialize(X::MatrixExpression) = X*I(size(X,2))
 materialize(X::SVD) = convert(Matrix,X)
@@ -49,7 +62,7 @@ function test_show(data::DataMatrix; matrix=nothing, var=nothing, obs=nothing, m
     @test startswith(s[3],"  Variables: ")
     var!==nothing && @test sort(split(s[3][14:end], ", "))==sort(var)
     @test startswith(s[4],"  Observations: ")
-    var!==nothing && @test sort(split(s[4][17:end], ", "))==sort(obs)
+    obs!==nothing && @test sort(split(s[4][17:end], ", "))==sort(obs)
 
     length(s)>4 && @test startswith(s[5],"  Models: ")
     if models !== nothing
