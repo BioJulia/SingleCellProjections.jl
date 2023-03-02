@@ -18,9 +18,10 @@ end
 
 function simple_tf_idf_transform(X, idf, scale_factor)
 	@assert size(idf) == (size(X,1),)
+	X = Matrix(X)
 	# log( 1 + c*f/s * idf )
 	s = max.(1,sum(X;dims=1))
-	log.(1 .+ X.*scale_factor.*idf./s )
+	sparse(log.(1 .+ X.*scale_factor.*idf./s))
 end
 
 

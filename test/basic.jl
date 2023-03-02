@@ -22,7 +22,7 @@
 		test_show(lproj; matrix="SparseMatrixCSC", var=names(counts_proj.var), obs=names(counts_proj.obs), models="LogTransformModel")
 	end
 
-	@testset "tf_idf scale_factor=$scale_factor" for scale_factor in (10_000, 1_000)
+	@testset "tf-idf scale_factor=$scale_factor" for scale_factor in (10_000, 1_000)
 		idf = simple_idf(expected_mat)
 		X = simple_tf_idf_transform(expected_mat, idf, scale_factor)
 		kwargs = scale_factor == 10_000 ? (;) : (;scale_factor)

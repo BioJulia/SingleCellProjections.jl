@@ -46,7 +46,18 @@
 			log_mat = simple_logtransform(ref_mat[.!startswith.(ref_var.id,"NEW_"),:], 10_000)
 			l = logtransform(counts)
 			l_proj2 = project(counts_proj2, l)
+			@test issorted(indexin(l_proj2.var.id, l.var.id))
 			@test materialize(l_proj2) ≈ log_mat
+		end
+
+		@testset "tf-idf" begin
+			X = ref_mat[.!startswith.(ref_var.id,"NEW_"),:]
+			idf = simple_idf(X)
+			tf_mat = simple_tf_idf_transform(X, idf, 10_000)
+			tf = tf_idf_transform(counts)
+			tf_proj2 = project(counts_proj2, tf)
+			@test issorted(indexin(tf_proj2.var.id, tf.var.id))
+			@test materialize(tf_proj2) ≈ tf_mat
 		end
 
 		transformed_proj2 = project(counts_proj2, transformed) # TODO: use me
