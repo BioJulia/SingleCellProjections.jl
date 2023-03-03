@@ -28,6 +28,7 @@ include("common_data.jl")
     include("datamatrix.jl")
     include("load.jl")
     include("basic.jl")
+    include("annotate.jl")
     include("projections.jl")
     include("test_barnes_hut.jl")
 end

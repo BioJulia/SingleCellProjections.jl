@@ -7,27 +7,40 @@ struct ObsAnnotationModel <: ProjectionModel
 	matrix::Symbol
 end
 
-_default_out_name(row::DataFrameRow, id_cols::Vector, delim='_') = join([row[col] for col in id_cols], delim)
-_default_out_name(id_cols::Vector, delim='_') = row->_default_out_name(row, id_cols, delim)
+_get_name_src(fvar::Pair) = first(fvar)
+_get_name_src(::Any) = nothing
+
+_default_out_name(row::DataFrameRow, id_cols::AbstractVector, delim) = join([row[col] for col in id_cols], delim)
+_default_out_name(row::DataFrameRow, id_col, ::Any) = row[id_col]
+_default_out_name(id_cols, delim='_') = row->_default_out_name(row, id_cols, delim)
 
 function instantiate_out_names(var::DataFrame, out_names::AbstractVector)
 	length(out_names)==size(var,1) || throw(ArgumentError("Expected out_names ($out_names) to have the same length as the number of matched annotations."))
 	out_names
 end
+instantiate_out_names(var::DataFrame, out_names::Union{AbstractString,Symbol}) = instantiate_out_names(var,[out_names])
 instantiate_out_names(var::DataFrame, f) = f.(eachrow(var))
 
 function ObsAnnotationModel(fvar, data::DataMatrix;
-                            out_names=_default_out_name(data.var_id_cols),
+                            name_src=nothing, names=nothing,
                             var=:keep, obs=:keep, matrix=:keep)
 	@assert var in (:keep, :copy)
 	@assert obs in (:keep, :copy)
 	@assert matrix in (:keep, :copy)
 
+	names !== nothing && name_src !== nothing && throw(ArgumentError("At most one of `name_src` and `names` should be specified."))
+
+	# kwargs trick to let defaults be decided here if `nothing` is passed to name_src or names
+	if names === nothing
+		name_src = @something name_src _get_name_src(fvar) data.var_id_cols
+		names = _default_out_name(name_src)
+	end
+
 	var_ind = _filter_indices(data.var, fvar)
 	v = data.var[var_ind,:]
 	var_match = select(v, data.var_id_cols; copycols=false)
 	isempty(var_match) && throw(ArgumentError("No variables match filter ($fvar)."))
-	ObsAnnotationModel(var_match, instantiate_out_names(v, out_names), var, obs, matrix)
+	ObsAnnotationModel(var_match, instantiate_out_names(v, names), var, obs, matrix)
 end
 
 
@@ -59,27 +72,22 @@ function _new_annot(data::DataMatrix, model::ObsAnnotationModel; verbose=false)
 	DataFrame(columns, model.out_names)
 end
 
-function var_to_obs!(fvar, data; out_names=_default_out_name(data.var_id_cols))
-	model = ObsAnnotationModel(fvar, data; out_names)
+function var_to_obs!(fvar, data; kwargs...)
+	model = ObsAnnotationModel(fvar, data; kwargs...)
 	new_obs = _new_annot(data, model)
-
-	# TODO: cleanup code
-	for name in names(new_obs)
-		insertcols!(data.obs, name=>new_obs[!,name])
-	end
-
+	insertcols!(data.obs,pairs(eachcol(new_obs))...)
 	push!(data.models, model)
 	data
 end
 
-function var_to_obs(fvar, data; out_names=_default_out_name(data.var_id_cols),
-                                  var=:copy, obs=:copy, matrix=:keep, kwargs...)
-	model = ObsAnnotationModel(fvar, data; out_names, var, obs, matrix)
+function var_to_obs(fvar, data; name_src=nothing, names=nothing,
+                                var=:copy, obs=:copy, matrix=:keep, kwargs...)
+	model = ObsAnnotationModel(fvar, data; name_src, names, var, obs, matrix)
 	project_impl(data, model; kwargs...)
 end
 
-function var_to_obs_table(fvar, data; out_names=_default_out_name(data.var_id_cols))
-	model = ObsAnnotationModel(fvar, data; out_names)
+function var_to_obs_table(fvar, data; kwargs...)
+	model = ObsAnnotationModel(fvar, data; kwargs...)
 	new_obs = _new_annot(data, model)
 	hcat(select(data.obs, data.obs_id_cols), new_obs)
 end

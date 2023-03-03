@@ -329,6 +329,4 @@
 
 		test_show(c; obs=vcat(names(counts.obs), ["A","B","C"]), models="VarCountsFractionModel")
 	end
-
-	# TODO: var2obs
 end
