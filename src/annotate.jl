@@ -65,10 +65,9 @@ function _new_annot(data::DataMatrix, model::ObsAnnotationModel; verbose=false)
 	values = convert(Matrix, values)
 
 	# insert columns with missing here
-	columns = fill([], length(missing_var)) # dummy init
+	columns = Vector{Union{Vector{eltype(values)},Vector{Union{eltype(values),Missing}}}}(undef, length(missing_var))
 	columns[.!missing_var] = [values[:,j] for j=1:length(var_ind)]
 	columns[missing_var] = [missings(eltype(data.matrix), size(data,2)) for j=1:count(missing_var)]
-
 	DataFrame(columns, model.out_names)
 end
 

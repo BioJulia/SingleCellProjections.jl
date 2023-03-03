@@ -6,6 +6,7 @@
 		var_to_obs!(:name=>==("GPR22"), c; names="OutName")
 		n += 1
 		@test c.obs.OutName == c.matrix[findfirst(==("GPR22"),c.var.name),:]
+		@test eltype(c.obs.OutName) <: Integer
 		@test size(c.obs,2) == n
 
 		@test_throws ArgumentError var_to_obs!(:name=>==("GPR22"), c; names="OutName")
@@ -41,5 +42,9 @@
 
 		@test_throws ArgumentError var_to_obs!([3], c; name_src=:id, names="OutC")
 		@test size(c.obs,2) == n
+
+		t2 = var_to_obs(:name=>==("GPR22"), normalized)
+		@test t2.obs.GPR22 ≈ materialize(normalized)[findfirst(==("GPR22"),normalized.var.name), :]
+		@test eltype(t2.obs.GPR22) <: Float64
 	end
 end
