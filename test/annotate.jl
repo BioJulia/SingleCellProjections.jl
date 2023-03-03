@@ -3,6 +3,11 @@
 		c = DataMatrix(counts.matrix, copy(counts.var), copy(counts.obs)) # TODO: copy(counts)
 		n = size(c.obs,2)
 
+		table = var_to_obs_table(:name=>==("GPR22"), c; names="OutName")
+		@show names(table)
+		@test table.OutName == c.matrix[findfirst(==("GPR22"),c.var.name),:]
+		@test eltype(table.OutName) <: Integer
+
 		var_to_obs!(:name=>==("GPR22"), c; names="OutName")
 		n += 1
 		@test c.obs.OutName == c.matrix[findfirst(==("GPR22"),c.var.name),:]
