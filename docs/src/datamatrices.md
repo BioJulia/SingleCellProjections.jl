@@ -86,8 +86,8 @@ Most of this complexity is hidden from the user, but internally SingleCellProjec
     SingleCellProjections.jl will reuse matrices when possible, in order to reduce memory usage.
     E.g. [`normalize_matrix`](@ref) will reuse and extend the Matrix Expression of the source `DataMatrix`, without creating a copy of the actual data.
     When matrices are reused/copied is considered an implementation detail, and can change at any time.
-    Users of SingleCellProjections should thus consider the matrices to be "read-only".
-    This rarely presents a problem in practice.
+    Users of SingleCellProjections.jl should thus consider the matrices to be "read-only".
+    This should rarely present problems in practice.
 
 
 Roughly, the matrix types used at different stages are:
