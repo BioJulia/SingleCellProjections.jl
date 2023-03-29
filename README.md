@@ -155,9 +155,9 @@ DataMatrix (20239 variables and 34639 observations)
 The matrix is now stored as an `SVD` object, which includes low dimensional representations of the observations and variables.
 To retrieve the low dimensional coordinates, use `obs_coordinates` and `var_coordinates` respectively.
 
-![Principal Component Analysis](https://user-images.githubusercontent.com/16546530/213447197-b417b050-8d17-490b-9d2c-7acff684a67d.svg)
+![Principal Component Analysis](https://user-images.githubusercontent.com/16546530/228492439-7e31d4d1-1edd-493e-9e96-48fd2583b93d.svg)
 
-[Download interactive PCA plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/10456817/svd.zip).
+[Download interactive PCA plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/11099039/svd.zip).
 
 
 ### Visualization
@@ -201,9 +201,9 @@ DataMatrix (3 variables and 34639 observations)
   Observations: id, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, lane, ...
   Models: NearestNeighborModel(base="force_layout", k=10), SVD, Filter, Normalization, SCTransform, ...
 ```
-![force_layout](https://user-images.githubusercontent.com/16546530/213448020-ec2e8e14-90b7-4be7-88be-a9ab87d86c2c.svg)
+![force_layout](https://user-images.githubusercontent.com/16546530/228492990-14c31888-28e1-4f3c-8062-f10682e55430.svg)
 
-[Download interactive Force Layout plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/10456840/force_layout.zip).
+[Download interactive Force Layout plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/11099049/force_layout.zip).
 
 
 
@@ -219,9 +219,9 @@ DataMatrix (3 variables and 34639 observations)
   Observations: id, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, lane, ...
   Models: UMAP(n_components=3), SVD, Filter, Normalization, SCTransform, ...
 ```
-![umap](https://user-images.githubusercontent.com/16546530/213448139-beb04732-3836-4392-b9c1-32f4e04d9a65.svg)
+![umap](https://user-images.githubusercontent.com/16546530/228493039-588cafde-86fc-4fae-ae58-fa65cf59e929.svg)
 
-[Download interactive UMAP plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/10456847/umap.zip).
+[Download interactive UMAP plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/11099051/umap.zip).
 
 
 #### t-SNE
@@ -237,9 +237,9 @@ DataMatrix (3 variables and 3464 observations)
   Observations: id, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, lane, ...
   Models: NearestNeighborModel(base="tsne", k=10), Filter, SVD, Filter, Normalization, ...
 ```
-![t-SNE](https://user-images.githubusercontent.com/16546530/213448219-397f9c16-cd47-4020-b959-729e59efe73c.svg)
+![t-SNE](https://user-images.githubusercontent.com/16546530/228493090-06cc9f32-4e11-4441-a9b3-8da93d503a83.svg)
 
-[Download interactive t-SNE plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/10456849/t-SNE.zip).
+[Download interactive t-SNE plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/11099055/t-SNE.zip).
 
 
 #### Other
@@ -283,9 +283,9 @@ DataMatrix (3 variables and 41095 observations)
 ```
 The result looks similar to the force layout plot above, since the donors "P5" and "P6" are similar to donors "P1" and "P2".
 
-![force_layout_projected](https://user-images.githubusercontent.com/16546530/213479253-6616d052-e3d9-4e47-9c82-9ef63f966c07.svg)
+![force_layout_projected](https://user-images.githubusercontent.com/16546530/228493122-bfdee02b-e6fb-4219-88d1-31ab4e323ca9.svg)
 
-[Download interactive Force Layout projection plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/10457993/force_layout_projected.zip).
+[Download interactive Force Layout projection plot](https://github.com/rasmushenningsson/SingleCellProjections.jl/files/11099059/force_layout_projected.zip).
 
 Under the hood, `SingleCellProjections` recorded a `ProjectionModel` for every step of the analysis leading up to the Force Layout.
 Let's take a look:
