@@ -2,8 +2,8 @@ using SingleCellProjections
 using SparseArrays # helps to remove "SparseArrays." when printing @repl/@example blocks
 using Documenter
 
-# For consistency in DataFrames printing
-ENV["COLUMNS"] = 80
+# For consistency in printing (for DataFrames in particular)
+ENV["COLUMNS"] = 100
 ENV["LINES"] = 16
 
 DocMeta.setdocmeta!(SingleCellProjections, :DocTestSetup, :(using SingleCellProjections); recursive=true)
