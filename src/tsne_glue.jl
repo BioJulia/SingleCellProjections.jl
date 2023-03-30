@@ -9,7 +9,7 @@ Usually, `data` is a DataMatrix after reduction to `10-100` dimensions by `svd`.
 
 The other `args...` and `kwargs...` are forwarded to `TSne.tsne`. See `TSne` documentation for more details.
 
-See also: [`TSne.tsne`](@ref)
+See also: [`TSne.tsne`](https://github.com/lejon/TSne.jl)
 """
 function TSne.tsne(data::DataMatrix, args...; k=10, obs=:copy, kwargs...)
 	t = permutedims(TSne.tsne(obs_coordinates(data)', args...; kwargs...))

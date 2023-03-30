@@ -19,7 +19,7 @@ Usually, `data` is a DataMatrix after reduction to `10-100` dimensions by `svd`.
 
 The other `args...` and `kwargs...` are forwarded to `UMAP.umap`. See `UMAP` documentation for more details.
 
-See also: [`UMAP.umap`](@ref)
+See also: [`UMAP.umap`](https://github.com/dillondaudert/UMAP.jl)
 """
 function UMAP.umap(data::DataMatrix, args...; obs=:copy, kwargs...)
 	model = UMAPModel(UMAP.UMAP_(obs_coordinates(data), args...; kwargs...), select(data.var,data.var_id_cols), obs)

@@ -1,5 +1,6 @@
 using SingleCellProjections
 using SparseArrays # helps to remove "SparseArrays." when printing @repl/@example blocks
+using UMAP, TSne # To get docstrings for glue code
 using Documenter
 
 # For consistency in printing (for DataFrames in particular)
