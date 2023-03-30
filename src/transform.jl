@@ -296,7 +296,7 @@ function project_impl(counts::DataMatrix, model::SCTransformModel; allow_obs_ind
 	var_ind2 = var_ind[var_mask]
 
 	n_removed = size(counts.var,1) - length(var_ind2)
-	verbose && n_removed>0 && @info "- Removed $n_removed variables that where not found in Model"
+	verbose && n_removed>0 && @info "- Removed $n_removed variables that were not found in Model"
 
 	n_missing = length(var_ind) - length(var_ind2)
 	if n_missing>0
