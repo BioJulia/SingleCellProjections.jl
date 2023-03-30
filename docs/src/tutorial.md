@@ -195,8 +195,10 @@ To retrieve the low dimensional coordinates, use `obs_coordinates` and `var_coor
 
 
 ## Visualization
+```@raw html
 <details>
 <summary>Expand this to show some example PlotlyJS plotting code.</summary>
+```
 
 You can of course use your own favorite plotting library instead.
 Use `obs_coordinates` to get the coordinates for each cell, and `data.obs` to access cell annotations for coloring.
@@ -219,7 +221,10 @@ Use it like this:
 ```julia-repl
 julia> plot_categorical_3d(reduced, "celltype.l1")
 ```
+```@raw html
 </details>
+<br>
+```
 
 For visualization purposes, it is often useful to further reduce the dimension after running PCA.
 (In contrast, analyses are generally run on the PCA/normalized/original data, since the methods below necessarily distort the data to force it down to 2 or 3 dimensions.)
