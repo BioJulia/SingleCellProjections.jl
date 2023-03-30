@@ -4,9 +4,10 @@ function svdbyeigen(A; nsv::Integer=3)
 	M = size(K,1)
 	F = eigen(K, M-nsv+1:M)
 	S = sqrt.(max.(0.,reverse(F.values)))
+	denom = max.(1e-100, S) # To avoid NaNs if any singular value is zero
 
 	V = F.vectors[:,end:-1:1]
-	N<=P ? SVD(A*V./S',S,V') : SVD(V,S,V'A./S)
+	N<=P ? SVD(A*V./denom',S,V') : SVD(V,S,V'A./denom)
 end
 
 function stabilize_sign!(F::SVD)

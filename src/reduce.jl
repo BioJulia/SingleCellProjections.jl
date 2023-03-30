@@ -49,7 +49,7 @@ function project_impl(data::DataMatrix, model::SVDModel; verbose=true)
 	X = data.matrix
 
 	V = X'F.U # TODO: compute F.U'X instead to get Vt directly
-	V ./= F.S'
+	V ./= max.(F.S,1e-100)' # To avoid NaNs if any singular value is zero
 	matrix = SVD(F.U,F.S,Matrix(V'))
 	update_matrix(data, matrix, model; model.obs, model.var)
 end
