@@ -13,6 +13,8 @@ export
 	ObsAnnotationModel,
 	VarCountsFractionModel,
 	project,
+	set_var_id_cols!,
+	set_obs_id_cols!,
 	var_coordinates,
 	obs_coordinates,
 	load10x,

@@ -46,8 +46,9 @@ struct DataMatrix{T,Tv,To}
 			throw(DimensionMismatch(string("Matrix has dimensions (",P,',',N,"), but there are ", p, " variable annotations and ", n, " observation annotations.")))
 		end
 
-		var_id_cols = @something var_id_cols _detect_var_id_cols(var)
-		obs_id_cols = @something obs_id_cols _detect_obs_id_cols(obs)
+		# NB: copy because we do not want different DataMatrices to share the same storage
+		var_id_cols = var_id_cols !== nothing ? copy(var_id_cols) : _detect_var_id_cols(var)
+		obs_id_cols = obs_id_cols !== nothing ? copy(obs_id_cols) : _detect_obs_id_cols(obs)
 
 		table_validatecols(var, var_id_cols)
 		table_validatecols(obs, obs_id_cols)
@@ -87,6 +88,33 @@ Base.size(data::DataMatrix) = size(data.matrix)
 Base.size(data::DataMatrix, dim::Integer) = size(data.matrix, dim)
 
 Base.axes(data::DataMatrix, d::Integer) = axes(data)[d] # needed to make end work in getindex
+
+
+
+"""
+	set_var_id_cols!(data::DataMatrix, var_id_cols::Vector{String})
+
+Set which column(s) to use as variable IDs.
+The rows of the `data.var` table must be unique, considering only the `var_id_cols` columns.
+"""
+function set_var_id_cols!(data::DataMatrix, var_id_cols::Vector{String})
+	table_validatecols(data.var, var_id_cols)
+	table_validateunique(data.var, var_id_cols)
+	copy!(data.var_id_cols, var_id_cols)
+end
+
+"""
+	set_obs_id_cols!(data::DataMatrix, obs_id_cols::Vector{String})
+
+Set which column(s) to use as observation IDs.
+The rows of the `data.obs` table must be unique, considering only the `obs_id_cols` columns.
+"""
+function set_obs_id_cols!(data::DataMatrix, obs_id_cols::Vector{String})
+	table_validatecols(data.obs, obs_id_cols)
+	table_validateunique(data.obs, obs_id_cols)
+	copy!(data.obs_id_cols, obs_id_cols)
+end
+
 
 
 """
@@ -326,7 +354,7 @@ function update_matrix(data::DataMatrix, matrix, model=nothing;
 	models = model !== nothing ? vcat(data.models,model) : ProjectionModel[]
 	var = _update_annot(data.var, var, size(matrix,1))
 	obs = _update_annot(data.obs, obs, size(matrix,2))
-	DataMatrix(matrix, var, obs, copy(var_id_cols), copy(obs_id_cols), models)
+	DataMatrix(matrix, var, obs, var_id_cols, obs_id_cols, models)
 end
 
 
