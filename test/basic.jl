@@ -308,7 +308,7 @@
 		nAC = vec(sum(X[startswith.(counts.var.name,"AC"),:]; dims=1))
 		nTot = vec(sum(X;dims=1))
 
-		c = DataMatrix(counts.matrix, copy(counts.var), copy(counts.obs)) # TODO: copy(counts)
+		c = copy(counts)
 
 		var_counts_fraction!(c, "name"=>startswith("A"), Returns(true), "A")
 		@test c.obs.A == nA ./ nTot

@@ -92,6 +92,26 @@ Base.axes(data::DataMatrix, d::Integer) = axes(data)[d] # needed to make end wor
 
 
 """
+	copy(data::DataMatrix; var=:copy, obs=:copy, matrix=:keep)
+
+Copy DataMatrix `data`. By default, `var` and `obs` annotations are copied, but the `matrix` is shared.
+Set kwargs `var`, `obs` and `matrix` to `:keep`/`:copy` for fine grained control.
+"""
+function Base.copy(data::DataMatrix; var=:copy, obs=:copy, matrix=:keep)
+	@assert var in (:copy,:keep)
+	@assert obs in (:copy,:keep)
+	@assert matrix in (:copy,:keep)
+
+	X = matrix==:copy ? copy(data.matrix) : data.matrix
+	v = var==:copy ? copy(data.var) : data.var
+	o = obs==:copy ? copy(data.obs) : data.obs
+
+	DataMatrix(X, v, o, data.var_id_cols, data.obs_id_cols, copy(data.models))
+end
+
+
+
+"""
 	set_var_id_cols!(data::DataMatrix, var_id_cols::Vector{String})
 
 Set which column(s) to use as variable IDs.

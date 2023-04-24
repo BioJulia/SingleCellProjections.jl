@@ -1,6 +1,6 @@
 @testset "Annotate" begin
 	@testset "var_to_obs" begin
-		c = DataMatrix(counts.matrix, copy(counts.var), copy(counts.obs)) # TODO: copy(counts)
+		c = copy(counts)
 		n = size(c.obs,2)
 
 		table = var_to_obs_table(:name=>==("GPR22"), c; names="OutName")
