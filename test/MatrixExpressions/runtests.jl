@@ -16,7 +16,10 @@ using .MatrixExpressions: ChainOrder,
 include("reference.jl")
 
 
+mr(;kwargs...) = MatrixRef(kwargs...)
+ms(args...)    = matrixsum(args...)
 ms(;kwargs...) = matrixsum(kwargs...)
+mp(args...)    = matrixproduct(args...)
 mp(;kwargs...) = matrixproduct(kwargs...)
 di(;kwargs...) = Diag(mp(;kwargs...))
 dg(;kwargs...) = DiagGram(mp(;kwargs...))
@@ -109,6 +112,71 @@ end
 
             @test orderstring(di(;A,B,C,D)) == "diag((BᵀAᵀ)ᵀ(CD))"
             @test orderstring(di(;A=Matrix(A')',B=Matrix(B')',C,D)) == "diag((B'ᵀA'ᵀ)ᵀ(CD))"
+        end
+    end
+
+    @testset "copy" begin
+        X = mr(;X=zeros(2,2))
+        Y = mr(;Y=ones(2,2))
+        Z = mr(;Z=[1 2; 3 4]')
+
+        @testset "MatrixRef" begin
+            X2 = copy(X)
+            @test X2 === X
+        end
+
+        @testset "MatrixSum" begin
+            s = ms(X,Y)
+            s2 = copy(s)
+            @test s2.terms !== s.terms
+            @test s2.terms == s.terms
+        end
+
+        @testset "MatrixProduct" begin
+            p = mp(X,Y)
+            p2 = copy(p)
+            @test p2.factors !== p.factors
+            @test p2.factors == p.factors
+        end
+
+        @testset "Recursive" begin
+            p1 = mp(X,Y)
+            p2 = mp(Z,Y)
+            s = ms(p1,p2)
+            o = mp(Y,s,X)
+
+            o2 = copy(o)
+            @test o2.factors !== o.factors
+            @test o2.factors == o.factors
+
+            @test o2.factors[1] === Y
+            @test o2.factors[3] === X
+
+            @test o2.factors[2] !== s
+            @test o2.factors[2] == s
+
+            @test o2.factors[2].terms[1] !== p1
+            @test o2.factors[2].terms[1] == p1
+            @test o2.factors[2].terms[2] !== p2
+            @test o2.factors[2].terms[2] == p2
+        end
+
+        @testset "Diag" begin
+            p = mp(X,Y)
+            d = Diag(p)
+            d2 = copy(d)
+
+            @test d.A !== d2.A
+            @test d.A == d2.A
+        end
+
+        @testset "DiagGram" begin
+            p = mp(X,Y)
+            dg = DiagGram(p)
+            dg2 = copy(dg)
+
+            @test dg.A !== dg2.A
+            @test dg.A == dg2.A
         end
     end
 

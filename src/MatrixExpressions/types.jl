@@ -40,6 +40,29 @@ Base.size(A::MatrixExpression, ind) = ind>2 ? 1 : size(A)[ind]
 Base.eltype(::MatrixExpression) = Float64
 
 
+Base.:(==)(A::MatrixRef, B::MatrixRef) = A.name == B.name && A.matrix == B.matrix
+Base.:(==)(A::MatrixProduct, B::MatrixProduct) = A.factors == B.factors
+Base.:(==)(A::MatrixSum, B::MatrixSum) = A.terms == B.terms
+Base.:(==)(A::DiagGram, B::DiagGram) = A.A == B.A
+Base.:(==)(A::Diag, B::Diag) = A.A == B.A
+
+
+function _copy_rec(v::Vector)
+	out = similar(v)
+	for i in eachindex(v)
+		out[i] = copy(v[i])
+	end
+	out
+end
+
+Base.copy(A::MatrixRef) = MatrixRef(A.name, A.matrix)
+Base.copy(A::MatrixProduct{T}) where T = MatrixProduct{T}(_copy_rec(A.factors))
+Base.copy(A::MatrixSum) = MatrixSum(_copy_rec(A.terms))
+Base.copy(A::DiagGram) = DiagGram(copy(A.A))
+Base.copy(A::Diag) = Diag(copy(A.A))
+
+
+
 
 matrixexpression(X::MatrixExpression) = X
 matrixexpression(X) = MatrixRef(X)
