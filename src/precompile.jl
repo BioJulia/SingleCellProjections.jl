@@ -1,9 +1,9 @@
-using SnoopPrecompile
+using PrecompileTools
 
-@precompile_setup begin
+@setup_workload begin
 	base_path = joinpath(pkgdir(SingleCellProjections), "test/data")
 	h5_path = joinpath(base_path, "500_PBMC_3p_LT_Chromium_X_50genes/filtered_feature_bc_matrix.h5")
-	@precompile_all_calls begin
+	@compile_workload begin
 		counts = load10x(h5_path)
 		P,N = size(counts)
 		counts2 = load_counts([h5_path,h5_path]; sample_names=["a","b"])
