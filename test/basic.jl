@@ -66,7 +66,8 @@
 
 	X = materialize(transformed)
 	Xc = (X.-mean(X; dims=2))
-	Xs = Xc ./ std(X; dims=2)
+	X_std = std(X; dims=2)
+	Xs = Xc ./ X_std
 
 	# categorical
 	Xcat = copy(X)
@@ -74,19 +75,22 @@
 	for c in unique(g)
 		Xcat[:, c.==g] .-= mean(Xcat[:, c.==g]; dims=2)
 	end
-	Xcat_s = Xcat ./ std(Xcat; dims=2)
+	Xcat_std = std(Xcat; dims=2)
+	Xcat_s = Xcat ./ Xcat_std
 
 	# numerical
 	v = transformed.obs.value .- mean(transformed.obs.value)
 	β = Xc/v'
 	Xnum = Xc .- β*v'
-	Xnum_s = Xnum ./ std(Xnum; dims=2)
+	Xnum_std = std(Xnum; dims=2)
+	Xnum_s = Xnum ./ Xnum_std
 
 	# combined
 	D = [g.=="A" g.=="B" g.=="C" v]
 	β = X / D'
 	Xcom = X .- β*D'
-	Xcom_s = Xcom ./ std(Xcom; dims=2)
+	Xcom_std = std(Xcom; dims=2)
+	Xcom_s = Xcom ./ Xcom_std
 
 	@testset "normalize" begin
 		n = normalize_matrix(transformed)
@@ -97,6 +101,7 @@
 		n = normalize_matrix(transformed; scale=true)
 		@test materialize(n) ≈ Xs
 		@test materialize(project(transformed_proj,n)) ≈ Xs[:,proj_obs_indices] rtol=1e-3
+		@test n.var.scaling ≈ 1.0./X_std
 		test_show(n; matrix=r"^D\(A\+B₁B₂B₃\+\(-β\)X'\)$", models="NormalizationModel")
 
 		n = normalize_matrix(transformed, "group")
@@ -105,6 +110,7 @@
 		n = normalize_matrix(transformed, "group"; scale=true)
 		@test materialize(n) ≈ Xcat_s
 		@test materialize(project(transformed_proj,n)) ≈ Xcat_s[:,proj_obs_indices] rtol=1e-3
+		@test n.var.scaling ≈ 1.0./Xcat_std
 
 		n = normalize_matrix(transformed, "value")
 		@test materialize(n) ≈ Xnum
@@ -112,6 +118,7 @@
 		n = normalize_matrix(transformed, "value"; scale=true)
 		@test materialize(n) ≈ Xnum_s
 		@test materialize(project(transformed_proj,n)) ≈ Xnum_s[:,proj_obs_indices] rtol=1e-3
+		@test n.var.scaling ≈ 1.0./Xnum_std
 
 		n = normalize_matrix(transformed, "group", "value")
 		@test materialize(n) ≈ Xcom
@@ -119,6 +126,7 @@
 		n = normalize_matrix(transformed, "group", "value"; scale=true)
 		@test materialize(n) ≈ Xcom_s
 		@test materialize(project(transformed_proj,n)) ≈ Xcom_s[:,proj_obs_indices] rtol=1e-3
+		@test n.var.scaling ≈ 1.0./Xcom_std
 	end
 
 	normalized_proj = project(transformed_proj,normalized)

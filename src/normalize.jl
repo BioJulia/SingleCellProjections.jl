@@ -198,7 +198,7 @@ struct NormalizationModel <: ProjectionModel
 	rank::Int # Just for show
 	var_match::DataFrame
 	scaling::Vector{Float64} # empty vector means no scaling
-	annotate::Bool # true: add std as a var annotation
+	annotate::Bool # true: add scaling as a var annotation
 	var::Symbol
 	obs::Symbol
 end
@@ -343,7 +343,7 @@ function project_impl(data::DataMatrix, model::NormalizationModel, design::Desig
 	if !isempty(model.scaling)
 		matrix = matrixproduct(:D=>Diagonal(model.scaling), _named_matrix(matrix,:A))
 		if model.annotate
-			var.std = copy(model.scaling)
+			var.scaling = copy(model.scaling)
 		end
 	end
 
