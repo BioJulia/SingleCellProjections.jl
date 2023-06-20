@@ -38,6 +38,8 @@ export
 	var_to_obs,
 	var_to_obs_table,
 	var_counts_fraction!,
+	mannwhitney!,
+	mannwhitney,
 	mannwhitney_table,
 	differentialexpression
 
