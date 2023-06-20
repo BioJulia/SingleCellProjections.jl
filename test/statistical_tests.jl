@@ -1,8 +1,11 @@
 @testset "Statistical Tests" begin
 	P,N = (50,587)
 
-	l = logtransform(counts)
-	tf = tf_idf_transform(counts)
+	c = copy(counts)
+	c.obs.group2 = replace(c.obs.group, "C"=>missing)
+
+	l = logtransform(c)
+	tf = tf_idf_transform(c)
 
 	@testset "A vs B" begin
 		test_ind = 47
@@ -71,32 +74,32 @@
 	@testset "column names" begin
 		test_ind = 19
 		# ground truth
-		x = convert(Vector, counts.matrix[test_ind,:])
-		mw = ApproximateMannWhitneyUTest(x[isequal.("C",counts.obs.group)], x[.!isequal.("C",counts.obs.group)])
+		x = convert(Vector, c.matrix[test_ind,:])
+		mw = ApproximateMannWhitneyUTest(x[isequal.("C",c.obs.group)], x[.!isequal.("C",c.obs.group)])
 
-		df = mannwhitney_table(counts, "group", "C"; statistic_col="my_u", pvalue_col="my_p")
+		df = mannwhitney_table(c, "group", "C"; statistic_col="my_u", pvalue_col="my_p")
 		@test df[test_ind,"my_u"] == mw.U
 		@test df[test_ind,"my_p"] ≈ pvalue(mw)
 
-		data = mannwhitney(counts, "group", "C"; statistic_col="my_u", pvalue_col="my_p")
+		data = mannwhitney(c, "group", "C"; statistic_col="my_u", pvalue_col="my_p")
 		@test data.var[test_ind,"my_u"] == mw.U
 		@test data.var[test_ind,"my_p"] ≈ pvalue(mw)
-		@test !hasproperty(counts.var, "my_u")
-		@test !hasproperty(counts.var, "my_p")
+		@test !hasproperty(c.var, "my_u")
+		@test !hasproperty(c.var, "my_p")
 
-		data = copy(counts)
+		data = copy(c)
 		mannwhitney!(data, "group", "C"; statistic_col="my_u", pvalue_col="my_p")
 		@test data.var[test_ind,"my_u"] == mw.U
 		@test data.var[test_ind,"my_p"] ≈ pvalue(mw)
 
 
-		data = mannwhitney(counts, "group", "C"; prefix="another_")
+		data = mannwhitney(c, "group", "C"; prefix="another_")
 		@test data.var[test_ind,"another_U"] == mw.U
 		@test data.var[test_ind,"another_pValue"] ≈ pvalue(mw)
-		@test !hasproperty(counts.var, "another_U")
-		@test !hasproperty(counts.var, "another_pValue")
+		@test !hasproperty(c.var, "another_U")
+		@test !hasproperty(c.var, "another_pValue")
 
-		data = copy(counts)
+		data = copy(c)
 		mannwhitney!(data, "group", "C"; prefix="another_")
 		@test data.var[test_ind,"another_U"] == mw.U
 		@test data.var[test_ind,"another_pValue"] ≈ pvalue(mw)
