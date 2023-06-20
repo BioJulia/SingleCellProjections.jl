@@ -1,28 +1,35 @@
+function process_rows(f,(X,offset))
+	for j in 1:size(X,2)
+		f(X, j, j+offset)
+	end
+end
+
 function threaded_sparse_row_worker(f,channel)
 	while true
 		item = take!(channel)
 		isnothing(item) && break # no more chunks to process
-
-		X,offset = item
-		for j in 1:size(X,2)
-			f(X, j, j+offset)
-		end
+		process_rows(f,item)
 		# yield() # Shouldn't be needed with take! above
 	end
 end
 
 function threaded_sparse_row_map(f, X::AbstractSparseMatrix{Tv,Ti};
                                  chunk_size=100,
-                                 nthreads=Threads.nthreads(),
-                                 channel_size=nthreads*4,
+                                 nworkers=Threads.nthreads()-1,
+                                 channel_size=nworkers*4,
                                 ) where {Tv<:Real,Ti<:Integer}
-	nthreads = max(nthreads,1)
+	nworkers = max(nworkers,1)
 	P,N = size(X)
 
-	channel = Channel{Union{Nothing,Tuple{SparseMatrixCSC{Tv,Ti},Int}}}(channel_size)
+	local channel
+	local workers
 
-	workers = map(1:nthreads) do _
-		Threads.@spawn threaded_sparse_row_worker(f, channel)
+	if nworkers>1
+		channel = Channel{Union{Nothing,Tuple{SparseMatrixCSC{Tv,Ti},Int}}}(channel_size)
+		workers = map(1:nworkers) do _
+			Threads.@spawn threaded_sparse_row_worker(f, channel)
+			# @async threaded_sparse_row_worker(f, channel) # TEMP
+		end
 	end
 
 	colptr_curr = first.(nzrange.(Ref(X),1:N))
@@ -59,16 +66,22 @@ function threaded_sparse_row_map(f, X::AbstractSparseMatrix{Tv,Ti};
 
 		chunk = SparseMatrixCSC(length(row_range), N, colptr_chunk, rowval_chunk, nzval_chunk)
 		chunk = permutedims(chunk,(2,1)) # transpose
+		offset = first(row_range)-1
 
-		put!(channel, (chunk,first(row_range)-1))
+		if nworkers>1
+			put!(channel, (chunk,offset))
+		else
+			process_rows(f, (chunk,offset))
+		end
 	end
 
 	# Tell workers to stop
-	for i in 1:nthreads
-		put!(channel, nothing)
+	if nworkers>1
+		for i in 1:nworkers
+			put!(channel, nothing)
+		end
+		wait.(workers)
 	end
-
-	wait.(workers)
 
 	nothing
 end
