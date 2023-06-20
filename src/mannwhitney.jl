@@ -1,6 +1,8 @@
 """
 	ustatistic_single(X, j, groups, n1, n2)
 
+NB: Assumes all sparse non-zeros are positive.
+
 `X` is a sparse matrix where each column is a variable.
 `j` is the current variable.
 `groups` is a vector with values: `1` for each sample in group 1, `2` for each sample in group 2 and `0` for samples in neither group.
@@ -27,6 +29,7 @@ function ustatistic_single(X::AbstractSparseMatrix{T}, j, groups, n1, n2) where 
 	end
 
 	sort!(values; by=first) # sort them to get ranking
+	first(first(values)) <= 0.0 && throw(DomainError("All non-zero values in matrix must be positive."))
 
 	# First compute U=U₁ as if there were no zeros
 	
@@ -36,6 +39,8 @@ function ustatistic_single(X::AbstractSparseMatrix{T}, j, groups, n1, n2) where 
 	tie_count = 0 # current number of ties
 	tie_count1 = 0 # current number of ties that belong to group 1
 	nz_count1 = 0 # total number of non-zeros that belong to group 1
+
+	tie_adjustment = 0.0 # accumulate t³-t where t is the number of ties for each unique rank
 	
 	for (rank,(v,b)) in enumerate(values)
 		if v !== prev_value
@@ -46,6 +51,7 @@ function ustatistic_single(X::AbstractSparseMatrix{T}, j, groups, n1, n2) where 
 
 			mean_rank_times2 = 2rank-tie_count-1
 			Rtimes2 += mean_rank_times2*tie_count1
+			tie_adjustment += tie_count*(tie_count^2 - 1)
 
 			tie_count = tie_count1 = 0
 		end
@@ -59,7 +65,7 @@ function ustatistic_single(X::AbstractSparseMatrix{T}, j, groups, n1, n2) where 
 	rank = length(values)+1
 	mean_rank_times2 = 2rank-tie_count-1
 	Rtimes2 += mean_rank_times2*tie_count1
-
+	tie_adjustment += tie_count*(tie_count^2 - 1)
 
 	# Now adjust for zeros
 
@@ -76,13 +82,29 @@ function ustatistic_single(X::AbstractSparseMatrix{T}, j, groups, n1, n2) where 
 	z_count1 = n1-nz_count1
 	mean_zero_rank_times2 = z_count+1
 	Rtimes2 += mean_zero_rank_times2*z_count1
+	tie_adjustment += z_count*(z_count^2 - 1)
 
 	Utimes2 = Rtimes2 - n1*(n1+1)
-	Utimes2/2
+	Utimes2/2, tie_adjustment
+end
+
+mannwhitney_σ(n1,n2,tie_adjustment) =
+	sqrt(n1*n2/12 * (n1 + n2 + 1 - tie_adjustment/((n1+n2)*(n1+n2-1))))
+
+function mannwhitney_single(X::AbstractSparseMatrix, j, groups, n1, n2)
+	U, tie_adjustment = ustatistic_single(X, j, groups, n1, n2)
+
+	m = n1*n2/2
+	σ = mannwhitney_σ(n1,n2,tie_adjustment)
+
+	# TODO: handle directional tests too
+	z = U-m
+	p = min(1, 2*ccdf(Normal(0,σ), abs(z)-0.5)) # 0.5 is the continuity correction factor
+	U, p
 end
 
 
-function ustatistic(X::AbstractSparseMatrix, groups; kwargs...)
+function mannwhitney(X::AbstractSparseMatrix, groups; kwargs...)
 	@assert all(in(0,1,2), groups)
 	n1 = count(==(1), groups)
 	n2 = count(==(2), groups)
@@ -90,10 +112,11 @@ function ustatistic(X::AbstractSparseMatrix, groups; kwargs...)
 	@assert n2>0
 
 	U = zeros(size(X,1))
+	p = zeros(size(X,1))
 
 	threaded_sparse_row_map(X; kwargs...) do (Y, col, i)
-		U[i] = ustatistic_single(Y,col,groups,n1,n2)
+		U[i],p[i] = mannwhitney_single(Y,col,groups,n1,n2)
 	end
 
-	U
+	U, p
 end

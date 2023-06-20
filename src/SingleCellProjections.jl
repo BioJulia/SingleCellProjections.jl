@@ -70,6 +70,7 @@ using .MatrixExpressions
 
 include("utils.jl")
 include("table_utils.jl")
+include("threaded_sparse_row_map.jl")
 
 
 include("bilinear.jl")
@@ -97,7 +98,9 @@ include("reduce.jl")
 include("annotate.jl")
 include("counts_fraction.jl")
 
-include("differentialexpression.jl")
+
+include("mannwhitney.jl")
+include("differentialexpression.jl") # Deprecated
 
 include("precompile.jl")
 
