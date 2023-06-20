@@ -44,10 +44,7 @@ function ustatistic_single(X::AbstractSparseMatrix{T}, j, groups, n1, n2) where 
 
 		for (rank,(v,b)) in enumerate(values)
 			if v !== prev_value
-				# We are ready to process the last group of ties (e.g. up to rank-1)
-
-				# range = rank-tie_count:rank-1
-				# mean_rank = (rank-tie_count + rank-1)/2
+				# We are ready to process the previous group of ties (e.g. up to rank-1)
 
 				mean_rank_times2 = 2rank-tie_count-1
 				Rtimes2 += mean_rank_times2*tie_count1
@@ -76,9 +73,6 @@ function ustatistic_single(X::AbstractSparseMatrix{T}, j, groups, n1, n2) where 
 
 	
 	# 2. Add rank for zero-elements in group 1
-
-	# range: 1:z_count
-	# mean_rank = (1+z_count)/2
 
 	z_count1 = n1-nz_count1
 	mean_zero_rank_times2 = z_count+1
