@@ -20,6 +20,7 @@ params = scparams(expected_sparse, DataFrame(id=expected_feature_ids, name=expec
 counts = load10x(h5_path)
 
 counts.obs.group = rand(StableRNG(904), ("A","B","C"), size(counts,2))
+counts.obs.group2 = replace(counts.obs.group, "C"=>missing)
 counts.obs.value = 1 .+ randn(StableRNG(905), size(counts,2))
 
 transformed = sctransform(counts; use_cache=false)
