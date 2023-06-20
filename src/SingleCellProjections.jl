@@ -38,6 +38,7 @@ export
 	var_to_obs,
 	var_to_obs_table,
 	var_counts_fraction!,
+	mannwhitney_table,
 	differentialexpression
 
 using LinearAlgebra
@@ -96,6 +97,7 @@ include("transform.jl")
 include("normalize.jl")
 include("reduce.jl")
 include("annotate.jl")
+include("statistical_tests.jl")
 include("counts_fraction.jl")
 
 
