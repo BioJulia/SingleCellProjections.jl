@@ -38,6 +38,9 @@ export
 	var_to_obs,
 	var_to_obs_table,
 	var_counts_fraction!,
+	mannwhitney!,
+	mannwhitney,
+	mannwhitney_table,
 	differentialexpression
 
 using LinearAlgebra
@@ -70,6 +73,7 @@ using .MatrixExpressions
 
 include("utils.jl")
 include("table_utils.jl")
+include("threaded_sparse_row_map.jl")
 
 
 include("bilinear.jl")
@@ -95,9 +99,12 @@ include("transform.jl")
 include("normalize.jl")
 include("reduce.jl")
 include("annotate.jl")
+include("statistical_tests.jl")
 include("counts_fraction.jl")
 
-include("differentialexpression.jl")
+
+include("mannwhitney.jl")
+include("differentialexpression.jl") # Deprecated
 
 include("precompile.jl")
 
