@@ -80,3 +80,20 @@ function ustatistic_single(X::AbstractSparseMatrix{T}, j, groups, n1, n2) where 
 	Utimes2 = Rtimes2 - n1*(n1+1)
 	Utimes2/2
 end
+
+
+function ustatistic(X::AbstractSparseMatrix, groups; kwargs...)
+	@assert all(in(0,1,2), groups)
+	n1 = count(==(1), groups)
+	n2 = count(==(2), groups)
+	@assert n1>0
+	@assert n2>0
+
+	U = zeros(size(X,1))
+
+	threaded_sparse_row_map(X; kwargs...) do (Y, col, i)
+		U[i] = ustatistic_single(Y,col,groups,n1,n2)
+	end
+
+	U
+end
