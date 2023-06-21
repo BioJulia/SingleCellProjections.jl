@@ -43,7 +43,9 @@ end
 function _mannwhitney_table(X::AbstractSparseMatrix, var, groups::Vector{Int}; statistic_col="U", pvalue_col="pValue", kwargs...)
 	U,p = mannwhitney_sparse(X::AbstractSparseMatrix, groups; kwargs...)
 	table = copy(var)
-	insertcols!(table, statistic_col=>U, pvalue_col=>p; copycols=false)
+	statistic_col !== nothing && insertcols!(table, statistic_col=>U; copycols=false)
+	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
+	table
 end
 
 _mannwhitney_table(ref::MatrixRef, args...; kwargs...) =
@@ -69,8 +71,8 @@ If both `groupA` and `groupB` are given, the observations in group A are compare
 `mannwhitney_table` returns a Dataframe with columns for variable IDs, U statistics and p-values.
 
 Supported `kwargs` are:
-* `statistic_col="U"`   - Name of the output column containing the U statistics.
-* `pvalue_col="pValue"` - Name of the output column containing the p-values.
+* `statistic_col="U"`   - Name of the output column containing the U statistics. (Set to nothing to remove from output.)
+* `pvalue_col="pValue"` - Name of the output column containing the p-values. (Set to nothing to remove from output.)
 
 The following `kwargs` determine how the computations are threaded:
 * `nworkers`      - Number of worker threads used in the computation. Set to 1 to disable threading.
@@ -207,7 +209,9 @@ function _ftest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; 
 	end
 
 	table = data.var[:,data.var_id_cols]
-	insertcols!(table, statistic_col=>F, pvalue_col=>p; copycols=false)
+	statistic_col !== nothing && insertcols!(table, statistic_col=>F; copycols=false)
+	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
+	table
 end
 
 
@@ -255,7 +259,9 @@ function _ttest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; 
 	end
 
 	table = data.var[:,data.var_id_cols]
-	insertcols!(table, statistic_col=>t, pvalue_col=>p; copycols=false)
+	statistic_col !== nothing && insertcols!(table, statistic_col=>t; copycols=false)
+	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
+	table
 end
 
 function ttest_table(data::DataMatrix, test;

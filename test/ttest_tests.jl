@@ -23,7 +23,7 @@ function ttest_ground_truth(A, obs, test, null::Tuple)
 end
 
 
-@testset "t-Test" begin
+@testset "t-test" begin
 	N = size(transformed,2)
 
 	t = copy(transformed)
@@ -31,18 +31,76 @@ end
 
 	A = t.matrix*I(N)
 
-	setup = (("value", ()),
-             ("value", ("group",)),
-             ("value2", ("value",)),
-             ("value2", ("group","value")),
-             ("value", ("value",)),
+	setup = (("value", (), "value_"),
+             ("value", ("group",), "value_H0_group_"),
+             ("value2", ("value",), "value2_H0_value_"),
+             ("value2", ("group","value"), "value2_H0_group_value_"),
+             ("value", ("value",), "value_H0_value_"),
             )
 
-	@testset "H1:$test, H0:$(join(null,','))" for (test,null) in setup
-		df = ttest_table(t, test; null)
-		gtt, gtP = ttest_ground_truth(A, t.obs, test, null)
+	@testset "H1:$test, H0:$(join(null,','))" for (test,null,prefix) in setup
+		gtT, gtP = ttest_ground_truth(A, t.obs, test, null)
 
-		@test df.t ≈ gtt
-		@test df.pValue ≈ gtP
+		@testset "$f" for f in (ttest_table, ttest, ttest!)
+			data = f==ttest! ? copy(t) : t
+
+			result = f(data, test; null)
+
+			t_col = "t"
+			p_col = "pValue"
+			if f==ttest_table
+				df = result
+			else
+				df = result.var
+				t_col = string(prefix,t_col)
+				p_col = string(prefix,p_col)
+
+				# columns should only be added to source if using ttest!
+				@test hasproperty(data.var, t_col) == (f==ttest!)
+				@test hasproperty(data.var, p_col) == (f==ttest!)
+			end
+
+			@test df[:,t_col] ≈ gtT
+			@test df[:,p_col] ≈ gtP
+		end
+	end
+
+	@testset "Column names" begin
+		gtT, gtP = ttest_ground_truth(A, t.obs, "value", ())
+
+		df = ttest_table(t, "value"; statistic_col="my_t", pvalue_col="my_p")
+		@test df[:,"my_t"] ≈ gtT
+		@test df[:,"my_p"] ≈ gtP
+
+		df = ttest_table(t, "value"; statistic_col=nothing, pvalue_col="my_p")
+		@test !hasproperty(df, "t")
+		@test df[:,"my_p"] ≈ gtP
+
+		df = ttest_table(t, "value"; statistic_col="my_t", pvalue_col=nothing)
+		@test df[:,"my_t"] ≈ gtT
+		@test !hasproperty(df, "pValue")
+
+		data = ttest(t, "value"; statistic_col="my_t", pvalue_col="my_p")
+		@test data.var[:,"my_t"] ≈ gtT
+		@test data.var[:,"my_p"] ≈ gtP
+		@test !hasproperty(t.var, "my_t")
+		@test !hasproperty(t.var, "my_p")
+
+		data = copy(t)
+		ttest!(data, "value"; statistic_col="my_t", pvalue_col="my_p")
+		@test data.var[:,"my_t"] ≈ gtT
+		@test data.var[:,"my_p"] ≈ gtP
+
+
+		data = ttest(t, "value"; prefix="another_")
+		@test data.var[:,"another_t"] ≈ gtT
+		@test data.var[:,"another_pValue"] ≈ gtP
+		@test !hasproperty(t.var, "another_t")
+		@test !hasproperty(t.var, "another_pValue")
+
+		data = copy(t)
+		ttest!(data, "value"; prefix="another_")
+		@test data.var[:,"another_t"] ≈ gtT
+		@test data.var[:,"another_pValue"] ≈ gtP
 	end
 end

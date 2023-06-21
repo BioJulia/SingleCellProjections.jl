@@ -24,7 +24,7 @@ function ftest_ground_truth(A, obs, test::Tuple, null::Tuple)
 end
 
 
-@testset "F-Test" begin
+@testset "F-test" begin
 	N = size(transformed,2)
 
 	t = copy(transformed)
@@ -32,23 +32,82 @@ end
 
 	A = t.matrix*I(N)
 
-	setup = ((("group",), ()),
-             (("value",), ()),
-             (("group",), ("value",)),
-             (("value",), ("group",)),
-             (("value","value2"), ()),
-             (("value","value2"), ("group",)),
-             (("value2",), ("group","value")),
-             (("value",), ("value",)),
+	setup = ((("group",), (), "group_"),
+             (("value",), (), "value_"),
+             (("group",), ("value",), "group_H0_value_"),
+             (("value",), ("group",), "value_H0_group_"),
+             (("value","value2"), (), "value_value2_"),
+             (("value","value2"), ("group",), "value_value2_H0_group_"),
+             (("value2",), ("group","value"), "value2_H0_group_value_"),
+             (("value",), ("value",), "value_H0_value_"),
             )
 
-	@testset "H1:$(join(test,',')), H0:$(join(null,','))" for (test,null) in setup
-		df = ftest_table(t, test; null)
+	@testset "H1:$(join(test,',')), H0:$(join(null,','))" for (test,null,prefix) in setup
 		gtF, gtP = ftest_ground_truth(A, t.obs, test, null)
 
-		@test df.F ≈ gtF
-		@test df.pValue ≈ gtP
+		@testset "$f" for f in (ftest_table, ftest, ftest!)
+			data = f==ftest! ? copy(t) : t
+
+			result = f(data, test; null)
+
+			f_col = "F"
+			p_col = "pValue"
+			if f==ftest_table
+				df = result
+			else
+				df = result.var
+				f_col = string(prefix,f_col)
+				p_col = string(prefix,p_col)
+
+				# columns should only be added to source if using ftest!
+				@test hasproperty(data.var, f_col) == (f==ftest!)
+				@test hasproperty(data.var, p_col) == (f==ftest!)
+			end
+
+			@test df[:,f_col] ≈ gtF
+			@test df[:,p_col] ≈ gtP
+		end
 	end
+
+	@testset "Column names" begin
+		gtF, gtP = ftest_ground_truth(A, t.obs, ("group",), ())
+
+		df = ftest_table(t, "group"; statistic_col="my_F", pvalue_col="my_p")
+		@test df[:,"my_F"] ≈ gtF
+		@test df[:,"my_p"] ≈ gtP
+
+		df = ftest_table(t, "group"; statistic_col=nothing, pvalue_col="my_p")
+		@test !hasproperty(df, "F")
+		@test df[:,"my_p"] ≈ gtP
+
+		df = ftest_table(t, "group"; statistic_col="my_F", pvalue_col=nothing)
+		@test df[:,"my_F"] ≈ gtF
+		@test !hasproperty(df, "pValue")
+
+		data = ftest(t, "group"; statistic_col="my_F", pvalue_col="my_p")
+		@test data.var[:,"my_F"] ≈ gtF
+		@test data.var[:,"my_p"] ≈ gtP
+		@test !hasproperty(t.var, "my_F")
+		@test !hasproperty(t.var, "my_p")
+
+		data = copy(t)
+		ftest!(data, "group"; statistic_col="my_F", pvalue_col="my_p")
+		@test data.var[:,"my_F"] ≈ gtF
+		@test data.var[:,"my_p"] ≈ gtP
+
+
+		data = ftest(t, "group"; prefix="another_")
+		@test data.var[:,"another_F"] ≈ gtF
+		@test data.var[:,"another_pValue"] ≈ gtP
+		@test !hasproperty(t.var, "another_F")
+		@test !hasproperty(t.var, "another_pValue")
+
+		data = copy(t)
+		ftest!(data, "group"; prefix="another_")
+		@test data.var[:,"another_F"] ≈ gtF
+		@test data.var[:,"another_pValue"] ≈ gtP
+	end
+
 
 	# @testset "categorical" begin
 	# 	df = ftest_table(t, "group")

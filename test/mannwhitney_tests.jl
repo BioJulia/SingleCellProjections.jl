@@ -1,4 +1,4 @@
-@testset "MannWhitney" begin
+@testset "Mann-Whitney U-test" begin
 	P,N = (50,587)
 
 	c = copy(counts)
@@ -71,7 +71,7 @@
 		end
 	end
 	
-	@testset "column names" begin
+	@testset "Column names" begin
 		test_ind = 19
 		# ground truth
 		x = convert(Vector, c.matrix[test_ind,:])
@@ -80,6 +80,14 @@
 		df = mannwhitney_table(c, "group", "C"; statistic_col="my_u", pvalue_col="my_p")
 		@test df[test_ind,"my_u"] == mw.U
 		@test df[test_ind,"my_p"] ≈ pvalue(mw)
+
+		df = mannwhitney_table(c, "group", "C"; statistic_col=nothing, pvalue_col="my_p")
+		@test !hasproperty(df, "U")
+		@test df[test_ind,"my_p"] ≈ pvalue(mw)
+
+		df = mannwhitney_table(c, "group", "C"; statistic_col="my_u", pvalue_col=nothing)
+		@test df[test_ind,"my_u"] == mw.U
+		@test !hasproperty(df, "my_p")
 
 		data = mannwhitney(c, "group", "C"; statistic_col="my_u", pvalue_col="my_p")
 		@test data.var[test_ind,"my_u"] == mw.U
