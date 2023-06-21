@@ -131,11 +131,17 @@ function orthonormal_design(design::DesignMatrix, Q0=nothing; rtol=sqrt(eps()))
 		X -= Q0*(Q0'X) # orthogonalize X w.r.t. Q0
 	end
 
-	# TODO: No need to run svd etc. if there just is an intercept.
-	F = svd(X)
+	if size(X,2)==1
+		# No need to run svd etc. if there just a single column (intercept or t-test column)
+		n = norm(X)
+		n>rtol && return X./n
+		return X[:,1:0] # no columns
+	else
+		F = svd(X)
 
-	k = something(findlast(>(rtol), F.S), 0)
-	F.U[:,1:k]
+		k = something(findlast(>(rtol), F.S), 0)
+		return F.U[:,1:k]
+	end
 end
 
 
@@ -147,7 +153,7 @@ function _linear_test(data::DataMatrix, test::DesignMatrix, null::DesignMatrix)
 	# TODO: support no null model (not even intercept)
 	Q0 = orthonormal_design(null)
 	Q1_pre = orthonormal_design(test, Q0)
-	Q1 = hcat(Q0,Q1_pre)
+	Q1 = hcat(Q0,Q1_pre) # The purpose of this is to gain numerical accuracy - does it help?
 
 	A = data.matrix
 
