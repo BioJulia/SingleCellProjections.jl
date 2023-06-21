@@ -71,3 +71,7 @@ function test_show(data::DataMatrix; matrix=nothing, var=nothing, obs=nothing, m
         @test contains(m, models)
     end
 end
+
+function _formula(args...)
+	StatsModels.Term(:y) ~ +(StatsModels.ConstantTerm(1), StatsModels.Term.(Symbol.(args))...)
+end

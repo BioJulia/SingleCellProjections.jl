@@ -1,7 +1,3 @@
-function _formula(args...)
-	StatsModels.Term(:y) ~ +(StatsModels.ConstantTerm(1), StatsModels.Term.(Symbol.(args))...)
-end
-
 function ftest_ground_truth(A, obs, h1_formula, h0_formula)
 	F = zeros(size(A,1))
 	p = zeros(size(A,1))
@@ -28,7 +24,7 @@ function ftest_ground_truth(A, obs, test::Tuple, null::Tuple)
 end
 
 
-@testset "FTest" begin
+@testset "F-Test" begin
 	N = size(transformed,2)
 
 	t = copy(transformed)

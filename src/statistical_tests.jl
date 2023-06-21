@@ -152,8 +152,9 @@ function _linear_test(data::DataMatrix, test::DesignMatrix, null::DesignMatrix)
 
 	# TODO: support no null model (not even intercept)
 	Q0 = orthonormal_design(null)
-	Q1_pre = orthonormal_design(test, Q0)
-	Q1 = hcat(Q0,Q1_pre) # The purpose of this is to gain numerical accuracy - does it help?
+	Q1 = orthonormal_design(test, Q0)
+	# Q1_pre = orthonormal_design(test, Q0)
+	# Q1 = hcat(Q0,Q1_pre) # The purpose of this is to gain numerical accuracy - does it help?
 
 	A = data.matrix
 
@@ -167,18 +168,22 @@ function _linear_test(data::DataMatrix, test::DesignMatrix, null::DesignMatrix)
 	ssβ0 = vec(sum(abs2, β0; dims=2))
 	ssβ1 = vec(sum(abs2, β1; dims=2))
 
-	ssExplained = ssβ1 - ssβ0
-	ssUnexplained = ssA - ssβ1
+	# ssExplained = ssβ1 - ssβ0
+	# ssUnexplained = ssA - ssβ1
+	# rank0 = size(Q0,2)
+	# rank1 = size(Q1,2)
 
+	ssExplained = max.(0.0, ssβ1)
+	ssUnexplained = max.(0.0, ssA - ssβ1 - ssβ0)
 	rank0 = size(Q0,2)
-	rank1 = size(Q1,2)
+	rank1 = size(Q1,2)+rank0
 
-	ssExplained, ssUnexplained, rank0, rank1
+	ssExplained, ssUnexplained, rank0, rank1, β1
 end
 
 
 function _ftest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; statistic_col="F", pvalue_col="pValue")
-	ssExplained, ssUnexplained, rank0, rank1 = _linear_test(data, test, null)
+	ssExplained, ssUnexplained, rank0, rank1, _ = _linear_test(data, test, null)
 	N = size(data,2)
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
@@ -196,7 +201,6 @@ function _ftest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; 
 end
 
 
-
 _splattable(x::Union{Tuple,AbstractVector}) = x
 _splattable(x) = (x,)
 
@@ -206,4 +210,36 @@ function ftest_table(data::DataMatrix, test;
 	null_design = designmatrix(data, _splattable(null)...; center, max_categories)
 
 	_ftest_table(data, test_design, null_design; kwargs...)
+end
+
+
+
+function _ttest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; statistic_col="t", pvalue_col="pValue")
+	_, ssUnexplained, rank0, rank1, β1 = _linear_test(data, test, null)
+	N = size(data,2)
+	ν1 = (rank1-rank0)
+	ν2 = (N-rank1)
+
+	if ν1==1 && ν2>0
+		t = vec(β1./sqrt.(max.(0.0,(ν1/ν2).*ssUnexplained)))
+		p = min.(1.0, 2.0.*ccdf.(TDist(ν2), abs.(t)))
+	else
+		t = zeros(size(ssUnexplained))
+		p = ones(size(ssUnexplained))
+	end
+
+	table = data.var[:,data.var_id_cols]
+	insertcols!(table, statistic_col=>t, pvalue_col=>p; copycols=false)
+end
+
+function ttest_table(data::DataMatrix, test;
+                     null=(), center=true, max_categories=nothing, kwargs...)
+
+	# TODO: support two-group comparison
+	test_design = designmatrix(data, test; center=false, max_categories)
+	@assert size(test_design.matrix,2)==1
+
+	null_design = designmatrix(data, _splattable(null)...; center, max_categories)
+
+	_ttest_table(data, test_design, null_design; kwargs...)
 end
