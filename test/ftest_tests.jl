@@ -20,9 +20,11 @@ function ftest_ground_truth(A, obs, h1_formula, h0_formula)
 	F,p
 end
 function ftest_ground_truth(A, obs, test::Tuple, null::Tuple)
+	all(in(null), test) && return zeros(size(A,1)), ones(size(A,1))
+
 	h1_formula = _formula(null..., test...)
 	h0_formula = _formula(null...)
-	ftest_ground_truth(A, obs, h1_formula, h0_formula)
+	return ftest_ground_truth(A, obs, h1_formula, h0_formula)
 end
 
 
@@ -41,6 +43,7 @@ end
              (("value","value2"), ()),
              (("value","value2"), ("group",)),
              (("value2",), ("group","value")),
+             (("value",), ("value",)),
             )
 
 	@testset "H1:$(join(test,',')), H0:$(join(null,','))" for (test,null) in setup

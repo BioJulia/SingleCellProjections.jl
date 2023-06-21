@@ -122,27 +122,32 @@ end
 
 
 # TODO: merge with code in NormalizationModel?
-function orthonormal_design(design::DesignMatrix; rtol=sqrt(eps()))
+function orthonormal_design(design::DesignMatrix, Q0=nothing; rtol=sqrt(eps()))
 	X = design.matrix
+
+	if Q0 !== nothing
+		# X  is N×d₁
+		# Q0 is N×d₂
+		X -= Q0*(Q0'X) # orthogonalize X w.r.t. Q0
+	end
 
 	# TODO: No need to run svd etc. if there just is an intercept.
 	F = svd(X)
 
-	k = findlast(>(rtol), F.S)
+	k = something(findlast(>(rtol), F.S), 0)
 	F.U[:,1:k]
 end
 
 
 
-
-# This function assumes that all covariates that are present in null are also in test
-function _ftest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; statistic_col="F", pvalue_col="pValue")
+function _linear_test(data::DataMatrix, test::DesignMatrix, null::DesignMatrix)
 	@assert table_cols_equal(data.obs, test.obs_match) "F-test expects design matrix and data matrix observations to be identical."
 	@assert table_cols_equal(data.obs, null.obs_match) "F-test expects design matrix and data matrix observations to be identical."
 
 	# TODO: support no null model (not even intercept)
 	Q0 = orthonormal_design(null)
-	Q1 = orthonormal_design(test)
+	Q1_pre = orthonormal_design(test, Q0)
+	Q1 = hcat(Q0,Q1_pre)
 
 	A = data.matrix
 
@@ -159,14 +164,26 @@ function _ftest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; 
 	ssExplained = ssβ1 - ssβ0
 	ssUnexplained = ssA - ssβ1
 
-	N = size(A,2)
 	rank0 = size(Q0,2)
 	rank1 = size(Q1,2)
+
+	ssExplained, ssUnexplained, rank0, rank1
+end
+
+
+function _ftest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; statistic_col="F", pvalue_col="pValue")
+	ssExplained, ssUnexplained, rank0, rank1 = _linear_test(data, test, null)
+	N = size(data,2)
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
 
-	F = max.(0.0, (ν2/ν1) * ssExplained./ssUnexplained)
-	p = ccdf.(FDist(ν1,ν2), F)
+	if ν1>0 && ν2>0
+		F = max.(0.0, (ν2/ν1) * ssExplained./ssUnexplained)
+		p = ccdf.(FDist(ν1,ν2), F)
+	else
+		F = zeros(size(ssExplained))
+		p = ones(size(ssExplained))
+	end
 
 	table = data.var[:,data.var_id_cols]
 	insertcols!(table, statistic_col=>F, pvalue_col=>p; copycols=false)
@@ -179,7 +196,7 @@ _splattable(x) = (x,)
 
 function ftest_table(data::DataMatrix, test;
                      null=(), center=true, max_categories=nothing, kwargs...)
-	test_design = designmatrix(data, _splattable(null)..., _splattable(test)...; center, max_categories)
+	test_design = designmatrix(data, _splattable(test)...; center=false, max_categories)
 	null_design = designmatrix(data, _splattable(null)...; center, max_categories)
 
 	_ftest_table(data, test_design, null_design; kwargs...)
