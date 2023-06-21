@@ -165,8 +165,6 @@ function _ftest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; 
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
 
-	@show ν1, ν2
-
 	F = max.(0.0, (ν2/ν1) * ssExplained./ssUnexplained)
 	p = ccdf.(FDist(ν1,ν2), F)
 
@@ -180,9 +178,9 @@ _splattable(x::Union{Tuple,AbstractVector}) = x
 _splattable(x) = (x,)
 
 function ftest_table(data::DataMatrix, test, null=();
-                     center=true, max_categories=nothing)
+                     center=true, max_categories=nothing, kwargs...)
 	test_design = designmatrix(data, _splattable(null)..., _splattable(test)...; center, max_categories)
 	null_design = designmatrix(data, _splattable(null)...; center, max_categories)
 
-	_ftest_table(data, test_design, null_design)
+	_ftest_table(data, test_design, null_design; kwargs...)
 end
