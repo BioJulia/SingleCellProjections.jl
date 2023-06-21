@@ -1,4 +1,4 @@
-@testset "Statistical Tests" begin
+@testset "MannWhitney" begin
 	P,N = (50,587)
 
 	c = copy(counts)
