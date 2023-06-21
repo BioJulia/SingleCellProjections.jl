@@ -119,3 +119,70 @@ function mannwhitney(data::DataMatrix, args...; var=:copy, obs=:copy, matrix=:ke
 	data = copy(data; var, obs, matrix)
 	mannwhitney!(data, args...; kwargs...)
 end
+
+
+# TODO: merge with code in NormalizationModel?
+function orthonormal_design(design::DesignMatrix; rtol=sqrt(eps()))
+	X = design.matrix
+
+	# TODO: No need to run svd etc. if there just is an intercept.
+	F = svd(X)
+
+	k = findlast(>(rtol), F.S)
+	F.U[:,1:k]
+end
+
+
+
+
+# This function assumes that all covariates that are present in null are also in test
+function _ftest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; statistic_col="F", pvalue_col="pValue")
+	@assert table_cols_equal(data.obs, test.obs_match) "F-test expects design matrix and data matrix observations to be identical."
+	@assert table_cols_equal(data.obs, null.obs_match) "F-test expects design matrix and data matrix observations to be identical."
+
+	# TODO: support no null model (not even intercept)
+	Q0 = orthonormal_design(null)
+	Q1 = orthonormal_design(test)
+
+	A = data.matrix
+
+	# fit models
+	β0 = A*Q0
+	β1 = A*Q1
+
+	# compute residuals
+	ssA = variable_sum_squares(A)
+
+	ssβ0 = vec(sum(abs2, β0; dims=2))
+	ssβ1 = vec(sum(abs2, β1; dims=2))
+
+	ssExplained = ssβ1 - ssβ0
+	ssUnexplained = ssA - ssβ1
+
+	N = size(A,2)
+	rank0 = size(Q0,2)
+	rank1 = size(Q1,2)
+	ν1 = (rank1-rank0)
+	ν2 = (N-rank1)
+
+	@show ν1, ν2
+
+	F = max.(0.0, (ν2/ν1) * ssExplained./ssUnexplained)
+	p = ccdf.(FDist(ν1,ν2), F)
+
+	table = data.var[:,data.var_id_cols]
+	insertcols!(table, statistic_col=>F, pvalue_col=>p; copycols=false)
+end
+
+
+
+_splattable(x::Union{Tuple,AbstractVector}) = x
+_splattable(x) = (x,)
+
+function ftest_table(data::DataMatrix, test, null=();
+                     center=true, max_categories=nothing)
+	test_design = designmatrix(data, _splattable(null)..., _splattable(test)...; center, max_categories)
+	null_design = designmatrix(data, _splattable(null)...; center, max_categories)
+
+	_ftest_table(data, test_design, null_design)
+end

@@ -38,6 +38,7 @@ export
 	var_to_obs,
 	var_to_obs_table,
 	var_counts_fraction!,
+	ftest_table,
 	mannwhitney!,
 	mannwhitney,
 	mannwhitney_table,
@@ -75,13 +76,10 @@ include("utils.jl")
 include("table_utils.jl")
 include("threaded_sparse_row_map.jl")
 
-
 include("bilinear.jl")
 include("sctransformsparse.jl")
 
-
 include("implicitsvd.jl")
-
 
 include("barnes_hut.jl")
 include("force_layout.jl")
@@ -89,21 +87,23 @@ include("embed.jl")
 
 include("h5ad.jl")
 
+include("mannwhitney.jl")
+
 include("lowrank.jl")
 include("projectionmodels.jl")
 include("datamatrix.jl")
 include("subset_expression.jl")
+
 include("filter.jl")
 include("load.jl")
 include("transform.jl")
+include("design.jl")
 include("normalize.jl")
 include("reduce.jl")
 include("annotate.jl")
 include("statistical_tests.jl")
 include("counts_fraction.jl")
 
-
-include("mannwhitney.jl")
 include("differentialexpression.jl") # Deprecated
 
 include("precompile.jl")
