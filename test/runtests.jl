@@ -8,6 +8,7 @@ using StableRNGs
 using StaticArrays
 using Statistics
 using HypothesisTests
+using GLM
 using DelimitedFiles
 using DataFrames
 using CodecZlib
@@ -31,6 +32,7 @@ include("common_data.jl")
     include("load.jl")
     include("basic.jl")
     include("annotate.jl")
+    include("ftest_tests.jl")
     include("mannwhitney_tests.jl")
     include("projections.jl")
     include("test_barnes_hut.jl")
