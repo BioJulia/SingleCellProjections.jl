@@ -8,7 +8,7 @@ function ftest_ground_truth(A, obs, h1_formula, h0_formula)
 		df.y = A[i,:]
 		h0 = lm(h0_formula, df)
 		h1 = lm(h1_formula, df)
-		ft = ftest(h0.model, h1.model)
+		ft = GLM.ftest(h0.model, h1.model)
 		F[i] = ft.fstat[end]
 		p[i] = ft.pval[end]
 	end

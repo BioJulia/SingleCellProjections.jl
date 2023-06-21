@@ -2,6 +2,16 @@ _create_two_group_prefix(col_name::AbstractString) = string(col_name,'_')
 _create_two_group_prefix(col_name, a) = string(col_name,'_',a,'_')
 _create_two_group_prefix(col_name, a, b) = string(col_name,'_',a,"_vs_",b,'_')
 
+function _create_ftest_prefix(test, null)
+	str = string(join(test,'_'),'_')
+	isempty(null) ? str : string(str,"H0_",join(null,'_'),'_')
+end
+
+function _create_ttest_prefix(test, null)
+	str = string(test,'_')
+	isempty(null) ? str : string(str,"H0_",join(null,'_'),'_')
+end
+
 function _create_two_group(obs, col_name::AbstractString)
 	col = obs[:,col_name]
 	unique_values = sort(unique(skipmissing(col))) # Sort to get stability in which group is 1 and which is 2
@@ -212,6 +222,22 @@ function ftest_table(data::DataMatrix, test;
 	_ftest_table(data, test_design, null_design; kwargs...)
 end
 
+function ftest!(data::DataMatrix, test;
+                null=(),
+                prefix = _create_ftest_prefix(_splattable(test), _splattable(null)),
+                kwargs...)
+	df = ftest_table(data, test; null, statistic_col="$(prefix)F", pvalue_col="$(prefix)pValue", kwargs...)
+	leftjoin!(data.var, df; on=data.var_id_cols)
+	data
+end
+
+function ftest(data::DataMatrix, args...; var=:copy, obs=:copy, matrix=:keep, kwargs...)
+	data = copy(data; var, obs, matrix)
+	ftest!(data, args...; kwargs...)
+end
+
+
+
 
 
 function _ttest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; statistic_col="t", pvalue_col="pValue")
@@ -242,4 +268,19 @@ function ttest_table(data::DataMatrix, test;
 	null_design = designmatrix(data, _splattable(null)...; center, max_categories)
 
 	_ttest_table(data, test_design, null_design; kwargs...)
+end
+
+
+function ttest!(data::DataMatrix, test;
+                null=(),
+                prefix = _create_ttest_prefix(test, _splattable(null)),
+                kwargs...)
+	df = ttest_table(data, test; null, statistic_col="$(prefix)t", pvalue_col="$(prefix)pValue", kwargs...)
+	leftjoin!(data.var, df; on=data.var_id_cols)
+	data
+end
+
+function ttest(data::DataMatrix, args...; var=:copy, obs=:copy, matrix=:keep, kwargs...)
+	data = copy(data; var, obs, matrix)
+	ttest!(data, args...; kwargs...)
 end

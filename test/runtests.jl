@@ -8,7 +8,8 @@ using StableRNGs
 using StaticArrays
 using Statistics
 using HypothesisTests
-using GLM
+import GLM
+using GLM: StatsModels, lm, coeftable
 using DelimitedFiles
 using DataFrames
 using CodecZlib
