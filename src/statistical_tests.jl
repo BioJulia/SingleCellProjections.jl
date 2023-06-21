@@ -177,8 +177,8 @@ end
 _splattable(x::Union{Tuple,AbstractVector}) = x
 _splattable(x) = (x,)
 
-function ftest_table(data::DataMatrix, test, null=();
-                     center=true, max_categories=nothing, kwargs...)
+function ftest_table(data::DataMatrix, test;
+                     null=(), center=true, max_categories=nothing, kwargs...)
 	test_design = designmatrix(data, _splattable(null)..., _splattable(test)...; center, max_categories)
 	null_design = designmatrix(data, _splattable(null)...; center, max_categories)
 

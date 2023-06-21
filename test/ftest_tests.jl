@@ -27,7 +27,7 @@ end
 
 
 @testset "FTest" begin
-	P,N = (50,587)
+	N = size(transformed,2)
 
 	t = copy(transformed)
 	t.obs.value2 = t.obs.value.^2
@@ -44,7 +44,7 @@ end
             )
 
 	@testset "H1:$(join(test,',')), H0:$(join(null,','))" for (test,null) in setup
-		df = ftest_table(t, test, null)
+		df = ftest_table(t, test; null)
 		gtF, gtP = ftest_ground_truth(A, t.obs, test, null)
 
 		@test df.F ≈ gtF
