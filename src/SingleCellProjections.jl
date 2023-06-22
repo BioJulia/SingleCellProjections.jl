@@ -46,8 +46,7 @@ export
 	ttest_table,
 	mannwhitney!,
 	mannwhitney,
-	mannwhitney_table,
-	differentialexpression
+	mannwhitney_table
 
 using LinearAlgebra
 import LinearAlgebra: svd
@@ -108,8 +107,6 @@ include("reduce.jl")
 include("annotate.jl")
 include("statistical_tests.jl")
 include("counts_fraction.jl")
-
-include("differentialexpression.jl") # Deprecated
 
 include("precompile.jl")
 

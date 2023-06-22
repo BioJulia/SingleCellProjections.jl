@@ -7,3 +7,4 @@ Whenever there is a breaking release, the breaking changes will be listed in thi
 ## 0.3
 
 * `normalize_matrix`: Categorical coviariates with `missing` values will now error.
+* `differentialexpression`: Removed function. Differential expression is now done with `ftest`, `ttest` or `mannwhitney` instead.
