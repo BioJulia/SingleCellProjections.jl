@@ -15,11 +15,11 @@ function ftest_ground_truth(A, obs, h1_formula, h0_formula)
 	
 	F,p
 end
-function ftest_ground_truth(A, obs, test::Tuple, null::Tuple)
-	all(in(null), test) && return zeros(size(A,1)), ones(size(A,1))
+function ftest_ground_truth(A, obs, h1::Tuple, h0::Tuple)
+	all(in(h0), h1) && return zeros(size(A,1)), ones(size(A,1))
 
-	h1_formula = _formula(null..., test...)
-	h0_formula = _formula(null...)
+	h1_formula = _formula(h0..., h1...)
+	h0_formula = _formula(h0...)
 	return ftest_ground_truth(A, obs, h1_formula, h0_formula)
 end
 
@@ -42,13 +42,13 @@ end
              (("value",), ("value",), "value_H0_value_"),
             )
 
-	@testset "H1:$(join(test,',')), H0:$(join(null,','))" for (test,null,prefix) in setup
-		gtF, gtP = ftest_ground_truth(A, t.obs, test, null)
+	@testset "H1:$(join(h1,',')), H0:$(join(h0,','))" for (h1,h0,prefix) in setup
+		gtF, gtP = ftest_ground_truth(A, t.obs, h1, h0)
 
 		@testset "$f" for f in (ftest_table, ftest, ftest!)
 			data = f==ftest! ? copy(t) : t
 
-			result = f(data, test; null)
+			result = f(data, h1; h0)
 
 			f_col = "F"
 			p_col = "pValue"

@@ -2,14 +2,14 @@ _create_two_group_prefix(col_name::AbstractString) = string(col_name,'_')
 _create_two_group_prefix(col_name, a) = string(col_name,'_',a,'_')
 _create_two_group_prefix(col_name, a, b) = string(col_name,'_',a,"_vs_",b,'_')
 
-function _create_ftest_prefix(test, null)
-	str = string(join(test,'_'),'_')
-	isempty(null) ? str : string(str,"H0_",join(null,'_'),'_')
+function _create_ftest_prefix(h1, h0)
+	str = string(join(h1,'_'),'_')
+	isempty(h0) ? str : string(str,"H0_",join(h0,'_'),'_')
 end
 
-function _create_ttest_prefix(test, null)
-	str = string(test,'_')
-	isempty(null) ? str : string(str,"H0_",join(null,'_'),'_')
+function _create_ttest_prefix(h1, h0)
+	str = string(h1,'_')
+	isempty(h0) ? str : string(str,"H0_",join(h0,'_'),'_')
 end
 
 function _create_two_group(obs, col_name::AbstractString)
@@ -158,14 +158,14 @@ end
 
 
 
-function _linear_test(data::DataMatrix, test::DesignMatrix, null::DesignMatrix)
-	@assert table_cols_equal(data.obs, test.obs_match) "F-test expects design matrix and data matrix observations to be identical."
-	@assert table_cols_equal(data.obs, null.obs_match) "F-test expects design matrix and data matrix observations to be identical."
+function _linear_test(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix)
+	@assert table_cols_equal(data.obs, h1.obs_match) "Design matrix and data matrix observations should be identical."
+	@assert table_cols_equal(data.obs, h0.obs_match) "Design matrix (H0) and data matrix observations should be identical."
 
 	# TODO: support no null model (not even intercept)
-	Q0 = orthonormal_design(null)
-	Q1 = orthonormal_design(test, Q0)
-	# Q1_pre = orthonormal_design(test, Q0)
+	Q0 = orthonormal_design(h0)
+	Q1 = orthonormal_design(h1, Q0)
+	# Q1_pre = orthonormal_design(h1, Q0)
 	# Q1 = hcat(Q0,Q1_pre) # The purpose of this is to gain numerical accuracy - does it help?
 
 	A = data.matrix
@@ -194,8 +194,8 @@ function _linear_test(data::DataMatrix, test::DesignMatrix, null::DesignMatrix)
 end
 
 
-function _ftest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; statistic_col="F", pvalue_col="pValue")
-	ssExplained, ssUnexplained, rank0, rank1, _ = _linear_test(data, test, null)
+function _ftest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix; statistic_col="F", pvalue_col="pValue")
+	ssExplained, ssUnexplained, rank0, rank1, _ = _linear_test(data, h1, h0)
 	N = size(data,2)
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
@@ -218,19 +218,19 @@ end
 _splattable(x::Union{Tuple,AbstractVector}) = x
 _splattable(x) = (x,)
 
-function ftest_table(data::DataMatrix, test;
-                     null=(), center=true, max_categories=nothing, kwargs...)
-	test_design = designmatrix(data, _splattable(test)...; center=false, max_categories)
-	null_design = designmatrix(data, _splattable(null)...; center, max_categories)
+function ftest_table(data::DataMatrix, h1;
+                     h0=(), center=true, max_categories=nothing, kwargs...)
+	h1_design = designmatrix(data, _splattable(h1)...; center=false, max_categories)
+	h0_design = designmatrix(data, _splattable(h0)...; center, max_categories)
 
-	_ftest_table(data, test_design, null_design; kwargs...)
+	_ftest_table(data, h1_design, h0_design; kwargs...)
 end
 
-function ftest!(data::DataMatrix, test;
-                null=(),
-                prefix = _create_ftest_prefix(_splattable(test), _splattable(null)),
+function ftest!(data::DataMatrix, h1;
+                h0=(),
+                prefix = _create_ftest_prefix(_splattable(h1), _splattable(h0)),
                 kwargs...)
-	df = ftest_table(data, test; null, statistic_col="$(prefix)F", pvalue_col="$(prefix)pValue", kwargs...)
+	df = ftest_table(data, h1; h0, statistic_col="$(prefix)F", pvalue_col="$(prefix)pValue", kwargs...)
 	leftjoin!(data.var, df; on=data.var_id_cols)
 	data
 end
@@ -244,8 +244,8 @@ end
 
 
 
-function _ttest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; statistic_col="t", pvalue_col="pValue")
-	_, ssUnexplained, rank0, rank1, β1 = _linear_test(data, test, null)
+function _ttest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix; statistic_col="t", pvalue_col="pValue")
+	_, ssUnexplained, rank0, rank1, β1 = _linear_test(data, h1, h0)
 	N = size(data,2)
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
@@ -264,24 +264,24 @@ function _ttest_table(data::DataMatrix, test::DesignMatrix, null::DesignMatrix; 
 	table
 end
 
-function ttest_table(data::DataMatrix, test;
-                     null=(), center=true, max_categories=nothing, kwargs...)
+function ttest_table(data::DataMatrix, h1;
+                     h0=(), center=true, max_categories=nothing, kwargs...)
 
 	# TODO: support two-group comparison
-	test_design = designmatrix(data, test; center=false, max_categories)
-	@assert size(test_design.matrix,2)==1
+	h1_design = designmatrix(data, h1; center=false, max_categories)
+	@assert size(h1_design.matrix,2)==1
 
-	null_design = designmatrix(data, _splattable(null)...; center, max_categories)
+	h0_design = designmatrix(data, _splattable(h0)...; center, max_categories)
 
-	_ttest_table(data, test_design, null_design; kwargs...)
+	_ttest_table(data, h1_design, h0_design; kwargs...)
 end
 
 
-function ttest!(data::DataMatrix, test;
-                null=(),
-                prefix = _create_ttest_prefix(test, _splattable(null)),
+function ttest!(data::DataMatrix, h1;
+                h0=(),
+                prefix = _create_ttest_prefix(h1, _splattable(h0)),
                 kwargs...)
-	df = ttest_table(data, test; null, statistic_col="$(prefix)t", pvalue_col="$(prefix)pValue", kwargs...)
+	df = ttest_table(data, h1; h0, statistic_col="$(prefix)t", pvalue_col="$(prefix)pValue", kwargs...)
 	leftjoin!(data.var, df; on=data.var_id_cols)
 	data
 end

@@ -15,10 +15,10 @@ function ttest_ground_truth(A, obs, formula)
 	
 	t,p
 end
-function ttest_ground_truth(A, obs, test, null::Tuple)
-	test in null && return zeros(size(A,1)), ones(size(A,1))
+function ttest_ground_truth(A, obs, h1, h0::Tuple)
+	h1 in h0 && return zeros(size(A,1)), ones(size(A,1))
 
-	formula = _formula(null..., test)
+	formula = _formula(h0..., h1)
 	return ttest_ground_truth(A, obs, formula)
 end
 
@@ -38,13 +38,13 @@ end
              ("value", ("value",), "value_H0_value_"),
             )
 
-	@testset "H1:$test, H0:$(join(null,','))" for (test,null,prefix) in setup
-		gtT, gtP = ttest_ground_truth(A, t.obs, test, null)
+	@testset "H1:$h1, H0:$(join(h0,','))" for (h1,h0,prefix) in setup
+		gtT, gtP = ttest_ground_truth(A, t.obs, h1, h0)
 
 		@testset "$f" for f in (ttest_table, ttest, ttest!)
 			data = f==ttest! ? copy(t) : t
 
-			result = f(data, test; null)
+			result = f(data, h1; h0)
 
 			t_col = "t"
 			p_col = "pValue"
