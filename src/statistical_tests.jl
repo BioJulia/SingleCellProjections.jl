@@ -40,7 +40,8 @@ function _create_two_group(obs, col_name::AbstractString,
 end
 
 
-function _mannwhitney_table(X::AbstractSparseMatrix, var, groups::Vector{Int}; statistic_col="U", pvalue_col="pValue", kwargs...)
+function _mannwhitney_table(X::AbstractSparseMatrix, var, groups::Vector{Int};
+                            statistic_col="U", pvalue_col="pValue", kwargs...)
 	U,p = mannwhitney_sparse(X::AbstractSparseMatrix, groups; kwargs...)
 	table = copy(var)
 	statistic_col !== nothing && insertcols!(table, statistic_col=>U; copycols=false)
@@ -133,6 +134,36 @@ function mannwhitney(data::DataMatrix, args...; var=:copy, obs=:copy, matrix=:ke
 end
 
 
+function _add_column_names!(columns, args)
+	for c in args
+		if c isa CovariateDesc
+			c.type != :intercept && push!(columns, c.name)
+		else
+			push!(columns, c)
+		end
+	end
+end
+
+# No-op of no filtering is needed
+function _filter_missing_obs(data::DataMatrix, h1, h0; h1_missing, h0_missing)
+	@assert h1_missing in (:skip,:error)
+	@assert h0_missing in (:skip,:error)
+	h1 = _splattable(h1)
+	h0 = _splattable(h0)
+
+	columns = String[]
+	h1_missing == :skip && _add_column_names!(columns, h1)
+	h0_missing == :skip && _add_column_names!(columns, h0)
+
+	isempty(columns) && return data
+
+	mask = completecases(data.obs, unique(columns))
+
+	all(mask) && return data
+	return data[:,mask]
+end
+
+
 # TODO: merge with code in NormalizationModel?
 function orthonormal_design(design::DesignMatrix, Q0=nothing; rtol=sqrt(eps()))
 	X = design.matrix
@@ -194,7 +225,8 @@ function _linear_test(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix)
 end
 
 
-function _ftest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix; statistic_col="F", pvalue_col="pValue")
+function _ftest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix;
+                      statistic_col="F", pvalue_col="pValue")
 	ssExplained, ssUnexplained, rank0, rank1, _ = _linear_test(data, h1, h0)
 	N = size(data,2)
 	ν1 = (rank1-rank0)
@@ -219,9 +251,15 @@ _splattable(x::Union{Tuple,AbstractVector}) = x
 _splattable(x) = (x,)
 
 function ftest_table(data::DataMatrix, h1;
-                     h0=(), center=true, max_categories=nothing, kwargs...)
-	h1_design = designmatrix(data, _splattable(h1)...; center=false, max_categories)
-	h0_design = designmatrix(data, _splattable(h0)...; center, max_categories)
+                     h0=(),
+                     h1_missing=:skip, h0_missing=:error,
+                     center=true, max_categories=nothing, kwargs...)
+	h1 = _splattable(h1)
+	h0 = _splattable(h0)
+	data = _filter_missing_obs(data, h1, h0; h1_missing, h0_missing)
+
+	h1_design = designmatrix(data, h1...; center=false, max_categories)
+	h0_design = designmatrix(data, h0...; center, max_categories)
 
 	_ftest_table(data, h1_design, h0_design; kwargs...)
 end
@@ -244,7 +282,8 @@ end
 
 
 
-function _ttest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix; statistic_col="t", pvalue_col="pValue")
+function _ttest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix;
+                      statistic_col="t", pvalue_col="pValue")
 	_, ssUnexplained, rank0, rank1, β1 = _linear_test(data, h1, h0)
 	N = size(data,2)
 	ν1 = (rank1-rank0)
@@ -265,13 +304,17 @@ function _ttest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix; stat
 end
 
 function ttest_table(data::DataMatrix, h1;
-                     h0=(), center=true, max_categories=nothing, kwargs...)
+                     h0=(),
+                     h1_missing=:skip, h0_missing=:error,
+                     center=true, max_categories=nothing, kwargs...)
+	h0 = _splattable(h0)
+	data = _filter_missing_obs(data, h1, h0; h1_missing, h0_missing)
 
 	# TODO: support two-group comparison
 	h1_design = designmatrix(data, h1; center=false, max_categories)
 	@assert size(h1_design.matrix,2)==1
 
-	h0_design = designmatrix(data, _splattable(h0)...; center, max_categories)
+	h0_design = designmatrix(data, h0...; center, max_categories)
 
 	_ttest_table(data, h1_design, h0_design; kwargs...)
 end

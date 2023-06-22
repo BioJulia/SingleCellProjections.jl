@@ -74,6 +74,26 @@ end
 	@testset "Missing" begin
 		@test_throws r"Missing values.+numerical" ttest_table(t, "value"; h0="value3")
 		@test_throws r"Missing values.+categorical" ttest_table(t, "value"; h0="group2")
+
+		mask = t.obs.value3 .!== missing
+		gtT, gtP = ttest_ground_truth(A[:,mask], t.obs[mask,:], "value3", ())
+		df = ttest_table(t, "value3"; h1_missing=:skip)
+		@test df.t ≈ gtT
+		@test df.pValue ≈ gtP
+		gtT, gtP = ttest_ground_truth(A[:,mask], t.obs[mask,:], "value3", ("group",))
+		df = ttest_table(t, "value3"; h0="group", h1_missing=:skip)
+		@test df.t ≈ gtT
+		@test df.pValue ≈ gtP
+
+		# mask = t.obs.group2 .!== missing
+		# gtT, gtP = ttest_ground_truth(A[:,mask], t.obs[mask,:], "group2", ())
+		# df = ttest_table(t, "group2"; h1_missing=:skip)
+		# @test df.t ≈ gtT
+		# @test df.pValue ≈ gtP
+		# gtT, gtP = ttest_ground_truth(A[:,mask], t.obs[mask,:], "group2", ("value",))
+		# df = ttest_table(t, "group2"; h0="value", h1_missing=:skip)
+		# @test df.t ≈ gtT
+		# @test df.pValue ≈ gtP
 	end
 
 	@testset "Column names" begin
