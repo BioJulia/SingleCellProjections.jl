@@ -92,6 +92,13 @@
 	Xcom_std = std(Xcom; dims=2)
 	Xcom_s = Xcom ./ Xcom_std
 
+	# two-group
+	D = [g.=="C" g.!="C"]
+	β = X / D'
+	Xtwo = X .- β*D'
+	Xtwo_std = std(Xtwo; dims=2)
+	Xtwo_s = Xtwo ./ Xtwo_std
+
 	@testset "normalize" begin
 		n = normalize_matrix(transformed)
 		@test materialize(n) ≈ Xc
@@ -127,6 +134,17 @@
 		@test materialize(n) ≈ Xcom_s
 		@test materialize(project(transformed_proj,n)) ≈ Xcom_s[:,proj_obs_indices] rtol=1e-3
 		@test n.var.scaling ≈ 1.0./Xcom_std
+
+		n = normalize_matrix(transformed, covariate("group","C"))
+		@test materialize(n) ≈ Xtwo
+		@test materialize(project(transformed_proj,n)) ≈ Xtwo[:,proj_obs_indices] rtol=1e-3
+		n = normalize_matrix(transformed, covariate("group","C"); scale=true)
+		@test materialize(n) ≈ Xtwo_s
+		@test materialize(project(transformed_proj,n)) ≈ Xtwo_s[:,proj_obs_indices] rtol=1e-3
+		@test n.var.scaling ≈ 1.0./Xtwo_std
+
+		n = normalize_matrix(transformed, covariate("group","B"))
+		@test_throws "No values" project(transformed_proj,n)
 	end
 
 	normalized_proj = project(transformed_proj,normalized)
