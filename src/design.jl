@@ -7,9 +7,9 @@ struct NumericalCovariate <: AbstractCovariate
 end
 function NumericalCovariate(data::DataMatrix, name::String, center::Bool)
 	v = data.obs[!,name]
-	@assert all(!ismissing, v) "Missing values not supported for numerical covariates."
-	@assert all(!isnan, v) "NaN values not supported for numerical covariates."
-	@assert all(!isinf, v) "Inf values not supported for numerical covariates."
+	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
+	any(isnan, v) && throw(ArgumentError("NaN values not supported for numerical covariates."))
+	any(isinf, v) && throw(ArgumentError("Inf values not supported for numerical covariates."))
 	m = center ? mean(v) : 0.0
 	s = max(1e-6, maximum(x->abs(x-m), v)) # Avoid scaling up if values are too small in absolute numbers
 	NumericalCovariate(name, m, s)
@@ -18,7 +18,11 @@ struct CategoricalCovariate{T} <: AbstractCovariate
 	name::String
 	values::Vector{T}
 end
-CategoricalCovariate(data::DataMatrix, name::String) = CategoricalCovariate(name, unique(data.obs[!,name]))
+function CategoricalCovariate(data::DataMatrix, name::String)
+	v = unique(data.obs[!,name])
+	any(ismissing, v) && throw(ArgumentError("Missing values not supported for categorical covariates."))
+	CategoricalCovariate(name, v)
+end
 
 _length(::AbstractCovariate) = 1
 _length(c::CategoricalCovariate) = length(c.values)
@@ -91,9 +95,9 @@ end
 covariate_design!(A, data, ::InterceptCovariate) = A .= 1.0
 function covariate_design!(A, data, c::NumericalCovariate)
 	v = data.obs[!,c.name]
-	@assert all(!ismissing, v) "Missing values not supported for numerical covariates."
-	@assert all(!isnan, v) "NaN values not supported for numerical covariates."
-	@assert all(!isinf, v) "Inf values not supported for numerical covariates."
+	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
+	any(isnan, v) && throw(ArgumentError("NaN values not supported for numerical covariates."))
+	any(isinf, v) && throw(ArgumentError("Inf values not supported for numerical covariates."))
 
 	# Center and scale for numerical stability
 	A .= (v .- c.mean)./c.scale

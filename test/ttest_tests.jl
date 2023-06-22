@@ -29,6 +29,12 @@ end
 	t = copy(transformed)
 	t.obs.value2 = t.obs.value.^2
 
+	# annotations with missing values
+	t.obs.value3 = missings(Float64, size(t,2))
+	t.obs.value3[1:2:end] .= 1:cld(size(t,2),2)
+	t.obs.group2 = replace(t.obs.group, "C"=>missing)
+
+
 	A = t.matrix*I(N)
 
 	setup = (("value", (), "value_"),
@@ -63,6 +69,11 @@ end
 			@test df[:,t_col] ≈ gtT
 			@test df[:,p_col] ≈ gtP
 		end
+	end
+
+	@testset "Missing" begin
+		@test_throws r"Missing values.+numerical" ttest_table(t, "value"; h0="value3")
+		@test_throws r"Missing values.+categorical" ttest_table(t, "value"; h0="group2")
 	end
 
 	@testset "Column names" begin
