@@ -75,6 +75,8 @@ end
 	end
 
 	@testset "Missing" begin
+		@test_throws r"Missing values.+numerical" ftest_table(t, "value3"; h1_missing=:error)
+		@test_throws r"Missing values.+categorical" ftest_table(t, "group2"; h1_missing=:error)
 		@test_throws r"Missing values.+numerical" ftest_table(t, "value"; h0="value3")
 		@test_throws r"Missing values.+categorical" ftest_table(t, "value"; h0="group2")
 

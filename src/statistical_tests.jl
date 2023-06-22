@@ -2,13 +2,13 @@ _create_two_group_prefix(col_name::AbstractString) = string(col_name,'_')
 _create_two_group_prefix(col_name, a) = string(col_name,'_',a,'_')
 _create_two_group_prefix(col_name, a, b) = string(col_name,'_',a,"_vs_",b,'_')
 
-function _create_ftest_prefix(h1, h0)
+function _create_ftest_prefix(h0, h1)
 	str = string(join(h1,'_'),'_')
 	isempty(h0) ? str : string(str,"H0_",join(h0,'_'),'_')
 end
 
-function _create_ttest_prefix(h1, h0)
-	str = string(h1,'_')
+function _create_ttest_prefix(h0, args...)
+	str = _create_two_group_prefix(args...)
 	isempty(h0) ? str : string(str,"H0_",join(h0,'_'),'_')
 end
 
@@ -266,7 +266,7 @@ end
 
 function ftest!(data::DataMatrix, h1;
                 h0=(),
-                prefix = _create_ftest_prefix(_splattable(h1), _splattable(h0)),
+                prefix = _create_ftest_prefix(_splattable(h0), _splattable(h1)),
                 kwargs...)
 	df = ftest_table(data, h1; h0, statistic_col="$(prefix)F", pvalue_col="$(prefix)pValue", kwargs...)
 	leftjoin!(data.var, df; on=data.var_id_cols)
@@ -303,14 +303,13 @@ function _ttest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix;
 	table
 end
 
-function ttest_table(data::DataMatrix, h1;
+function ttest_table(data::DataMatrix, h1::CovariateDesc;
                      h0=(),
                      h1_missing=:skip, h0_missing=:error,
                      center=true, max_categories=nothing, kwargs...)
 	h0 = _splattable(h0)
 	data = _filter_missing_obs(data, h1, h0; h1_missing, h0_missing)
 
-	# TODO: support two-group comparison
 	h1_design = designmatrix(data, h1; center=false, max_categories)
 	@assert size(h1_design.matrix,2)==1
 
@@ -319,12 +318,20 @@ function ttest_table(data::DataMatrix, h1;
 	_ttest_table(data, h1_design, h0_design; kwargs...)
 end
 
+# Handle Two-Group
+function ttest_table(data::DataMatrix, h1; kwargs...)
+	t = eltype(data.obs[!,h1]) <: Union{Missing,Number} ? :numerical : :twogroup
+	ttest_table(data, covariate(h1, t); kwargs...)
+end
+ttest_table(data::DataMatrix, h1, groupA, groupB=nothing; kwargs...) =
+	ttest_table(data, covariate(h1, groupA, groupB); kwargs...)
 
-function ttest!(data::DataMatrix, h1;
+
+function ttest!(data::DataMatrix, args...;
                 h0=(),
-                prefix = _create_ttest_prefix(h1, _splattable(h0)),
+                prefix = _create_ttest_prefix(_splattable(h0), args...),
                 kwargs...)
-	df = ttest_table(data, h1; h0, statistic_col="$(prefix)t", pvalue_col="$(prefix)pValue", kwargs...)
+	df = ttest_table(data, args...; h0, statistic_col="$(prefix)t", pvalue_col="$(prefix)pValue", kwargs...)
 	leftjoin!(data.var, df; on=data.var_id_cols)
 	data
 end

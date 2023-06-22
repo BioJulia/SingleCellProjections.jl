@@ -1,4 +1,4 @@
-function ttest_ground_truth(A, obs, formula)
+function ttest_ground_truth(A, obs, formula, group_a)
 	t = zeros(size(A,1))
 	p = zeros(size(A,1))
 
@@ -11,16 +11,32 @@ function ttest_ground_truth(A, obs, formula)
 
 		t[i] = table.cols[table.teststatcol][end]
 		p[i] = table.cols[table.pvalcol][end]
+
+		# a little hack since we cannot control which group is outputted by lm/coeftable
+		if group_a !== nothing && !endswith(table.rownms[end], ": $group_a")
+			t[i] = -t[i]
+		end
 	end
 	
 	t,p
 end
-function ttest_ground_truth(A, obs, h1, h0::Tuple)
+function ttest_ground_truth(A, obs, h1, group_a, group_b, h0::Tuple)
 	h1 in h0 && return zeros(size(A,1)), ones(size(A,1))
 
+	if !(eltype(obs[!,h1]) <: Union{Missing,Number})
+		if group_a === nothing
+			group_a = first(sort(obs[!,h1]))
+		elseif group_b === nothing # overwrite everything except a
+			obs = copy(obs)
+			obs[.!isequal.(obs[!,h1],group_a), h1] .= "Not_$group_a"
+		end
+	end
+
 	formula = _formula(h0..., h1)
-	return ttest_ground_truth(A, obs, formula)
+	return ttest_ground_truth(A, obs, formula, group_a)
 end
+ttest_ground_truth(A, obs, h1, group_a, h0::Tuple) = ttest_ground_truth(A,obs,h1,group_a,nothing,h0)
+ttest_ground_truth(A, obs, h1, h0::Tuple) = ttest_ground_truth(A,obs,h1,nothing,nothing,h0)
 
 
 @testset "t-test" begin
@@ -33,24 +49,32 @@ end
 	t.obs.value3 = missings(Float64, size(t,2))
 	t.obs.value3[1:2:end] .= 1:cld(size(t,2),2)
 	t.obs.group2 = replace(t.obs.group, "C"=>missing)
+	t.obs.twogroup = replace(t.obs.group, "C"=>"A")
 
 
 	A = t.matrix*I(N)
 
-	setup = (("value", (), "value_"),
-             ("value", ("group",), "value_H0_group_"),
-             ("value2", ("value",), "value2_H0_value_"),
-             ("value2", ("group","value"), "value2_H0_group_value_"),
-             ("value", ("value",), "value_H0_value_"),
+	setup = ((("value",), (), "value_"),
+             (("value",), ("group",), "value_H0_group_"),
+             (("value2",), ("value",), "value2_H0_value_"),
+             (("value2",), ("group","value"), "value2_H0_group_value_"),
+             (("value",), ("value",), "value_H0_value_"),
+             (("twogroup",), (), "twogroup_"),
+             (("twogroup","A","B"), (), "twogroup_A_vs_B_"),
+             (("twogroup","B","A"), (), "twogroup_B_vs_A_"),
+             (("group","C"), (), "group_C_"),
             )
 
-	@testset "H1:$h1, H0:$(join(h0,','))" for (h1,h0,prefix) in setup
-		gtT, gtP = ttest_ground_truth(A, t.obs, h1, h0)
+	h1_str(h1) = h1
+	h1_str(h1,groupA) = "$(h1)_$groupA"
+	h1_str(h1,groupA,groupB) = "$(h1)_$(groupA)_vs_$groupB"
+	@testset "H1:$(h1_str(h1...)), H0:$(join(h0,','))" for (h1,h0,prefix) in setup
+		gtT, gtP = ttest_ground_truth(A, t.obs, h1..., h0)
 
 		@testset "$f" for f in (ttest_table, ttest, ttest!)
 			data = f==ttest! ? copy(t) : t
 
-			result = f(data, h1; h0)
+			result = f(data, h1...; h0)
 
 			t_col = "t"
 			p_col = "pValue"
@@ -72,28 +96,30 @@ end
 	end
 
 	@testset "Missing" begin
+		@test_throws r"Missing values.+numerical" ttest_table(t, "value3"; h1_missing=:error)
+		@test_throws r"Missing values.+two-group" ttest_table(t, "group2"; h1_missing=:error)
 		@test_throws r"Missing values.+numerical" ttest_table(t, "value"; h0="value3")
 		@test_throws r"Missing values.+categorical" ttest_table(t, "value"; h0="group2")
 
 		mask = t.obs.value3 .!== missing
 		gtT, gtP = ttest_ground_truth(A[:,mask], t.obs[mask,:], "value3", ())
-		df = ttest_table(t, "value3"; h1_missing=:skip)
+		df = ttest_table(t, "value3")
 		@test df.t ≈ gtT
 		@test df.pValue ≈ gtP
 		gtT, gtP = ttest_ground_truth(A[:,mask], t.obs[mask,:], "value3", ("group",))
-		df = ttest_table(t, "value3"; h0="group", h1_missing=:skip)
+		df = ttest_table(t, "value3"; h0="group")
 		@test df.t ≈ gtT
 		@test df.pValue ≈ gtP
 
-		# mask = t.obs.group2 .!== missing
-		# gtT, gtP = ttest_ground_truth(A[:,mask], t.obs[mask,:], "group2", ())
-		# df = ttest_table(t, "group2"; h1_missing=:skip)
-		# @test df.t ≈ gtT
-		# @test df.pValue ≈ gtP
-		# gtT, gtP = ttest_ground_truth(A[:,mask], t.obs[mask,:], "group2", ("value",))
-		# df = ttest_table(t, "group2"; h0="value", h1_missing=:skip)
-		# @test df.t ≈ gtT
-		# @test df.pValue ≈ gtP
+		mask = t.obs.group2 .!== missing
+		gtT, gtP = ttest_ground_truth(A[:,mask], t.obs[mask,:], "group2", ())
+		df = ttest_table(t, "group2")
+		@test df.t ≈ gtT
+		@test df.pValue ≈ gtP
+		gtT, gtP = ttest_ground_truth(A[:,mask], t.obs[mask,:], "group2", ("value",))
+		df = ttest_table(t, "group2"; h0="value")
+		@test df.t ≈ gtT
+		@test df.pValue ≈ gtP
 	end
 
 	@testset "Column names" begin

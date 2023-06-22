@@ -23,31 +23,69 @@ function CategoricalCovariate(data::DataMatrix, name::String)
 	any(ismissing, v) && throw(ArgumentError("Missing values not supported for categorical covariates."))
 	CategoricalCovariate(name, v)
 end
+struct TwoGroupCovariate{T} <: AbstractCovariate
+	name::String
+	groupA::T
+	groupB::Union{Nothing,T}
+end
+function TwoGroupCovariate(data::DataMatrix, name::String, groupA, groupB)
+	v = unique(data.obs[!,name])
+	any(ismissing, v) && throw(ArgumentError("Missing values not supported for two-group covariates."))
+
+	if groupA === nothing && groupB === nothing
+		length(v) != 2 && throw(ArgumentError("Column \"$name\" have exactly two groups (found \"$v\")."))
+		groupA,groupB = minmax(v[1],v[2]) # Keep order stable
+	else
+		groupA in v || throw(ArgumentError("Group A (\"$groupA\") not found in column \"$name\"."))
+		if groupB !== nothing
+			# only groupA and groupB allowed
+			groupB in v || throw(ArgumentError("Group B (\"$groupB\") not found in column \"$name\"."))
+			length(v) > 2 && throw(ArgumentError("Only two groups allowed in column \"$name\" (found \"$v\")."))
+		end
+	end
+	TwoGroupCovariate(name, groupA, groupB)
+end
 
 _length(::AbstractCovariate) = 1
 _length(c::CategoricalCovariate) = length(c.values)
+_length(t::TwoGroupCovariate) = 1
 
 
-struct CovariateDesc
-	name::String
+struct CovariateDesc{T}
 	type::Symbol
-	function CovariateDesc(name::String, type::Symbol)
-		@assert type in (:auto, :numerical, :categorical, :intercept)
-		new(name,type)
+	name::String
+	groupA::T
+	groupB::Union{Nothing,T}
+	function CovariateDesc(type::Symbol, name::String, groupA::T, groupB::Union{Nothing,T}) where T
+		@assert type in (:auto, :numerical, :categorical, :twogroup, :intercept)
+		new{T}(type, name, groupA, groupB)
 	end
 end
+CovariateDesc(type, name) = CovariateDesc(type, name, nothing, nothing)
 
 """
 	covariate(name::String, type=:auto)
 
 Create a `covariate` referring to column `name`.
-`type` must be one of `:auto`, `:numerical`, `:categorical` and `:intercept`.
+`type` must be one of `:auto`, `:numerical`, `:categorical`, `:twogroup` and `:intercept`.
 `:auto` means auto-detection by checking if the values in the column are numerical or categorical.
 `type==:intercept` adds an intercept to the model (in which case the `name` parameter is ignored).
 
 See also: [`designmatrix`](@ref)
 """
-covariate(name::String, type=:auto) = CovariateDesc(name, type)
+covariate(name::String, type::Symbol=:auto) = CovariateDesc(type, name)
+
+"""
+	covariate(name::String, groupA, [groupB])
+
+Create a two-group `covariate` referring to column `name`, comparing `groupA` to `groupB`.
+`groupA` and `groupB` must be values occuring in the column `name`.
+
+If `groupB` is not given, `groupA` will be compared to all other observations.
+
+See also: [`designmatrix`](@ref)
+"""
+covariate(name::String, groupA, groupB=nothing) = CovariateDesc(:twogroup, name, groupA, groupB)
 
 
 function instantiate_covariate(data::DataMatrix, c::CovariateDesc, center::Bool)
@@ -60,6 +98,8 @@ function instantiate_covariate(data::DataMatrix, c::CovariateDesc, center::Bool)
 		NumericalCovariate(data, c.name, center)
 	elseif t == :categorical
 		CategoricalCovariate(data, c.name)
+	elseif t == :twogroup
+		TwoGroupCovariate(data, c.name, c.groupA, c.groupB)
 	elseif t == :intercept
 		InterceptCovariate()
 	else
@@ -109,6 +149,25 @@ function covariate_design!(A, data, c::CategoricalCovariate)
 	isempty(new_values) || error("Categorical covariate ", c.name, " has values not present in the model: ", join(new_value, ','))
 
 	A .= isequal.(v, permutedims(c.values))
+end
+function covariate_design!(A, data, t::TwoGroupCovariate)
+	v = data.obs[!,t.name]
+	any(ismissing, v) && throw(ArgumentError("Missing values not supported for two-group covariates."))
+
+	if t.groupB !== nothing
+		new_values = setdiff(unique(v), (t.groupA, t.groupB))
+		isempty(new_values) || throw(ArgumentError(("Two-group covariate ", t.name, " has values not present in the model: ", join(new_value, ','))))
+	end
+
+	nA = count(==(t.groupA), v)
+	nB = length(v)-nA
+	nA == 0 && throw(ArgumentError("No values belong to group A (\"$(t.groupA)\")."))
+	if nB == 0
+		suffix = t.groupB !== nothing ? string(" (\"", t.groupB, "\")") : ""
+		throw(ArgumentError("No values belong to group B$suffix."))
+	end
+
+	A .= ifelse.(v.==t.groupA, 1.0, -1.0)
 end
 
 function designmatrix(data::DataMatrix, covariates::AbstractVector{<:AbstractCovariate}; max_categories=nothing)
