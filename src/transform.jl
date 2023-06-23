@@ -4,8 +4,17 @@ struct LogTransformModel <: ProjectionModel
 	var::Symbol
 	obs::Symbol
 end
-LogTransformModel(counts::DataMatrix; scale_factor=10_000, var=:copy, obs=:copy) =
-	LogTransformModel(scale_factor, select(counts.var,counts.var_id_cols), var, obs)
+function LogTransformModel(counts::DataMatrix;
+                           var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
+                           scale_factor=10_000, var=:copy, obs=:copy)
+	var_match = select(counts.var, counts.var_id_cols)
+	if var_filter !== nothing
+		sub = filter(var_filter, counts.var; view=true)
+		ind = first(parentindices(sub))
+		var_match = var_match[ind,:]
+	end
+	LogTransformModel(scale_factor, var_match, var, obs)
+end
 
 projection_isequal(m1::LogTransformModel, m2::LogTransformModel) =
 	m1.scale_factor == m2.scale_factor && m1.var_match == m2.var_match
@@ -61,13 +70,18 @@ function project_impl(counts::DataMatrix, model::LogTransformModel; verbose=true
 end
 
 """
-	logtransform(counts::DataMatrix; scale_factor=10_000, var=:copy, obs=:copy)
+	logtransform(counts::DataMatrix;
+	             var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
+	             scale_factor=10_000,
+	             var=:copy,
+	             obs=:copy)
 
 Log-transform `counts` using the formula:
 ```
   log(1 + cᵢⱼ*scale_factor/(∑ᵢcᵢⱼ))
 ```
 
+* `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `:feature_type => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
 * `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
 * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
 
@@ -91,11 +105,17 @@ struct TFIDFTransformModel <: ProjectionModel
 	obs::Symbol
 end
 function TFIDFTransformModel(counts::DataMatrix;
+                             var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
                              scale_factor=10_000,
                              idf=vec(size(counts,2) ./ max.(1,sum(counts.matrix; dims=2))),
                              annotate=true,
                              var=:copy, obs=:copy)
-	var_match = select(counts.var,counts.var_id_cols)
+	var_match = select(counts.var, counts.var_id_cols)
+	if var_filter !== nothing
+		sub = filter(var_filter, counts.var; view=true)
+		ind = first(parentindices(sub))
+		var_match = var_match[ind,:]
+	end
 	TFIDFTransformModel(scale_factor, idf, var_match, annotate, var, obs)
 end
 
@@ -169,16 +189,20 @@ end
 
 """
 	tf_idf_transform(counts::DataMatrix;
-                     scale_factor = 10_000,
-                     idf = vec(size(counts,2) ./ max.(1,sum(counts.matrix; dims=2))),
-                     annotate = true,
-                     var = :copy,
-                     obs = :copy)
+	                 var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
+	                 scale_factor = 10_000,
+	                 idf = vec(size(counts,2) ./ max.(1,sum(counts.matrix; dims=2))),
+	                 annotate = true,
+	                 var = :copy,
+	                 obs = :copy)
 
 Compute the TF-IDF (term frequency-inverse document frequency) transform of `counts`, using
 the formula `log( 1 + scale_factor * tf * idf )` where `tf` is the term frequency `counts.matrix ./ max.(1, sum(counts.matrix; dims=1))`.
 
-If `annotate` is true, `idf` will be added as a `var` annotation.
+* `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `:feature_type => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
+* `annotate` - If true, `idf` will be added as a `var` annotation.
+* `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
+* `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
 """
 tf_idf_transform(counts::DataMatrix; kwargs...) = project(counts, TFIDFTransformModel(counts; kwargs...))
 
