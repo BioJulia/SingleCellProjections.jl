@@ -142,14 +142,14 @@ function mannwhitney(data::DataMatrix, args...; var=:copy, obs=:copy, matrix=:ke
 	mannwhitney!(data, args...; kwargs...)
 end
 
-
-function _add_column_names!(columns, args)
-	for c in args
-		if c isa CovariateDesc
-			c.type != :intercept && push!(columns, c.name)
-		else
-			push!(columns, c)
-		end
+_keep_mask(df, c::String) = completecases(df,c)
+function _keep_mask(df, c::CovariateDesc{T})  where T
+	if c.type == :intercept
+		return trues(size(df,1))
+	elseif c.type == :twogroup && c.groupB !== nothing
+		return isequal.(df[!,c.name], c.groupA) .| isequal.(df[!,c.name], c.groupB)
+	else
+		return completecases(df,c.name)
 	end
 end
 
@@ -157,16 +157,13 @@ end
 function _filter_missing_obs(data::DataMatrix, h1, h0; h1_missing, h0_missing)
 	@assert h1_missing in (:skip,:error)
 	@assert h0_missing in (:skip,:error)
+
 	h1 = _splattable(h1)
 	h0 = _splattable(h0)
 
-	columns = String[]
-	h1_missing == :skip && _add_column_names!(columns, h1)
-	h0_missing == :skip && _add_column_names!(columns, h0)
-
-	isempty(columns) && return data
-
-	mask = completecases(data.obs, unique(columns))
+	mask = trues(size(data,2))
+	h1_missing == :skip && (mask=mapreduce(c->_keep_mask(data.obs, c), .&, h1; init = mask))
+	h0_missing == :skip && (mask=mapreduce(c->_keep_mask(data.obs, c), .&, h0; init = mask))
 
 	all(mask) && return data
 	return data[:,mask]
@@ -353,14 +350,14 @@ function ftest!(data::DataMatrix, h1;
 end
 
 """
-	ftest(data::DataMatrix, h1; h0, kwargs...)
+	ftest(data::DataMatrix, h1; h0, var=:copy, obs=:copy, matrix=:keep, kwargs...)
 
 Performs an F-Test with the given `h1` (alternative hypothesis) and `h0` (null hypothesis).
 Examples of F-Tests are ANOVA and Quadratic Regression, but any linear model can be used.
 
-`ftest!` creates a copy of `data` and adds a F-statistic and a p-value column to `data.var`.
+`ftest` creates a copy of `data` and adds a F-statistic and a p-value column to `data.var`.
 
-See [`ftest!`](@ref) and [`ftest_table`](@ref)  for usage examples and more details on computations and parameters.
+See [`ftest_table`](@ref) and [`ftest!`](@ref) for usage examples and more details on computations and parameters.
 
 See also: [`ftest!`](@ref), [`ftest_table`](@ref), [`ttest`](@ref)
 """
@@ -398,7 +395,7 @@ function _ttest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix;
 end
 
 """
-	ttest_table(data::DataMatrix, h1; h0, kwargs...)
+	ttest_table(data::DataMatrix, h1, [groupA], [groupB]; h0, kwargs...)
 
 Performs a t-Test with the given `h1` (alternative hypothesis) and `h0` (null hypothesis).
 Examples of t-Tests are Two-Group tests and Linear Regression.
@@ -410,10 +407,12 @@ T-tests can be performed on any `DataMatrix`, but it is almost always recommende
     If you want to correct for the same covariates, pass them as `h0` to `ttest_table`.
 
 `h1` can be:
-* A string specifying a column name of `data.obs`. Auto-detection determines if the column is categorical (Two-Grup) or numerical (linear regression).
+* A string specifying a column name of `data.obs`. Auto-detection determines if the column is categorical (Two-Group) or numerical (linear regression).
+  - If `groupA` and `groupB` are specified, a Two-Group test between `groupA` and `groupB` is performed.
+  - If `groupA` is specified, but not `groupB`, a Two-Group test between `groupA` and all other observations is performed.
 * A [`covariate`](@ref) for more control of how to interpret the values in the column.
 
-`ttest_table` returns a Dataframe with columns for variable IDs, t-statistics, p-values and difference.
+`ttest_table` returns a Dataframe with columns for variable IDs, t-statistics, p-values and differences.
 For Two-group tests, `difference` is the difference in mean between the two groups.
 For linear regression, the difference corresponds to the rate of change.
 
@@ -427,6 +426,26 @@ Supported `kwargs` are:
 * `h0_missing=:error`   - One of `:skip` and `:error`. If `skip`, missing values in `h0` columns are skipped, otherwise an error is thrown.
 
 # Examples
+
+Perform a Two-Group t-test between celltypes "Mono" and "DC".
+```julia
+julia> ttest_table(transformed, "celltype", "Mono", "DC")
+```
+
+Perform a Two-Group t-test between celltype "Mono" and all other cells.
+```julia
+julia> ttest_table(transformed, "celltype", "Mono")
+```
+
+Perform a Two-Group t-test between celltypes "Mono" and "DC", while correcting for "fraction_mt" (a linear covariate).
+```julia
+julia> ttest_table(transformed, "celltype", "Mono", "DC")
+```
+
+Perform Linear Regression using the covariate "fraction_mt".
+```julia
+julia> ttest_table(transformed, "fraction_mt")
+```
 
 See also: [`ttest!`](@ref), [`ttest`](@ref), [`ftest_table`](@ref), [`mannwhitney_table`](@ref), [`covariate`](@ref)
 """
@@ -454,6 +473,21 @@ ttest_table(data::DataMatrix, h1, groupA, groupB=nothing; kwargs...) =
 	ttest_table(data, covariate(h1, groupA, groupB); kwargs...)
 
 
+"""
+	ttest!(data::DataMatrix, h1, [groupA], [groupB]; h0, kwargs...)
+
+Performs a t-Test with the given `h1` (alternative hypothesis) and `h0` (null hypothesis).
+Examples of t-Tests are Two-Group tests and Linear Regression.
+
+`ttest!` adds a t-statistic, a p-value and a difference column to `data.var`.
+
+See [`ttest_table`](@ref) for usage examples and more details on computations and parameters.
+
+In addition `ttest!` supports the `kwarg`:
+* `prefix` - Output column names for t-statistics, p-values and differences will be prefixed with this string. If none is given, it will be constructed from `h1`, `groupA`, `groupB` and `h0`.
+
+See also: [`ttest_table`](@ref), [`ttest`](@ref), [`ftest!`](@ref), [`mannwhitney!`](@ref)
+"""
 function ttest!(data::DataMatrix, args...;
                 h0=(),
                 prefix = _create_ttest_prefix(_splattable(h0), args...),
@@ -463,6 +497,18 @@ function ttest!(data::DataMatrix, args...;
 	data
 end
 
+"""
+	ttest(data::DataMatrix, h1, [groupA], [groupB]; h0, var=:copy, obs=:copy, matrix=:keep, kwargs...)
+
+Performs a t-Test with the given `h1` (alternative hypothesis) and `h0` (null hypothesis).
+Examples of t-Tests are Two-Group tests and Linear Regression.
+
+`ttest` creates a copy of `data` and adds a t-statistic, a p-value and a difference column to `data.var`.
+
+See [`ttest_table`](@ref) and [`ttest!`](@ref) for usage examples and more details on computations and parameters.
+
+See also: [`ttest!`](@ref), [`ttest_table`](@ref), [`ftest`](@ref), [`mannwhitney`](@ref)
+"""
 function ttest(data::DataMatrix, args...; var=:copy, obs=:copy, matrix=:keep, kwargs...)
 	data = copy(data; var, obs, matrix)
 	ttest!(data, args...; kwargs...)

@@ -33,6 +33,10 @@ function ttest_ground_truth(A, obs, h1, group_a, group_b, h0::Tuple)
 		elseif group_b === nothing # overwrite everything except a
 			obs = copy(obs)
 			obs[.!isequal.(obs[!,h1],group_a), h1] .= "Not_$group_a"
+		else # keep only observations belonging to group a and group b
+			mask = isequal.(obs[!,h1],group_a) .| isequal.(obs[!,h1],group_b)
+			A = A[:,mask]
+			obs = obs[mask, :]
 		end
 	end
 
@@ -67,6 +71,7 @@ ttest_ground_truth(A, obs, h1, h0::Tuple) = ttest_ground_truth(A,obs,h1,nothing,
              (("twogroup","A","B"), (), "twogroup_A_vs_B_"),
              (("twogroup","B","A"), (), "twogroup_B_vs_A_"),
              (("group","C"), (), "group_C_"),
+             (("group","B", "C"), (), "group_B_vs_C_"),
             )
 
 	h1_str(h1) = h1
