@@ -69,6 +69,17 @@ struct CovariateDesc{T}
 end
 CovariateDesc(type, name) = CovariateDesc(type, name, nothing, nothing)
 
+function covariate_prefix(c::CovariateDesc{T}, suffix='_') where T
+	if c.type == :twogroup
+		if c.groupB !== nothing
+			return string(c.name, '_', c.groupA, "_vs_", c.groupB, suffix)
+		elseif c.groupA !== nothing
+			return string(c.name, '_', c.groupA, suffix)
+		end
+	end
+	return string(c.name, suffix)
+end
+
 """
 	covariate(name::String, type=:auto)
 
@@ -93,6 +104,8 @@ See also: [`designmatrix`](@ref)
 """
 covariate(name::String, groupA, groupB=nothing) = CovariateDesc(:twogroup, name, groupA, groupB)
 
+covariate(c::CovariateDesc) = c
+
 
 function instantiate_covariate(data::DataMatrix, c::CovariateDesc, center::Bool)
 	t = c.type
@@ -112,11 +125,9 @@ function instantiate_covariate(data::DataMatrix, c::CovariateDesc, center::Bool)
 		error("Unknown covariate type.")
 	end
 end
-instantiate_covariate(data::DataMatrix, s::String, center::Bool) = instantiate_covariate(data, covariate(s), center)
 
 
 function setup_covariates(data::DataMatrix, args...; center=true)
-	# @show args
 	covariates = AbstractCovariate[]
 
 	center |= any(==(InterceptCovariate()), args)
@@ -126,7 +137,7 @@ function setup_covariates(data::DataMatrix, args...; center=true)
 	end
 	for x in args
 		x == InterceptCovariate() && continue # intercept already handled above
-		push!(covariates, instantiate_covariate(data, x, center))
+		push!(covariates, instantiate_covariate(data, covariate(x), center))
 	end
 	covariates
 end

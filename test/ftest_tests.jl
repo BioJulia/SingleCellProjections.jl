@@ -16,6 +16,10 @@ function ftest_ground_truth(A, obs, h1_formula, h0_formula)
 	F,p
 end
 function ftest_ground_truth(A, obs, h1::Tuple, h0::Tuple)
+	# simple unwrapping of Covariates, does not care about types or two-groups
+	h1 = (x->x isa CovariateDesc ? x.name : x).(h1)
+	h0 = (x->x isa CovariateDesc ? x.name : x).(h0)
+
 	all(in(h0), h1) && return zeros(size(A,1)), ones(size(A,1))
 
 	h1_formula = _formula(h0..., h1...)
@@ -45,9 +49,16 @@ end
              (("value","value2"), ("group",), "value_value2_H0_group_"),
              (("value2",), ("group","value"), "value2_H0_group_value_"),
              (("value",), ("value",), "value_H0_value_"),
+             ((covariate("value"),), (), "value_"),
+             ((covariate("group"),), (), "group_"),
+             (("group",), (covariate("value"),), "group_H0_value_"),
+             (("value",), (covariate("group"),), "value_H0_group_"),
             )
 
-	@testset "H1:$(join(h1,',')), H0:$(join(h0,','))" for (h1,h0,prefix) in setup
+	cov_str(c::CovariateDesc) = covariate_prefix(c,"'")
+	cov_str(x) = x
+
+	@testset "H1:$(join(cov_str.(h1),',')), H0:$(join(cov_str.(h0),','))" for (h1,h0,prefix) in setup
 		gtF, gtP = ftest_ground_truth(A, t.obs, h1, h0)
 
 		@testset "$f" for f in (ftest_table, ftest, ftest!)
@@ -126,7 +137,6 @@ end
 		ftest!(data, "group"; statistic_col="my_F", pvalue_col="my_p")
 		@test data.var[:,"my_F"] ≈ gtF
 		@test data.var[:,"my_p"] ≈ gtP
-
 
 		data = ftest(t, "group"; prefix="another_")
 		@test data.var[:,"another_F"] ≈ gtF

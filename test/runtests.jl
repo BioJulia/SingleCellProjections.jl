@@ -18,7 +18,7 @@ using SCTransform
 using UMAP
 using TSne
 
-using SingleCellProjections: BarnesHutTree, build!
+using SingleCellProjections: BarnesHutTree, build!, CovariateDesc, covariate_prefix
 
 
 include("MatrixExpressions/runtests.jl")

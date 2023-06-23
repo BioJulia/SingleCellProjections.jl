@@ -1,15 +1,18 @@
+_splattable(x::Union{Tuple,AbstractVector}) = x
+_splattable(x) = (x,)
+
 _create_two_group_prefix(col_name::AbstractString) = string(col_name,'_')
 _create_two_group_prefix(col_name, a) = string(col_name,'_',a,'_')
 _create_two_group_prefix(col_name, a, b) = string(col_name,'_',a,"_vs_",b,'_')
 
 function _create_ftest_prefix(h0, h1)
-	str = string(join(h1,'_'),'_')
-	isempty(h0) ? str : string(str,"H0_",join(h0,'_'),'_')
+	str = join(covariate_prefix.(h1))
+	isempty(h0) ? str : string(str,"H0_",join(covariate_prefix.(h0)))
 end
 
-function _create_ttest_prefix(h0, args...)
-	str = _create_two_group_prefix(args...)
-	isempty(h0) ? str : string(str,"H0_",join(h0,'_'),'_')
+function _create_ttest_prefix(h0, h1)
+	str = covariate_prefix(h1)
+	isempty(h0) ? str : string(str,"H0_",join(covariate_prefix.(h0)))
 end
 
 function _create_two_group(obs, col_name::AbstractString; h1_missing)
@@ -142,8 +145,7 @@ function mannwhitney(data::DataMatrix, args...; var=:copy, obs=:copy, matrix=:ke
 	mannwhitney!(data, args...; kwargs...)
 end
 
-_keep_mask(df, c::String) = completecases(df,c)
-function _keep_mask(df, c::CovariateDesc{T})  where T
+function _keep_mask(df, c::CovariateDesc{T}) where T
 	if c.type == :intercept
 		return trues(size(df,1))
 	elseif c.type == :twogroup && c.groupB !== nothing
@@ -157,9 +159,6 @@ end
 function _filter_missing_obs(data::DataMatrix, h1, h0; h1_missing, h0_missing)
 	@assert h1_missing in (:skip,:error)
 	@assert h0_missing in (:skip,:error)
-
-	h1 = _splattable(h1)
-	h0 = _splattable(h0)
 
 	mask = trues(size(data,2))
 	h1_missing == :skip && (mask=mapreduce(c->_keep_mask(data.obs, c), .&, h1; init = mask))
@@ -254,9 +253,6 @@ function _ftest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix;
 end
 
 
-_splattable(x::Union{Tuple,AbstractVector}) = x
-_splattable(x) = (x,)
-
 """
 	ftest_table(data::DataMatrix, h1; h0, kwargs...)
 
@@ -315,8 +311,8 @@ function ftest_table(data::DataMatrix, h1;
                      h0=(),
                      h1_missing=:skip, h0_missing=:error,
                      center=true, max_categories=nothing, kwargs...)
-	h1 = _splattable(h1)
-	h0 = _splattable(h0)
+	h1 = covariate.(_splattable(h1))
+	h0 = covariate.(_splattable(h0))
 	data = _filter_missing_obs(data, h1, h0; h1_missing, h0_missing)
 
 	h1_design = designmatrix(data, h1...; center=false, max_categories)
@@ -342,8 +338,11 @@ See also: [`ftest_table`](@ref), [`ftest`](@ref), [`ttest!`](@ref)
 """
 function ftest!(data::DataMatrix, h1;
                 h0=(),
-                prefix = _create_ftest_prefix(_splattable(h0), _splattable(h1)),
+                prefix = nothing,
                 kwargs...)
+	h1 = covariate.(_splattable(h1))
+	h0 = covariate.(_splattable(h0))
+	prefix === nothing && (prefix = _create_ftest_prefix(h0, h1))
 	df = ftest_table(data, h1; h0, statistic_col="$(prefix)F", pvalue_col="$(prefix)pValue", kwargs...)
 	leftjoin!(data.var, df; on=data.var_id_cols)
 	data
@@ -393,6 +392,16 @@ function _ttest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix;
 	difference_col !== nothing && insertcols!(table, difference_col=>d; copycols=false)
 	table
 end
+
+
+# Handle Two-Group
+_ttest_covariate(::Any, h1::CovariateDesc) = h1
+function _ttest_covariate(data, h1)
+	t = eltype(data.obs[!,h1]) <: Union{Missing,Number} ? :numerical : :twogroup
+	covariate(h1, t)
+end
+_ttest_covariate(::Any, h1, groupA, groupB=nothing) = covariate(h1, groupA, groupB)
+
 
 """
 	ttest_table(data::DataMatrix, h1, [groupA], [groupB]; h0, kwargs...)
@@ -449,12 +458,14 @@ julia> ttest_table(transformed, "fraction_mt")
 
 See also: [`ttest!`](@ref), [`ttest`](@ref), [`ftest_table`](@ref), [`mannwhitney_table`](@ref), [`covariate`](@ref)
 """
-function ttest_table(data::DataMatrix, h1::CovariateDesc;
+function ttest_table(data::DataMatrix, args...;
                      h0=(),
                      h1_missing=:skip, h0_missing=:error,
                      center=true, max_categories=nothing, kwargs...)
-	h0 = _splattable(h0)
-	data = _filter_missing_obs(data, h1, h0; h1_missing, h0_missing)
+	h1 = _ttest_covariate(data, args...)
+	h0 = covariate.(_splattable(h0))
+
+	data = _filter_missing_obs(data, (h1,), h0; h1_missing, h0_missing)
 
 	h1_design = designmatrix(data, h1; center=false, max_categories)
 	@assert size(h1_design.matrix,2)==1
@@ -463,14 +474,6 @@ function ttest_table(data::DataMatrix, h1::CovariateDesc;
 
 	_ttest_table(data, h1_design, h0_design; kwargs...)
 end
-
-# Handle Two-Group
-function ttest_table(data::DataMatrix, h1; kwargs...)
-	t = eltype(data.obs[!,h1]) <: Union{Missing,Number} ? :numerical : :twogroup
-	ttest_table(data, covariate(h1, t); kwargs...)
-end
-ttest_table(data::DataMatrix, h1, groupA, groupB=nothing; kwargs...) =
-	ttest_table(data, covariate(h1, groupA, groupB); kwargs...)
 
 
 """
@@ -490,9 +493,13 @@ See also: [`ttest_table`](@ref), [`ttest`](@ref), [`ftest!`](@ref), [`mannwhitne
 """
 function ttest!(data::DataMatrix, args...;
                 h0=(),
-                prefix = _create_ttest_prefix(_splattable(h0), args...),
+                prefix = nothing,
                 kwargs...)
-	df = ttest_table(data, args...; h0, statistic_col="$(prefix)t", pvalue_col="$(prefix)pValue", difference_col="$(prefix)difference", kwargs...)
+	h1 = _ttest_covariate(data, args...)
+	h0 = covariate.(_splattable(h0))
+	prefix === nothing && (prefix = _create_ttest_prefix(h0, h1))
+
+	df = ttest_table(data, h1; h0, statistic_col="$(prefix)t", pvalue_col="$(prefix)pValue", difference_col="$(prefix)difference", kwargs...)
 	leftjoin!(data.var, df; on=data.var_id_cols)
 	data
 end
