@@ -16,9 +16,12 @@
 		@testset "$f" for f in (mannwhitney_table, mannwhitney, mannwhitney!)
 			data = f==mannwhitney! ? copy(l) : l
 
-			for (args,prefix) in ((("group","A","B"), "group_A_vs_B_"),
-			                      (("group2",),       "group2_"),
-			                      (("group2","A"),    "group2_A_"))
+			setup = ((("group","A","B"), "group_A_vs_B_"),
+			         (("group2",),       "group2_"),
+			         (("group2","A"),    "group2_A_")
+			        )
+
+			@testset "$args" for (args,prefix) in setup
 				result = f(data, args...)
 
 				u_col = "U"
@@ -37,37 +40,67 @@
 
 				@test df[test_ind,u_col] == mw.U
 				@test df[test_ind,p_col] ≈ pvalue(mw)
+
+				if any(ismissing, data.obs[:,args[1]])
+					@test_throws "missing values" f(data, args...; h1_missing=:error)
+				else
+					data2 = f==mannwhitney! ? copy(l) : l
+					result2 = f(data2, args...; h1_missing=:error)
+					df2 = f==mannwhitney_table ? result2 : result2.var
+
+					@test isequal(df, df2)
+				end
 			end
 		end
 	end
 
 	@testset "B vs Other" begin
-		test_ind = 23
-		# ground truth
-		x = convert(Vector, tf.matrix.matrix[test_ind,:])
-		mw = ApproximateMannWhitneyUTest(x[isequal.("B",tf.obs.group)], x[.!isequal.("B",tf.obs.group)])
+		setup = (("group","B","group_B_"),
+		         ("group2","B","group2_B_"),
+		        )
 
-		@testset "$f" for f in (mannwhitney_table, mannwhitney, mannwhitney!)
-			data = f==mannwhitney! ? copy(tf) : tf
+		@testset "$column $value" for (column,value,prefix) in setup
+			test_ind = 23
+			# ground truth
+			x = convert(Vector, tf.matrix.matrix[test_ind,:])
 
-			result = f(data, "group", "B")
+			mask1 = isequal.(value,tf.obs[!,column])
+			mask2 = .!mask1 .& .!ismissing.(tf.obs[!,column])
+			mw = ApproximateMannWhitneyUTest(x[mask1], x[mask2])
 
-			u_col = "U"
-			p_col = "pValue"
-			if f==mannwhitney_table
-				df = result
-			else
-				df = result.var
-				u_col = string("group_B_",u_col)
-				p_col = string("group_B_",p_col)
+			@testset "$f" for f in (mannwhitney_table, mannwhitney, mannwhitney!)
+				data = f==mannwhitney! ? copy(tf) : tf
 
-				# columns should only be added to source if using mannwhitney!
-				@test hasproperty(data.var, u_col) == (f==mannwhitney!)
-				@test hasproperty(data.var, p_col) == (f==mannwhitney!)
+				result = f(data, column, value)
+
+				u_col = "U"
+				p_col = "pValue"
+				if f==mannwhitney_table
+					df = result
+				else
+					df = result.var
+					u_col = string(prefix,u_col)
+					p_col = string(prefix,p_col)
+
+					# columns should only be added to source if using mannwhitney!
+					@test hasproperty(data.var, u_col) == (f==mannwhitney!)
+					@test hasproperty(data.var, p_col) == (f==mannwhitney!)
+				end
+
+				@test df[test_ind,u_col] == mw.U
+				@test df[test_ind,p_col] ≈ pvalue(mw)
+
+
+				if any(ismissing, data.obs[:,column])
+					@test_throws "missing values" f(data, column, value; h1_missing=:error)
+				else
+					data2 = f==mannwhitney! ? copy(tf) : tf
+					result2 = f(data2, column, value; h1_missing=:error)
+					df2 = f==mannwhitney_table ? result2 : result2.var
+
+					@test isequal(df, df2)
+				end
 			end
-
-			@test df[test_ind,u_col] == mw.U
-			@test df[test_ind,p_col] ≈ pvalue(mw)
 		end
 	end
 	

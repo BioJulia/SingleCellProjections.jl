@@ -12,11 +12,15 @@ function _create_ttest_prefix(h0, args...)
 	isempty(h0) ? str : string(str,"H0_",join(h0,'_'),'_')
 end
 
-function _create_two_group(obs, col_name::AbstractString)
+function _create_two_group(obs, col_name::AbstractString; h1_missing)
+	@assert h1_missing in (:skip,:error)
 	col = obs[:,col_name]
+	if h1_missing == :error && any(ismissing,col)
+		throw(ArgumentError(string("Column \"",col_name,"\" has missing values, set `h1_missing=:skip` to skip them.")))
+	end
 	unique_values = sort(unique(skipmissing(col))) # Sort to get stability in which group is 1 and which is 2
 	if length(unique_values)!=2
-		throw(ArgumentError(string("Column \"",col_name,"\" must have exactly two unique values (ignoring missing), found ", length(unique_values), ".")))
+		throw(ArgumentError(string("Column \"",col_name,"\" must have exactly two unique values, found ", length(unique_values), ".")))
 	end
 	groups = zeros(Int, length(col))
 	groups[isequal.(col,unique_values[1])] .= 1
@@ -25,8 +29,13 @@ function _create_two_group(obs, col_name::AbstractString)
 end
 function _create_two_group(obs, col_name::AbstractString,
                            a::AbstractString,
-                           b::Union{AbstractString,Nothing}=nothing)
+                           b::Union{AbstractString,Nothing}=nothing;
+                           h1_missing)
+	@assert h1_missing in (:skip,:error)
 	col = obs[:,col_name]
+	if h1_missing == :error && any(ismissing,col)
+		throw(ArgumentError(string("Column \"",col_name,"\" has missing values, set `h1_missing=:skip` to skip them.")))
+	end
 	groups = zeros(Int, length(col))
 	a in col || throw(ArgumentError(string("Column \"",col_name,"\" doesn't contain \"",a,"\".")))
 	groups[isequal.(col,a)] .= 1
@@ -74,6 +83,7 @@ If both `groupA` and `groupB` are given, the observations in group A are compare
 Supported `kwargs` are:
 * `statistic_col="U"`   - Name of the output column containing the U statistics. (Set to nothing to remove from output.)
 * `pvalue_col="pValue"` - Name of the output column containing the p-values. (Set to nothing to remove from output.)
+* `h1_missing` - One of `:skip` and `:error`. If `skip`, missing values in `column` are skipped, otherwise an error is thrown.
 
 The following `kwargs` determine how the computations are threaded:
 * `nworkers`      - Number of worker threads used in the computation. Set to 1 to disable threading.
@@ -82,8 +92,8 @@ The following `kwargs` determine how the computations are threaded:
 
 See also: [`mannwhitney!`](@ref), [`mannwhitney`](@ref)
 """
-function mannwhitney_table(data::DataMatrix, args...; kwargs...)
-	groups = _create_two_group(data.obs, args...)
+function mannwhitney_table(data::DataMatrix, args...; h1_missing=:skip, kwargs...)
+	groups = _create_two_group(data.obs, args...; h1_missing)
 	_mannwhitney_table(data.matrix, data.var[:, data.var_id_cols], groups; kwargs...)
 end
 
