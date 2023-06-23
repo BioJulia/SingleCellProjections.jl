@@ -1,10 +1,6 @@
 _splattable(x::Union{Tuple,AbstractVector}) = x
 _splattable(x) = (x,)
 
-_create_two_group_prefix(col_name::AbstractString) = string(col_name,'_')
-_create_two_group_prefix(col_name, a) = string(col_name,'_',a,'_')
-_create_two_group_prefix(col_name, a, b) = string(col_name,'_',a,"_vs_",b,'_')
-
 function _create_ftest_prefix(h0, h1)
 	str = join(covariate_prefix.(h1))
 	isempty(h0) ? str : string(str,"H0_",join(covariate_prefix.(h0)))
@@ -15,39 +11,54 @@ function _create_ttest_prefix(h0, h1)
 	isempty(h0) ? str : string(str,"H0_",join(covariate_prefix.(h0)))
 end
 
-function _create_two_group(obs, col_name::AbstractString; h1_missing)
+_create_mannwhitney_prefix(h1) = covariate_prefix(h1)
+
+function _create_mannwhitney_groups(obs, h1::CovariateDesc{T}; h1_missing) where T
+	@assert h1.type == :twogroup
 	@assert h1_missing in (:skip,:error)
-	col = obs[:,col_name]
-	if h1_missing == :error && any(ismissing,col)
-		throw(ArgumentError(string("Column \"",col_name,"\" has missing values, set `h1_missing=:skip` to skip them.")))
+
+	name, groupA, groupB = h1.name, h1.groupA, h1.groupB
+	v = obs[!,name]
+
+	if h1_missing == :error && any(ismissing,v)
+		throw(ArgumentError(string("Column \"",name,"\" has missing values, set `h1_missing=:skip` to skip them.")))
 	end
-	unique_values = sort(unique(skipmissing(col))) # Sort to get stability in which group is 1 and which is 2
-	if length(unique_values)!=2
-		throw(ArgumentError(string("Column \"",col_name,"\" must have exactly two unique values, found ", length(unique_values), ".")))
+
+	# Three cases
+	# groupA and groupB given - must have at least one groupA and at least one groupB (missing excluded)
+	# groupA given            - must have at least one groupA and at least one !groupA (missing excluded)
+	# none given              - must have exactly two groups (missing excluded)
+
+	uv = unique(skipmissing(v))
+
+	if groupA === nothing
+		@assert groupB === nothing
+		if length(uv)!=2
+			throw(ArgumentError(string("Column \"",name,"\" must have exactly two unique values, found; ", uv, ".")))
+		end
+		groupA, groupB = minmax(uv[1], uv[2])
 	end
-	groups = zeros(Int, length(col))
-	groups[isequal.(col,unique_values[1])] .= 1
-	groups[isequal.(col,unique_values[2])] .= 2
-	groups
-end
-function _create_two_group(obs, col_name::AbstractString,
-                           a::AbstractString,
-                           b::Union{AbstractString,Nothing}=nothing;
-                           h1_missing)
-	@assert h1_missing in (:skip,:error)
-	col = obs[:,col_name]
-	if h1_missing == :error && any(ismissing,col)
-		throw(ArgumentError(string("Column \"",col_name,"\" has missing values, set `h1_missing=:skip` to skip them.")))
+
+	maskA = isequal.(v, groupA)
+	if !any(maskA)
+		throw(ArgumentError(string("Column \"",name,"\" doesn't contain \"",groupA,"\".")))
 	end
-	groups = zeros(Int, length(col))
-	a in col || throw(ArgumentError(string("Column \"",col_name,"\" doesn't contain \"",a,"\".")))
-	groups[isequal.(col,a)] .= 1
-	if b !== nothing
-		b in col || throw(ArgumentError(string("Column \"",col_name,"\" doesn't contain \"",b,"\".")))
-		groups[isequal.(col,b)] .= 2
+
+	if groupB !== nothing
+		maskB = isequal.(v, groupB)
+		if !any(maskB)
+			throw(ArgumentError(string("Column \"",name,"\" only contains one group: \"",groupA,"\".")))
+		end
 	else
-		groups[.!isequal.(col,a) .& .!ismissing.(col)] .= 2
+		maskB = .!isequal.(v, groupA) .& .!ismissing.(v)
+		if !any(maskB)
+			throw(ArgumentError(string("Column \"",name,"\" doesn't contain \"",groupB,"\".")))
+		end
 	end
+
+	groups = zeros(Int, size(obs,1))
+	groups[maskA] .= 1
+	groups[maskB] .= 2
 	groups
 end
 
@@ -63,6 +74,11 @@ end
 
 _mannwhitney_table(ref::MatrixRef, args...; kwargs...) =
 	_mannwhitney_table(ref.matrix, args...; kwargs...)
+
+
+_mannwhitney_covariate(h1::CovariateDesc) = h1
+_mannwhitney_covariate(h1) = covariate(h1, :twogroup)
+_mannwhitney_covariate(h1, args...) = covariate(h1, args...)
 
 
 """
@@ -95,7 +111,8 @@ The following `kwargs` determine how the computations are threaded:
 See also: [`mannwhitney!`](@ref), [`mannwhitney`](@ref)
 """
 function mannwhitney_table(data::DataMatrix, args...; h1_missing=:skip, kwargs...)
-	groups = _create_two_group(data.obs, args...; h1_missing)
+	h1 = _mannwhitney_covariate(args...)
+	groups = _create_mannwhitney_groups(data.obs, h1; h1_missing)
 	_mannwhitney_table(data.matrix, data.var[:, data.var_id_cols], groups; kwargs...)
 end
 
@@ -118,9 +135,11 @@ In addition `mannwhitney!` supports the `kwarg`:
 See also: [`mannwhitney_table`](@ref), [`mannwhitney`](@ref)
 """
 function mannwhitney!(data::DataMatrix, args...;
-                      prefix = _create_two_group_prefix(args...),
+                      prefix = nothing,
                       kwargs...)
-	df = mannwhitney_table(data, args...; statistic_col="$(prefix)U", pvalue_col="$(prefix)pValue", kwargs...)
+	h1 = _mannwhitney_covariate(args...)
+	prefix === nothing && (prefix = _create_mannwhitney_prefix(h1))
+	df = mannwhitney_table(data, h1; statistic_col="$(prefix)U", pvalue_col="$(prefix)pValue", kwargs...)
 	leftjoin!(data.var, df; on=data.var_id_cols)
 	data
 end
