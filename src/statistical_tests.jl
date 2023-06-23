@@ -281,7 +281,7 @@ Examples of F-Tests are ANOVA and Quadratic Regression, but any linear model can
 
 F-tests can be performed on any `DataMatrix`, but it is almost always recommended to do it directly after transforming the data using e.g. `sctransform`, `logtransform` or `tf_idf_transform`.
 
-!!! danger "Normalization"
+!!! note "Normalization"
     Do not use `ftest_table` after normalizing the data using `normalize_matrix`: `ftest_table` needs to know about the `h0` model (regressed out covariates) for correction computations. Failing to do so can result in incorrect results.
     If you want to correct for the same covariates, pass them as `h0` to `ftest_table`.
 
@@ -437,7 +437,7 @@ Examples of t-Tests are Two-Group tests and Linear Regression.
 
 T-tests can be performed on any `DataMatrix`, but it is almost always recommended to do it directly after transforming the data using e.g. `sctransform`, `logtransform` or `tf_idf_transform`.
 
-!!! danger "Normalization"
+!!! note "Normalization"
     Do not use `ttest_table` after normalizing the data using `normalize_matrix`: `ttest_table` needs to know about the `h0` model (regressed out covariates) for correction computations. Failing to do so can result in incorrect results.
     If you want to correct for the same covariates, pass them as `h0` to `ttest_table`.
 
