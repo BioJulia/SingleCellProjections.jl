@@ -8,10 +8,10 @@
 	tf = tf_idf_transform(c)
 
 	@testset "A vs B" begin
-		test_ind = 47
-		# ground truth
-		x = convert(Vector, l.matrix.matrix[test_ind,:])
-		mw = ApproximateMannWhitneyUTest(x[isequal.("A",l.obs.group2)], x[isequal.("B",l.obs.group2)])
+		X = convert(Matrix,l.matrix.matrix)
+		mw = [ApproximateMannWhitneyUTest(X[i,isequal.("A",l.obs.group2)], X[i,isequal.("B",l.obs.group2)]) for i in 1:size(X,1)]
+		mwU = getfield.(mw,:U)
+		mwP = pvalue.(mw)
 
 		@testset "$f" for f in (mannwhitney_table, mannwhitney, mannwhitney!)
 			data = f==mannwhitney! ? copy(l) : l
@@ -38,8 +38,8 @@
 					@test hasproperty(data.var, p_col) == (f==mannwhitney!)
 				end
 
-				@test df[test_ind,u_col] == mw.U
-				@test df[test_ind,p_col] ≈ pvalue(mw)
+				@test df[:,u_col] == mwU
+				@test df[:,p_col] ≈ mwP
 
 				if any(ismissing, data.obs[:,args[1]])
 					@test_throws "missing values" f(data, args...; h1_missing=:error)
