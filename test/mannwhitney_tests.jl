@@ -14,15 +14,22 @@
 		mwP = pvalue.(mw)
 
 		@testset "$f" for f in (mannwhitney_table, mannwhitney, mannwhitney!)
-			data = f==mannwhitney! ? copy(l) : l
-
-			setup = ((("group","A","B"), "group_A_vs_B_"),
-			         (("group2",),       "group2_"),
-			         (("group2","A"),    "group2_A_")
+			setup = ((("group","A","B"),                "group_A_vs_B_"),
+			         (("group2",),                      "group2_"),
+			         (("group2","A"),                   "group2_A_"),
+			         ((covariate("group","A","B"),),    "group_A_vs_B_"),
+			         ((covariate("group2",:twogroup),), "group2_"),
+			         ((covariate("group2","A"),),       "group2_A_"),
 			        )
 
-			@testset "$args" for (args,prefix) in setup
-				result = f(data, args...)
+			cov_str(c::CovariateDesc) = covariate_prefix(c,"'")
+			cov_str(h1) = h1
+			cov_str(h1,groupA) = "$(h1)_$groupA"
+			cov_str(h1,groupA,groupB) = "$(h1)_$(groupA)_vs_$groupB"
+
+			@testset "$(cov_str(h1...))" for (h1,prefix) in setup
+				data = f==mannwhitney! ? copy(l) : l
+				result = f(data, h1...)
 
 				u_col = "U"
 				p_col = "pValue"
@@ -41,11 +48,11 @@
 				@test df[:,u_col] == mwU
 				@test df[:,p_col] ≈ mwP
 
-				if any(ismissing, data.obs[:,args[1]])
-					@test_throws "missing values" f(data, args...; h1_missing=:error)
+				if any(ismissing, data.obs[:,covariate(h1...).name])
+					@test_throws "missing values" f(data, h1...; h1_missing=:error)
 				else
 					data2 = f==mannwhitney! ? copy(l) : l
-					result2 = f(data2, args...; h1_missing=:error)
+					result2 = f(data2, h1...; h1_missing=:error)
 					df2 = f==mannwhitney_table ? result2 : result2.var
 
 					@test isequal(df, df2)

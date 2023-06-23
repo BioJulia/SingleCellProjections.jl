@@ -74,10 +74,12 @@ ttest_ground_truth(A, obs, h1, h0::Tuple) = ttest_ground_truth(A,obs,h1,nothing,
              (("group","B", "C"), (), "group_B_vs_C_"),
             )
 
-	h1_str(h1) = h1
-	h1_str(h1,groupA) = "$(h1)_$groupA"
-	h1_str(h1,groupA,groupB) = "$(h1)_$(groupA)_vs_$groupB"
-	@testset "H1:$(h1_str(h1...)), H0:$(join(h0,','))" for (h1,h0,prefix) in setup
+	cov_str(c::CovariateDesc) = covariate_prefix(c,"'")
+	cov_str(h1) = h1
+	cov_str(h1,groupA) = "$(h1)_$groupA"
+	cov_str(h1,groupA,groupB) = "$(h1)_$(groupA)_vs_$groupB"
+
+	@testset "H1:$(cov_str(h1...)), H0:$(join(cov_str.(h0),','))" for (h1,h0,prefix) in setup
 		gtT, gtP, gtβ = ttest_ground_truth(A, t.obs, h1..., h0)
 
 		@testset "$f" for f in (ttest_table, ttest, ttest!)
