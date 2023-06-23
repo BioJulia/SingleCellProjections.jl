@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3] - 2023-06-23
+
 ### Breaking
 
 * `normalize_matrix`: Categorical coviariates with `missing` values will now error.
