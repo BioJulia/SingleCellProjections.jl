@@ -150,6 +150,11 @@ end
 		@test data.var[:,"another_pValue"] ≈ gtP
 	end
 
+	@testset "Normalized" begin
+		n = normalize_matrix(t)
+		@test_throws "allow_normalized_matrix" ftest_table(n, "value")
+		@test ftest_table(n, "value"; allow_normalized_matrix=true) isa Any # test it doesn't throw
+	end
 
 	# @testset "categorical" begin
 	# 	df = ftest_table(t, "group")

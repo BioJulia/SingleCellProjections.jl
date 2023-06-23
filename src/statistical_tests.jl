@@ -299,6 +299,7 @@ Supported `kwargs` are:
 * `pvalue_col="pValue"` - Name of the output column containing the p-values. (Set to nothing to remove from output.)
 * `h1_missing=:skip`    - One of `:skip` and `:error`. If `skip`, missing values in `h1` columns are skipped, otherwise an error is thrown.
 * `h0_missing=:error`   - One of `:skip` and `:error`. If `skip`, missing values in `h0` columns are skipped, otherwise an error is thrown.
+* `allow_normalized_matrix=false` - Set to true to accept running on a `DataMatrix` that has been normalized.
 
 # Examples
 
@@ -329,7 +330,13 @@ See also: [`ftest!`](@ref), [`ftest`](@ref), [`ttest_table`](@ref), [`covariate`
 function ftest_table(data::DataMatrix, h1;
                      h0=(),
                      h1_missing=:skip, h0_missing=:error,
-                     center=true, max_categories=nothing, kwargs...)
+                     center=true, max_categories=nothing,
+                     allow_normalized_matrix=false,
+                     kwargs...)
+	if !allow_normalized_matrix && any(x->x isa NormalizationModel, data.models)
+		throw(ArgumentError("It is not recommended to perform an F-test after normalizing the data matrix. Set allow_normalized_matrix=true to disable this error."))
+	end
+
 	h1 = covariate.(_splattable(h1))
 	h0 = covariate.(_splattable(h0))
 	data = _filter_missing_obs(data, h1, h0; h1_missing, h0_missing)
@@ -445,13 +452,14 @@ For Two-group tests, `difference` is the difference in mean between the two grou
 For linear regression, the difference corresponds to the rate of change.
 
 Supported `kwargs` are:
-* `h0`                          - Use a non-trivial `h0` (null) model. Specified in the same way as `h1` above.
-* `center=true`                 - Add an intercept to the `h0` (null) model.
-* `statistic_col="t"`           - Name of the output column containing the t-statistics. (Set to nothing to remove from output.)
-* `pvalue_col="pValue"`         - Name of the output column containing the p-values. (Set to nothing to remove from output.)
-* `difference_col="difference"` - Name of the output column containing the differences. (Set to nothing to remove from output.)
-* `h1_missing=:skip`            - One of `:skip` and `:error`. If `skip`, missing values in `h1` columns are skipped, otherwise an error is thrown.
-* `h0_missing=:error`           - One of `:skip` and `:error`. If `skip`, missing values in `h0` columns are skipped, otherwise an error is thrown.
+* `h0`                            - Use a non-trivial `h0` (null) model. Specified in the same way as `h1` above.
+* `center=true`                   - Add an intercept to the `h0` (null) model.
+* `statistic_col="t"`             - Name of the output column containing the t-statistics. (Set to nothing to remove from output.)
+* `pvalue_col="pValue"`           - Name of the output column containing the p-values. (Set to nothing to remove from output.)
+* `difference_col="difference"`   - Name of the output column containing the differences. (Set to nothing to remove from output.)
+* `h1_missing=:skip`              - One of `:skip` and `:error`. If `skip`, missing values in `h1` columns are skipped, otherwise an error is thrown.
+* `h0_missing=:error`             - One of `:skip` and `:error`. If `skip`, missing values in `h0` columns are skipped, otherwise an error is thrown.
+* `allow_normalized_matrix=false` - Set to true to accept running on a `DataMatrix` that has been normalized.
 
 # Examples
 
@@ -480,7 +488,13 @@ See also: [`ttest!`](@ref), [`ttest`](@ref), [`ftest_table`](@ref), [`mannwhitne
 function ttest_table(data::DataMatrix, args...;
                      h0=(),
                      h1_missing=:skip, h0_missing=:error,
-                     center=true, max_categories=nothing, kwargs...)
+                     center=true, max_categories=nothing,
+                     allow_normalized_matrix=false,
+                     kwargs...)
+	if !allow_normalized_matrix && any(x->x isa NormalizationModel, data.models)
+		throw(ArgumentError("It is not recommended to perform a t-test after normalizing the data matrix. Set allow_normalized_matrix=true to disable this error."))
+	end
+
 	h1 = _ttest_covariate(data, args...)
 	h0 = covariate.(_splattable(h0))
 
