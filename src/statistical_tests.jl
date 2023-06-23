@@ -278,11 +278,12 @@ F-tests can be performed on any `DataMatrix`, but it is almost always recommende
 * A [`covariate`](@ref) for more control of how to interpret the values in a column.
 * A tuple or vector of the above for compound models.
 
-`ftest_table` returns a Dataframe with columns for variable IDs, F statistics and p-values.
+`ftest_table` returns a Dataframe with columns for variable IDs, F-statistics and p-values.
 
 Supported `kwargs` are:
-* `h0`                  - Use a non-trivial `h0` (null) model. Specified in the same way as `h1` above. Defaults to intercept only.
-* `statistic_col="F"`   - Name of the output column containing the F statistics. (Set to nothing to remove from output.)
+* `h0`                  - Use a non-trivial `h0` (null) model. Specified in the same way as `h1` above.
+* `center=true`         - Add an intercept to the `h0` (null) model.
+* `statistic_col="F"`   - Name of the output column containing the F-statistics. (Set to nothing to remove from output.)
 * `pvalue_col="pValue"` - Name of the output column containing the p-values. (Set to nothing to remove from output.)
 * `h1_missing=:skip`    - One of `:skip` and `:error`. If `skip`, missing values in `h1` columns are skipped, otherwise an error is thrown.
 * `h0_missing=:error`   - One of `:skip` and `:error`. If `skip`, missing values in `h0` columns are skipped, otherwise an error is thrown.
@@ -333,12 +334,12 @@ end
 Performs an F-Test with the given `h1` (alternative hypothesis) and `h0` (null hypothesis).
 Examples of F-Tests are ANOVA and Quadratic Regression, but any linear model can be used.
 
-`ftest!` adds a F statistic and a p-value column to `data.var`.
+`ftest!` adds a F-statistic and a p-value column to `data.var`.
 
 See [`ftest_table`](@ref) for usage examples and more details on computations and parameters.
 
 In addition `ftest!` supports the `kwarg`:
-* `prefix` - Output column names for F statistics and p-values will be prefixed with this string. If none is given, it will be constructed from `h1` and `h0`.
+* `prefix` - Output column names for F-statistics and p-values will be prefixed with this string. If none is given, it will be constructed from `h1` and `h0`.
 
 See also: [`ftest_table`](@ref), [`ftest`](@ref), [`ttest!`](@ref)
 """
@@ -357,7 +358,7 @@ end
 Performs an F-Test with the given `h1` (alternative hypothesis) and `h0` (null hypothesis).
 Examples of F-Tests are ANOVA and Quadratic Regression, but any linear model can be used.
 
-`ftest!` creates a copy of `data` and adds a F statistic and a p-value column to `data.var`.
+`ftest!` creates a copy of `data` and adds a F-statistic and a p-value column to `data.var`.
 
 See [`ftest!`](@ref) and [`ftest_table`](@ref)  for usage examples and more details on computations and parameters.
 
@@ -396,6 +397,39 @@ function _ttest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix;
 	table
 end
 
+"""
+	ttest_table(data::DataMatrix, h1; h0, kwargs...)
+
+Performs a t-Test with the given `h1` (alternative hypothesis) and `h0` (null hypothesis).
+Examples of t-Tests are Two-Group tests and Linear Regression.
+
+T-tests can be performed on any `DataMatrix`, but it is almost always recommended to do it directly after transforming the data using e.g. `sctransform`, `logtransform` or `tf_idf_transform`.
+
+!!! danger "Normalization"
+    Do not use `ttest_table` after normalizing the data using `normalize_matrix`: `ttest_table` needs to know about the `h0` model (regressed out covariates) for correction computations. Failing to do so can result in incorrect results.
+    If you want to correct for the same covariates, pass them as `h0` to `ttest_table`.
+
+`h1` can be:
+* A string specifying a column name of `data.obs`. Auto-detection determines if the column is categorical (Two-Grup) or numerical (linear regression).
+* A [`covariate`](@ref) for more control of how to interpret the values in the column.
+
+`ttest_table` returns a Dataframe with columns for variable IDs, t-statistics, p-values and difference.
+For Two-group tests, `difference` is the difference in mean between the two groups.
+For linear regression, the difference corresponds to the rate of change.
+
+Supported `kwargs` are:
+* `h0`                  - Use a non-trivial `h0` (null) model. Specified in the same way as `h1` above.
+* `center=true`         - Add an intercept to the `h0` (null) model.
+* `statistic_col="t"`   - Name of the output column containing the t-statistics. (Set to nothing to remove from output.)
+* `pvalue_col="pValue"` - Name of the output column containing the p-values. (Set to nothing to remove from output.)
+* `difference_col="difference"` - Name of the output column containing the differences. (Set to nothing to remove from output.)
+* `h1_missing=:skip`    - One of `:skip` and `:error`. If `skip`, missing values in `h1` columns are skipped, otherwise an error is thrown.
+* `h0_missing=:error`   - One of `:skip` and `:error`. If `skip`, missing values in `h0` columns are skipped, otherwise an error is thrown.
+
+# Examples
+
+See also: [`ttest!`](@ref), [`ttest`](@ref), [`ftest_table`](@ref), [`mannwhitney_table`](@ref), [`covariate`](@ref)
+"""
 function ttest_table(data::DataMatrix, h1::CovariateDesc;
                      h0=(),
                      h1_missing=:skip, h0_missing=:error,
