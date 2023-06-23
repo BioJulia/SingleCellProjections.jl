@@ -165,6 +165,7 @@ end
 
 
 # TODO: merge with code in NormalizationModel?
+# returns the orthogonalized design matrix, and if it was a single column design matrix - return the norm before rescaling (otherwise return 0.0)
 function orthonormal_design(design::DesignMatrix, Q0=nothing; rtol=sqrt(eps()))
 	X = design.matrix
 
@@ -177,13 +178,13 @@ function orthonormal_design(design::DesignMatrix, Q0=nothing; rtol=sqrt(eps()))
 	if size(X,2)==1
 		# No need to run svd etc. if there just a single column (intercept or t-test column)
 		n = norm(X)
-		n>rtol && return X./n
-		return X[:,1:0] # no columns
+		n>rtol && return X./n, n
+		return X[:,1:0], 0.0 # no columns
 	else
 		F = svd(X)
 
 		k = something(findlast(>(rtol), F.S), 0)
-		return F.U[:,1:k]
+		return F.U[:,1:k], 0.0
 	end
 end
 
@@ -194,8 +195,8 @@ function _linear_test(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix)
 	@assert table_cols_equal(data.obs, h0.obs_match) "Design matrix (H0) and data matrix observations should be identical."
 
 	# TODO: support no null model (not even intercept)
-	Q0 = orthonormal_design(h0)
-	Q1 = orthonormal_design(h1, Q0)
+	Q0,_ = orthonormal_design(h0)
+	Q1,scale = orthonormal_design(h1, Q0)
 	# Q1_pre = orthonormal_design(h1, Q0)
 	# Q1 = hcat(Q0,Q1_pre) # The purpose of this is to gain numerical accuracy - does it help?
 
@@ -221,13 +222,13 @@ function _linear_test(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix)
 	rank0 = size(Q0,2)
 	rank1 = size(Q1,2)+rank0
 
-	ssExplained, ssUnexplained, rank0, rank1, β1
+	ssExplained, ssUnexplained, rank0, rank1, β1, scale
 end
 
 
 function _ftest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix;
                       statistic_col="F", pvalue_col="pValue")
-	ssExplained, ssUnexplained, rank0, rank1, _ = _linear_test(data, h1, h0)
+	ssExplained, ssUnexplained, rank0, rank1, _, _ = _linear_test(data, h1, h0)
 	N = size(data,2)
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
@@ -283,8 +284,8 @@ end
 
 
 function _ttest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix;
-                      statistic_col="t", pvalue_col="pValue")
-	_, ssUnexplained, rank0, rank1, β1 = _linear_test(data, h1, h0)
+                      statistic_col="t", pvalue_col="pValue", difference_col="difference")
+	_, ssUnexplained, rank0, rank1, β1, scale = _linear_test(data, h1, h0)
 	N = size(data,2)
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
@@ -292,14 +293,17 @@ function _ttest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix;
 	if ν1==1 && ν2>0
 		t = vec(β1./sqrt.(max.(0.0,(ν1/ν2).*ssUnexplained)))
 		p = min.(1.0, 2.0.*ccdf.(TDist(ν2), abs.(t)))
+		d = vec(β1)/(scale*_covariate_scale(only(h1.covariates)))
 	else
 		t = zeros(size(ssUnexplained))
 		p = ones(size(ssUnexplained))
+		d = zeros(size(ssUnexplained))
 	end
 
 	table = data.var[:,data.var_id_cols]
 	statistic_col !== nothing && insertcols!(table, statistic_col=>t; copycols=false)
 	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
+	difference_col !== nothing && insertcols!(table, difference_col=>d; copycols=false)
 	table
 end
 
@@ -331,7 +335,7 @@ function ttest!(data::DataMatrix, args...;
                 h0=(),
                 prefix = _create_ttest_prefix(_splattable(h0), args...),
                 kwargs...)
-	df = ttest_table(data, args...; h0, statistic_col="$(prefix)t", pvalue_col="$(prefix)pValue", kwargs...)
+	df = ttest_table(data, args...; h0, statistic_col="$(prefix)t", pvalue_col="$(prefix)pValue", difference_col="$(prefix)difference", kwargs...)
 	leftjoin!(data.var, df; on=data.var_id_cols)
 	data
 end

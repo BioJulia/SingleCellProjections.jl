@@ -48,7 +48,9 @@ end
 
 _length(::AbstractCovariate) = 1
 _length(c::CategoricalCovariate) = length(c.values)
-_length(t::TwoGroupCovariate) = 1
+
+_covariate_scale(::AbstractCovariate) = 1.0
+_covariate_scale(n::NumericalCovariate) = n.scale
 
 
 struct CovariateDesc{T}
@@ -167,7 +169,7 @@ function covariate_design!(A, data, t::TwoGroupCovariate)
 		throw(ArgumentError("No values belong to group B$suffix."))
 	end
 
-	A .= ifelse.(v.==t.groupA, 1.0, -1.0)
+	A .= ifelse.(v.==t.groupA, nB/(nA+nB), -nA/(nA+nB))
 end
 
 function designmatrix(data::DataMatrix, covariates::AbstractVector{<:AbstractCovariate}; max_categories=nothing)
