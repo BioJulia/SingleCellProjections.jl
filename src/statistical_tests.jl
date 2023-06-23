@@ -17,7 +17,7 @@ function _create_mannwhitney_groups(obs, h1::CovariateDesc{T}; h1_missing) where
 	@assert h1.type == :twogroup
 	@assert h1_missing in (:skip,:error)
 
-	name, groupA, groupB = h1.name, h1.groupA, h1.groupB
+	name, group_a, group_b = h1.name, h1.group_a, h1.group_b
 	v = obs[!,name]
 
 	if h1_missing == :error && any(ismissing,v)
@@ -25,34 +25,34 @@ function _create_mannwhitney_groups(obs, h1::CovariateDesc{T}; h1_missing) where
 	end
 
 	# Three cases
-	# groupA and groupB given - must have at least one groupA and at least one groupB (missing excluded)
-	# groupA given            - must have at least one groupA and at least one !groupA (missing excluded)
-	# none given              - must have exactly two groups (missing excluded)
+	# group_a and group_b given - must have at least one group_a and at least one group_b (missing excluded)
+	# group_a given             - must have at least one group_a and at least one !group_a (missing excluded)
+	# none given                - must have exactly two groups (missing excluded)
 
 	uv = unique(skipmissing(v))
 
-	if groupA === nothing
-		@assert groupB === nothing
+	if group_a === nothing
+		@assert group_b === nothing
 		if length(uv)!=2
 			throw(ArgumentError(string("Column \"",name,"\" must have exactly two unique values, found; ", uv, ".")))
 		end
-		groupA, groupB = minmax(uv[1], uv[2])
+		group_a, group_b = minmax(uv[1], uv[2])
 	end
 
-	maskA = isequal.(v, groupA)
+	maskA = isequal.(v, group_a)
 	if !any(maskA)
-		throw(ArgumentError(string("Column \"",name,"\" doesn't contain \"",groupA,"\".")))
+		throw(ArgumentError(string("Column \"",name,"\" doesn't contain \"",group_a,"\".")))
 	end
 
-	if groupB !== nothing
-		maskB = isequal.(v, groupB)
+	if group_b !== nothing
+		maskB = isequal.(v, group_b)
 		if !any(maskB)
-			throw(ArgumentError(string("Column \"",name,"\" only contains one group: \"",groupA,"\".")))
+			throw(ArgumentError(string("Column \"",name,"\" only contains one group: \"",group_a,"\".")))
 		end
 	else
-		maskB = .!isequal.(v, groupA) .& .!ismissing.(v)
+		maskB = .!isequal.(v, group_a) .& .!ismissing.(v)
 		if !any(maskB)
-			throw(ArgumentError(string("Column \"",name,"\" doesn't contain \"",groupB,"\".")))
+			throw(ArgumentError(string("Column \"",name,"\" doesn't contain \"",group_b,"\".")))
 		end
 	end
 
@@ -82,7 +82,7 @@ _mannwhitney_covariate(h1, args...) = covariate(h1, args...)
 
 
 """
-	mannwhitney_table(data::DataMatrix, column, [groupA, groupB]; kwargs...)
+	mannwhitney_table(data::DataMatrix, column, [group_a, group_b]; kwargs...)
 
 Perform a Mann-Whitney U-test (also known as a Wilcoxon rank-sum test) between two groups of observations.
 The U statistic is corrected for ties, and p-values are computed using a normal approximation.
@@ -92,9 +92,9 @@ It is recommended to first [`logtransform`](@ref) (or [`tf_idf_transform`](@ref)
 
 `column` specifies a column in `data.obs` and is used to determine which observations belong in which group.
 
-If `groupA` and `groupB` are not given, the `column` must contain exactly two unique values (except `missing`).
-If `groupA` is given, but not `groupB`, the observations in group A are compared to all other observations (except `missing`).
-If both `groupA` and `groupB` are given, the observations in group A are compared the observations in group B.
+If `group_a` and `group_b` are not given, the `column` must contain exactly two unique values (except `missing`).
+If `group_a` is given, but not `group_b`, the observations in group A are compared to all other observations (except `missing`).
+If both `group_a` and `group_b` are given, the observations in group A are compared the observations in group B.
 
 `mannwhitney_table` returns a Dataframe with columns for variable IDs, U statistics and p-values.
 
@@ -118,7 +118,7 @@ end
 
 
 """
-	mannwhitney!(data::DataMatrix, column, [groupA, groupB]; kwargs...)
+	mannwhitney!(data::DataMatrix, column, [group_a, group_b]; kwargs...)
 
 Perform a Mann-Whitney U-test (also known as a Wilcoxon rank-sum test) between two groups of observations.
 The U statistic is corrected for ties, and p-values are computed using a normal approximation.
@@ -130,7 +130,7 @@ It is recommended to first [`logtransform`](@ref) (or [`tf_idf_transform`](@ref)
 See [`mannwhitney_table`](@ref) for more details on groups and kwargs.
 
 In addition `mannwhitney!` supports the `kwarg`:
-* `prefix` - Output column names for U statistics and p-values will be prefixed with this string. If none is given, it will be constructed from `column`, `groupA` and `groupB`.
+* `prefix` - Output column names for U statistics and p-values will be prefixed with this string. If none is given, it will be constructed from `column`, `group_a` and `group_b`.
 
 See also: [`mannwhitney_table`](@ref), [`mannwhitney`](@ref)
 """
@@ -146,7 +146,7 @@ end
 
 
 """
-	mannwhitney(data::DataMatrix, column, [groupA, groupB]; var=:copy, obs=:copy, matrix=:keep, kwargs...)
+	mannwhitney(data::DataMatrix, column, [group_a, group_b]; var=:copy, obs=:copy, matrix=:keep, kwargs...)
 
 Perform a Mann-Whitney U-test (also known as a Wilcoxon rank-sum test) between two groups of observations.
 The U statistic is corrected for ties, and p-values are computed using a normal approximation.
@@ -167,8 +167,8 @@ end
 function _keep_mask(df, c::CovariateDesc{T}) where T
 	if c.type == :intercept
 		return trues(size(df,1))
-	elseif c.type == :twogroup && c.groupB !== nothing
-		return isequal.(df[!,c.name], c.groupA) .| isequal.(df[!,c.name], c.groupB)
+	elseif c.type == :twogroup && c.group_b !== nothing
+		return isequal.(df[!,c.name], c.group_a) .| isequal.(df[!,c.name], c.group_b)
 	else
 		return completecases(df,c.name)
 	end
@@ -419,11 +419,11 @@ function _ttest_covariate(data, h1)
 	t = eltype(data.obs[!,h1]) <: Union{Missing,Number} ? :numerical : :twogroup
 	covariate(h1, t)
 end
-_ttest_covariate(::Any, h1, groupA, groupB=nothing) = covariate(h1, groupA, groupB)
+_ttest_covariate(::Any, h1, group_a, group_b=nothing) = covariate(h1, group_a, group_b)
 
 
 """
-	ttest_table(data::DataMatrix, h1, [groupA], [groupB]; h0, kwargs...)
+	ttest_table(data::DataMatrix, h1, [group_a], [group_b]; h0, kwargs...)
 
 Performs a t-Test with the given `h1` (alternative hypothesis) and `h0` (null hypothesis).
 Examples of t-Tests are Two-Group tests and Linear Regression.
@@ -436,8 +436,8 @@ T-tests can be performed on any `DataMatrix`, but it is almost always recommende
 
 `h1` can be:
 * A string specifying a column name of `data.obs`. Auto-detection determines if the column is categorical (Two-Group) or numerical (linear regression).
-  - If `groupA` and `groupB` are specified, a Two-Group test between `groupA` and `groupB` is performed.
-  - If `groupA` is specified, but not `groupB`, a Two-Group test between `groupA` and all other observations is performed.
+  - If `group_a` and `group_b` are specified, a Two-Group test between `group_a` and `group_b` is performed.
+  - If `group_a` is specified, but not `group_b`, a Two-Group test between `group_a` and all other observations is performed.
 * A [`covariate`](@ref) for more control of how to interpret the values in the column.
 
 `ttest_table` returns a Dataframe with columns for variable IDs, t-statistics, p-values and differences.
@@ -445,13 +445,13 @@ For Two-group tests, `difference` is the difference in mean between the two grou
 For linear regression, the difference corresponds to the rate of change.
 
 Supported `kwargs` are:
-* `h0`                  - Use a non-trivial `h0` (null) model. Specified in the same way as `h1` above.
-* `center=true`         - Add an intercept to the `h0` (null) model.
-* `statistic_col="t"`   - Name of the output column containing the t-statistics. (Set to nothing to remove from output.)
-* `pvalue_col="pValue"` - Name of the output column containing the p-values. (Set to nothing to remove from output.)
+* `h0`                          - Use a non-trivial `h0` (null) model. Specified in the same way as `h1` above.
+* `center=true`                 - Add an intercept to the `h0` (null) model.
+* `statistic_col="t"`           - Name of the output column containing the t-statistics. (Set to nothing to remove from output.)
+* `pvalue_col="pValue"`         - Name of the output column containing the p-values. (Set to nothing to remove from output.)
 * `difference_col="difference"` - Name of the output column containing the differences. (Set to nothing to remove from output.)
-* `h1_missing=:skip`    - One of `:skip` and `:error`. If `skip`, missing values in `h1` columns are skipped, otherwise an error is thrown.
-* `h0_missing=:error`   - One of `:skip` and `:error`. If `skip`, missing values in `h0` columns are skipped, otherwise an error is thrown.
+* `h1_missing=:skip`            - One of `:skip` and `:error`. If `skip`, missing values in `h1` columns are skipped, otherwise an error is thrown.
+* `h0_missing=:error`           - One of `:skip` and `:error`. If `skip`, missing values in `h0` columns are skipped, otherwise an error is thrown.
 
 # Examples
 
@@ -496,7 +496,7 @@ end
 
 
 """
-	ttest!(data::DataMatrix, h1, [groupA], [groupB]; h0, kwargs...)
+	ttest!(data::DataMatrix, h1, [group_a], [group_b]; h0, kwargs...)
 
 Performs a t-Test with the given `h1` (alternative hypothesis) and `h0` (null hypothesis).
 Examples of t-Tests are Two-Group tests and Linear Regression.
@@ -506,7 +506,7 @@ Examples of t-Tests are Two-Group tests and Linear Regression.
 See [`ttest_table`](@ref) for usage examples and more details on computations and parameters.
 
 In addition `ttest!` supports the `kwarg`:
-* `prefix` - Output column names for t-statistics, p-values and differences will be prefixed with this string. If none is given, it will be constructed from `h1`, `groupA`, `groupB` and `h0`.
+* `prefix` - Output column names for t-statistics, p-values and differences will be prefixed with this string. If none is given, it will be constructed from `h1`, `group_a`, `group_b` and `h0`.
 
 See also: [`ttest_table`](@ref), [`ttest`](@ref), [`ftest!`](@ref), [`mannwhitney!`](@ref)
 """
@@ -524,7 +524,7 @@ function ttest!(data::DataMatrix, args...;
 end
 
 """
-	ttest(data::DataMatrix, h1, [groupA], [groupB]; h0, var=:copy, obs=:copy, matrix=:keep, kwargs...)
+	ttest(data::DataMatrix, h1, [group_a], [group_b]; h0, var=:copy, obs=:copy, matrix=:keep, kwargs...)
 
 Performs a t-Test with the given `h1` (alternative hypothesis) and `h0` (null hypothesis).
 Examples of t-Tests are Two-Group tests and Linear Regression.

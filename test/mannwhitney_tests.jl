@@ -24,8 +24,8 @@
 
 			cov_str(c::CovariateDesc) = covariate_prefix(c,"'")
 			cov_str(h1) = h1
-			cov_str(h1,groupA) = "$(h1)_$groupA"
-			cov_str(h1,groupA,groupB) = "$(h1)_$(groupA)_vs_$groupB"
+			cov_str(h1,group_a) = "$(h1)_$group_a"
+			cov_str(h1,group_a,group_b) = "$(h1)_$(group_a)_vs_$group_b"
 
 			@testset "$(cov_str(h1...))" for (h1,prefix) in setup
 				data = f==mannwhitney! ? copy(l) : l
