@@ -27,23 +27,27 @@ struct TwoGroupCovariate{T} <: AbstractCovariate
 	name::String
 	groupA::T
 	groupB::Union{Nothing,T}
+	mean::Float64
 end
-function TwoGroupCovariate(data::DataMatrix, name::String, groupA, groupB)
-	v = unique(data.obs[!,name])
-	any(ismissing, v) && throw(ArgumentError("Missing values not supported for two-group covariates."))
+function TwoGroupCovariate(data::DataMatrix, name::String, groupA, groupB, center::Bool)
+	v = data.obs[!,name]
+	uv = unique(v)
+	any(ismissing, uv) && throw(ArgumentError("Missing values not supported for two-group covariates."))
 
 	if groupA === nothing && groupB === nothing
-		length(v) != 2 && throw(ArgumentError("Column \"$name\" have exactly two groups (found \"$v\")."))
-		groupA,groupB = minmax(v[1],v[2]) # Keep order stable
+		length(uv) != 2 && throw(ArgumentError("Column \"$name\" have exactly two groups (found \"$uv\")."))
+		groupA,groupB = minmax(uv[1],uv[2]) # Keep order stable
 	else
-		groupA in v || throw(ArgumentError("Group A (\"$groupA\") not found in column \"$name\"."))
+		groupA in uv || throw(ArgumentError("Group A (\"$groupA\") not found in column \"$name\"."))
 		if groupB !== nothing
 			# only groupA and groupB allowed
-			groupB in v || throw(ArgumentError("Group B (\"$groupB\") not found in column \"$name\"."))
-			length(v) > 2 && throw(ArgumentError("Only two groups allowed in column \"$name\" (found \"$v\")."))
+			groupB in uv || throw(ArgumentError("Group B (\"$groupB\") not found in column \"$name\"."))
+			length(uv) > 2 && throw(ArgumentError("Only two groups allowed in column \"$name\" (found \"$uv\")."))
 		end
 	end
-	TwoGroupCovariate(name, groupA, groupB)
+
+	m = center ? (1.0./count(isequal(groupA),v)) : 0.0
+	TwoGroupCovariate(name, groupA, groupB, m)
 end
 
 _length(::AbstractCovariate) = 1
@@ -101,7 +105,7 @@ function instantiate_covariate(data::DataMatrix, c::CovariateDesc, center::Bool)
 	elseif t == :categorical
 		CategoricalCovariate(data, c.name)
 	elseif t == :twogroup
-		TwoGroupCovariate(data, c.name, c.groupA, c.groupB)
+		TwoGroupCovariate(data, c.name, c.groupA, c.groupB, center)
 	elseif t == :intercept
 		InterceptCovariate()
 	else
@@ -169,7 +173,7 @@ function covariate_design!(A, data, t::TwoGroupCovariate)
 		throw(ArgumentError("No values belong to group B$suffix."))
 	end
 
-	A .= ifelse.(v.==t.groupA, nB/(nA+nB), -nA/(nA+nB))
+	A .= (v.==t.groupA) .- t.mean
 end
 
 function designmatrix(data::DataMatrix, covariates::AbstractVector{<:AbstractCovariate}; max_categories=nothing)

@@ -72,7 +72,6 @@ Note that `data` must be a `DataMatrix` containing a sparse matrix only.
 It is recommended to first [`logtransform`](@ref) (or [`tf_idf_transform`](@ref)) the raw counts before performing the Mann-Whitney U-test.
 
 `column` specifies a column in `data.obs` and is used to determine which observations belong in which group.
-Observations with `missing` values in the given `column` are always ignored.
 
 If `groupA` and `groupB` are not given, the `column` must contain exactly two unique values (except `missing`).
 If `groupA` is given, but not `groupB`, the observations in group A are compared to all other observations (except `missing`).
@@ -83,7 +82,7 @@ If both `groupA` and `groupB` are given, the observations in group A are compare
 Supported `kwargs` are:
 * `statistic_col="U"`   - Name of the output column containing the U statistics. (Set to nothing to remove from output.)
 * `pvalue_col="pValue"` - Name of the output column containing the p-values. (Set to nothing to remove from output.)
-* `h1_missing` - One of `:skip` and `:error`. If `skip`, missing values in `column` are skipped, otherwise an error is thrown.
+* `h1_missing=:skip`    - One of `:skip` and `:error`. If `skip`, missing values in `column` are skipped, otherwise an error is thrown.
 
 The following `kwargs` determine how the computations are threaded:
 * `nworkers`      - Number of worker threads used in the computation. Set to 1 to disable threading.
@@ -204,7 +203,7 @@ function _linear_test(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix)
 	@assert table_cols_equal(data.obs, h1.obs_match) "Design matrix and data matrix observations should be identical."
 	@assert table_cols_equal(data.obs, h0.obs_match) "Design matrix (H0) and data matrix observations should be identical."
 
-	# TODO: support no null model (not even intercept)
+	# TODO: Support no null model? (not even intercept)
 	Q0,_ = orthonormal_design(h0)
 	Q1,scale = orthonormal_design(h1, Q0)
 	# Q1_pre = orthonormal_design(h1, Q0)
@@ -261,6 +260,59 @@ end
 _splattable(x::Union{Tuple,AbstractVector}) = x
 _splattable(x) = (x,)
 
+"""
+	ftest_table(data::DataMatrix, h1; h0, kwargs...)
+
+Performs an F-Test with the given `h1` (alternative hypothesis) and `h0` (null hypothesis).
+Examples of F-Tests are ANOVA and Quadratic Regression, but any linear model can be used.
+(See "Examples" below for concrete examples.)
+
+F-tests can be performed on any DataMatrix, but it is almost always recommended to do it directly after transforming the data using e.g. `sctransform`, `logtransform` or `tf_idf_transform`.
+
+!!! danger "Normalization"
+    Do not use `ftest_table` after normalizing the data using `normalize_matrix`, because `ftest_table` needs to know about the `h0` model (regressed out covariates) for correction computations. Failing to do so can result in incorrect results.
+    Instead, if you want to correct for the same covariates, pass them as `h0` to `ftest_table`.
+
+`h1` can be
+* A string specifying a column name of `data.obs`. Auto-detection determines if the column is categorical (ANOVA) or numerical.
+* A [`covariate`](@ref) for more control of how to interpret the values in a column.
+* A tuple or vector of the above for compound models.
+
+`ftest_table` returns a Dataframe with columns for variable IDs, F statistics and p-values.
+
+Supported `kwargs` are:
+* `h0`                  - Use a non-trivial H₀ (null) model. Specified in the same way as `h1` above. Defaults to intercept only.
+* `statistic_col="F"`   - Name of the output column containing the F statistics. (Set to nothing to remove from output.)
+* `pvalue_col="pValue"` - Name of the output column containing the p-values. (Set to nothing to remove from output.)
+* `h1_missing=:skip` - One of `:skip` and `:error`. If `skip`, missing values in `h1` columns are skipped, otherwise an error is thrown.
+* `h0_missing=:error` - One of `:skip` and `:error`. If `skip`, missing values in `h0` columns are skipped, otherwise an error is thrown.
+
+# Examples
+
+Perform an ANOVA using the "celltype" annotation.
+```julia
+julia> ftest_table(data, "celltype")
+```
+
+Perform an ANOVA using the "celltype" annotation, while eliminating `fraction_mt` (a linear covariate).
+```julia
+julia> ftest_table(data, "celltype"; h0="fraction_mt")
+```
+
+Perform an ANOVA using the "celltype" annotation, while eliminating `fraction_mt` (a linear covariate) and "phase" (a categorical covariate).
+```julia
+julia> ftest_table(data, "celltype"; h0=("fraction_mt","phase"))
+```
+
+Perform Quadtractic Regression using the covariate `x`, by first creating an annotation for `x` squared, and then using a compound model.
+```julia
+julia> data.obs.x2 = data.obs.x.^2
+
+julia> ftest_table(data, ("x","x2"))
+```
+
+See also: [`ftest!`](@ref), [`ftest`](@ref), [`ttest_table`](@ref), [`covariate`](@ref)
+"""
 function ftest_table(data::DataMatrix, h1;
                      h0=(),
                      h1_missing=:skip, h0_missing=:error,
