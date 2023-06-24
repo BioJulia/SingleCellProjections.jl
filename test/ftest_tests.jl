@@ -165,11 +165,9 @@ end
 		@test df.F ≈ gtF
 		@test df.pValue ≈ gtP
 
-		# TODO:
-		# gtF, gtP = ftest_ground_truth(A, t.obs, ("group",), ("value",); center=false)
-		# df = ftest_table(t, "group"; h0="value", center=false)
-		# @test df.F ≈ gtF
-		# @test df.pValue ≈ gtP
+		df = ftest_table(t, "group"; center=false)
+		@test df.F[1] ≈ 3.9212969283098507 # answer from R `lm`
+		@test df.pValue[1] ≈ 0.008655746937774073
 	end
 
 	# @testset "categorical" begin
