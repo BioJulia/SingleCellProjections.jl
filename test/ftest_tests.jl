@@ -6,13 +6,13 @@ function ftest_ground_truth(A, obs, h1_formula, h0_formula)
 	df.y = zeros(size(A,2))
 	for i in 1:size(A,1)
 		df.y = A[i,:]
-		h0 = lm(h0_formula, df)
-		h1 = lm(h1_formula, df)
-		ft = GLM.ftest(h0.model, h1.model)
+		h0 = lm(h0_formula, df).model # This includes intercept by default.
+		h1 = lm(h1_formula, df).model # (Not posible to turn off?)
+		ft = GLM.ftest(h0, h1)
 		F[i] = ft.fstat[end]
 		p[i] = ft.pval[end]
 	end
-	
+
 	F,p
 end
 function ftest_ground_truth(A, obs, h1::Tuple, h0::Tuple)
@@ -154,6 +154,22 @@ end
 		n = normalize_matrix(t)
 		@test_throws "allow_normalized_matrix" ftest_table(n, "value")
 		@test ftest_table(n, "value"; allow_normalized_matrix=true) isa Any # test it doesn't throw
+	end
+
+	@testset "No intercept" begin
+		# gtF, gtP = ftest_ground_truth(A, t.obs, ("value",), (); center=false)
+		gtT, gtP, _ = ttest_ground_truth(A, t.obs, "value", (); center=false)
+		gtF = gtT.^2
+
+		df = ftest_table(t, "value"; center=false)
+		@test df.F ≈ gtF
+		@test df.pValue ≈ gtP
+
+		# TODO:
+		# gtF, gtP = ftest_ground_truth(A, t.obs, ("group",), ("value",); center=false)
+		# df = ftest_table(t, "group"; h0="value", center=false)
+		# @test df.F ≈ gtF
+		# @test df.pValue ≈ gtP
 	end
 
 	# @testset "categorical" begin

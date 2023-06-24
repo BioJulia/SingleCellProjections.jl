@@ -72,6 +72,12 @@ function test_show(data::DataMatrix; matrix=nothing, var=nothing, obs=nothing, m
     end
 end
 
-function _formula(args...)
-	StatsModels.Term(:y) ~ +(StatsModels.ConstantTerm(1), StatsModels.Term.(Symbol.(args))...)
+function _formula(args...; center=true)
+	if center
+		StatsModels.Term(:y) ~ +(StatsModels.ConstantTerm(1), StatsModels.Term.(Symbol.(args))...)
+	elseif !isempty(args)
+		StatsModels.Term(:y) ~ sum(StatsModels.Term.(Symbol.(args)))
+	else
+		nothing
+	end
 end

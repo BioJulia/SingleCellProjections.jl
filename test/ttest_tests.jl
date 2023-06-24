@@ -1,4 +1,4 @@
-function ttest_ground_truth(A, obs, formula, group_a)
+function ttest_ground_truth(A, obs, formula, group_a; center)
 	t = zeros(size(A,1))
 	p = zeros(size(A,1))
 	β = zeros(size(A,1))
@@ -7,7 +7,13 @@ function ttest_ground_truth(A, obs, formula, group_a)
 	df.y = zeros(size(A,2))
 	for i in 1:size(A,1)
 		df.y = A[i,:]
-		m = lm(formula, df)
+
+		if center
+			m = lm(formula, df)
+		else
+			m = lm(modelmatrix(formula,df), df.y) # this skips the intercept
+		end
+
 		table = coeftable(m)
 		@assert table.colnms[1] == "Coef."
 
@@ -24,7 +30,7 @@ function ttest_ground_truth(A, obs, formula, group_a)
 	
 	t,p,β
 end
-function ttest_ground_truth(A, obs, h1, group_a, group_b, h0::Tuple)
+function ttest_ground_truth(A, obs, h1, group_a, group_b, h0::Tuple; center=true)
 	h1 in h0 && return zeros(size(A,1)), ones(size(A,1)), zeros(size(A,1))
 
 	if !(eltype(obs[!,h1]) <: Union{Missing,Number})
@@ -40,11 +46,11 @@ function ttest_ground_truth(A, obs, h1, group_a, group_b, h0::Tuple)
 		end
 	end
 
-	formula = _formula(h0..., h1)
-	return ttest_ground_truth(A, obs, formula, group_a)
+	formula = _formula(h0..., h1; center)
+	return ttest_ground_truth(A, obs, formula, group_a; center)
 end
-ttest_ground_truth(A, obs, h1, group_a, h0::Tuple) = ttest_ground_truth(A,obs,h1,group_a,nothing,h0)
-ttest_ground_truth(A, obs, h1, h0::Tuple) = ttest_ground_truth(A,obs,h1,nothing,nothing,h0)
+ttest_ground_truth(A, obs, h1, group_a, h0::Tuple; kwargs...) = ttest_ground_truth(A,obs,h1,group_a,nothing,h0; kwargs...)
+ttest_ground_truth(A, obs, h1, h0::Tuple; kwargs...) = ttest_ground_truth(A,obs,h1,nothing,nothing,h0; kwargs...)
 
 
 @testset "t-test" begin
@@ -195,4 +201,13 @@ ttest_ground_truth(A, obs, h1, h0::Tuple) = ttest_ground_truth(A,obs,h1,nothing,
 		@test_throws "allow_normalized_matrix" ttest_table(n, "value")
 		@test ttest_table(n, "value"; allow_normalized_matrix=true) isa Any # test it doesn't throw
 	end
+
+	@testset "No intercept" begin
+		gtT, gtP, gtβ = ttest_ground_truth(A, t.obs, "value", (); center=false)
+		df = ttest_table(t, "value"; center=false)
+		@test df.t ≈ gtT
+		@test df.pValue ≈ gtP
+		@test df.difference ≈ gtβ
+	end
+
 end
