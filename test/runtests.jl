@@ -9,7 +9,7 @@ using StaticArrays
 using Statistics
 using HypothesisTests
 import GLM
-using GLM: StatsModels, lm, coeftable
+using GLM: StatsModels, lm, coeftable, modelmatrix
 using DelimitedFiles
 using DataFrames
 using CodecZlib

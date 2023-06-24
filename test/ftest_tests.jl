@@ -1,33 +1,3 @@
-function ftest_ground_truth(A, obs, h1_formula, h0_formula)
-	F = zeros(size(A,1))
-	p = zeros(size(A,1))
-
-	df = copy(obs)
-	df.y = zeros(size(A,2))
-	for i in 1:size(A,1)
-		df.y = A[i,:]
-		h0 = lm(h0_formula, df).model # This includes intercept by default.
-		h1 = lm(h1_formula, df).model # (Not posible to turn off?)
-		ft = GLM.ftest(h0, h1)
-		F[i] = ft.fstat[end]
-		p[i] = ft.pval[end]
-	end
-
-	F,p
-end
-function ftest_ground_truth(A, obs, h1::Tuple, h0::Tuple)
-	# simple unwrapping of Covariates, does not care about types or two-groups
-	h1 = (x->x isa CovariateDesc ? x.name : x).(h1)
-	h0 = (x->x isa CovariateDesc ? x.name : x).(h0)
-
-	all(in(h0), h1) && return zeros(size(A,1)), ones(size(A,1))
-
-	h1_formula = _formula(h0..., h1...)
-	h0_formula = _formula(h0...)
-	return ftest_ground_truth(A, obs, h1_formula, h0_formula)
-end
-
-
 @testset "F-test" begin
 	N = size(transformed,2)
 
