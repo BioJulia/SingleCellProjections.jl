@@ -76,9 +76,9 @@ end
 	             var=:copy,
 	             obs=:copy)
 
-Log-transform `counts` using the formula:
+Log₂-transform `counts` using the formula:
 ```
-  log(1 + cᵢⱼ*scale_factor/(∑ᵢcᵢⱼ))
+  log₂(1 + cᵢⱼ*scale_factor/(∑ᵢcᵢⱼ))
 ```
 
 * `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `:feature_type => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
