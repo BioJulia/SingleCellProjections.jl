@@ -31,9 +31,9 @@ end
 
 
 # assumes each column is a cell
-function dividebysigma!(X::SparseMatrixCSC{Float64}, logCellCounts::Vector{Float64},
+function dividebysigma!(X::SparseMatrixCSC{T}, logCellCounts::Vector{Float64},
                         β0::Vector{Float64}, β1::Vector{Float64}, θ::Vector{Float64};
-                        clip)
+                        clip) where T
 	P,N = size(X)
 	@assert clip>0
 	@assert P == length(β0)
@@ -50,7 +50,7 @@ function dividebysigma!(X::SparseMatrixCSC{Float64}, logCellCounts::Vector{Float
 			μ = exp(β0[i]+β1[i]*logCellCounts[j])
 			σ = sqrt(μ+μ^2/θ[i])
 			v = clamp(V[k]/σ, -clip+μ/σ, clip+μ/σ) # ensure -clip <= x/σ-μ/σ <= clip
-			V[k] = v
+			V[k] = convert(T, v)
 		end
 	end
 	X
@@ -83,16 +83,16 @@ end
 # 	X
 # end
 
-dividebysigma(X::SparseMatrixCSC{Float64}, args...; kwargs...) = dividebysigma!(copy(X), args...; kwargs...)
-dividebysigma(X::SparseMatrixCSC, args...; kwargs...) = dividebysigma!(convert.(Float64,X), args...; kwargs...)
+# dividebysigma(X::SparseMatrixCSC{Float64}, args...; kwargs...) = dividebysigma!(copy(X), args...; kwargs...)
+# dividebysigma(X::SparseMatrixCSC, args...; kwargs...) = dividebysigma!(convert.(Float64,X), args...; kwargs...)
 
 
 # assumes each column is a cell
-function sctransformsparse(X::SparseMatrixCSC, features, params;
+function sctransformsparse(::Type{T}, X::SparseMatrixCSC, features, params;
                            transpose = false,
                            feature_id_columns = [:id,:feature_type],
                            cell_ind = 1:size(X,2),
-                           clip=sqrt(size(X,2)/30), kwargs...)
+                           clip=sqrt(size(X,2)/30), kwargs...) where T
 
 	@assert size(X,1)==length(getproperty(features,first(propertynames(features)))) "The number of rows in X and features must match"
 
@@ -123,7 +123,7 @@ function sctransformsparse(X::SparseMatrixCSC, features, params;
 	# A little trick to save memory by avoiding duplicating the rowval and colptr vectors
 	# Ideally, this could be done in one step to avoid duplicating nzval too
 	X = X[feature_ind,cell_ind]
-	X = SparseMatrixCSC(size(X)..., X.colptr, X.rowval, convert.(Float64,X.nzval))
+	X = SparseMatrixCSC(size(X)..., X.colptr, X.rowval, convert.(T,X.nzval))
 
 
 	# compute (approximate) factorization of matrix with elements -μᵢⱼ/σᵢⱼ
@@ -136,3 +136,5 @@ function sctransformsparse(X::SparseMatrixCSC, features, params;
 	Z = transpose ? Z' : Z
 	Z, features[feature_ind,:] # TODO: revise this solution
 end
+sctransformsparse(X::SparseMatrixCSC, args...; kwargs...) =
+	sctransformsparse(Float64, X, args...; kwargs...)
