@@ -300,6 +300,8 @@ function SCTransformModel(::Type{T}, counts::DataMatrix;
 	post_filter = FilterModel(params, counts.var_id_cols, post_var_filter, post_obs_filter; var=:copy, obs)
 	SCTransformModel{T}(params, counts.var_id_cols, clip, rtol, atol, annotate, post_filter)
 end
+SCTransformModel(counts::DataMatrix; kwargs...) =
+	SCTransformModel(Float64, counts; kwargs...)
 
 function projection_isequal(m1::SCTransformModel{T1}, m2::SCTransformModel{T2}) where {T1,T2}
 	T1 === T2 &&
