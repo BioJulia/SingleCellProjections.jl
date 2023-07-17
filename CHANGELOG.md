@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2023-07-17
+
+### Added
+
+* Float32 support: `sctransform`, `logtransform` and `tf_idf_transform` now supports an optional type argument `T` which controls the eltype of the sparse transformed matrix. By setting it to `Float32` it is possible to reduce memory usage with little impact on results, since downstream computations are still performed in `Float64` precision.
+
 ## [0.3] - 2023-06-23
 
 ### Breaking
