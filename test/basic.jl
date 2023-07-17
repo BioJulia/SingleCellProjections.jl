@@ -66,7 +66,6 @@
 			trans = sctransform(Float32, counts; use_cache=false)
 			trans_proj = project(counts_proj, trans)
 			t2 = sctransform(T, counts; use_cache=false, var_filter=nothing)
-			sct = T.(sct)
 		end
 
 		@test params.logGeneMean ≈ trans.var.logGeneMean
@@ -76,11 +75,11 @@
 		@test params.theta ≈ trans.var.theta
 
 		@test size(trans.matrix) == size(sct)
-		@test materialize(trans) ≈ sct rtol=1e-3
 		@test eltype(trans.matrix.terms[1].matrix) == T
+		@test materialize(trans) ≈ sct rtol=1e-3
 
-		@test materialize(trans_proj) ≈ sct[:,proj_obs_indices] rtol=1e-3
 		@test eltype(trans_proj.matrix.terms[1].matrix) == T
+		@test materialize(trans_proj) ≈ sct[:,proj_obs_indices] rtol=1e-3
 
 		@test params.logGeneMean ≈ trans_proj.var.logGeneMean
 		@test params.outlier == trans_proj.var.outlier
