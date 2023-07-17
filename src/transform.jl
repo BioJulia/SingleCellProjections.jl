@@ -1,40 +1,42 @@
-struct LogTransformModel <: ProjectionModel
+struct LogTransformModel{T} <: ProjectionModel
 	scale_factor::Float64
 	var_match::DataFrame
 	var::Symbol
 	obs::Symbol
 end
-function LogTransformModel(counts::DataMatrix;
+function LogTransformModel(::Type{T}, counts::DataMatrix;
                            var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
-                           scale_factor=10_000, var=:copy, obs=:copy)
+                           scale_factor=10_000, var=:copy, obs=:copy) where T
 	var_match = select(counts.var, counts.var_id_cols)
 	if var_filter !== nothing
 		sub = filter(var_filter, counts.var; view=true)
 		ind = first(parentindices(sub))
 		var_match = var_match[ind,:]
 	end
-	LogTransformModel(scale_factor, var_match, var, obs)
+	LogTransformModel{T}(scale_factor, var_match, var, obs)
 end
+LogTransformModel(counts::DataMatrix; kwargs...) = LogTransformModel(Float64, counts; kwargs...)
 
-projection_isequal(m1::LogTransformModel, m2::LogTransformModel) =
-	m1.scale_factor == m2.scale_factor && m1.var_match == m2.var_match
+projection_isequal(m1::LogTransformModel{T1}, m2::LogTransformModel{T2}) where {T1,T2} =
+	T1 === T2 && m1.scale_factor == m2.scale_factor && m1.var_match == m2.var_match
 
-update_model(m::LogTransformModel; scale_factor=m.scale_factor, var=m.var, obs=m.obs, kwargs...) =
-	(LogTransformModel(scale_factor, m.var_match, var, obs), kwargs)
+update_model(m::LogTransformModel{T}; scale_factor=m.scale_factor, var=m.var, obs=m.obs, kwargs...) where T =
+	(LogTransformModel{T}(scale_factor, m.var_match, var, obs), kwargs)
 
 
-function logtransform_impl(X, model::LogTransformModel)
+function logtransform_impl(X, model::LogTransformModel{T}) where T
 	P,N = size(X)
 	s = max.(1, sum(X; dims=1))
 	nf = model.scale_factor ./ s
 
 	# log( 1 + c*f/s)
 	nzval = nonzeros(X)
-	nzval_out = zeros(nnz(X))
+	nzval_out = zeros(T, nnz(X))
 
 	for j in 1:N
 		irange = nzrange(X,j)
-		nzval_out[irange] .= log2.(1 .+ (@view nzval[irange]) .* nf[j])
+		# nzval_out[irange] .= log2.(1 .+ (@view nzval[irange]) .* nf[j])
+		nzval_out[irange] .= convert.(T, log2.(1 .+ (@view nzval[irange]) .* nf[j]))
 	end
 
 	A = SparseMatrixCSC(P, N, copy(X.colptr), copy(X.rowval), nzval_out)
@@ -70,7 +72,7 @@ function project_impl(counts::DataMatrix, model::LogTransformModel; verbose=true
 end
 
 """
-	logtransform(counts::DataMatrix;
+	logtransform([T=Float64], counts::DataMatrix;
 	             var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
 	             scale_factor=10_000,
 	             var=:copy,
@@ -81,6 +83,9 @@ Log₂-transform `counts` using the formula:
   log₂(1 + cᵢⱼ*scale_factor/(∑ᵢcᵢⱼ))
 ```
 
+Optionally, `T` can be specified to control the `eltype` of the sparse transformed matrix.
+`T=Float32` can be used to lower the memory usage, with little impact on the results, since downstream analysis is still done with Float64.
+
 * `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `:feature_type => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
 * `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
 * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
@@ -90,13 +95,19 @@ Log₂-transform `counts` using the formula:
 julia> transformed = logtransform(counts)
 ```
 
+Use eltype Float32 to lower memory usage:
+```julia
+julia> transformed = logtransform(Float32, counts)
+```
+
 See also: [`sctransform`](@ref)
 """
-logtransform(counts::DataMatrix; kwargs...) = project(counts, LogTransformModel(counts; kwargs...))
+logtransform(::Type{T}, counts::DataMatrix; kwargs...) where T =
+	project(counts, LogTransformModel(T, counts; kwargs...))
+logtransform(counts::DataMatrix; kwargs...) = logtransform(Float64, counts; kwargs...)
 
 
-
-struct TFIDFTransformModel <: ProjectionModel
+struct TFIDFTransformModel{T} <: ProjectionModel
 	scale_factor::Float64
 	idf::Vector{Float64}
 	var_match::DataFrame
@@ -104,30 +115,33 @@ struct TFIDFTransformModel <: ProjectionModel
 	var::Symbol
 	obs::Symbol
 end
-function TFIDFTransformModel(counts::DataMatrix;
+function TFIDFTransformModel(::Type{T}, counts::DataMatrix;
                              var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
                              scale_factor=10_000,
                              idf=vec(size(counts,2) ./ max.(1,sum(counts.matrix; dims=2))),
                              annotate=true,
-                             var=:copy, obs=:copy)
+                             var=:copy, obs=:copy) where T
 	var_match = select(counts.var, counts.var_id_cols)
 	if var_filter !== nothing
 		sub = filter(var_filter, counts.var; view=true)
 		ind = first(parentindices(sub))
 		var_match = var_match[ind,:]
 	end
-	TFIDFTransformModel(scale_factor, idf, var_match, annotate, var, obs)
+	TFIDFTransformModel{T}(scale_factor, idf, var_match, annotate, var, obs)
 end
+TFIDFTransformModel(counts::DataMatrix; kwargs...) =
+	TFIDFTransformModel(Float64, counts; kwargs...)
 
-projection_isequal(m1::TFIDFTransformModel, m2::TFIDFTransformModel) =
-	m1.scale_factor == m2.scale_factor && m1.idf == m2.idf && m1.var_match == m2.var_match
+projection_isequal(m1::TFIDFTransformModel{T1}, m2::TFIDFTransformModel{T2}) where {T1,T2} =
+	T1 === T2 && m1.scale_factor == m2.scale_factor && m1.idf == m2.idf && m1.var_match == m2.var_match
 
-update_model(m::TFIDFTransformModel; scale_factor=m.scale_factor, idf=m.idf,
-                                     annotate=m.annotate, var=m.var, obs=m.obs, kwargs...) =
-	(TFIDFTransformModel(scale_factor, idf, m.var_match, annotate, var, obs), kwargs)
+update_model(m::TFIDFTransformModel{T}; scale_factor=m.scale_factor, idf=m.idf,
+                                        annotate=m.annotate, var=m.var, obs=m.obs,
+                                        kwargs...) where T =
+	(TFIDFTransformModel{T}(scale_factor, idf, m.var_match, annotate, var, obs), kwargs)
 
 
-function tf_idf_transform_impl(X, scale_factor, idf)
+function tf_idf_transform_impl(::Type{T}, X, scale_factor, idf) where T
 	P,N = size(X)
 	s = max.(1, sum(X; dims=1))
 	nf = scale_factor ./ s
@@ -135,12 +149,13 @@ function tf_idf_transform_impl(X, scale_factor, idf)
 	# log( 1 + c*f/s * idf )
 	R = rowvals(X)
 	nzval = nonzeros(X)
-	nzval_out = zeros(nnz(X))
+	nzval_out = zeros(T, nnz(X))
 
 	for j in 1:N
 		for k in nzrange(X,j)
 			i = R[k]
-			nzval_out[k] = log(1.0 + nzval[k]*nf[j]*idf[i])
+			# nzval_out[k] = log(1.0 + nzval[k]*nf[j]*idf[i])
+			nzval_out[k] = convert(T, log(1.0 + nzval[k]*nf[j]*idf[i]))
 		end
 	end
 
@@ -148,7 +163,7 @@ function tf_idf_transform_impl(X, scale_factor, idf)
 	MatrixRef(:A=>A)
 end
 
-function project_impl(counts::DataMatrix, model::TFIDFTransformModel; verbose=true)
+function project_impl(counts::DataMatrix, model::TFIDFTransformModel{T}; verbose=true) where T
 	# TODO: share this code with LogTransformModel - the only difference is idf
 	matrix = counts.matrix
 	var = model.var
@@ -176,7 +191,7 @@ function project_impl(counts::DataMatrix, model::TFIDFTransformModel; verbose=tr
 		end
 	end
 
-	matrix = tf_idf_transform_impl(matrix, model.scale_factor, idf)
+	matrix = tf_idf_transform_impl(T, matrix, model.scale_factor, idf)
 
 	if model.annotate
 		if var isa Symbol
@@ -188,7 +203,7 @@ function project_impl(counts::DataMatrix, model::TFIDFTransformModel; verbose=tr
 end
 
 """
-	tf_idf_transform(counts::DataMatrix;
+	tf_idf_transform([T=Float64], counts::DataMatrix;
 	                 var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
 	                 scale_factor = 10_000,
 	                 idf = vec(size(counts,2) ./ max.(1,sum(counts.matrix; dims=2))),
@@ -199,19 +214,25 @@ end
 Compute the TF-IDF (term frequency-inverse document frequency) transform of `counts`, using
 the formula `log( 1 + scale_factor * tf * idf )` where `tf` is the term frequency `counts.matrix ./ max.(1, sum(counts.matrix; dims=1))`.
 
+Optionally, `T` can be specified to control the `eltype` of the sparse transformed matrix.
+`T=Float32` can be used to lower the memory usage, with little impact on the results, since downstream analysis is still done with Float64.
+
 * `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `:feature_type => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
 * `annotate` - If true, `idf` will be added as a `var` annotation.
 * `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
 * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
 """
-tf_idf_transform(counts::DataMatrix; kwargs...) = project(counts, TFIDFTransformModel(counts; kwargs...))
+tf_idf_transform(::Type{T}, counts::DataMatrix; kwargs...) where T =
+	project(counts, TFIDFTransformModel(T, counts; kwargs...))
+tf_idf_transform(counts::DataMatrix; kwargs...) =
+	tf_idf_transform(Float64, counts; kwargs...)
 
 
 
 
 scparams(counts::DataMatrix; kwargs...) = scparams(counts.matrix, counts.var; kwargs...)
 
-struct SCTransformModel <: ProjectionModel
+struct SCTransformModel{T} <: ProjectionModel
 	params::DataFrame
 	var_id_cols::Vector{String}
 	clip::Float64
@@ -222,7 +243,7 @@ struct SCTransformModel <: ProjectionModel
 end
 
 """
-	SCTransformModel(counts::DataMatrix;
+	SCTransformModel([T=Float64], counts::DataMatrix;
 	                 var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
 	                 rtol=1e-3, atol=0.0, annotate=true,
 	                 post_var_filter=:, post_obs_filter=:,
@@ -231,6 +252,9 @@ end
 
 Computes the `SCTransform` parameter estimates for `counts` and creates a SCTransformModel that can be applied to the same or another data set.
 Defaults to only using "Gene Expression" features.
+
+Optionally, `T` can be specified to control the `eltype` of the sparse transformed matrix.
+`T=Float32` can be used to lower the memory usage, with little impact on the results, since downstream analysis is still done with Float64.
 
 * `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `:feature_type => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
 * `rtol` - Relative tolerance when constructing low rank approximation.
@@ -254,12 +278,12 @@ julia> SCTransformModel(counts; var_filter = :feature_type => isequal("Antibody 
 
 See also: [`sctransform`](@ref), [`SCTransform.scparams`](https://github.com/rasmushenningsson/SCTransform.jl), [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter)
 """
-function SCTransformModel(counts::DataMatrix;
+function SCTransformModel(::Type{T}, counts::DataMatrix;
                           var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
                           rtol=1e-3, atol=0.0, annotate=true,
                           post_var_filter=:, post_obs_filter=:,
                           obs=:copy,
-                          kwargs...)
+                          kwargs...) where T
 	nvar = size(counts,1)
 
 	if var_filter === nothing
@@ -274,10 +298,11 @@ function SCTransformModel(counts::DataMatrix;
 	params = scparams(counts; feature_mask, kwargs...)
 	clip = sqrt(size(counts,2)/30)
 	post_filter = FilterModel(params, counts.var_id_cols, post_var_filter, post_obs_filter; var=:copy, obs)
-	SCTransformModel(params, counts.var_id_cols, clip, rtol, atol, annotate, post_filter)
+	SCTransformModel{T}(params, counts.var_id_cols, clip, rtol, atol, annotate, post_filter)
 end
 
-function projection_isequal(m1::SCTransformModel, m2::SCTransformModel)
+function projection_isequal(m1::SCTransformModel{T1}, m2::SCTransformModel{T2}) where {T1,T2}
+	T1 === T2 &&
 	m1.params == m2.params &&
 	m1.var_id_cols == m2.var_id_cols &&
 	m1.clip == m2.clip &&
@@ -287,26 +312,26 @@ function projection_isequal(m1::SCTransformModel, m2::SCTransformModel)
 end
 
 
-function update_model(m::SCTransformModel;
+function update_model(m::SCTransformModel{T};
                       clip=m.clip, rtol=m.rtol, atol=m.atol,
                       annotate=m.annotate,
                       post_var_filter=m.post_filter.var_filter,
                       post_obs_filter=nothing,
                       obs=m.post_filter.obs,
                       kwargs...
-                     )
+                     ) where T
 	post_var_filter = _filter_indices(m.params, post_var_filter)
 
 	allow_obs_indexing = post_obs_filter !== nothing
 	post_obs_filter === nothing && (post_obs_filter = m.post_filter.obs_filter)
 
 	post_filter = FilterModel(post_var_filter, post_obs_filter, m.post_filter.var_match, m.post_filter.var, obs)
-	model = SCTransformModel(m.params, m.var_id_cols, clip, rtol, atol, annotate, post_filter)
+	model = SCTransformModel{T}(m.params, m.var_id_cols, clip, rtol, atol, annotate, post_filter)
 	(model, (;allow_obs_indexing, kwargs...))
 end
 
 
-function project_impl(counts::DataMatrix, model::SCTransformModel; allow_obs_indexing=false, verbose=true)
+function project_impl(counts::DataMatrix, model::SCTransformModel{T}; allow_obs_indexing=false, verbose=true) where T
 	# use post_filter to figure out variable and observations subsetting
 	_validate(model.params, model.post_filter, allow_obs_indexing, SCTransformModel, "post_obs_filter")
 
@@ -333,7 +358,7 @@ function project_impl(counts::DataMatrix, model::SCTransformModel; allow_obs_ind
 		end
 	end
 
-	X,var = sctransformsparse(counts.matrix, counts.var, params;
+	X,var = sctransformsparse(T, counts.matrix, counts.var, params;
 	                          feature_id_columns=model.var_id_cols,
 	                          cell_ind=J,
 	                          model.clip, model.rtol, model.atol)
@@ -350,11 +375,14 @@ end
 
 
 """
-	sctransform(counts::DataMatrix; verbose=true, kwargs...)
+	sctransform([T=Float64], counts::DataMatrix; verbose=true, kwargs...)
 
 Compute the SCTransform of the DataMatrix `counts`.
 The result is stored as a Matrix Expression with the sum of a sparse and a low-rank term.
 I.e. no large dense matrix is created.
+
+Optionally, `T` can be specified to control the `eltype` of the sparse transformed matrix.
+`T=Float32` can be used to lower the memory usage, with little impact on the results, since downstream analysis is still done with Float64.
 
 See `SCTransformModel` for description of `kwargs...`.
 
@@ -369,19 +397,30 @@ Compute SCTransform (Antibody Capture features):
 julia> sctransform(counts; var_filter = :feature_type => isequal("Antibody Capture"))
 ```
 
+Compute SCTransform (Gene Expression features), using eltype Float32 to lower memory usage:
+```
+julia> sctransform(Float32, counts)
+```
+
 See also: [`SCTransformModel`](@ref), [`SCTransform.scparams`](https://github.com/rasmushenningsson/SCTransform.jl)
 """
-sctransform(counts::DataMatrix; verbose=true, kwargs...) =
-	project_impl(counts, SCTransformModel(counts; verbose, kwargs...); verbose, allow_obs_indexing=true)
-
+sctransform(::Type{T}, counts::DataMatrix; verbose=true, kwargs...) where T =
+	project_impl(counts, SCTransformModel(T, counts; verbose, kwargs...); verbose, allow_obs_indexing=true)
+sctransform(counts::DataMatrix; kwargs...) = sctransform(Float64, counts; kwargs...)
 
 # - show -
-function Base.show(io::IO, ::MIME"text/plain", model::LogTransformModel)
-	print(io, "LogTransformModel(scale_factor=", round(model.scale_factor;digits=2), ')')
+function Base.show(io::IO, ::MIME"text/plain", model::LogTransformModel{T}) where T
+	print(io, "LogTransformModel")
+	T !== Float64 && print(io, '{', T, '}')
+	print(io, "(scale_factor=", round(model.scale_factor;digits=2), ')')
 end
-function Base.show(io::IO, ::MIME"text/plain", model::TFIDFTransformModel)
-	print(io, "TFIDFTransformModel(scale_factor=", round(model.scale_factor;digits=2), ')')
+function Base.show(io::IO, ::MIME"text/plain", model::TFIDFTransformModel{T}) where T
+	print(io, "TFIDFTransformModel")
+	T !== Float64 && print(io, '{', T, '}')
+	print(io, "(scale_factor=", round(model.scale_factor;digits=2), ')')
 end
-function Base.show(io::IO, ::MIME"text/plain", model::SCTransformModel)
-	print(io, "SCTransformModel(nvar=", size(model.params,1), ", clip=", round(model.clip;digits=2), ')')
+function Base.show(io::IO, ::MIME"text/plain", model::SCTransformModel{T}) where T
+	print(io, "SCTransformModel")
+	T !== Float64 && print(io, '{', T, '}')
+	print(io, "(nvar=", size(model.params,1), ", clip=", round(model.clip;digits=2), ')')
 end

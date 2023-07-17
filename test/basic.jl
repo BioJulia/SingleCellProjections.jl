@@ -8,59 +8,87 @@
 	proj_obs_indices = identity.(indexin(counts_proj.obs.barcode, counts.obs.barcode))
 
 
-	@testset "logtransform scale_factor=$scale_factor" for scale_factor in (10_000, 1_000)
+	@testset "logtransform scale_factor=$scale_factor T=$T" for scale_factor in (10_000, 1_000), T in (Float64,Float32)
 		X = simple_logtransform(expected_mat, scale_factor)
 		kwargs = scale_factor == 10_000 ? (;) : (;scale_factor)
-		l = logtransform(counts; kwargs...)
+		if T==Float64
+			l = logtransform(counts; kwargs...)
+		else
+			l = logtransform(T, counts; kwargs...)
+			X = T.(X)
+		end
+
 		@test l.matrix.matrix ≈ X
 		@test nnz(l.matrix.matrix) == expected_nnz
+		@test eltype(l.matrix.matrix) == T
 
 		lproj = project(counts_proj, l)
 		@test lproj.matrix.matrix ≈ X[:,proj_obs_indices]
+		@test eltype(lproj.matrix.matrix) == T
 
 		test_show(l; matrix="SparseMatrixCSC", var=names(counts.var), obs=names(counts.obs), models="LogTransformModel")
 		test_show(lproj; matrix="SparseMatrixCSC", var=names(counts_proj.var), obs=names(counts_proj.obs), models="LogTransformModel")
 	end
 
-	@testset "tf-idf scale_factor=$scale_factor" for scale_factor in (10_000, 1_000)
+	@testset "tf-idf scale_factor=$scale_factor T=$T" for scale_factor in (10_000, 1_000), T in (Float64,Float32)
 		idf = simple_idf(expected_mat)
 		X = simple_tf_idf_transform(expected_mat, idf, scale_factor)
 		kwargs = scale_factor == 10_000 ? (;) : (;scale_factor)
-		tf = tf_idf_transform(counts; kwargs...)
+
+		if T==Float64
+			tf = tf_idf_transform(counts; kwargs...)
+		else
+			tf = tf_idf_transform(T, counts; kwargs...)
+			X = T.(X)
+		end
+
 		@test tf.matrix.matrix ≈ X
 		@test nnz(tf.matrix.matrix) == expected_nnz
+		@test eltype(tf.matrix.matrix) == T
 
 		tf_proj = project(counts_proj, tf)
 		@test tf_proj.matrix.matrix ≈ X[:,proj_obs_indices]
+		@test eltype(tf_proj.matrix.matrix) == T
 
 		test_show(tf; matrix="SparseMatrixCSC", var=vcat(names(counts.var),"idf"), obs=names(counts.obs), models="TFIDFTransformModel")
 		test_show(tf_proj; matrix="SparseMatrixCSC", var=vcat(names(counts_proj.var),"idf"), obs=names(counts_proj.obs), models="TFIDFTransformModel")
 	end
 
 	transformed_proj = project(counts_proj, transformed)
-	@testset "sctransform" begin
-		@test params.logGeneMean ≈ transformed.var.logGeneMean
-		@test params.outlier == transformed.var.outlier
-		@test params.beta0 ≈ transformed.var.beta0
-		@test params.beta1 ≈ transformed.var.beta1
-		@test params.theta ≈ transformed.var.theta
-
+	@testset "sctransform T=$T" for T in (Float64,Float32)
 		sct = sctransform(expected_sparse, counts.var, params)
 
-		@test size(transformed.matrix) == size(sct)
-		@test materialize(transformed) ≈ sct rtol=1e-3
+		if T==Float64
+			trans = transformed
+			trans_proj = transformed_proj
+			t2 = sctransform(counts; use_cache=false, var_filter=nothing)
+		else
+			trans = sctransform(Float32, counts; use_cache=false)
+			trans_proj = project(counts_proj, trans)
+			t2 = sctransform(T, counts; use_cache=false, var_filter=nothing)
+		end
 
-		@test materialize(transformed_proj) ≈ sct[:,proj_obs_indices] rtol=1e-3
+		@test params.logGeneMean ≈ trans.var.logGeneMean
+		@test params.outlier == trans.var.outlier
+		@test params.beta0 ≈ trans.var.beta0
+		@test params.beta1 ≈ trans.var.beta1
+		@test params.theta ≈ trans.var.theta
 
-		@test params.logGeneMean ≈ transformed_proj.var.logGeneMean
-		@test params.outlier == transformed_proj.var.outlier
-		@test params.beta0 ≈ transformed_proj.var.beta0
-		@test params.beta1 ≈ transformed_proj.var.beta1
-		@test params.theta ≈ transformed_proj.var.theta
+		@test size(trans.matrix) == size(sct)
+		@test eltype(trans.matrix.terms[1].matrix) == T
+		@test materialize(trans) ≈ sct rtol=1e-3
 
-		test_show(transformed; matrix=r"^A\+B₁B₂B₃$", models="SCTransformModel")
+		@test eltype(trans_proj.matrix.terms[1].matrix) == T
+		@test materialize(trans_proj) ≈ sct[:,proj_obs_indices] rtol=1e-3
 
-		t2 = sctransform(counts; use_cache=false, var_filter=nothing)
+		@test params.logGeneMean ≈ trans_proj.var.logGeneMean
+		@test params.outlier == trans_proj.var.outlier
+		@test params.beta0 ≈ trans_proj.var.beta0
+		@test params.beta1 ≈ trans_proj.var.beta1
+		@test params.theta ≈ trans_proj.var.theta
+
+		test_show(trans; matrix=r"^A\+B₁B₂B₃$", models="SCTransformModel")
+
 		@test materialize(t2) ≈ sct rtol=1e-3
 	end
 
