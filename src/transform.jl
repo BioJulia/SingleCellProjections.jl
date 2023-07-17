@@ -72,7 +72,7 @@ function project_impl(counts::DataMatrix, model::LogTransformModel; verbose=true
 end
 
 """
-	logtransform(counts::DataMatrix;
+	logtransform([T=Float64], counts::DataMatrix;
 	             var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
 	             scale_factor=10_000,
 	             var=:copy,
@@ -83,6 +83,9 @@ Log₂-transform `counts` using the formula:
   log₂(1 + cᵢⱼ*scale_factor/(∑ᵢcᵢⱼ))
 ```
 
+Optionally, `T` can be specified to control the `eltype` of the sparse transformed matrix.
+`T=Float32` can be used to lower the memory usage, with little impact on the results, since downstream analysis is still done with Float64.
+
 * `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `:feature_type => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
 * `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
 * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
@@ -90,6 +93,11 @@ Log₂-transform `counts` using the formula:
 # Examples
 ```julia
 julia> transformed = logtransform(counts)
+```
+
+Use eltype Float32 to lower memory usage:
+```julia
+julia> transformed = logtransform(Float32, counts)
 ```
 
 See also: [`sctransform`](@ref)
@@ -195,7 +203,7 @@ function project_impl(counts::DataMatrix, model::TFIDFTransformModel{T}; verbose
 end
 
 """
-	tf_idf_transform(counts::DataMatrix;
+	tf_idf_transform([T=Float64], counts::DataMatrix;
 	                 var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
 	                 scale_factor = 10_000,
 	                 idf = vec(size(counts,2) ./ max.(1,sum(counts.matrix; dims=2))),
@@ -205,6 +213,9 @@ end
 
 Compute the TF-IDF (term frequency-inverse document frequency) transform of `counts`, using
 the formula `log( 1 + scale_factor * tf * idf )` where `tf` is the term frequency `counts.matrix ./ max.(1, sum(counts.matrix; dims=1))`.
+
+Optionally, `T` can be specified to control the `eltype` of the sparse transformed matrix.
+`T=Float32` can be used to lower the memory usage, with little impact on the results, since downstream analysis is still done with Float64.
 
 * `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `:feature_type => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
 * `annotate` - If true, `idf` will be added as a `var` annotation.
@@ -232,7 +243,7 @@ struct SCTransformModel{T} <: ProjectionModel
 end
 
 """
-	SCTransformModel(counts::DataMatrix;
+	SCTransformModel([T=Float64], counts::DataMatrix;
 	                 var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
 	                 rtol=1e-3, atol=0.0, annotate=true,
 	                 post_var_filter=:, post_obs_filter=:,
@@ -241,6 +252,9 @@ end
 
 Computes the `SCTransform` parameter estimates for `counts` and creates a SCTransformModel that can be applied to the same or another data set.
 Defaults to only using "Gene Expression" features.
+
+Optionally, `T` can be specified to control the `eltype` of the sparse transformed matrix.
+`T=Float32` can be used to lower the memory usage, with little impact on the results, since downstream analysis is still done with Float64.
 
 * `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `:feature_type => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
 * `rtol` - Relative tolerance when constructing low rank approximation.
@@ -361,11 +375,14 @@ end
 
 
 """
-	sctransform(counts::DataMatrix; verbose=true, kwargs...)
+	sctransform([T=Float64], counts::DataMatrix; verbose=true, kwargs...)
 
 Compute the SCTransform of the DataMatrix `counts`.
 The result is stored as a Matrix Expression with the sum of a sparse and a low-rank term.
 I.e. no large dense matrix is created.
+
+Optionally, `T` can be specified to control the `eltype` of the sparse transformed matrix.
+`T=Float32` can be used to lower the memory usage, with little impact on the results, since downstream analysis is still done with Float64.
 
 See `SCTransformModel` for description of `kwargs...`.
 
@@ -378,6 +395,11 @@ julia> sctransform(counts)
 Compute SCTransform (Antibody Capture features):
 ```
 julia> sctransform(counts; var_filter = :feature_type => isequal("Antibody Capture"))
+```
+
+Compute SCTransform (Gene Expression features), using eltype Float32 to lower memory usage:
+```
+julia> sctransform(Float32, counts)
 ```
 
 See also: [`SCTransformModel`](@ref), [`SCTransform.scparams`](https://github.com/rasmushenningsson/SCTransform.jl)
