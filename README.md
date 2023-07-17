@@ -1,7 +1,7 @@
 # SingleCellProjections.jl
 
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://rasmushenningsson.github.io/SingleCellProjections.jl/dev/)
-[![Build Status](https://github.com/rasmushenningsson/SCTransform.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/rasmushenningsson/SCTransform.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Build Status](https://github.com/rasmushenningsson/SingleCellProjections.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/rasmushenningsson/SingleCellProjections.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/rasmushenningsson/SingleCellProjections.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/rasmushenningsson/SingleCellProjections.jl)
 
 
