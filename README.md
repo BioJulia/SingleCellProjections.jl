@@ -1,8 +1,8 @@
 # SingleCellProjections.jl
 
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://rasmushenningsson.github.io/SingleCellProjections.jl/dev/)
-[![Build Status](https://github.com/rasmushenningsson/SingleCellProjections.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/rasmushenningsson/SingleCellProjections.jl/actions/workflows/CI.yml?query=branch%3Amain)
-[![Coverage](https://codecov.io/gh/rasmushenningsson/SingleCellProjections.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/rasmushenningsson/SingleCellProjections.jl)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://biojulia.dev/SingleCellProjections.jl/dev/)
+[![Build Status](https://github.com/BioJulia/SingleCellProjections.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/BioJulia/SingleCellProjections.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Coverage](https://codecov.io/gh/BioJulia/SingleCellProjections.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/BioJulia/SingleCellProjections.jl)
 
 
 SingleCellProjections.jl is an easy to use and powerful package for analysis of Single Cell Expression data in Julia.
@@ -24,11 +24,11 @@ SingleCellProjections.jl relies heavily on threading. Please make sure to [enabl
 
 
 ## Tutorial
-Here is a [tutorial](https://rasmushenningsson.github.io/SingleCellProjections.jl/dev/tutorial/), showcasing SingleCellProjections.jl functionality using a PBMC (Peripheral Blood Mononuclear Cell) data set.
+Here is a [tutorial](https://biojulia.dev/SingleCellProjections.jl/dev/tutorial/), showcasing SingleCellProjections.jl functionality using a PBMC (Peripheral Blood Mononuclear Cell) data set.
 
 ![force_layout](https://user-images.githubusercontent.com/16546530/228492990-14c31888-28e1-4f3c-8062-f10682e55430.svg)
 
 Force layout plot of the PBMC data.
 
 ## Documentation
-For more information, please refer to the [documentation](https://rasmushenningsson.github.io/SingleCellProjections.jl/dev/).
+For more information, please refer to the [documentation](https://biojulia.dev/SingleCellProjections.jl/dev/).
