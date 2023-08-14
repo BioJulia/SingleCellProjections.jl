@@ -180,7 +180,7 @@
 	@testset "svd" begin
 		reduced = svd(normalized; nsv=3, subspacedims=24, niter=4, rng=StableRNG(102))
 		F = svd(Xcom)
-		@test size(reduced)==size(transformed)
+		@test size(reduced)==size(normalized)
 		@test reduced.matrix.S ≈ F.S[1:3] rtol=1e-3
 		@test abs.(reduced.matrix.U'F.U[:,1:3]) ≈ I(3) rtol=1e-3
 		@test abs.(reduced.matrix.V'F.V[:,1:3]) ≈ I(3) rtol=1e-3
@@ -200,6 +200,37 @@
 
 		test_show(reduced; matrix="SVD (3 dimensions)", models="SVDModel")
 	end
+
+	@testset "PrincipalMomentAnalysis" begin
+		G = groupsimplices(normalized.obs.group)
+		p = pma(normalized, G; nsv=3, subspacedims=24, niter=8, rng=StableRNG(102))
+
+		F = pma(Xcom, G; nsv=3)
+		@test size(p)==size(normalized)
+		@test p.matrix.S ≈ F.S rtol=1e-3
+
+		@test abs.(p.matrix.U'F.U) ≈ I(3) rtol=1e-3
+
+		signs = 2 .* (diag(p.matrix.U'F.U) .> 0) .- 1
+		FV = F.V*Diagonal(signs)
+		@test p.matrix.V ≈ FV rtol=1e-3
+
+		U = p.matrix.U
+		@test all(>(0.0), sum(U;dims=1))
+
+		@test var_coordinates(p) == p.matrix.U
+
+		X = materialize(p)
+		p_proj = project(normalized_proj, p)
+		Xproj = materialize(p_proj)
+		@test Xproj ≈ X[:,proj_obs_indices] rtol=1e-3
+
+		U_proj = p_proj.matrix.U
+		@test all(>(0.0), sum(U_proj;dims=1))
+
+		test_show(p; matrix="PMA (3 dimensions)", models="PMAModel")
+	end
+
 
 	reduced_proj = project(normalized_proj, reduced)
 

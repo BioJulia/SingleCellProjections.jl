@@ -4,6 +4,7 @@ using SingleCellProjections
 using SingleCellProjections: Index, LowRank, implicitsvd, innersize, var_coordinates, obs_coordinates, table_cols_equal
 using SingleCellProjections.MatrixExpressions
 
+using LinearAlgebra
 using DataFrames
 
 if isdefined(Base, :get_extension)
@@ -88,7 +89,7 @@ function PrincipalMomentAnalysis.pma(data::DataMatrix, args...; nsv=3, var=:copy
 	update_matrix(data, F, model; model.var, model.obs)
 end
 
-function project_impl(data::DataMatrix, model::PMAModel; verbose=true)
+function SingleCellProjections.project_impl(data::DataMatrix, model::PMAModel; verbose=true)
 	@assert table_cols_equal(data.var, model.var_match) "PMA projection expects model and data variables to be identical."
 
 	F = model.F
