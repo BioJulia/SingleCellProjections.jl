@@ -66,14 +66,16 @@ using StaticArrays
 
 using Distributions
 
-using Requires
-
 import SCTransform: SCTransform, scparams, sctransform
 using SingleCell10x
 
 
 include("MatrixExpressions/MatrixExpressions.jl")
 using .MatrixExpressions
+
+
+# This symbol is only defined on Julia versions that support extensions
+isdefined(Base, :get_extension) || using Requires
 
 
 include("utils.jl")
@@ -110,10 +112,12 @@ include("counts_fraction.jl")
 
 include("precompile.jl")
 
-function __init__()
-    @require UMAP="c4f8c510-2410-5be4-91d7-4fbaeb39457e" include("umap_glue.jl")
-    @require TSne="24678dba-d5e9-5843-a4c6-250288b04835" include("tsne_glue.jl")
-    @require PrincipalMomentAnalysis="6a3ba550-3b7f-11e9-2734-d9178ad1e8db" include("pma_glue.jl")
+@static if !isdefined(Base, :get_extension)
+	function __init__()
+		@require UMAP="c4f8c510-2410-5be4-91d7-4fbaeb39457e" include("../ext/SingleCellProjectionsUMAPExt.jl")
+		@require TSne="24678dba-d5e9-5843-a4c6-250288b04835" include("../ext/SingleCellProjectionsTSneExt.jl")
+		@require PrincipalMomentAnalysis="6a3ba550-3b7f-11e9-2734-d9178ad1e8db" include("../ext/SingleCellProjectionsPrincipalMomentAnalysisExt.jl")
+	end
 end
 
 end
