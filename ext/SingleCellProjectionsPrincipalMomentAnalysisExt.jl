@@ -68,6 +68,20 @@ end
 SingleCellProjections.projection_isequal(m1::PMAModel, m2::PMAModel) = m1.F === m2.F && m1.var_match == m2.var_match
 SingleCellProjections.update_model(m::PMAModel; var=m.var, obs=m.obs, kwargs...) = (SVDModel(m.F, m.var_match, var, obs), kwargs)
 
+"""
+	pma(data::DataMatrix, G; nsv=3, obs=:copy, var=:copy, kwargs...)
+
+Computes the Principal Moment Analysis of the DataMatrix `data`.
+
+* `nsv` - The number of singular values.
+* `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
+* `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
+
+The `G` parameter is handled as in `PrincipalMomentAnalysis.pma`. See [`PrincipalMomentAnalysis` documentation](https://principalmomentanalysis.github.io/PrincipalMomentAnalysis.jl/stable/) for more details.
+Additional kwargs related to numerical precision are passed to `SingleCellProjections.implicitsvd`.
+
+See also: [`PrincipalMomentAnalysis.pma`](https://principalmomentanalysis.github.io/PrincipalMomentAnalysis.jl/stable/reference/#PrincipalMomentAnalysis.pma)
+"""
 function PrincipalMomentAnalysis.pma(data::DataMatrix, args...; nsv=3, var=:copy, obs=:copy, kwargs...)
 	F = implicitpma(data.matrix, args...; nsv=nsv, kwargs...)
 	model = PMAModel(F,select(data.var,data.var_id_cols), var, obs)
