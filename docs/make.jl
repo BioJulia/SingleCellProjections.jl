@@ -12,11 +12,11 @@ DocMeta.setdocmeta!(SingleCellProjections, :DocTestSetup, :(using SingleCellProj
 makedocs(;
     modules=[SingleCellProjections],
     authors="Rasmus Henningsson <rasmus.henningsson@med.lu.se>",
-    repo="https://github.com/rasmushenningsson/SingleCellProjections.jl/blob/{commit}{path}#{line}",
+    repo="https://github.com/BioJulia/SingleCellProjections.jl/blob/{commit}{path}#{line}",
     sitename="SingleCellProjections.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://rasmushenningsson.github.io/SingleCellProjections.jl",
+        canonical="https://BioJulia.github.io/SingleCellProjections.jl",
         edit_link="main",
         assets=String[],
         ansicolor = true, # for underlining to work in REPL output
@@ -31,6 +31,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/rasmushenningsson/SingleCellProjections.jl",
+    repo="github.com/BioJulia/SingleCellProjections.jl",
     devbranch="main",
 )
