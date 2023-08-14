@@ -1,18 +1,24 @@
 module SingleCellProjectionsPrincipalMomentAnalysisExt
 
 using SingleCellProjections
+using SingleCellProjections: Index, LowRank, implicitsvd, innersize, var_coordinates, obs_coordinates, table_cols_equal
+using SingleCellProjections.MatrixExpressions
+
+using DataFrames
 
 if isdefined(Base, :get_extension)
+	using PrincipalMomentAnalysis
 	using PrincipalMomentAnalysis: PMA, SimplexGraph, simplices2kernelmatrixroot
 else
+	using ..PrincipalMomentAnalysis
 	using ..PrincipalMomentAnalysis: PMA, SimplexGraph, simplices2kernelmatrixroot
 end
 
 
 function _implicitpma(A, samplekernelroot::AbstractMatrix; kwargs...)
 	prod(size(A))==0 && return PMA(zeros(0,0), zeros(0), zeros(0,0), zeros(0,0))
-	B = SingleCellProjections.matrixproduct(A, samplekernelroot)
-	F = SingleCellProjections.implicitsvd(B; kwargs...)
+	B = matrixproduct(A, samplekernelroot)
+	F = implicitsvd(B; kwargs...)
 
 	U = F.U
 	S = F.S
@@ -45,11 +51,11 @@ function SingleCellProjections._subsetmatrix(F::PMA, I::Index, J::Index)
 	U = F.U[I,:]
 	Vt = F.Vt[:,J]
 	lmul!(Diagonal(F.S), Vt)
-	SingleCellProjections.LowRank(U, Vt)
+	LowRank(U, Vt)
 end
 
 
-SingleCellProjections._showmatrix(io, matrix::PMA) = print(io, "PMA (", SingleCellProjections.innersize(matrix), " dimensions)")
+SingleCellProjections._showmatrix(io, matrix::PMA) = print(io, "PMA (", innersize(matrix), " dimensions)")
 
 
 struct PMAModel <: ProjectionModel
@@ -69,19 +75,19 @@ function PrincipalMomentAnalysis.pma(data::DataMatrix, args...; nsv=3, var=:copy
 end
 
 function project_impl(data::DataMatrix, model::PMAModel; verbose=true)
-	@assert SingleCellProjections.table_cols_equal(data.var, model.var_match) "PMA projection expects model and data variables to be identical."
+	@assert table_cols_equal(data.var, model.var_match) "PMA projection expects model and data variables to be identical."
 
 	F = model.F
 	X = data.matrix
 
 	V = X'F.U # TODO: compute F.U'X instead to get Vt directly
-	matrix = SingleCellProjections.LowRank(F.U, V') # V is already scaled with F.S like it should be
+	matrix = LowRank(F.U, V') # V is already scaled with F.S like it should be
 	update_matrix(data, matrix, model; model.obs, model.var)
 end
 
 
 function Base.show(io::IO, ::MIME"text/plain", model::PMAModel)
-	print(io, "PMAModel(nsv=", SingleCellProjections.innersize(model.F), ')')
+	print(io, "PMAModel(nsv=", innersize(model.F), ')')
 end
 
 end
