@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2023-08-16
+
+### Fixed
+* UMAP, TSne and PrincipalMomentAnalysis support now uses Package Extensions (on Julia 1.9+)
+* Compat bump for SingleCell10x which should reduce loading time and memory usage when reading from .h5 files
+
 ## [0.3.2] - 2023-07-17
 
 ### Fixed
