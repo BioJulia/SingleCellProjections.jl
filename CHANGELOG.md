@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2023-09-13
+
+### Fixed
+
+* Add compat with HDF5.jl v0.17
+
 ## [0.3.3] - 2023-08-16
 
 ### Fixed
