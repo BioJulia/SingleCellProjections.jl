@@ -272,7 +272,7 @@ The natural input for most cases are the coordinates after dimension reduction b
 
 
 ## Projections
-`SingleCellProjections` is build to make it very easy to project one dataset onto another.
+`SingleCellProjections` is built to make it very easy to project one dataset onto another.
 
 Let's load count data for two more samples:
 ```@repl fake
