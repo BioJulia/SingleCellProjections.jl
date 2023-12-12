@@ -18,7 +18,7 @@ struct PseudoBulkModel <: ProjectionModel
 	end
 end
 PseudoBulkModel(obs_col, args...; merged_id="id", delim='_', var=:copy) =
-	PseudoBulkModel(collect(obs_col, args...), merged_id, delim, var)
+	PseudoBulkModel(collect((obs_col, args...)), merged_id, delim, var)
 
 projection_isequal(m1::PseudoBulkModel, m2::PseudoBulkModel) =
 	m1.obs_id_cols == m2.obs_id_cols &&
@@ -61,11 +61,15 @@ function project_impl(data::DataMatrix, model::PseudoBulkModel; verbose=true)
 	dropmissing!(obs) # This is the new obs annotation
 
 	# Find out which group each cell belongs to
-	obs_ind = table_indexin(data.obs, obs)
+	obs_ind = table_indexin(data.obs, obs; matchmissing=:equal)
 
 	# Create sparse matrix mapping cells to groups
 	N = size(data,2)
-	S = sparse(1:N, obs_ind, 1.0, N, size(obs,1))
+
+	mask = obs_ind .!== nothing
+	I = (1:N)[mask]
+	J = identity.(obs_ind[mask])
+	S = sparse(I, J, 1.0, N, size(obs,1))
 
 	# Make each column sum to one (so that we take mean for each group)
 	rmul!(S, Diagonal(1.0 ./ vec(sum(S; dims=1))))

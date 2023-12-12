@@ -414,4 +414,63 @@
 
 		test_show(c; obs=vcat(names(counts.obs), ["A","B","C"]), models="VarCountsFractionModel")
 	end
+
+	@testset "pseudobulk $name" for (name,data,data_proj) in (("counts",counts,counts_proj), ("transformed",transformed,transformed_proj))
+	# TODO: Make pseudobulk work with data.matrix::Factorization
+	# @testset "pseudobulk $name" for (name,data,data_proj) in (("counts",counts,counts_proj), ("transformed",transformed,transformed_proj), ("reduced",reduced,reduced_proj))
+		d = copy(data)
+		d.obs.group2 = replace(d.obs.group, "C"=>missing)
+		d.obs.group3 = rand(StableRNG(276), ("a","b"), size(data,2))
+		d.obs.twogroup = replace(d.obs.group, "C"=>"A")
+		X = materialize(d.matrix)
+
+		@testset "$annot" for annot in ("group","group2","group3","twogroup")
+			unique_groups = collect(skipmissing(unique!(sort(d.obs[!,annot]))))
+
+			pb = pseudobulk(d, annot)
+			@test names(pb.obs) == ["id", annot]
+			@test unique!(sort(pb.obs.id)) == unique_groups
+			@test unique!(sort(pb.obs[!,annot])) == unique_groups
+
+			pb_X = materialize(pb.matrix)
+			@test size(pb_X,1) == size(X,1)
+			@test size(pb_X,2) == length(unique_groups)
+
+			for g in unique_groups
+				x = vec(mean(X[:, isequal.(d.obs[!,annot], g)]; dims=2))
+				gi = findfirst(isequal(g), pb.obs.id)
+
+				@test x ≈ pb_X[:,gi]
+			end
+		end
+
+		@testset "$annot1, $annot2" for (annot1,annot2) in (("group","group3"),("group","group2"),("group","twogroup"))
+			groups = string.(d.obs[!,annot1],'_',d.obs[!,annot2])
+			mask = .!ismissing.(d.obs[!,annot1]) .& .!ismissing.(d.obs[!,annot2])
+			unique_groups = unique!(sort!(groups[mask]))
+
+			pb = pseudobulk(d, annot1, annot2)
+			@test names(pb.obs) == ["id", annot1, annot2]
+			@test unique!(sort(pb.obs.id)) == unique_groups
+			@test unique!(sort(pb.obs[!,annot1])) == unique!(sort!(d.obs[mask,annot1]))
+			@test unique!(sort(pb.obs[!,annot2])) == unique!(sort!(d.obs[mask,annot2]))
+
+
+			pb_X = materialize(pb.matrix)
+			@test size(pb_X,1) == size(X,1)
+			@test size(pb_X,2) == length(unique_groups)
+
+			for g1 in unique(d.obs[mask,annot1]), g2 in unique(d.obs[mask,annot2])
+				g_mask = isequal.(d.obs[!,annot1], g1) .& isequal.(d.obs[!,annot2], g2)
+				x = vec(mean(X[:, g_mask]; dims=2))
+				gi = findfirst(isequal(string(g1,'_',g2)), pb.obs.id)
+				if any(g_mask) # are there any observations in this group?
+					@test x ≈ pb_X[:,gi]
+				else
+					@test gi === nothing
+				end
+			end
+		end
+
+	end
 end
