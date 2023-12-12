@@ -12,6 +12,7 @@ export
 	NearestNeighborModel,
 	ObsAnnotationModel,
 	VarCountsFractionModel,
+	PseudoBulkModel,
 	project,
 	set_var_id_cols!,
 	set_obs_id_cols!,
@@ -38,6 +39,7 @@ export
 	var_to_obs,
 	var_to_obs_table,
 	var_counts_fraction!,
+	pseudobulk,
 	ftest!,
 	ftest,
 	ftest_table,
@@ -109,6 +111,7 @@ include("reduce.jl")
 include("annotate.jl")
 include("statistical_tests.jl")
 include("counts_fraction.jl")
+include("pseudobulk.jl")
 
 include("precompile.jl")
 
