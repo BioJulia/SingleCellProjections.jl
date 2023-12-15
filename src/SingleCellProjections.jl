@@ -91,6 +91,11 @@ include("sctransformsparse.jl")
 
 include("implicitsvd.jl")
 
+include("lowrank.jl")
+include("projectionmodels.jl")
+include("datamatrix.jl")
+include("subset_expression.jl")
+
 include("adjacency_matrices.jl")
 
 include("barnes_hut.jl")
@@ -100,11 +105,6 @@ include("embed.jl")
 include("h5ad.jl")
 
 include("mannwhitney.jl")
-
-include("lowrank.jl")
-include("projectionmodels.jl")
-include("datamatrix.jl")
-include("subset_expression.jl")
 
 include("filter.jl")
 include("load.jl")
