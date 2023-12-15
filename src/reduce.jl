@@ -148,7 +148,7 @@ julia> force_layout(data; ndim=3, k=100)
 function force_layout(data::DataMatrix; ndim=3, k=nothing, adj=nothing, kprojection=10, obs=:copy, adj_out=nothing, kwargs...)
 	@assert isnothing(k) != isnothing(adj) "Must specify exactly one of k and adj."
 	if k !== nothing
-		adj = knn_adjacency_matrix(obs_coordinates(data); k)
+		adj = knn_adjacency_matrix(obs_coordinates(data); k, make_symmetric=true)
 	end
 	adj_out !== nothing && (adj_out[] = adj)
 
