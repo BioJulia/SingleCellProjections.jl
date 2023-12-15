@@ -1,7 +1,7 @@
 name = "SingleCellProjections"
 uuid = "03d38035-ed2f-4a36-82eb-797f1727ab2e"
 authors = ["Rasmus Henningsson <rasmus.henningsson@med.lu.se>"]
-version = "0.3.5"
+version = "0.3.6"
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6] - 2023-12-15
+
 ### Added
 
 * `local_outlier_factor!` - Compute the Local Outlier Factor (LOF) for each observation in a DataMatrix. Supports finding neighbors in a low dimensional space (e.g. after PCA or UMAP), but computing distances in a high dimensional space (e.g. after normalization).
