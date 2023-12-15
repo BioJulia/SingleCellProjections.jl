@@ -81,6 +81,8 @@ Compute the Local Outlier Factor, with nearest neighbors based only on `reduced`
 using distances in `full` for the actual LOF computation.
 
 ```julia
+julia> reduced = svd(normalized; nsv=10)
+
 julia> local_outlier_factor!(reduced, normalized; k=10)
 ```
 
@@ -141,6 +143,8 @@ The nearest neighbors are computed between observations in `reduced` and `base_r
 the distances in the actual LOF computation are between the same observations in `normalized` and `base_normalized`.
 
 ```julia
+julia> base_reduced = svd(base_normalized; nsv=10)
+
 julia> normalized = project(counts, base_normalized);
 
 julia> reduced = project(normalized, base_reduced);
