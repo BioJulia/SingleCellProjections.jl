@@ -1,31 +1,3 @@
-function knn_adjacency_matrix(X; k, make_symmetric=true)
-    N = size(X,2)
-    k = min(k,N-1)
-    tree = KDTree(X)
-    indices,_ = knn(tree, X, k+1)
-
-    I = zeros(Int, k*N)
-    J = zeros(Int, k*N)
-    destInd = 1
-    for (j,ind) in enumerate(indices)
-        skip = 0
-        for a in 1:k
-            ind[a]==j && (skip=1)
-            I[destInd] = ind[a+skip]
-            J[destInd] = j
-            destInd += 1
-        end
-    end
-    adj = sparse(I,J,true,N,N)
-    if make_symmetric
-        adj = adj.|adj'
-    end
-    adj
-end
-
-
-
-
 _randinit(::Val{ndim}, rng, N::Int, scale) where ndim = scale.*randn(rng, SVector{ndim,Float64}, N)
 
 

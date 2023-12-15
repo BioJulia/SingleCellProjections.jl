@@ -40,6 +40,8 @@ export
 	var_to_obs_table,
 	var_counts_fraction!,
 	pseudobulk,
+	local_outlier_factor!,
+	local_outlier_factor_projection!,
 	ftest!,
 	ftest,
 	ftest_table,
@@ -89,6 +91,8 @@ include("sctransformsparse.jl")
 
 include("implicitsvd.jl")
 
+include("adjacency_matrices.jl")
+
 include("barnes_hut.jl")
 include("force_layout.jl")
 include("embed.jl")
@@ -112,6 +116,8 @@ include("annotate.jl")
 include("statistical_tests.jl")
 include("counts_fraction.jl")
 include("pseudobulk.jl")
+
+include("local_outlier_factor.jl")
 
 include("precompile.jl")
 
