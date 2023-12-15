@@ -62,8 +62,8 @@ end
 For each structural non-zero in `adj`, compute the Euclidean distance between the point in
 the DataMatrix `Y` and the point in the DataMatrix `X`.
 
-Can be useful when `adj` is created using e.g. a lower-dimensional representation and we
-want to know the distances in the original, high-dimensional space.
+Can be useful when `adj` is created using e.g. a lower dimensional representation and we
+want to know the distances in the original, high dimensional space.
 
 At the moment all points in `Y` are required to have the same number of neighbors in `X`,
 for computation reasons.
