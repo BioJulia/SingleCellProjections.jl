@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7] - 2023-12-19
+
+### Fixed
+
+* `load_counts` - You can now pass a single filename to load a single file (previously arrays were required, but the error message was confusing).
+
 ## [0.3.6] - 2023-12-15
 
 ### Added
