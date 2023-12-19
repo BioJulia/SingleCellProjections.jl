@@ -1,4 +1,6 @@
-function samplenamesfromfilenames(filenames)::Vector{String}
+function samplenamesfromfilenames(filenames::AbstractVector)::Union{Vector{String},Nothing}
+	length(filenames) == 1 && return nothing
+
 	n = first.(splitext.(filenames))
 	n = replace.(n, r"_?(matrix|filtered_feature_bc_matrix|sample_feature_bc_matrix|sample_filtered_feature_bc_matrix)$"i=>"")
 
@@ -14,6 +16,8 @@ function samplenamesfromfilenames(filenames)::Vector{String}
 	error("Failed to find unique sample names from filenames: $filenames")
 end
 
+samplenamesfromfilenames(::Any) = nothing
+
 
 struct Lazy10xMatrix{Tv,Ti}
 	sz::Tuple{Int,Int}
@@ -21,6 +25,12 @@ struct Lazy10xMatrix{Tv,Ti}
 	filename::String
 end
 Lazy10xMatrix(::Type{Tv},::Type{Ti}, args...) where {Tv,Ti} = Lazy10xMatrix{Tv,Ti}(args...)
+
+Base.:(==)(a::Lazy10xMatrix, b::Lazy10xMatrix) = false
+function Base.:(==)(a::Lazy10xMatrix{T,Tv}, b::Lazy10xMatrix{T,Tv}) where {T,Tv}
+	all(i->getfield(a,i)==getfield(b,i), 1:nfields(a))
+end
+
 
 struct LazyMergedMatrix{Tv,Ti}
 	sz::Tuple{Int,Int}
@@ -30,6 +40,10 @@ struct LazyMergedMatrix{Tv,Ti}
 end
 LazyMergedMatrix(::Type{Tv},::Type{Ti}, args...) where {Tv,Ti} = LazyMergedMatrix{Tv,Ti}(args...)
 
+Base.:(==)(a::LazyMergedMatrix, b::LazyMergedMatrix) = false
+function Base.:(==)(a::LazyMergedMatrix{T,Tv}, b::LazyMergedMatrix{T,Tv}) where {T,Tv}
+	all(i->getfield(a,i)==getfield(b,i), 1:nfields(a))
+end
 
 Base.size(matrix::Lazy10xMatrix) = matrix.sz
 Base.size(matrix::Lazy10xMatrix, dim) = dim>2 ? 1 : matrix.sz[dim]
@@ -150,7 +164,7 @@ Defaults to loading 10x CellRanger files.
 The files are first loaded lazily, then the merged count matrix is allocated and finally each sample is loaded directly into the merged count matrix.
 (This strategy greatly reduces memory usage, since only one copy of data is needed instead of two.)
 
-The vector `filenames` specifies which files to load.
+`filenames` specifies which files to load. (It can be a vector of filenames or a single filename string.)
 For each file, `loadfun` is called.
 
 * `sample_names` - Specify the sample names. Should be a vector of the same length as `filenames`. Set to `nothing` to not create a sample name annotation.
@@ -180,6 +194,9 @@ function load_counts(loadfun, filenames;
                      merged_obs_id_col = "id",
                      merged_obs_id_delim = '_',
                      callback=nothing)
+
+	filenames isa AbstractVector || (filenames = [filenames])
+	sample_names isa Union{Nothing,AbstractVector} || (sample_names = [sample_names])
 
 	# TODO: call callback between sample loads(?)
 	args1 = lazy ? (;lazy) : (;)
