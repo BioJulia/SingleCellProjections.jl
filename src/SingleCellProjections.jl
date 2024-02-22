@@ -82,6 +82,7 @@ using .MatrixExpressions
 isdefined(Base, :get_extension) || using Requires
 
 
+include("random.jl")
 include("utils.jl")
 include("table_utils.jl")
 include("threaded_sparse_row_map.jl")
@@ -126,6 +127,7 @@ include("precompile.jl")
 		@require UMAP="c4f8c510-2410-5be4-91d7-4fbaeb39457e" include("../ext/SingleCellProjectionsUMAPExt.jl")
 		@require TSne="24678dba-d5e9-5843-a4c6-250288b04835" include("../ext/SingleCellProjectionsTSneExt.jl")
 		@require PrincipalMomentAnalysis="6a3ba550-3b7f-11e9-2734-d9178ad1e8db" include("../ext/SingleCellProjectionsPrincipalMomentAnalysisExt.jl")
+		@require StableRNGs="860ef19b-820b-49d6-a774-d7a799459cd3" include("../ext/SingleCellProjectionsStableRNGsExt.jl")
 	end
 end
 

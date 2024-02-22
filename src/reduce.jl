@@ -108,6 +108,7 @@ end
                  initialAlpha = 1.0,
                  finalAlpha = 1e-3,
                  initialScale = 10,
+                 seed,
                  rng)
 
 Compute the Force Layout (also known as a force directed knn-graph or SPRING plots) for `data`.
@@ -137,6 +138,7 @@ Paramters controlling the physics simulation:
 * `initialAlpha` - The alpha value decreases over time and allows larger changes to happen early, while being more stable towards the end.
 * `finalAlpha` - See `initialAlpha`
 * `initialScale` - The simulation is initialized by randomly drawing each observation from a multivariate Gaussian, and is scaled by `initialScale`.
+* `seed` - Optional random seed used to init `rng`. NB: This requires the package `StableRNGs` to be loaded.
 * `rng` - Optional RNG object. Useful for reproducibility.
 
 # Examples

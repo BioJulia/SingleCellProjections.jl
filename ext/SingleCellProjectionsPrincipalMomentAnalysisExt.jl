@@ -29,7 +29,7 @@ function _implicitpma(A, samplekernelroot::AbstractMatrix; kwargs...)
 end
 
 """
-	implicitpma(A, G::SimplexGraph; nsv=3, subspacedims=8nsv, niter=2)
+	implicitpma(A, G::SimplexGraph; nsv=3, subspacedims=8nsv, niter=2, seed, rng)
 
 Computes the Principal Moment Analysis of the implicitly given matrix `A` (variables × samples) using the sample simplex graph `G`.
 """
@@ -70,13 +70,15 @@ SingleCellProjections.projection_isequal(m1::PMAModel, m2::PMAModel) = m1.F === 
 SingleCellProjections.update_model(m::PMAModel; var=m.var, obs=m.obs, kwargs...) = (SVDModel(m.F, m.var_match, var, obs), kwargs)
 
 """
-	pma(data::DataMatrix, G; nsv=3, obs=:copy, var=:copy, kwargs...)
+	pma(data::DataMatrix, G; nsv=3, obs=:copy, var=:copy, seed, rng, kwargs...)
 
 Computes the Principal Moment Analysis of the DataMatrix `data`.
 
 * `nsv` - The number of singular values.
 * `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
 * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
+* `seed` - Use a random seed to init the `rng`. NB: This requires the package `StableRNGs` to be loaded.
+* `rng` - Specify a custom RNG.
 
 The `G` parameter is handled as in `PrincipalMomentAnalysis.pma`. See [`PrincipalMomentAnalysis` documentation](https://principalmomentanalysis.github.io/PrincipalMomentAnalysis.jl/stable/) for more details.
 Additional kwargs related to numerical precision are passed to `SingleCellProjections.implicitsvd`.

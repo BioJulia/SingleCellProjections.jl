@@ -113,7 +113,8 @@ function force_layout(::Val{ndim}, adj::AbstractMatrix;
                       velocity_decay=0.9,
                       initialAlpha = 1.0, finalAlpha = 1e-3,
                       initialScale = 10,
-                      rng = Random.default_rng()) where ndim
+                      seed = nothing,
+                      rng = seed !== nothing ? seed2rng(seed) : Random.default_rng()) where ndim
     N = size(adj,1)
     @assert size(adj,2)==N
     @assert issymmetric(adj) # TODO: support upper triangular adj matrix too?

@@ -178,7 +178,7 @@
 	normalized_proj = project(transformed_proj,normalized)
 
 	@testset "svd" begin
-		reduced = svd(normalized; nsv=3, subspacedims=24, niter=4, rng=StableRNG(102))
+		reduced = svd(normalized; nsv=3, subspacedims=24, niter=4, seed=102)
 		F = svd(Xcom)
 		@test size(reduced)==size(normalized)
 		@test reduced.matrix.S ≈ F.S[1:3] rtol=1e-3
@@ -349,7 +349,7 @@
 
 
 	@testset "force layout seed=$seed" for seed in 1:5
-		fl = force_layout(reduced; ndim=3, k=10, rng=StableRNG(seed))
+		fl = force_layout(reduced; ndim=3, k=10, seed)
 		# Sanity check output by checking that there is a descent overlap between nearest neighbors
 		ncommon = ncommon_neighbors(obs_coordinates(fl), obs_coordinates(reduced))
 		@test mean(ncommon) > 8
