@@ -66,7 +66,7 @@ struct PMAModel <: ProjectionModel
 	obs::Symbol
 end
 
-SingleCellProjections.projection_isequal(m1::PMAModel, m2::PMAModel) = m1.F === m2.F && m1.var_match == m2.var_match
+SingleCellProjections.projection_isequal(m1::PMAModel, m2::PMAModel) = m1.F == m2.F && m1.var_match == m2.var_match
 SingleCellProjections.update_model(m::PMAModel; var=m.var, obs=m.obs, kwargs...) = (SVDModel(m.F, m.var_match, var, obs), kwargs)
 
 """

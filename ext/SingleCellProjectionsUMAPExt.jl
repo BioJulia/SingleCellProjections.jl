@@ -10,7 +10,7 @@ struct UMAPModel <: ProjectionModel
 	obs::Symbol
 end
 
-SingleCellProjections.projection_isequal(m1::UMAPModel, m2::UMAPModel) = m1.m === m2.m && m1.var_match == m2.var_match
+SingleCellProjections.projection_isequal(m1::UMAPModel, m2::UMAPModel) = m1.m == m2.m && m1.var_match == m2.var_match
 
 SingleCellProjections.update_model(m::UMAPModel; obs=m.obs, kwargs...) = (UMAPModel(m.m, m.var_match, obs), kwargs)
 

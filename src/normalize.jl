@@ -43,7 +43,7 @@ struct NormalizationModel <: ProjectionModel
 end
 
 function projection_isequal(m1::NormalizationModel, m2::NormalizationModel)
-	m1.negβT === m2.negβT && m1.covariates == m2.covariates && m1.rank == m2.rank &&
+	m1.negβT == m2.negβT && m1.covariates == m2.covariates && m1.rank == m2.rank &&
 	m1.var_match == m2.var_match && m1.scaling == m2.scaling
 end
 

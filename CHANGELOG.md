@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.9] - 2024-03-04
+
+### Fixed
+
+* Relax `===` to `==` when comparing some models. (This fixes a bug when a model is saved to disk using e.g. JLD2 and the loaded again.)
+
 ## [0.3.8] - 2024-02-22
 
 ### Added

@@ -15,7 +15,7 @@ end
 
 # NB: Require Factorizations to be ===. This is faster and more reasonable.
 # Because of numerical issues, we should never expect Factorizations to be equal if they are not identical.
-projection_isequal(m1::SVDModel, m2::SVDModel) = m1.F === m2.F && m1.var_match == m2.var_match
+projection_isequal(m1::SVDModel, m2::SVDModel) = m1.F == m2.F && m1.var_match == m2.var_match
 
 
 update_model(m::SVDModel; var=m.var, obs=m.obs, kwargs...) = (SVDModel(m.F, m.var_match, var, obs), kwargs)
@@ -70,8 +70,7 @@ NearestNeighborModel(name, pre::DataMatrix, post::DataMatrix; kwargs...) =
 	NearestNeighborModel(name, pre, obs_coordinates(post); kwargs...)
 
 function projection_isequal(m1::NearestNeighborModel, m2::NearestNeighborModel)
-	# NB: === for factorizations/matrices
-	m1.name == m2.name && m1.pre === m2.pre && m1.post === m2.post &&
+	m1.name == m2.name && m1.pre == m2.pre && m1.post == m2.post &&
 	m1.var_match == m2.var_match && m1.k == m2.k
 end
 
