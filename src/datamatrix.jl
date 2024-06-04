@@ -82,29 +82,29 @@ end
 
 
 
-# """
-# 	set_var_id_cols!(data::DataMatrix, var_id_cols::Vector{String})
+"""
+	set_var_id_col!(data::DataMatrix, var_id_col::String)
 
-# Set which column(s) to use as variable IDs.
-# The rows of the `data.var` table must be unique, considering only the `var_id_cols` columns.
-# """
-# function set_var_id_cols!(data::DataMatrix, var_id_cols::Vector{String})
-# 	table_validatecols(data.var, var_id_cols)
-# 	table_validateunique(data.var, var_id_cols)
-# 	copy!(data.var_id_cols, var_id_cols)
-# end
+Set which column to use as variable IDs. It will be moved to the first column of `data.var`.
+The rows of this column in `data.var` must be unique.
+"""
+function set_var_id_col!(data::DataMatrix, var_id_col::String)
+	table_validatecols(data.var, var_id_col)
+	table_validateunique(data.var, var_id_col)
+	select!(data.var, var_id_col, Not(var_id_col)) # move var_id_col first
+end
 
-# """
-# 	set_obs_id_cols!(data::DataMatrix, obs_id_cols::Vector{String})
+"""
+	set_obs_id_col!(data::DataMatrix, obs_id_col::String)
 
-# Set which column(s) to use as observation IDs.
-# The rows of the `data.obs` table must be unique, considering only the `obs_id_cols` columns.
-# """
-# function set_obs_id_cols!(data::DataMatrix, obs_id_cols::Vector{String})
-# 	table_validatecols(data.obs, obs_id_cols)
-# 	table_validateunique(data.obs, obs_id_cols)
-# 	copy!(data.obs_id_cols, obs_id_cols)
-# end
+Set which column to use as observation IDs. It will be moved to the first column of `data.obs`.
+The rows of this column in `data.obs` must be unique.
+"""
+function set_obs_id_col!(data::DataMatrix, obs_id_col::String)
+	table_validatecols(data.obs, obs_id_col)
+	table_validateunique(data.obs, obs_id_col)
+	select!(data.obs, obs_id_col, Not(obs_id_col)) # move obs_id_col first
+end
 
 
 
@@ -365,7 +365,7 @@ function _showannotations(io, annotations, header)
 	print(io, header, ": ")
 	for (c,name) in enumerate(names(annotations))
 		c>=10 && (print(io, ", ..."); break)
-		_printannotation(io, name, c>1; underline=c==1)
+		_printannotation(io, name, c>1; underline=c==1, reverse=c==1 && !allunique(annotations[!,name])) # reverse if ID columns doesn't have unique values
 	end
 end
 _showvar(io, data) = _showannotations(io, data.var, "Variables")
