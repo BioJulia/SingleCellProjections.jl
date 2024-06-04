@@ -44,12 +44,12 @@ end
 function knn_adjacency_matrix(data::DataMatrix; kwargs...)
 	adj = knn_adjacency_matrix(obs_coordinates(data.matrix); kwargs...)
 	obs = copy(data.obs)
-	DataMatrix(adj, obs, obs; var_id_cols=data.obs_id_cols, data.obs_id_cols)
+	DataMatrix(adj, obs, obs)
 end
 
 function knn_adjacency_matrix(X::DataMatrix, Y::DataMatrix; kwargs...)
 	adj = knn_adjacency_matrix(obs_coordinates(X.matrix), obs_coordinates(Y.matrix); kwargs...)
-	DataMatrix(adj, copy(X.obs), copy(Y.obs); var_id_cols=X.obs_id_cols, Y.obs_id_cols)
+	DataMatrix(adj, copy(X.obs), copy(Y.obs))
 end
 
 
@@ -69,10 +69,10 @@ At the moment all points in `Y` are required to have the same number of neighbor
 for computation reasons.
 """
 function adjacency_distances(adj::DataMatrix, X::DataMatrix, Y::DataMatrix=X)
-	table_cols_equal(adj.var, X.obs; cols=X.obs_id_cols) || error("Adjacency matrix and DataMatrix have different obs.")
-	table_cols_equal(adj.obs, Y.obs; cols=Y.obs_id_cols) || error("Adjacency matrix and DataMatrix have different obs.")
+	table_cols_equal(adj.var, X.obs; cols=names(X.obs,1)) || error("Adjacency matrix and DataMatrix have different obs.")
+	table_cols_equal(adj.obs, Y.obs; cols=names(Y.obs,1)) || error("Adjacency matrix and DataMatrix have different obs.")
 	D = _adjacency_distances(adj.matrix, X, Y)
-	DataMatrix(D, copy(adj.var), copy(adj.obs); adj.var_id_cols, adj.obs_id_cols)
+	DataMatrix(D, copy(adj.var), copy(adj.obs))
 end
 
 
@@ -98,7 +98,7 @@ function _adjacency_distances(adj, X::DataMatrix, Y::DataMatrix=X)
 
 		# Xs = X[:,Is] # Doesn't work since DataMatrix doesn't allow duplicate IDs
 		# Temporary workaround - TODO: fix proper interface?
-		Xs = DataMatrix(_subsetmatrix(X.matrix,:,Is), X.var, DataFrame(id=1:length(Is)); var_id_cols=X.var_id_cols)
+		Xs = DataMatrix(_subsetmatrix(X.matrix,:,Is), X.var, DataFrame(id=1:length(Is)))
 
 
 		# Ys = Y[:,Js] # guaranteed to be equal to Y

@@ -28,7 +28,7 @@ The other `args...` and `kwargs...` are forwarded to `UMAP.umap`. See `UMAP` doc
 See also: [`UMAP.umap`](https://github.com/dillondaudert/UMAP.jl)
 """
 function UMAP.umap(data::DataMatrix, args...; obs=:copy, kwargs...)
-	model = UMAPModel(UMAP.UMAP_(obs_coordinates(data), args...; kwargs...), select(data.var,data.var_id_cols), obs)
+	model = UMAPModel(UMAP.UMAP_(obs_coordinates(data), args...; kwargs...), select(data.var,1), obs)
 	update_matrix(data, model.m.embedding, model; var="UMAP", model.obs)
 end
 

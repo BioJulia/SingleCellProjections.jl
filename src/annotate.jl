@@ -32,13 +32,13 @@ function ObsAnnotationModel(fvar, data::DataMatrix;
 
 	# kwargs trick to let defaults be decided here if `nothing` is passed to name_src or names
 	if names === nothing
-		name_src = @something name_src _get_name_src(fvar) data.var_id_cols
+		name_src = @something name_src _get_name_src(fvar) Base.names(data.var,1)
 		names = _default_out_name(name_src)
 	end
 
 	var_ind = _filter_indices(data.var, fvar)
 	v = data.var[var_ind,:]
-	var_match = select(v, data.var_id_cols; copycols=false)
+	var_match = select(v, 1; copycols=false)
 	isempty(var_match) && throw(ArgumentError("No variables match filter ($fvar)."))
 	ObsAnnotationModel(var_match, instantiate_out_names(v, names), var, obs, matrix)
 end
@@ -88,7 +88,7 @@ end
 function var_to_obs_table(fvar, data; kwargs...)
 	model = ObsAnnotationModel(fvar, data; kwargs...)
 	new_obs = _new_annot(data, model)
-	hcat(select(data.obs, data.obs_id_cols), new_obs)
+	hcat(select(data.obs, 1), new_obs)
 end
 
 

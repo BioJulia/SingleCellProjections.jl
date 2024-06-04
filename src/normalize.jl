@@ -115,7 +115,7 @@ function NormalizationModel(data::DataMatrix, design::DesignMatrix;
 	AU = A*F.U
 	negβT = (AU*negΣinv)*F.Vt
 
-	model = NormalizationModel(negβT, design.covariates, rank, select(data.var,data.var_id_cols), [], annotate, var, obs)
+	model = NormalizationModel(negβT, design.covariates, rank, select(data.var,1), [], annotate, var, obs)
 	_setscaling!(model, data, design, scale, min_std)
 end
 
@@ -132,7 +132,7 @@ _named_matrix(A, name::Symbol) = MatrixRef(name=>A)
 
 function project_impl(data::DataMatrix, model::NormalizationModel, design::DesignMatrix; verbose=true)
 	@assert model.var in (:keep, :copy)
-	@assert data.var_id_cols == names(model.var_match)
+	@assert names(data.var,1) == names(model.var_match)
 
 	@assert table_cols_equal(data.obs, design.obs_match) "Normalization expects design matrix and data matrix observations to be identical."
 

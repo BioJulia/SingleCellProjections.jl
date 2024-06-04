@@ -7,7 +7,7 @@ end
 function LogTransformModel(::Type{T}, counts::DataMatrix;
                            var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
                            scale_factor=10_000, var=:copy, obs=:copy) where T
-	var_match = select(counts.var, counts.var_id_cols)
+	var_match = select(counts.var, 1)
 	if var_filter !== nothing
 		sub = filter(var_filter, counts.var; view=true)
 		ind = first(parentindices(sub))
@@ -121,7 +121,7 @@ function TFIDFTransformModel(::Type{T}, counts::DataMatrix;
                              idf=vec(size(counts,2) ./ max.(1,sum(counts.matrix; dims=2))),
                              annotate=true,
                              var=:copy, obs=:copy) where T
-	var_match = select(counts.var, counts.var_id_cols)
+	var_match = select(counts.var, 1)
 	if var_filter !== nothing
 		sub = filter(var_filter, counts.var; view=true)
 		ind = first(parentindices(sub))
@@ -234,7 +234,7 @@ scparams(counts::DataMatrix; kwargs...) = scparams(counts.matrix, counts.var; kw
 
 struct SCTransformModel{T} <: ProjectionModel
 	params::DataFrame
-	var_id_cols::Vector{String}
+	var_id_col::String
 	clip::Float64
 	rtol::Float64
 	atol::Float64
@@ -297,8 +297,8 @@ function SCTransformModel(::Type{T}, counts::DataMatrix;
 
 	params = scparams(counts; feature_mask, kwargs...)
 	clip = sqrt(size(counts,2)/30)
-	post_filter = FilterModel(params, counts.var_id_cols, post_var_filter, post_obs_filter; var=:copy, obs)
-	SCTransformModel{T}(params, counts.var_id_cols, clip, rtol, atol, annotate, post_filter)
+	post_filter = FilterModel(params, post_var_filter, post_obs_filter; var=:copy, obs)
+	SCTransformModel{T}(params, only(names(counts.var,1)), clip, rtol, atol, annotate, post_filter)
 end
 SCTransformModel(counts::DataMatrix; kwargs...) =
 	SCTransformModel(Float64, counts; kwargs...)
@@ -306,7 +306,7 @@ SCTransformModel(counts::DataMatrix; kwargs...) =
 function projection_isequal(m1::SCTransformModel{T1}, m2::SCTransformModel{T2}) where {T1,T2}
 	T1 === T2 &&
 	m1.params == m2.params &&
-	m1.var_id_cols == m2.var_id_cols &&
+	m1.var_id_col == m2.var_id_col &&
 	m1.clip == m2.clip &&
 	m1.rtol == m2.rtol &&
 	m1.atol == m2.atol &&
@@ -328,7 +328,7 @@ function update_model(m::SCTransformModel{T};
 	post_obs_filter === nothing && (post_obs_filter = m.post_filter.obs_filter)
 
 	post_filter = FilterModel(post_var_filter, post_obs_filter, m.post_filter.var_match, m.post_filter.var, obs)
-	model = SCTransformModel{T}(m.params, m.var_id_cols, clip, rtol, atol, annotate, post_filter)
+	model = SCTransformModel{T}(m.params, m.var_id_col, clip, rtol, atol, annotate, post_filter)
 	(model, (;allow_obs_indexing, kwargs...))
 end
 
@@ -342,7 +342,8 @@ function project_impl(counts::DataMatrix, model::SCTransformModel{T}; allow_obs_
 	params = model.params[I,:]
 
 	# Remove any variables not found in counts
-	var_ind = table_indexin(params, counts.var; cols=model.var_id_cols)
+	only(names(counts.var,1)) == model.var_id_col || error("Expected variable id column $(model.var_id_col), got $(only(names(counts.var,1)))")
+	var_ind = table_indexin(params, counts.var; cols=model.var_id_col)
 	var_mask = var_ind.!==nothing
 	var_ind2 = var_ind[var_mask]
 
@@ -361,7 +362,7 @@ function project_impl(counts::DataMatrix, model::SCTransformModel{T}; allow_obs_
 	end
 
 	X,var = sctransformsparse(T, counts.matrix, counts.var, params;
-	                          feature_id_columns=model.var_id_cols,
+	                          feature_id_columns=[model.var_id_col],
 	                          cell_ind=J,
 	                          model.clip, model.rtol, model.atol)
 

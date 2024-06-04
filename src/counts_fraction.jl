@@ -14,7 +14,7 @@ function VarCountsFractionModel(counts::DataMatrix{<:AbstractMatrix{<:Integer}},
 	sub_ind = _filter_indices(var_annot, sub_filter)
 	tot_ind = _filter_indices(var_annot, tot_filter)
 
-	var_id = select(var_annot, counts.var_id_cols)
+	var_id = select(var_annot, 1)
 	var_match_sub = var_id[sub_ind, :]
 	var_match_tot = var_id[tot_ind, :]
 

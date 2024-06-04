@@ -87,7 +87,7 @@ See also: [`PrincipalMomentAnalysis.pma`](https://principalmomentanalysis.github
 """
 function PrincipalMomentAnalysis.pma(data::DataMatrix, args...; nsv=3, var=:copy, obs=:copy, kwargs...)
 	F = implicitpma(data.matrix, args...; nsv=nsv, kwargs...)
-	model = PMAModel(F,select(data.var,data.var_id_cols), var, obs)
+	model = PMAModel(F,select(data.var,1), var, obs)
 	update_matrix(data, F, model; model.var, model.obs)
 end
 

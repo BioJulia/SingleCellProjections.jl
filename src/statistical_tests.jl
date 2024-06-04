@@ -113,7 +113,7 @@ See also: [`mannwhitney!`](@ref), [`mannwhitney`](@ref)
 function mannwhitney_table(data::DataMatrix, args...; h1_missing=:skip, kwargs...)
 	h1 = _mannwhitney_covariate(args...)
 	groups = _create_mannwhitney_groups(data.obs, h1; h1_missing)
-	_mannwhitney_table(data.matrix, data.var[:, data.var_id_cols], groups; kwargs...)
+	_mannwhitney_table(data.matrix, select(data.var,1), groups; kwargs...)
 end
 
 
@@ -140,7 +140,7 @@ function mannwhitney!(data::DataMatrix, args...;
 	h1 = _mannwhitney_covariate(args...)
 	prefix === nothing && (prefix = _create_mannwhitney_prefix(h1))
 	df = mannwhitney_table(data, h1; statistic_col="$(prefix)U", pvalue_col="$(prefix)pValue", kwargs...)
-	leftjoin!(data.var, df; on=data.var_id_cols)
+	leftjoin!(data.var, df; on=names(data.var,1))
 	data
 end
 
@@ -265,7 +265,7 @@ function _ftest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix;
 		p = ones(size(ssExplained))
 	end
 
-	table = data.var[:,data.var_id_cols]
+	table = select(data.var,1)
 	statistic_col !== nothing && insertcols!(table, statistic_col=>F; copycols=false)
 	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
 	table
@@ -370,7 +370,7 @@ function ftest!(data::DataMatrix, h1;
 	h0 = covariate.(_splattable(h0))
 	prefix === nothing && (prefix = _create_ftest_prefix(h0, h1))
 	df = ftest_table(data, h1; h0, statistic_col="$(prefix)F", pvalue_col="$(prefix)pValue", kwargs...)
-	leftjoin!(data.var, df; on=data.var_id_cols)
+	leftjoin!(data.var, df; on=names(data.var,1))
 	data
 end
 
@@ -412,7 +412,7 @@ function _ttest_table(data::DataMatrix, h1::DesignMatrix, h0::DesignMatrix;
 		d = zeros(size(ssUnexplained))
 	end
 
-	table = data.var[:,data.var_id_cols]
+	table = select(data.var,1)
 	statistic_col !== nothing && insertcols!(table, statistic_col=>t; copycols=false)
 	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
 	difference_col !== nothing && insertcols!(table, difference_col=>d; copycols=false)
@@ -533,7 +533,7 @@ function ttest!(data::DataMatrix, args...;
 	prefix === nothing && (prefix = _create_ttest_prefix(h0, h1))
 
 	df = ttest_table(data, h1; h0, statistic_col="$(prefix)t", pvalue_col="$(prefix)pValue", difference_col="$(prefix)difference", kwargs...)
-	leftjoin!(data.var, df; on=data.var_id_cols)
+	leftjoin!(data.var, df; on=names(data.var,1))
 	data
 end
 

@@ -37,7 +37,7 @@ See also: [`SingleCellProjections.implicitsvd`](@ref)
 """
 function LinearAlgebra.svd(data::DataMatrix; nsv=3, var=:copy, obs=:copy, kwargs...)
 	F = implicitsvd(data.matrix; nsv=nsv, kwargs...)
-	model = SVDModel(F, select(data.var,data.var_id_cols), var, obs)
+	model = SVDModel(F, select(data.var,1), var, obs)
 	update_matrix(data, F, model; model.var, model.obs)
 end
 
@@ -65,7 +65,7 @@ struct NearestNeighborModel <: ProjectionModel
 	obs::Symbol
 end
 NearestNeighborModel(name, pre::DataMatrix, post; k, var, obs) =
-	NearestNeighborModel(name, obs_coordinates(pre), post, select(pre.var,pre.var_id_cols), k, var, obs)
+	NearestNeighborModel(name, obs_coordinates(pre), post, select(pre.var,1), k, var, obs)
 NearestNeighborModel(name, pre::DataMatrix, post::DataMatrix; kwargs...) =
 	NearestNeighborModel(name, pre, obs_coordinates(post); kwargs...)
 

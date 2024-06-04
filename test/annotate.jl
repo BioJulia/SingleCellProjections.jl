@@ -42,7 +42,8 @@
 
 		var_to_obs!([3], c)
 		n += 1
-		@test c.obs[:,"ENSG00000184924_Gene Expression"] == c.matrix[3,:]
+		@show names(c.obs)
+		@test c.obs[:,"ENSG00000184924"] == c.matrix[3,:]
 		@test size(c.obs,2) == n
 
 		@test_throws ArgumentError var_to_obs!([3], c; name_src=:id, names="OutC")

@@ -18,10 +18,10 @@ struct FilterModel{Tv<:Index,To} <: ProjectionModel
         new{Tv,To}(var_filter, obs_filter, var_match, var, obs)
     end
 end
-FilterModel(var_annots::Tv, var_id_cols, var_filter, obs_filter; var=:copy, obs=:copy) where Tv=
-	FilterModel(_filter_indices(var_annots, var_filter), obs_filter, select(var_annots, var_id_cols), var, obs)
+FilterModel(var_annots::Tv, var_filter, obs_filter; var=:copy, obs=:copy) where Tv=
+	FilterModel(_filter_indices(var_annots, var_filter), obs_filter, select(var_annots, 1), var, obs)
 FilterModel(data::DataMatrix, args...; kwargs...) =
-	FilterModel(data.var, data.var_id_cols, args...; kwargs...)
+	FilterModel(data.var, args...; kwargs...)
 
 function projection_isequal(m1::FilterModel, m2::FilterModel)
 	m1.var_filter == m2.var_filter && m1.obs_filter == m2.obs_filter &&

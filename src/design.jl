@@ -204,7 +204,7 @@ function designmatrix(data::DataMatrix, covariates::AbstractVector{<:AbstractCov
 		i += len
 	end
 
-	DesignMatrix(A, covariates, select(data.obs, data.obs_id_cols))
+	DesignMatrix(A, covariates, select(data.obs, 1))
 end
 
 """
