@@ -1,6 +1,7 @@
 module SingleCellProjections
 
 export
+	Annotations,
 	DataMatrix,
 	ProjectionModel,
 	FilterModel,
@@ -91,6 +92,8 @@ include("bilinear.jl")
 include("sctransformsparse.jl")
 
 include("implicitsvd.jl")
+
+include("annotations.jl")
 
 include("lowrank.jl")
 include("projectionmodels.jl")
