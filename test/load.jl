@@ -42,8 +42,8 @@
 			@test size(counts)==(P,N*2)
 			@test nnz(counts.matrix) == expected_nnz*2
 
-			@test Set(names(counts.obs)) == Set(("id", "sampleName", "barcode"))
-			@test counts.obs.id == [string.("a_",expected_barcodes); string.("b_",expected_barcodes)]
+			@test Set(names(counts.obs)) == Set(("cell_id", "sampleName", "barcode"))
+			@test counts.obs.cell_id == [string.("a_",expected_barcodes); string.("b_",expected_barcodes)]
 			@test counts.obs.sampleName == [fill("a",N); fill("b",N)]
 			@test counts.obs.barcode == [expected_barcodes; expected_barcodes]
 
@@ -57,7 +57,7 @@
 			@test counts.var.name == expected_feature_names
 			@test counts.var.feature_type == expected_feature_types
 
-			@test names(counts.obs,1) == ["id"]
+			@test names(counts.obs,1) == ["cell_id"]
 			@test names(counts.var,1) == ["id"]
 
 			if lazy_merge
@@ -84,8 +84,8 @@
 			@test size(counts)==(P,N)
 			@test nnz(counts.matrix) == expected_nnz
 
-			@test Set(names(counts.obs)) == Set(("id", "sampleName", "barcode"))
-			@test counts.obs.id == string.("a_",expected_barcodes)
+			@test Set(names(counts.obs)) == Set(("cell_id", "sampleName", "barcode"))
+			@test counts.obs.cell_id == string.("a_",expected_barcodes)
 			@test counts.obs.sampleName == fill("a",N)
 			@test counts.obs.barcode == expected_barcodes
 
@@ -99,7 +99,7 @@
 			@test counts.var.name == expected_feature_names
 			@test counts.var.feature_type == expected_feature_types
 
-			@test names(counts.obs,1) == ["id"]
+			@test names(counts.obs,1) == ["cell_id"]
 			@test names(counts.var,1) == ["id"]
 
 			if lazy_merge

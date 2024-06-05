@@ -155,7 +155,7 @@ end
 	load_counts([loadfun=load10x], filenames;
                 sample_names,
                 sample_name_col,
-                obs_id_col = "id",
+                obs_id_col = "cell_id",
                 lazy,
                 lazy_merge = false,
                 obs_id_delim = '_',
@@ -201,7 +201,7 @@ function load_counts(loadfun, filenames;
                      sample_name_col = sample_names===nothing ? nothing : "sampleName",
                      lazy=loadfun==load10x,
                      lazy_merge=false,
-                     obs_id_col = "id",
+                     obs_id_col = "cell_id",
                      obs_id_delim = '_',
                      obs_id_prefixes = sample_names,
                      extra_var_id_cols = :auto,
@@ -335,7 +335,7 @@ end
 	merge_counts(samples, sample_names;
 	             lazy=false,
 	             sample_name_col = sample_names===nothing ? nothing : "sampleName",
-	             obs_id_col = "id",
+	             obs_id_col = "cell_id",
 	             obs_id_delim = '_',
 	             obs_id_prefixes = sample_names,
 	             extra_var_id_cols::Union{Nothing,String,Vector{String}},
@@ -363,7 +363,7 @@ See also: [`load_counts`](@ref)
 function merge_counts(samples, sample_names;
                       lazy=false,
                       sample_name_col = sample_names===nothing ? nothing : "sampleName",
-                      obs_id_col = "id",
+                      obs_id_col = "cell_id",
                       obs_id_delim = '_',
                       obs_id_prefixes = sample_names,
                       extra_var_id_cols = :auto,

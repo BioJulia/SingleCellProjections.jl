@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Breaking
 
 * DataMatrix will now always use the first column of var/obs annotations as ID. (Multiple ID columns are no longer supported.)
+* `load_counts` - The default obs ID column name is now "cell_id" (was "id" before).
 * `load10x` - default to using only first column (id) as unique identifier. Specify e.g. `var_id="var_id"=>["id", "feature_type"]` to merge multiple columns to create the ID.
 * `load10x` - default to using first column (barcode) as unique identifier.
 * `load10x` - no longer supports `copy_obs_col` kwarg.
