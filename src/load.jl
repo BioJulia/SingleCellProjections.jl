@@ -36,6 +36,7 @@ struct LazyMergedMatrix{Tv,Ti}
 	sz::Tuple{Int,Int}
 	nnz::Int
 	data::Vector{DataMatrix}
+	var_id_cols::Vector{String}
 end
 LazyMergedMatrix(::Type{Tv},::Type{Ti}, args...) where {Tv,Ti} = LazyMergedMatrix{Tv,Ti}(args...)
 
@@ -63,7 +64,7 @@ getmatrix(matrix) = matrix
 getmatrix(matrix::Lazy10xMatrix{Tv,Ti}) where {Tv,Ti} = read10x_matrix(matrix.filename, SparseMatrixCSC{Tv,Ti})
 
 
-load_counts(data::DataMatrix; callback=nothing) = data
+load_counts(data::DataMatrix; callback=nothing, duplicate_var, duplicate_obs) = data
 
 """
 	load_counts(data::DataMatrix{<:Lazy10xMatrix})
@@ -72,21 +73,21 @@ Load counts for a lazily loaded 10x DataMatrix.
 
 See also: [`load10x`](@ref)
 """
-load_counts(data::DataMatrix{<:Lazy10xMatrix}; callback=nothing) = DataMatrix(getmatrix(data.matrix), data.var, data.obs)
+load_counts(data::DataMatrix{<:Lazy10xMatrix}; callback=nothing, kwargs...) = DataMatrix(getmatrix(data.matrix), data.var, data.obs, kwargs...)
 
 """
 	load_counts(data::DataMatrix{<:LazyMergedMatrix})
 
 Merge/load counts for a lazily merged DataMatrix.
 """
-function load_counts(data::DataMatrix{<:LazyMergedMatrix{Tv,Ti}}; callback=nothing) where {Tv,Ti}
+function load_counts(data::DataMatrix{<:LazyMergedMatrix{Tv,Ti}}; callback=nothing, kwargs...) where {Tv,Ti}
 	lazy_matrix = data.matrix
 
 	sample_features = getfield.(lazy_matrix.data,:var)
 	matrices = getfield.(lazy_matrix.data,:matrix)
-	matrix = _merge_matrices(Tv, Ti, data.var, sample_features, matrices; callback)
+	matrix = _merge_matrices(Tv, Ti, data.var, sample_features, matrices; lazy_matrix.var_id_cols, callback)
 	matrix===nothing && return nothing
-	update_matrix(data, matrix; var=:keep, obs=:keep)
+	update_matrix(data, matrix; var=:keep, obs=:keep, kwargs...)
 end
 
 
@@ -159,6 +160,9 @@ end
                 lazy_merge = false,
                 obs_id_delim = '_',
                 obs_id_prefixes = sample_names,
+                extra_var_id_cols::Union{Nothing,String,Vector{String}},
+                duplicate_var,
+                duplicate_obs,
                 callback=nothing)
 
 Load and merge multiple samples efficiently.
@@ -177,8 +181,11 @@ For each file, `loadfun` is called.
 * `lazy_merge` - Enable lazy merging, i.e. `var` and `obs` are created, but the count matrix merging is postponed until a second call to `load_counts`.
 * `obs_id_delim` - Delimiter used when creating merged `obs` IDs.
 * `obs_id_prefixes` - Prefix (one per sample) used to create new IDs. Set to nothing to keep old IDs. Defaults to `sample_names`.
+* `extra_var_id_cols` - Additional columns to use to ensure variable IDs are unique during merging. Defaults to "feature_type" if that column is present for all samples. Can be a `Vector{String}` to include multiple columns. Set to nothing to disable.
+* `duplicate_var` - Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate var IDs are found.
+* `duplicate_obs` - Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate obs IDs are found.
 * `callback` - Experimental callback functionality. The callback function is called between samples during merging. Return `true` to abort loading and `false` to continue.
-* Additional kwargs are passed to `loadfun`.
+* Additional kwargs (including `duplicate_var`/`duplicate_obs` if specified) are passed to `loadfun`.
 
 # Examples
 
@@ -197,6 +204,9 @@ function load_counts(loadfun, filenames;
                      obs_id_col = "id",
                      obs_id_delim = '_',
                      obs_id_prefixes = sample_names,
+                     extra_var_id_cols = :auto,
+                     duplicate_var = nothing,
+                     duplicate_obs = nothing,
                      callback=nothing,
                      kwargs...)
 
@@ -205,9 +215,12 @@ function load_counts(loadfun, filenames;
 
 	# TODO: call callback between sample loads(?)
 	args = lazy ? (;lazy) : (;)
-	samples = loadfun.(filenames; args..., kwargs...) # Do *not* pass kwargs to loadfuns that might not support them
+	kwargs_var = duplicate_var !== nothing ? (;duplicate_var) : (;)
+	kwargs_obs = duplicate_obs !== nothing ? (;duplicate_obs) : (;)
 
-	merge_counts(samples, sample_names; lazy=lazy_merge, sample_name_col, obs_id_col, obs_id_delim, obs_id_prefixes, callback)
+	samples = loadfun.(filenames; args..., kwargs_var..., kwargs_obs..., kwargs...) # Do *not* pass kwargs to loadfuns that might not support them
+
+	merge_counts(samples, sample_names; lazy=lazy_merge, sample_name_col, obs_id_col, obs_id_delim, obs_id_prefixes, extra_var_id_cols, callback, kwargs_var..., kwargs_obs...)
 end
 
 # default to 10x
@@ -218,18 +231,18 @@ load_counts(filenames; kwargs...) = load_counts(load10x, filenames; kwargs...)
 _value_or_ambiguous(x) = Ref(length(unique(x))!=1 ? "ambiguous" : first(x))
 
 
-function _merge_features(features)
+function _merge_features(features, var_id_cols)
 	id_col_names = only.(names.(features, 1))
 	@assert all(==(first(id_col_names)), id_col_names) "Variable ID columns must match"
 
 	c = coalesce.(vcat(features..., cols=:union),"")
-	g = groupby(c, 1)
+	g = groupby(c, var_id_cols)
 
 	# Bug in DataFrames? if valuecols(g) is empty, an empty DataFrame is returned, but we want the keys.
 	# combine(g, valuecols(g) .=> _value_or_ambiguous; renamecols=false)
 
 	# Workaround.
-	cols = vcat(Symbol(first(id_col_names)), valuecols(g))
+	cols = vcat(Symbol.(var_id_cols), valuecols(g))
 	combine(g, cols .=> _value_or_ambiguous; renamecols=false)
 end
 
@@ -270,7 +283,7 @@ function _merge_cells(samples, sample_names; sample_name_col, obs_id_col, obs_id
 end
 
 
-function _insert_matrix!(colptr, rowval, nzval, colptr_offset, nnz_offset, feature_ind, sf, A)
+function _insert_matrix!(colptr, rowval, nzval, colptr_offset, nnz_offset, feature_ind, sf, var_id_cols, A)
 	cp = SparseArrays.getcolptr(A)
 	rv = rowvals(A)
 	nz = nonzeros(A)
@@ -278,8 +291,8 @@ function _insert_matrix!(colptr, rowval, nzval, colptr_offset, nnz_offset, featu
 	colptr[colptr_offset .+ (1:size(A,2)+1)] .= cp .+ nnz_offset
 
 	# Figure out how to map feature indices in sample to global feature indices
-	sf_ind = select(sf, 1)
-	leftjoin!(sf_ind, feature_ind; on=names(sf_ind))
+	sf_ind = select(sf, var_id_cols)
+	leftjoin!(sf_ind, feature_ind; on=var_id_cols)
 	row_ind = sf_ind.__row__
 
 	rowval[nnz_offset .+ (1:nnz(A))] .= getindex.(Ref(row_ind),rv)
@@ -289,13 +302,13 @@ end
 
 
 function _merge_matrices(::Type{Tv}, ::Type{Ti}, features, sample_features, matrices;
-                         callback) where {Tv,Ti}
+                         var_id_cols, callback) where {Tv,Ti}
 	P = size(features,1)
 	N = sum(A->size(A,2), matrices)
 	nnonzeros = sum(nnz, matrices)
 
 
-	feature_ind = select(features, 1)
+	feature_ind = select(features, var_id_cols)
 	feature_ind.__row__ = 1:P
 
 	colptr = Vector{Ti}(undef, N+1)
@@ -308,7 +321,7 @@ function _merge_matrices(::Type{Tv}, ::Type{Ti}, features, sample_features, matr
 		callback !== nothing && callback() && return nothing
 
 		A = getmatrix(matrix)::AbstractSparseMatrix # handle lazy loading
-		_insert_matrix!(colptr, rowval, nzval, colptr_offset, nnz_offset, feature_ind, sf, A) # function barrier to handle type instabilities
+		_insert_matrix!(colptr, rowval, nzval, colptr_offset, nnz_offset, feature_ind, sf, var_id_cols, A) # function barrier to handle type instabilities
 
 		colptr_offset += size(A,2)
 		nnz_offset += nnz(A)
@@ -325,6 +338,9 @@ end
 	             obs_id_col = "id",
 	             obs_id_delim = '_',
 	             obs_id_prefixes = sample_names,
+	             extra_var_id_cols::Union{Nothing,String,Vector{String}},
+	             duplicate_var,
+	             duplicate_obs,
 	             callback=nothing)
 
 Merge `samples` to create one large DataMatrix, by concatenating the `obs`.
@@ -337,6 +353,9 @@ The `obs` IDs are created by concatenating the current `obs` ID columns, togethe
 * `obs_id_col` - Name of `obs` ID column after merging. (Set to nothing to keep old column name.)
 * `obs_id_delim` - Delimiter used when merging `obs` IDs.
 * `obs_id_prefixes` - Prefix (one per sample) used to create new IDs. Set to nothing to keep old IDs. Defaults to `sample_names`.
+* `extra_var_id_cols` - Additional columns to use to ensure variable IDs are unique during merging. Defaults to "feature_type" if that column is present for all samples. Can be a `Vector{String}` to include multiple columns. Set to nothing to disable.
+* `duplicate_var` - Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate var IDs are found.
+* `duplicate_obs` - Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate obs IDs are found.
 * `callback` - Experimental callback functionality. The callback function is called between samples during merging. Return `true` to abort loading and `false` to continue.
 
 See also: [`load_counts`](@ref)
@@ -347,12 +366,24 @@ function merge_counts(samples, sample_names;
                       obs_id_col = "id",
                       obs_id_delim = '_',
                       obs_id_prefixes = sample_names,
+                      extra_var_id_cols = :auto,
+                      duplicate_var = nothing,
+                      duplicate_obs = nothing,
                       callback=nothing)
 	@assert sample_name_col===nothing || length(samples)==length(sample_names)
 
 	sample_features = getfield.(samples,:var)
 
-	features = _merge_features(sample_features)
+	if extra_var_id_cols === nothing
+		extra_var_id_cols = String[]
+	elseif extra_var_id_cols == :auto
+		extra_var_id_cols = all(x->hasproperty(x, "feature_type"), sample_features) ? ["feature_type"] : String[]
+	else
+		extra_var_id_cols isa AbstractVector || (extra_var_id_cols = [extra_var_id_cols])
+	end
+	var_id_cols = vcat(names(first(sample_features),1), extra_var_id_cols)
+
+	features = _merge_features(sample_features, var_id_cols)
 	cells = _merge_cells(samples, sample_names; sample_name_col, obs_id_col, obs_id_delim, obs_id_prefixes)
 
 	matrices = getfield.(samples,:matrix)
@@ -363,7 +394,10 @@ function merge_counts(samples, sample_names;
 	N = sum(A->size(A,2), matrices)
 	nnonzeros = sum(nnz, matrices)
 
-	lazy_matrix = LazyMergedMatrix(Tv, Ti, (P,N), nnonzeros, convert(Vector{DataMatrix},samples))
-	lazy_data = DataMatrix(lazy_matrix, features, cells)
-	lazy ? lazy_data : load_counts(lazy_data; callback)
+	lazy_matrix = LazyMergedMatrix(Tv, Ti, (P,N), nnonzeros, convert(Vector{DataMatrix},samples), var_id_cols)
+
+	kwargs_var = duplicate_var !== nothing ? (;duplicate_var) : (;)
+	kwargs_obs = duplicate_obs !== nothing ? (;duplicate_obs) : (;)
+	lazy_data = DataMatrix(lazy_matrix, features, cells; kwargs_var..., kwargs_obs...)
+	lazy ? lazy_data : load_counts(lazy_data; callback, kwargs_var..., kwargs_obs...)
 end

@@ -7,14 +7,15 @@ function _validateunique(table, col, report, suffix)
 	report == :ignore && return
 	@assert report in (:warn, :error)
 	bad_id = _get_nonunique(table,col)
+	bad_id === nothing && return
 	msg = string("ID \"", bad_id, "\" is not unique.", suffix)
 	report == :error && error(msg)
 	report == :warn && @warn(msg)
 	return
 end
 
-validateunique_var(table, col, report) = _validateunique(table,col,report," Use duplicate_var=x, where x is :error, :warn or :ignore to control behavior.")
-validateunique_obs(table, col, report) = _validateunique(table,col,report," Use duplicate_obs=x, where x is :error, :warn or :ignore to control behavior.")
+validateunique_var(table, col; report) = _validateunique(table,col,report," Use duplicate_var=x, where x is :error, :warn or :ignore to control behavior.")
+validateunique_obs(table, col; report) = _validateunique(table,col,report," Use duplicate_obs=x, where x is :error, :warn or :ignore to control behavior.")
 
 """
 	struct DataMatrix{T,Tv,To}
@@ -57,8 +58,8 @@ Create a `DataMatrix` with the given `matrix`, `var` and `obs`.
 The first column of `var`/`obs` are used as IDs.
 
 Kwargs:
-* `duplicate_var`: Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate var IDs are found.
-* `duplicate_obs`: Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate obs IDs are found.
+* `duplicate_var` - Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate var IDs are found.
+* `duplicate_obs` - Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate obs IDs are found.
 """
 DataMatrix(matrix, var, obs; kwargs...) =
 	DataMatrix(matrix, var, obs, ProjectionModel[]; kwargs...)
@@ -110,7 +111,7 @@ end
 Set which column to use as variable IDs. It will be moved to the first column of `data.var`.
 The rows of this column in `data.var` must be unique.
 
-* `duplicate_var`: Set to :ignore, :warn or :error to decide what happens if duplicate IDs are found.
+* `duplicate_var` - Set to :ignore, :warn or :error to decide what happens if duplicate IDs are found.
 """
 function set_var_id_col!(data::DataMatrix, var_id_col::String; duplicate_var=:error)
 	table_validatecols(data.var, var_id_col)
@@ -124,7 +125,7 @@ end
 Set which column to use as observation IDs. It will be moved to the first column of `data.obs`.
 The rows of this column in `data.obs` must be unique.
 
-* `duplicate_obs`: Set to :ignore, :warn or :error to decide what happens if duplicate IDs are found.
+* `duplicate_obs` - Set to :ignore, :warn or :error to decide what happens if duplicate IDs are found.
 """
 function set_obs_id_col!(data::DataMatrix, obs_id_col::String; duplicate_obs=:error)
 	table_validatecols(data.obs, obs_id_col)
@@ -361,11 +362,12 @@ Kwargs:
 """
 function update_matrix(data::DataMatrix, matrix, model=nothing;
                        var::Union{Symbol,String,DataFrame} = "",
-                       obs::Union{Symbol,String,DataFrame} = "")
+                       obs::Union{Symbol,String,DataFrame} = "",
+                       kwargs...)
 	models = model !== nothing ? vcat(data.models,model) : ProjectionModel[]
 	var = _update_annot(data.var, var, size(matrix,1))
 	obs = _update_annot(data.obs, obs, size(matrix,2))
-	DataMatrix(matrix, var, obs, models)
+	DataMatrix(matrix, var, obs, models; kwargs...)
 end
 
 
