@@ -1,9 +1,9 @@
 table_validatecols(table, col) =
 	hasproperty(table, Symbol(col)) || throw(ArgumentError("ID column $col not found in table with columns $(join(names(table)))."))
 
-function table_validateunique(table, cols)
-	bad_ind = findfirst(nonunique(table, cols))
-	bad_ind !== nothing && error("ID [", join(table[bad_ind,cols],", "), "] is not unique.")
+function table_validateunique(table, col)
+	bad_ind = findfirst(nonunique(table, col))
+	bad_ind !== nothing && error("ID \"", table[bad_ind,col], "\" is not unique.")
 end
 
 table_cols_equal(a, b; cols=names(b)) =
