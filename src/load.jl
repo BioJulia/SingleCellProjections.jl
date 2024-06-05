@@ -126,7 +126,7 @@ julia> counts = load_counts(counts)
 
 See also: [`load_counts`](@ref)
 """
-function load10x(filename; lazy=false, var_id::Union{Nothing,Pair{String,<:Any}}=nothing, var_id_delim='_')
+function load10x(filename; lazy=false, var_id::Union{Nothing,Pair{String,<:Any}}=nothing, var_id_delim='_', kwargs...)
 	if lazy
 		if lowercase(splitext(filename)[2]) == ".h5"
 			P,N,nz,features,cells = h5open(_load10x_metadata, filename)
@@ -146,7 +146,7 @@ function load10x(filename; lazy=false, var_id::Union{Nothing,Pair{String,<:Any}}
 		insertcols!(features, 1, var_id_col=>var_ids)
 	end
 
-	DataMatrix(matrix, features, cells)
+	DataMatrix(matrix, features, cells; kwargs...)
 end
 
 
