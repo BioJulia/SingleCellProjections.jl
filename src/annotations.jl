@@ -7,5 +7,21 @@ function Base.getproperty(a::Annotations, column::Symbol)
 	column = String(column)
 	id_column = names(df, 1)
 	cols = only(id_column) == column ? id_column : vcat(id_column,column)
-	select(df, cols)
+	Annotations(select(df, cols))
+end
+
+# function annotation_id(a::Annotations)
+# 	df = getfield(a,:df)
+# 	only(names(df,1))
+# end
+function annotation_name(a::Annotations)
+	df = getfield(a,:df)
+	@assert size(df,2) == 2 "Expected annotations to object to have an ID column and a single data column, got columns: $(names(df))"
+	only(names(df,2))
+end
+
+function annotation_values(a::Annotations)
+	df = getfield(a,:df)
+	@assert size(df,2) == 2 "Expected annotations to object to have an ID column and a single data column, got columns: $(names(df))"
+	df[!,2]
 end

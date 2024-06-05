@@ -130,6 +130,32 @@ end
 _named_matrix(A::MatrixExpression, ::Symbol) = A
 _named_matrix(A, name::Symbol) = MatrixRef(name=>A)
 
+
+
+
+# TODO: Move these to somewhere else? Perhaps useful for other projections too.
+function _get_value_vector_from_annotations(data::DataMatrix, name::String, annotations::Annotations)
+	name != annotation_name(annotations) && return nothing
+	return annotation_values(annotations)
+end
+function _get_value_vector_from_annotations(data::DataMatrix, name::String, annotations::AbstractVector)
+	for a in annotations
+		v = _get_value_vector_from_annotations(name, a)
+		v !== nothing && return v
+	end
+	nothing
+end
+function _get_value_vector(data::DataMatrix, cov::AbstractCovariate, annotations)
+	cov isa InterceptCovariate && return nothing
+	cov.external == false && return data.obs[!,cov.name]
+	annotations === nothing && return nothing
+	# search in external annotations
+	return _get_value_vector_from_annotations(data, cov.name, annotations)
+end
+
+
+
+
 function project_impl(data::DataMatrix, model::NormalizationModel, design::DesignMatrix; verbose=true)
 	@assert model.var in (:keep, :copy)
 	@assert names(data.var,1) == names(model.var_match)
@@ -188,7 +214,11 @@ function project_impl(data::DataMatrix, model::NormalizationModel, design::Desig
 
 	update_matrix(data, matrix, model; var, model.obs)
 end
-project_impl(data::DataMatrix, model::NormalizationModel; kwargs...) = project_impl(data, model, designmatrix(data, model.covariates); kwargs...)
+function project_impl(data::DataMatrix, model::NormalizationModel; annotations=nothing, kwargs...)
+	value_vectors = [_get_value_vector(data,cov,annotations) for cov in model.covariates]
+	design = designmatrix(data, model.covariates, value_vectors)
+	project_impl(data, model, design; kwargs...)
+end
 
 
 """
@@ -241,11 +271,11 @@ end
 # - show -
 
 Base.show(io::IO, ::InterceptCovariate) = print(io, "1")
-Base.show(io::IO, c::NumericalCovariate) = print(io, "num(", c.name, ')')
-Base.show(io::IO, c::CategoricalCovariate) = print(io, "cat(", c.name, ')')
+Base.show(io::IO, c::NumericalCovariate) = print(io, "num(", c.name, c.external ? " (external)" : "", ')')
+Base.show(io::IO, c::CategoricalCovariate) = print(io, "cat(", c.name, c.external ? " (external)" : "", ')')
 Base.show(io::IO, ::MIME"text/plain", ::InterceptCovariate) = print(io, "1")
-Base.show(io::IO, ::MIME"text/plain", c::NumericalCovariate) = print(io, "num(", c.name, ')')
-Base.show(io::IO, ::MIME"text/plain", c::CategoricalCovariate) = print(io, "cat(", c.name, ",n=", length(c.values), ')')
+Base.show(io::IO, ::MIME"text/plain", c::NumericalCovariate) = print(io, "num(", c.name, c.external ? " (external)" : "", ')')
+Base.show(io::IO, ::MIME"text/plain", c::CategoricalCovariate) = print(io, "cat(", c.name, c.external ? " (external)" : "", ",n=", length(c.values), ')')
 
 function Base.show(io::IO, ::MIME"text/plain", model::NormalizationModel)
 	print(io, "NormalizationModel(rank=", model.rank)

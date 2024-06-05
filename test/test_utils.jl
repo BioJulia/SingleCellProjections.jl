@@ -158,8 +158,8 @@ function ftest_ground_truth(A, obs, h1_formula, h0_formula)
 end
 function ftest_ground_truth(A, obs, h1::Tuple, h0::Tuple)
 	# simple unwrapping of Covariates, does not care about types or two-groups
-	h1 = (x->x isa CovariateDesc ? x.name : x).(h1)
-	h0 = (x->x isa CovariateDesc ? x.name : x).(h0)
+	h1 = (x->x isa CovariateDesc ? x.src : x).(h1)
+	h0 = (x->x isa CovariateDesc ? x.src : x).(h0)
 
 	all(in(h0), h1) && return zeros(size(A,1)), ones(size(A,1))
 

@@ -17,8 +17,10 @@ function _create_mannwhitney_groups(obs, h1::CovariateDesc{T}; h1_missing) where
 	@assert h1.type == :twogroup
 	@assert h1_missing in (:skip,:error)
 
-	name, group_a, group_b = h1.name, h1.group_a, h1.group_b
-	v = obs[!,name]
+	# name, group_a, group_b = h1.name, h1.group_a, h1.group_b
+	# v = obs[!,name]
+	group_a, group_b = h1.group_a, h1.group_b
+	name,v = _get_values(obs,h1)
 
 	if h1_missing == :error && any(ismissing,v)
 		throw(ArgumentError(string("Column \"",name,"\" has missing values, set `h1_missing=:skip` to skip them.")))
@@ -165,14 +167,15 @@ function mannwhitney(data::DataMatrix, args...; var=:copy, obs=:copy, matrix=:ke
 end
 
 function _keep_mask(df, c::CovariateDesc{T}) where T
-	if c.type == :intercept
-		return trues(size(df,1))
-	elseif c.type == :twogroup && c.group_b !== nothing
-		return isequal.(df[!,c.name], c.group_a) .| isequal.(df[!,c.name], c.group_b)
-	else
-		return completecases(df,c.name)
+	c.type == :intercept && return trues(size(df,1))
+
+	_,v = _get_values(df, c) # TODO: pass v as an argument to avoid looking it up multiple times?
+	if c.type == :twogroup && c.group_b !== nothing
+		return isequal.(v, c.group_a) .| isequal.(v, c.group_b)
 	end
+	return .!ismissing.(v)
 end
+
 
 # No-op of no filtering is needed
 function _filter_missing_obs(data::DataMatrix, h1, h0; h1_missing, h0_missing)
