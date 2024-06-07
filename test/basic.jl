@@ -36,6 +36,8 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 		test_show(l; matrix="SparseMatrixCSC", var=names(counts.var), obs=names(counts.obs), models="LogTransformModel")
 		test_show(lproj; matrix="SparseMatrixCSC", var=names(counts_proj.var), obs=names(counts_proj.obs), models="LogTransformModel")
+
+		# TODO: test log_transform with kwargs: var_filter, external_var
 	end
 
 	@testset "tf-idf scale_factor=$scale_factor T=$T" for scale_factor in (10_000, 1_000), T in (Float64,Float32)
@@ -60,6 +62,8 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 		test_show(tf; matrix="SparseMatrixCSC", var=vcat(names(counts.var),"idf"), obs=names(counts.obs), models="TFIDFTransformModel")
 		test_show(tf_proj; matrix="SparseMatrixCSC", var=vcat(names(counts_proj.var),"idf"), obs=names(counts_proj.obs), models="TFIDFTransformModel")
+
+		# TODO: test tf_idf_transform with kwargs: var_filter, external_var
 	end
 
 	transformed_proj = project(counts_proj, transformed)
@@ -98,6 +102,8 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		test_show(trans; matrix=r"^A\+B₁B₂B₃$", models="SCTransformModel")
 
 		@test materialize(t2) ≈ sct rtol=1e-3
+
+		# TODO: test sctransform with kwargs: var_filter, post_var_filter, post_obs_filter, external_var, external_post_var, external_obs
 	end
 
 	X = materialize(transformed)
