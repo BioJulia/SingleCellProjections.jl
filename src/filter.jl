@@ -4,8 +4,8 @@ _subsetmatrix(X::AbstractMatrix, I::Index, J::Index) = X[I,J]
 
 function _gather_columns!(df, col::Union{Symbol,String}, external)
 	a = find_annotation(col, external)
-	a === nothing && throw(ArgumentError("External annotation \"$(cov.name)\" missing."))
-	leftjoin!(df, a; on=names(obs,1))
+	a === nothing && throw(ArgumentError("External annotation \"$col\" missing."))
+	leftjoin!(df, a; on=names(df,1))
 	nothing
 end
 
@@ -16,9 +16,9 @@ function _gather_columns!(df, cols::AbstractVector, external)
 end
 
 
-_filter_indices(::DataFrame, I::Index, ::Nothing=nothing) = I
-_filter_indices(df::DataFrame, f, ::Nothing=nothing) = first(parentindices(filter(f,df;view=true)))
-function _filter_indices(df::DataFrame, f::Pair{Union{Symbol,String,<:AbstractVector},Any}, external)
+_filter_indices(::DataFrame, I::Index) = I
+_filter_indices(df::DataFrame, f) = first(parentindices(filter(f,df;view=true)))
+function _filter_indices(df::DataFrame, f::Pair{<:Union{Symbol,String,<:AbstractVector},<:Any}, external)
 	df = select(df, 1; copycols=false) # just keep the ID column
 
 	# 1. Find names of columns needed for predicate
@@ -28,6 +28,8 @@ function _filter_indices(df::DataFrame, f::Pair{Union{Symbol,String,<:AbstractVe
 	# 3. Use standard _filter_indices
 	_filter_indices(df, f)
 end
+
+
 
 struct FilterModel{Tv<:Index,To} <: ProjectionModel
 	var_filter::Tv
@@ -45,7 +47,7 @@ struct FilterModel{Tv<:Index,To} <: ProjectionModel
     end
 end
 function FilterModel(var_annots::Tv, var_filter, obs_filter; var=:copy, obs=:copy, external_var=nothing, use_external_obs=false) where Tv
-	var_filter = _filter_indices(var_annots, var_filter, external_var)
+	var_filter = external_var !== nothing ? _filter_indices(var_annots, var_filter, external_var) : _filter_indices(var_annots, var_filter)
 	FilterModel(var_filter, obs_filter, select(var_annots, 1), use_external_obs, var, obs)
 end
 FilterModel(data::DataMatrix, args...; kwargs...) =
@@ -100,7 +102,7 @@ function project_impl(data::DataMatrix, model::FilterModel; external_obs=nothing
 	_validate(data.var, model, allow_obs_indexing)
 
 	I = _filter_indices(data.var, model.var_filter)
-	J = _filter_indices(data.obs, model.obs_filter, model.use_external_obs ? external_obs : nothing)
+	J = model.use_external_obs ?  _filter_indices(data.obs, model.obs_filter, external_obs) : _filter_indices(data.obs, model.obs_filter)
 
 	var = model.var
 
@@ -119,7 +121,7 @@ end
 
 
 """
-	filter_matrix(fvar, fobs, data::DataMatrix)
+	filter_matrix(fvar, fobs, data::DataMatrix; external_var=nothing, external_obs=nothing)
 
 Return a new DataMatrix, containing only the variables and observations passing the filters.
 
@@ -154,7 +156,7 @@ end
 
 
 """
-	filter_var(f, data::DataMatrix)
+	filter_var(f, data::DataMatrix; kwargs...)
 
 Return a new DataMatrix, containing only the variables passing the filter.
 
@@ -178,7 +180,7 @@ julia> filter_var("feature_type"=>isequal("Gene Expression"), data)
 
 See also: [`filter_matrix`](@ref), [`filter_obs`](@ref), [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter)
 """
-filter_var(f, data::DataMatrix) = filter_matrix(f, :, data)
+filter_var(f, data::DataMatrix; kwargs...) = filter_matrix(f, :, data; kwargs...)
 
 
 """
@@ -206,7 +208,7 @@ julia> filter_obs("celltype"=>!isequal("other"), data)
 
 See also: [`filter_matrix`](@ref), [`filter_var`](@ref), [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter)
 """
-filter_obs(f, data::DataMatrix) = filter_matrix(:, f, data)
+filter_obs(f, data::DataMatrix; kwargs...) = filter_matrix(:, f, data; kwargs...)
 
 
 # - show -

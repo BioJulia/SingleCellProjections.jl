@@ -1,4 +1,4 @@
-add_id_prefix!(df::DataFrame, prefix) = (df[:,1] = string.(prefix, df[:,1]); df)
+add_id_prefix!(df::DataFrame, prefix) = (df[!,1] = string.(prefix, df[:,1]); df)
 add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), prefix)
 
 @testset "Basic Workflow" begin
@@ -9,6 +9,11 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 	empty!(counts_proj.models)
 	proj_obs_indices = identity.(indexin(counts_proj.obs.barcode, counts.obs.barcode))
 	add_id_prefix!(counts_proj.obs, "proj_")
+
+	obs2_df = rename(counts.obs, "group"=>"external_group", "value"=>"external_value")
+	obs2_proj_df = rename(counts_proj.obs, "group"=>"external_group", "value"=>"external_value")
+
+	var2_df = rename(counts.var, "name"=>"external_name")
 
 
 	@testset "logtransform scale_factor=$scale_factor T=$T" for scale_factor in (10_000, 1_000), T in (Float64,Float32)
@@ -178,9 +183,6 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		@test_throws "No values" project(transformed_proj,n)
 	end
 
-	obs2_df = rename(counts.obs, "group"=>"external_group", "value"=>"external_value")
-	obs2_proj_df = rename(counts_proj.obs, "group"=>"external_group", "value"=>"external_value")
-
 	@testset "normalize (external_obs::$T)" for T in (Annotations,DataFrame)
 		if T==DataFrame
 			obs2 = obs2_df
@@ -288,116 +290,151 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		P2 = size(data,1)
 		X = materialize(data)
 
-		obs_ans = add_id_prefix(data.obs, "proj_")
+		obs_proj_ans = add_id_prefix(data.obs, "proj_")
 
 		f = filter_var(1:2:P2, data)
 		@test materialize(f) ≈ X[1:2:P2, :]
-		@test f.obs == obs_ans
+		@test f.obs == data.obs
 		@test f.var == data.var[1:2:P2, :]
 		f_proj = project(data_proj, f)
 		@test materialize(f_proj) ≈ X[1:2:P2, proj_obs_indices] rtol=1e-3
-		@test f_proj.obs == obs_ans[proj_obs_indices, :]
+		@test f_proj.obs == obs_proj_ans[proj_obs_indices, :]
 		@test f_proj.var == data.var[1:2:P2, :]
 
 		test_show(f, models="FilterModel")
 
 		f = data[1:2:end,:]
 		@test materialize(f) ≈ X[1:2:end, :]
-		@test f.obs == obs_ans
+		@test f.obs == data.obs
 		@test f.var == data.var[1:2:end, :]
 		f_proj = project(data_proj, f)
 		@test materialize(f_proj) ≈ X[1:2:end, proj_obs_indices] rtol=1e-3
-		@test f_proj.obs == obs_ans[proj_obs_indices, :]
+		@test f_proj.obs == obs_proj_ans[proj_obs_indices, :]
 		@test f_proj.var == data.var[1:2:end, :]
 
 		f = filter_obs(1:10:N, data)
 		@test materialize(f) ≈ X[:, 1:10:N]
-		@test f.obs == obs_ans[1:10:N, :]
+		@test f.obs == data.obs[1:10:N, :]
 		@test f.var == data.var
 		@test_throws ArgumentError project(data_proj, f)
 
 		f = data[:,1:10:end]
 		@test materialize(f) ≈ X[:, 1:10:end]
-		@test f.obs == obs_ans[1:10:end, :]
+		@test f.obs == data.obs[1:10:end, :]
 		@test f.var == data.var
 		@test_throws ArgumentError project(data_proj, f)
 
 		f = filter_matrix(1:2:P2, 1:10:N, data)
 		@test materialize(f) ≈ X[1:2:P2, 1:10:N]
-		@test f.obs == obs_ans[1:10:N, :]
+		@test f.obs == data.obs[1:10:N, :]
 		@test f.var == data.var[1:2:P2, :]
 		@test_throws ArgumentError project(data_proj, f)
 
 		f = data[1:2:end,1:10:end]
 		@test materialize(f) ≈ X[1:2:end, 1:10:end]
-		@test f.obs == obs_ans[1:10:end, :]
+		@test f.obs == data.obs[1:10:end, :]
 		@test f.var == data.var[1:2:end, :]
 		@test_throws ArgumentError project(data_proj, f)
 
 		f = filter_obs("group"=>==("A"), data)
 		@test materialize(f) ≈ X[:, g.=="A"]
-		@test f.obs == obs_ans[g.=="A", :]
+		@test f.obs == data.obs[g.=="A", :]
 		@test f.var == data.var
 		f_proj = project(data_proj, f)
 		obs_ind = intersect(findall(g.=="A"),proj_obs_indices)
 		@test materialize(f_proj) ≈ X[:, obs_ind] rtol=1e-3
-		@test f_proj.obs == obs_ans[obs_ind, :]
+		@test f_proj.obs == obs_proj_ans[obs_ind, :]
 		@test f_proj.var == data.var
 
-		f = filter_obs(row->row.group=="A", data)
+		f = filter_obs(row->row.group=="A", data) # TODO: remove? We will no longer support this?
 		@test materialize(f) ≈ X[:, g.=="A"]
-		@test f.obs == obs_ans[g.=="A", :]
+		@test f.obs == data.obs[g.=="A", :]
 		@test f.var == data.var
 		f_proj = project(data_proj, f)
 		obs_ind = intersect(findall(g.=="A"),proj_obs_indices)
 		@test materialize(f_proj) ≈ X[:, obs_ind] rtol=1e-3
-		@test f_proj.obs == obs_ans[obs_ind, :]
+		@test f_proj.obs == obs_proj_ans[obs_ind, :]
 		@test f_proj.var == data.var
 
 		f = filter_matrix(1:2:P2, "group"=>==("A"), data)
 		@test materialize(f) ≈ X[1:2:P2, g.=="A"]
-		@test f.obs == obs_ans[g.=="A", :]
+		@test f.obs == data.obs[g.=="A", :]
 		@test f.var == data.var[1:2:P2, :]
 		f_proj = project(data_proj, f)
 		obs_ind = intersect(findall(g.=="A"),proj_obs_indices)
 		@test materialize(f_proj) ≈ X[1:2:P2, obs_ind] rtol=1e-3
-		@test f_proj.obs == obs_ans[obs_ind, :]
+		@test f_proj.obs == obs_proj_ans[obs_ind, :]
 		@test f_proj.var == data.var[1:2:P2, :]
 
 		f = filter_var("name"=>>("D"), data)
 		@test materialize(f) ≈ X[data.var.name.>="D", :]
-		@test f.obs == obs_ans
+		@test f.obs == data.obs
 		@test f.var == data.var[data.var.name.>="D", :]
 		f_proj = project(data_proj, f)
 		@test materialize(f_proj) ≈ X[data.var.name.>="D", proj_obs_indices] rtol=1e-3
-		@test f_proj.obs == obs_ans[proj_obs_indices, :]
+		@test f_proj.obs == obs_proj_ans[proj_obs_indices, :]
 		@test f_proj.var == data.var[data.var.name.>="D", :]
 
 		f = filter_var(row->row.name>"D", data)
 		@test materialize(f) ≈ X[data.var.name.>="D", :]
-		@test f.obs == obs_ans
+		@test f.obs == data.obs
 		@test f.var == data.var[data.var.name.>="D", :]
 		f_proj = project(data_proj, f)
 		@test materialize(f_proj) ≈ X[data.var.name.>="D", proj_obs_indices] rtol=1e-3
-		@test f_proj.obs == obs_ans[proj_obs_indices, :]
+		@test f_proj.obs == obs_proj_ans[proj_obs_indices, :]
 		@test f_proj.var == data.var[data.var.name.>="D", :]
 
 		f = filter_matrix("name"=>>("D"), 1:10:N, data)
 		@test materialize(f) ≈ X[data.var.name.>="D", 1:10:N]
-		@test f.obs == obs_ans[1:10:N, :]
+		@test f.obs == data.obs[1:10:N, :]
 		@test f.var == data.var[data.var.name.>="D", :]
 		@test_throws ArgumentError project(data_proj, f)
 
 		f = filter_matrix("name"=>>("D"), "group"=>==("A"), data)
 		@test materialize(f) ≈ X[data.var.name.>="D", g.=="A"]
-		@test f.obs == obs_ans[g.=="A", :]
+		@test f.obs == data.obs[g.=="A", :]
 		@test f.var == data.var[data.var.name.>="D", :]
 		f_proj = project(data_proj, f)
 		obs_ind = intersect(findall(g.=="A"),proj_obs_indices)
 		@test materialize(f_proj) ≈ X[data.var.name.>="D", obs_ind] rtol=1e-3
-		@test f_proj.obs == obs_ans[obs_ind, :]
+		@test f_proj.obs == obs_proj_ans[obs_ind, :]
 		@test f_proj.var == data.var[data.var.name.>="D", :]
+
+
+		@testset "external_obs::$T" for T in (Annotations,DataFrame)
+			if T==DataFrame
+				obs2 = obs2_df
+				obs2_proj = obs2_proj_df
+				var2 = var2_df
+			else
+				obs2 = T(obs2_df)
+				obs2_proj = T(obs2_proj_df)
+				var2 = T(var2_df)
+			end
+
+			f = filter_obs("external_group"=>==("A"), data; external_obs=obs2)
+			@test materialize(f) ≈ X[:, g.=="A"]
+			@test f.obs == data.obs[g.=="A", :]
+			@test f.var == data.var
+			@test_throws ["ArgumentError","External annotation","external_group","missing."] project(data_proj, f)
+			f_proj = project(data_proj, f; external_obs=obs2_proj)
+			obs_ind = intersect(findall(g.=="A"),proj_obs_indices)
+			@test materialize(f_proj) ≈ X[:, obs_ind] rtol=1e-3
+			@test f_proj.obs == obs_proj_ans[obs_ind, :]
+			@test f_proj.var == data.var
+
+			f = filter_var("external_name"=>>("D"), data; external_var=var2)
+			@test materialize(f) ≈ X[data.var.name.>="D", :]
+			@test f.obs == data.obs
+			@test f.var == data.var[data.var.name.>="D", :]
+			f_proj = project(data_proj, f)
+			@test materialize(f_proj) ≈ X[data.var.name.>="D", proj_obs_indices] rtol=1e-3
+			@test f_proj.obs == obs_proj_ans[proj_obs_indices, :]
+			@test f_proj.var == data.var[data.var.name.>="D", :]
+		end
 	end
+
+
 
 
 	@testset "force layout seed=$seed" for seed in 1:5
