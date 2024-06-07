@@ -327,7 +327,7 @@ function update_model(m::SCTransformModel{T};
 	allow_obs_indexing = post_obs_filter !== nothing
 	post_obs_filter === nothing && (post_obs_filter = m.post_filter.obs_filter)
 
-	post_filter = FilterModel(post_var_filter, post_obs_filter, m.post_filter.var_match, m.post_filter.var, obs)
+	post_filter = FilterModel(post_var_filter, post_obs_filter, m.post_filter.var_match, m.post_filter.use_external_obs, m.post_filter.var, obs) # TODO: support external_var here?
 	model = SCTransformModel{T}(m.params, m.var_id_col, clip, rtol, atol, annotate, post_filter)
 	(model, (;allow_obs_indexing, kwargs...))
 end
