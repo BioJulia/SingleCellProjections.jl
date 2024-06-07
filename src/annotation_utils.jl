@@ -3,7 +3,10 @@ function find_annotation(name::String, df::DataFrame)
 	hasproperty(df, name) || return nothing
 	select(df, [only(names(df,1)), name]; copycols=false)
 end
-find_annotation(name::String, a::Annotations) = get_table(get(a, name, nothing))
+function find_annotation(name::String, a::Annotations)
+	x = get(a, name, nothing)
+	x !== nothing ? get_table(x) : nothing
+end
 
 function find_annotation(name::String, annot::AbstractVector)
 	for a in annot

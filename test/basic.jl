@@ -502,6 +502,33 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		@test c_proj.obs.C == c.obs.C[proj_obs_indices]
 
 		test_show(c; obs=vcat(names(counts.obs), ["A","B","C"]), models="VarCountsFractionModel")
+
+
+		@testset "external_obs::$T" for T in (Annotations,DataFrame)
+			var2 = T==DataFrame ? var2_df : T(var2_df)
+
+			c = copy(counts)
+			@test_throws ["ArgumentError","external_name"] var_counts_fraction!(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A")
+			@test_throws ["ArgumentError","external_name"] var_counts_fraction!(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A"; external_var_sub=var2)
+			@test_throws ["ArgumentError","external_name"] var_counts_fraction!(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A"; external_var_tot=var2)
+
+			@test_throws ["ArgumentError","External annotation","\"name\"","missing."] var_counts_fraction!(c, "name"=>startswith("AC"), "name"=>startswith("A"), "A"; external_var=var2)
+			@test_throws ["ArgumentError","External annotation","\"name\"","missing."] var_counts_fraction!(c, "name"=>startswith("AC"), "name"=>startswith("A"), "A"; external_var_sub=var2)
+			@test_throws ["ArgumentError","External annotation","\"name\"","missing."] var_counts_fraction!(c, "name"=>startswith("AC"), "name"=>startswith("A"), "A"; external_var_tot=var2)
+
+			var_counts_fraction!(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A"; external_var=var2)
+			@test c.obs.A == nAC ./ max.(1,nA)
+			var_counts_fraction!(c, "external_name"=>startswith("AC"), "name"=>startswith("A"), "B"; external_var_sub=var2)
+			@test c.obs.B == nAC ./ max.(1,nA)
+			var_counts_fraction!(c, "name"=>startswith("AC"), "external_name"=>startswith("A"), "C"; external_var_tot=var2)
+			@test c.obs.C == nAC ./ max.(1,nA)
+
+			c_proj = project(counts_proj, c)
+			@test c_proj.obs.A == c.obs.A[proj_obs_indices]
+			@test c_proj.obs.B == c.obs.B[proj_obs_indices]
+			@test c_proj.obs.C == c.obs.C[proj_obs_indices]
+		end
+
 	end
 
 	@testset "pseudobulk $name" for (name,data,data_proj) in (("counts",counts,counts_proj), ("transformed",transformed,transformed_proj))
