@@ -37,7 +37,27 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		test_show(l; matrix="SparseMatrixCSC", var=names(counts.var), obs=names(counts.obs), models="LogTransformModel")
 		test_show(lproj; matrix="SparseMatrixCSC", var=names(counts_proj.var), obs=names(counts_proj.obs), models="LogTransformModel")
 
-		# TODO: test log_transform with kwargs: var_filter, external_var
+		# Variable subsetting
+		var_mask = counts.var.name .> "L"
+		X = T.(simple_logtransform(expected_mat[var_mask,:], scale_factor))
+		@testset "var_filter (external_var::$VT)" for VT in (Annotations,DataFrame)
+			var2 = VT==DataFrame ? var2_df : VT(var2_df)
+
+			@test_throws ["ArgumentError","external_name"] logtransform(T, counts; var_filter="external_name"=>>("L"), kwargs...)
+			@test_throws ["ArgumentError","External annotation","\"name\"","missing."] logtransform(T, counts; var_filter="name"=>>("L"), external_var=var2, kwargs...)
+
+			l = logtransform(T, counts; var_filter="name"=>>("L"), kwargs...)
+
+			@test l.matrix.matrix ≈ X
+			@test eltype(l.matrix.matrix) == T
+
+			lproj = project(counts_proj, l)
+			@test lproj.matrix.matrix ≈ X[:,proj_obs_indices]
+			@test eltype(lproj.matrix.matrix) == T
+
+			l2 = logtransform(T, counts; var_filter="external_name"=>>("L"), external_var=var2, kwargs...)
+			@test l.matrix.matrix ≈ l2.matrix.matrix
+		end
 	end
 
 	@testset "tf-idf scale_factor=$scale_factor T=$T" for scale_factor in (10_000, 1_000), T in (Float64,Float32)
@@ -87,7 +107,6 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 			tf2 = tf_idf_transform(T, counts; var_filter="external_name"=>>("F"), external_var=var2, kwargs...)
 			@test tf.matrix.matrix ≈ tf2.matrix.matrix
-
 		end
 	end
 
