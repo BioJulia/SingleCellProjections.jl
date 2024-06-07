@@ -1,31 +1,59 @@
 _subsetmatrix(X::AbstractMatrix, I::Index, J::Index) = X[I,J]
 
 
-_filter_indices(::DataFrame, I::Index) = I
-_filter_indices(df::DataFrame, f) = first(parentindices(filter(f,df;view=true)))
+
+function _gather_columns!(df, col::Union{Symbol,String}, external)
+	a = find_annotation(col, external)
+	a === nothing && throw(ArgumentError("External annotation \"$(cov.name)\" missing."))
+	leftjoin!(df, a; on=names(obs,1))
+	nothing
+end
+
+function _gather_columns!(df, cols::AbstractVector, external)
+	for col in cols
+		_gather_columns!(df, col, external)
+	end
+end
+
+
+_filter_indices(::DataFrame, I::Index, ::Nothing=nothing) = I
+_filter_indices(df::DataFrame, f, ::Nothing=nothing) = first(parentindices(filter(f,df;view=true)))
+function _filter_indices(df::DataFrame, f::Pair{Union{Symbol,String,<:AbstractVector},Any}, external)
+	df = select(df, 1; copycols=false) # just keep the ID column
+
+	# 1. Find names of columns needed for predicate
+	# 2. Extract columns needed for predicate (and join to IDs)
+	_gather_columns!(df, first(f), external)
+
+	# 3. Use standard _filter_indices
+	_filter_indices(df, f)
+end
 
 struct FilterModel{Tv<:Index,To} <: ProjectionModel
 	var_filter::Tv
 	obs_filter::To
 	var_match::DataFrame
+	use_external_obs::Bool
 	var::Symbol
 	obs::Symbol
 
-    function FilterModel(var_filter::Tv, obs_filter::To, var_match, var, obs) where {Tv<:Index,To}
+    function FilterModel(var_filter::Tv, obs_filter::To, var_match, use_external_obs, var, obs) where {Tv<:Index,To}
 		# :keep only possible when indexing with :
 		var_filter != Colon() && var == :keep && throw(ArgumentError("var = :keep is only allowed when indexing with :"))
 		obs_filter != Colon() && obs == :keep && throw(ArgumentError("obs = :keep is only allowed when indexing with :"))
-        new{Tv,To}(var_filter, obs_filter, var_match, var, obs)
+        new{Tv,To}(var_filter, obs_filter, var_match, use_external_obs, var, obs)
     end
 end
-FilterModel(var_annots::Tv, var_filter, obs_filter; var=:copy, obs=:copy) where Tv=
-	FilterModel(_filter_indices(var_annots, var_filter), obs_filter, select(var_annots, 1), var, obs)
+function FilterModel(var_annots::Tv, var_filter, obs_filter; var=:copy, obs=:copy, external_var=nothing, use_external_obs=false) where Tv
+	var_filter = _filter_indices(var_annots, var_filter, external_var)
+	FilterModel(var_filter, obs_filter, select(var_annots, 1), use_external_obs, var, obs)
+end
 FilterModel(data::DataMatrix, args...; kwargs...) =
 	FilterModel(data.var, args...; kwargs...)
 
 function projection_isequal(m1::FilterModel, m2::FilterModel)
 	m1.var_filter == m2.var_filter && m1.obs_filter == m2.obs_filter &&
-	m1.var_match == m2.var_match
+	m1.var_match == m2.var_match && m1.use_external_obs == m2.use_external_obs
 end
 
 
@@ -33,7 +61,7 @@ function update_model(m::FilterModel; var_filter=m.var_filter, obs_filter=nothin
                       var=m.var, obs=m.obs, kwargs...)
 	allow_obs_indexing = obs_filter !== nothing
 	obs_filter === nothing && (obs_filter = m.obs_filter)
-	model = FilterModel(var_filter, obs_filter, m.var_match, var, obs)
+	model = FilterModel(var_filter, obs_filter, m.var_match, m.use_external_obs, var, obs)
 	(model, (;allow_obs_indexing, kwargs...))
 end
 
@@ -68,11 +96,11 @@ function _reordered_var_ind(I, var, var_match; verbose)
 	out_ind
 end
 
-function project_impl(data::DataMatrix, model::FilterModel; allow_obs_indexing=false, verbose=true)
+function project_impl(data::DataMatrix, model::FilterModel; external_obs=nothing, allow_obs_indexing=false, verbose=true)
 	_validate(data.var, model, allow_obs_indexing)
 
 	I = _filter_indices(data.var, model.var_filter)
-	J = _filter_indices(data.obs, model.obs_filter)
+	J = _filter_indices(data.obs, model.obs_filter, model.use_external_obs ? external_obs : nothing)
 
 	var = model.var
 
@@ -119,7 +147,10 @@ For more examples, see `filter_var` and `filter_obs`.
 
 See also: [`filter_var`](@ref), [`filter_obs`](@ref), [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter)
 """
-filter_matrix(fvar, fobs, data::DataMatrix) = project(data, FilterModel(data,fvar,fobs); allow_obs_indexing=true)
+function filter_matrix(fvar, fobs, data::DataMatrix; external_var=nothing, external_obs=nothing)
+	model = FilterModel(data,fvar,fobs; external_var, use_external_obs=external_obs!==nothing)
+	project(data, model; external_obs, allow_obs_indexing=true)
+end
 
 
 """

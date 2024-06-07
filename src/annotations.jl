@@ -7,6 +7,8 @@ end
 get_table(a::Annotations) = getfield(a,:df)
 
 
+Base.haskey(a::Annotations, name::String) = hasproperty(get_table(a), name)
+
 
 function Base.get(f::Union{Type,Function}, a::Annotations, column::String)
 	df = get_table(a)

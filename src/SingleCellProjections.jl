@@ -93,6 +93,7 @@ include("sctransformsparse.jl")
 include("implicitsvd.jl")
 
 include("annotations.jl")
+include("annotation_utils.jl")
 
 include("lowrank.jl")
 include("projectionmodels.jl")

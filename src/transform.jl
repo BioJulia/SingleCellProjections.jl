@@ -297,7 +297,7 @@ function SCTransformModel(::Type{T}, counts::DataMatrix;
 
 	params = scparams(counts; feature_mask, kwargs...)
 	clip = sqrt(size(counts,2)/30)
-	post_filter = FilterModel(params, post_var_filter, post_obs_filter; var=:copy, obs)
+	post_filter = FilterModel(params, post_var_filter, post_obs_filter; var=:copy, obs) # TODO: allow external_var & external_obs
 	SCTransformModel{T}(params, only(names(counts.var,1)), clip, rtol, atol, annotate, post_filter)
 end
 SCTransformModel(counts::DataMatrix; kwargs...) =

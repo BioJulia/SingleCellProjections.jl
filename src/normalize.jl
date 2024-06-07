@@ -133,34 +133,18 @@ _named_matrix(A, name::Symbol) = MatrixRef(name=>A)
 
 
 
-# TODO: Move these to somewhere else? Perhaps useful for other projections too.
-function _get_value_vector_from_external_obs(data::DataMatrix, name::String, external_obs::DataFrame)
-	obs = select(data.obs,1; copycols=false)
-	leftjoin!(obs, select(external_obs, [only(names(external_obs,1)), name]); on=names(obs,1))
-	obs[!,2]
-end
-function _get_value_vector_from_external_obs(data::DataMatrix, name::String, external_obs::Annotations)
-	obs = select(data.obs,1; copycols=false)
-	leftjoin!(obs, get_table(external_obs[name]); on=names(obs,1))
-	obs[!,2]
-end
-function _get_value_vector_from_external_obs(data::DataMatrix, name::String, external_obs::AbstractVector)
-	for a in external_obs
-		v = _get_value_vector_from_external_obs(name, a)
-		v !== nothing && return v
-	end
-	nothing
-end
-_get_value_vector_from_external_obs(::DataMatrix, ::String, external_obs::Nothing) = nothing
 
 function _get_value_vector(data::DataMatrix, cov::AbstractCovariate, external_obs)
 	cov isa InterceptCovariate && return nothing
 	cov.external == false && return data.obs[!,cov.name]
-	v = _get_value_vector_from_external_obs(data, cov.name, external_obs)
-	v === nothing && throw(ArgumentError("External annotation \"$(cov.name)\" missing, please provide external_obs when projecting."))
-	v
-end
 
+	a = find_annotation(cov.name, external_obs)
+	a === nothing && throw(ArgumentError("External annotation \"$(cov.name)\" missing, please provide external_obs when projecting."))
+
+	obs = select(data.obs,1; copycols=false)
+	leftjoin!(obs, a; on=names(obs,1))
+	obs[!,2]
+end
 
 
 
