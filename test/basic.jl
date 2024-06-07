@@ -63,7 +63,32 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		test_show(tf; matrix="SparseMatrixCSC", var=vcat(names(counts.var),"idf"), obs=names(counts.obs), models="TFIDFTransformModel")
 		test_show(tf_proj; matrix="SparseMatrixCSC", var=vcat(names(counts_proj.var),"idf"), obs=names(counts_proj.obs), models="TFIDFTransformModel")
 
-		# TODO: test tf_idf_transform with kwargs: var_filter, external_var
+		# Variable subsetting
+		@testset "var_filter (external_var::$VT)" for VT in (Annotations,DataFrame)
+			var2 = VT==DataFrame ? var2_df : VT(var2_df)
+
+			var_mask = counts.var.name .> "F"
+
+			idf = simple_idf(expected_mat[var_mask,:])
+			X = simple_tf_idf_transform(expected_mat[var_mask,:], idf, scale_factor)
+			X = T.(X)
+
+			@test_throws ["ArgumentError","external_name"] tf_idf_transform(T, counts; var_filter="external_name"=>>("F"), kwargs...)
+			@test_throws ["ArgumentError","External annotation","\"name\"","missing."] tf_idf_transform(T, counts; var_filter="name"=>>("F"), external_var=var2, kwargs...)
+
+			tf = tf_idf_transform(T, counts; var_filter="name"=>>("F"), kwargs...)
+
+			@test tf.matrix.matrix ≈ X
+			@test eltype(tf.matrix.matrix) == T
+
+			tf_proj = project(counts_proj, tf)
+			@test tf_proj.matrix.matrix ≈ X[:,proj_obs_indices]
+			@test eltype(tf_proj.matrix.matrix) == T
+
+			tf2 = tf_idf_transform(T, counts; var_filter="external_name"=>>("F"), external_var=var2, kwargs...)
+			@test tf.matrix.matrix ≈ tf2.matrix.matrix
+
+		end
 	end
 
 	transformed_proj = project(counts_proj, transformed)
@@ -75,7 +100,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			trans_proj = transformed_proj
 			t2 = sctransform(counts; use_cache=false, var_filter=nothing)
 		else
-			trans = sctransform(Float32, counts; use_cache=false)
+			trans = sctransform(T, counts; use_cache=false)
 			trans_proj = project(counts_proj, trans)
 			t2 = sctransform(T, counts; use_cache=false, var_filter=nothing)
 		end
@@ -103,7 +128,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 		@test materialize(t2) ≈ sct rtol=1e-3
 
-		# TODO: test sctransform with kwargs: var_filter, post_var_filter, post_obs_filter, external_var, external_post_var, external_obs
+		# TODO: test sctransform with kwargs: post_var_filter, post_obs_filter, external_var, external_post_var, external_obs
 	end
 
 	X = materialize(transformed)
@@ -373,38 +398,38 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		@test f_proj.var == data.var[1:2:P2, :]
 
 		f = filter_var("name"=>>("D"), data)
-		@test materialize(f) ≈ X[data.var.name.>="D", :]
+		@test materialize(f) ≈ X[data.var.name.>"D", :]
 		@test f.obs == data.obs
-		@test f.var == data.var[data.var.name.>="D", :]
+		@test f.var == data.var[data.var.name.>"D", :]
 		f_proj = project(data_proj, f)
-		@test materialize(f_proj) ≈ X[data.var.name.>="D", proj_obs_indices] rtol=1e-3
+		@test materialize(f_proj) ≈ X[data.var.name.>"D", proj_obs_indices] rtol=1e-3
 		@test f_proj.obs == obs_proj_ans[proj_obs_indices, :]
-		@test f_proj.var == data.var[data.var.name.>="D", :]
+		@test f_proj.var == data.var[data.var.name.>"D", :]
 
 		f = filter_var(row->row.name>"D", data)
-		@test materialize(f) ≈ X[data.var.name.>="D", :]
+		@test materialize(f) ≈ X[data.var.name.>"D", :]
 		@test f.obs == data.obs
-		@test f.var == data.var[data.var.name.>="D", :]
+		@test f.var == data.var[data.var.name.>"D", :]
 		f_proj = project(data_proj, f)
-		@test materialize(f_proj) ≈ X[data.var.name.>="D", proj_obs_indices] rtol=1e-3
+		@test materialize(f_proj) ≈ X[data.var.name.>"D", proj_obs_indices] rtol=1e-3
 		@test f_proj.obs == obs_proj_ans[proj_obs_indices, :]
-		@test f_proj.var == data.var[data.var.name.>="D", :]
+		@test f_proj.var == data.var[data.var.name.>"D", :]
 
 		f = filter_matrix("name"=>>("D"), 1:10:N, data)
-		@test materialize(f) ≈ X[data.var.name.>="D", 1:10:N]
+		@test materialize(f) ≈ X[data.var.name.>"D", 1:10:N]
 		@test f.obs == data.obs[1:10:N, :]
-		@test f.var == data.var[data.var.name.>="D", :]
+		@test f.var == data.var[data.var.name.>"D", :]
 		@test_throws ArgumentError project(data_proj, f)
 
 		f = filter_matrix("name"=>>("D"), "group"=>==("A"), data)
-		@test materialize(f) ≈ X[data.var.name.>="D", g.=="A"]
+		@test materialize(f) ≈ X[data.var.name.>"D", g.=="A"]
 		@test f.obs == data.obs[g.=="A", :]
-		@test f.var == data.var[data.var.name.>="D", :]
+		@test f.var == data.var[data.var.name.>"D", :]
 		f_proj = project(data_proj, f)
 		obs_ind = intersect(findall(g.=="A"),proj_obs_indices)
-		@test materialize(f_proj) ≈ X[data.var.name.>="D", obs_ind] rtol=1e-3
+		@test materialize(f_proj) ≈ X[data.var.name.>"D", obs_ind] rtol=1e-3
 		@test f_proj.obs == obs_proj_ans[obs_ind, :]
-		@test f_proj.var == data.var[data.var.name.>="D", :]
+		@test f_proj.var == data.var[data.var.name.>"D", :]
 
 
 		@testset "external_obs::$T" for T in (Annotations,DataFrame)

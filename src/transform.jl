@@ -128,6 +128,7 @@ function TFIDFTransformModel(::Type{T}, counts::DataMatrix;
 	if var_filter !== nothing
 		ind = external_var !== nothing ? _filter_indices(counts.var, var_filter, external_var) : _filter_indices(counts.var, var_filter)
 		var_match = var_match[ind,:]
+		idf = idf[ind]
 	end
 	TFIDFTransformModel{T}(scale_factor, idf, var_match, annotate, var, obs)
 end
