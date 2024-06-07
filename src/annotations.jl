@@ -3,12 +3,12 @@ struct Annotations
 end
 
 # TODO: rename and make public interface?
-_get_df(a::Annotations) = getfield(a,:df)
+get_table(a::Annotations) = getfield(a,:df)
 
 
 
 function Base.get(f::Union{Type,Function}, a::Annotations, column::String)
-	df = _get_df(a)
+	df = get_table(a)
 	hasproperty(df, column) || return f()
 	id_column = names(df, 1)
 	cols = only(id_column) == column ? id_column : vcat(id_column,column)
@@ -25,13 +25,13 @@ Base.getproperty(a::Annotations, column::Symbol) = a[column]
 Base.getproperty(a::Annotations, column::String) = a[column]
 
 function annotation_name(a::Annotations)
-	df = _get_df(a)
+	df = get_table(a)
 	@assert size(df,2) == 2 "Expected annotations to object to have an ID column and a single data column, got columns: $(names(df))"
 	only(names(df,2))
 end
 
 # function annotation_values(a::Annotations)
-# 	df = _get_df(a)
+# 	df = get_table(a)
 # 	@assert size(df,2) == 2 "Expected annotations to object to have an ID column and a single data column, got columns: $(names(df))"
 # 	df[!,2]
 # end

@@ -120,13 +120,16 @@ covariate(c::CovariateDesc) = c
 _get_name(c::CovariateDesc{String}) = c.src
 _get_name(c::CovariateDesc) = annotation_name(c.src)
 
+_get_src_df(cov::CovariateDesc{T}) where T<:AbstractDataFrame = cov.src
+_get_src_df(cov::CovariateDesc{Annotations}) = get_table(cov.src)
+
 _get_values(obs::DataFrame, c::CovariateDesc{String}) = c.src, obs[!,c.src]
 function _get_values(obs::DataFrame, c::CovariateDesc)
-	df = _get_df(c.src) # TODO: avoid "internal" function
+	df = _get_src_df(c)
 	size(df,2) == 2 || throw(ArgumentError("Covariate must have exactly one ID column and one value column."))
 
 	obs = select(obs,1)
-	leftjoin!(obs, df; on=names(obs,1)) # TODO: create and use some utility function for Annotations, instead of using DataFrame here
+	leftjoin!(obs, df; on=names(obs,1))
 	only(names(obs,2)), obs[!,2]
 end
 _get_values(data::DataMatrix, c::CovariateDesc) = _get_values(data.obs, c)

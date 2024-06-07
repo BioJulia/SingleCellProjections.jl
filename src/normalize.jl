@@ -134,11 +134,15 @@ _named_matrix(A, name::Symbol) = MatrixRef(name=>A)
 
 
 # TODO: Move these to somewhere else? Perhaps useful for other projections too.
-function _get_value_vector_from_external_obs(data::DataMatrix, name::String, external_obs::Annotations)
-	obs = select(data.obs,1)
-	leftjoin!(obs, _get_df(external_obs[name]); on=names(obs,1))
+function _get_value_vector_from_external_obs(data::DataMatrix, name::String, external_obs::DataFrame)
+	obs = select(data.obs,1; copycols=false)
+	leftjoin!(obs, select(external_obs, [only(names(external_obs,1)), name]); on=names(obs,1))
 	obs[!,2]
-
+end
+function _get_value_vector_from_external_obs(data::DataMatrix, name::String, external_obs::Annotations)
+	obs = select(data.obs,1; copycols=false)
+	leftjoin!(obs, get_table(external_obs[name]); on=names(obs,1))
+	obs[!,2]
 end
 function _get_value_vector_from_external_obs(data::DataMatrix, name::String, external_obs::AbstractVector)
 	for a in external_obs

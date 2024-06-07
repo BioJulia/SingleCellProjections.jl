@@ -178,22 +178,38 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		@test_throws "No values" project(transformed_proj,n)
 	end
 
-	obs2 = Annotations(rename(counts.obs, "group"=>"external_group", "value"=>"external_value"))
-	obs2_proj = Annotations(rename(counts_proj.obs, "group"=>"external_group", "value"=>"external_value"))
+	obs2_df = rename(counts.obs, "group"=>"external_group", "value"=>"external_value")
+	obs2_proj_df = rename(counts_proj.obs, "group"=>"external_group", "value"=>"external_value")
 
-	@testset "normalize (external_obs)" begin
+	@testset "normalize (external_obs::$T)" for T in (Annotations,DataFrame)
+		if T==DataFrame
+			obs2 = obs2_df
+			obs2_proj = obs2_proj_df
+			obs2_eg = select(obs2, ["barcode","external_group"])
+			obs2_ev = select(obs2, ["barcode","external_value"])
+			obs2_proj_eg = select(obs2_proj, ["barcode","external_group"])
+			obs2_proj_ev = select(obs2_proj, ["barcode","external_value"])
+		else
+			obs2 = T(obs2_df)
+			obs2_proj = T(obs2_proj_df)
+			obs2_eg = obs2.external_group
+			obs2_ev = obs2.external_value
+			obs2_proj_eg = obs2_proj.external_group
+			obs2_proj_ev = obs2_proj.external_value
+		end
+
 		@test_throws ["ArgumentError", "exactly one ID column", "one value column"] normalize_matrix(transformed, obs2)
 
-		n = normalize_matrix(transformed, obs2.external_group)
+		n = normalize_matrix(transformed, obs2_eg)
 		@test materialize(n) ≈ Xcat
 		@test_throws ["ArgumentError", "external_group"] project(transformed_proj,n)
-		@test materialize(project(transformed_proj,n; external_obs=obs2_proj.external_group)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
+		@test materialize(project(transformed_proj,n; external_obs=obs2_proj_eg)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
 		@test materialize(project(transformed_proj,n; external_obs=obs2_proj)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
 
-		n = normalize_matrix(transformed, obs2.external_value)
+		n = normalize_matrix(transformed, obs2_ev)
 		@test materialize(n) ≈ Xnum
 		@test_throws ["ArgumentError", "external_value"] project(transformed_proj,n)
-		@test materialize(project(transformed_proj,n; external_obs=obs2_proj.external_value)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
+		@test materialize(project(transformed_proj,n; external_obs=obs2_proj_ev)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
 		@test materialize(project(transformed_proj,n; external_obs=obs2_proj)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
 	end
 
