@@ -1,7 +1,6 @@
 module SingleCellProjections
 
 export
-	Annotations,
 	DataMatrix,
 	ProjectionModel,
 	FilterModel,

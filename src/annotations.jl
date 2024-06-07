@@ -1,8 +1,9 @@
+# NB: Annotations is considered experimental API and thus not exported.
+#     It may get breaking changes in minor/patch releases.
 struct Annotations
 	df::DataFrame # implementation detail, might be changed later. The first column is the ID column, and the name of that column is the name of the axis.
 end
 
-# TODO: rename and make public interface?
 get_table(a::Annotations) = getfield(a,:df)
 
 
