@@ -135,8 +135,6 @@ _named_matrix(A, name::Symbol) = MatrixRef(name=>A)
 
 # TODO: Move these to somewhere else? Perhaps useful for other projections too.
 function _get_value_vector_from_annotations(data::DataMatrix, name::String, annotations::Annotations)
-	name != annotation_name(annotations) && return nothing
-
 	obs = select(data.obs,1)
 	leftjoin!(obs, _get_df(annotations[name]); on=names(obs,1))
 	obs[!,2]

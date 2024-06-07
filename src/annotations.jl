@@ -12,7 +12,7 @@ function Base.get(f::Union{Type,Function}, a::Annotations, column::String)
 	hasproperty(df, column) || return f()
 	id_column = names(df, 1)
 	cols = only(id_column) == column ? id_column : vcat(id_column,column)
-	Annotations(select(df, cols))
+	Annotations(select(df, cols; copycols=false))
 end
 Base.get(a::Annotations, column::String, default) = get(()->default, a, column)
 Base.get(f::Union{Type,Function}, a::Annotations, column::Symbol) = get(f, a, String(column))

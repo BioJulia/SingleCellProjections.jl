@@ -154,6 +154,7 @@
 		@test materialize(n) ≈ Xcat
 		@test_throws ["ArgumentError", "external_group"] project(transformed_proj,n)
 		@test materialize(project(transformed_proj,n; annotations=external_annotations.external_group)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
+		@test materialize(project(transformed_proj,n; annotations=external_annotations)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
 
 		n = normalize_matrix(transformed, "value")
 		@test materialize(n) ≈ Xnum
@@ -167,6 +168,7 @@
 		@test materialize(n) ≈ Xnum
 		@test_throws ["ArgumentError", "external_value"] project(transformed_proj,n)
 		@test materialize(project(transformed_proj,n; annotations=external_annotations.external_value)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
+		@test materialize(project(transformed_proj,n; annotations=external_annotations)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
 
 		n = normalize_matrix(transformed, "group", "value")
 		@test materialize(n) ≈ Xcom
