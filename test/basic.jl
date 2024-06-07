@@ -211,6 +211,17 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		@test_throws ["ArgumentError", "external_value"] project(transformed_proj,n)
 		@test materialize(project(transformed_proj,n; external_obs=obs2_proj_ev)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
 		@test materialize(project(transformed_proj,n; external_obs=obs2_proj)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
+
+		n = normalize_matrix(transformed, covariate(obs2_eg,"C"))
+		@test materialize(n) ≈ Xtwo
+		@test_throws ["ArgumentError", "external_group"] project(transformed_proj,n)
+		@test materialize(project(transformed_proj,n; external_obs=obs2_proj_eg)) ≈ Xtwo[:,proj_obs_indices] rtol=1e-3
+		@test materialize(project(transformed_proj,n; external_obs=obs2_proj)) ≈ Xtwo[:,proj_obs_indices] rtol=1e-3
+
+		n = normalize_matrix(transformed, covariate(obs2_eg,"B"))
+		@test_throws ["ArgumentError", "external_group"] project(transformed_proj,n)
+		@test_throws "No values" project(transformed_proj,n; external_obs=obs2_proj_eg)
+		@test_throws "No values" project(transformed_proj,n; external_obs=obs2_proj)
 	end
 
 
