@@ -122,9 +122,11 @@ _get_name(c::CovariateDesc) = annotation_name(c.src)
 
 _get_values(obs::DataFrame, c::CovariateDesc{String}) = c.src, obs[!,c.src]
 function _get_values(obs::DataFrame, c::CovariateDesc)
-	annot = annotation_values(c.src)
+	df = _get_df(c.src) # TODO: avoid "internal" function
+	@assert size(df,2) == 2
+
 	obs = select(obs,1)
-	leftjoin!(obs, annot; on=names(obs,1))
+	leftjoin!(obs, df; on=names(obs,1)) # TODO: create and use some utility function for Annotations, instead of using DataFrame here
 	only(names(obs,2)), obs[!,2]
 end
 _get_values(data::DataMatrix, c::CovariateDesc) = _get_values(data.obs, c)

@@ -2,26 +2,36 @@ struct Annotations
 	df::DataFrame # implementation detail, might be changed later. The first column is the ID column, and the name of that column is the name of the axis.
 end
 
-function Base.getproperty(a::Annotations, column::Symbol)
-	df = getfield(a,:df)
-	column = String(column)
+# TODO: rename and make public interface?
+_get_df(a::Annotations) = getfield(a,:df)
+
+
+
+function Base.get(f::Union{Type,Function}, a::Annotations, column::String)
+	df = _get_df(a)
+	hasproperty(df, column) || return f()
 	id_column = names(df, 1)
 	cols = only(id_column) == column ? id_column : vcat(id_column,column)
 	Annotations(select(df, cols))
 end
+Base.get(a::Annotations, column::String, default) = get(()->default, a, column)
+Base.get(f::Union{Type,Function}, a::Annotations, column::Symbol) = get(f, a, String(column))
+Base.get(a::Annotations, column::Symbol, default) = get(a,String(column), default)
 
-# function annotation_id(a::Annotations)
-# 	df = getfield(a,:df)
-# 	only(names(df,1))
-# end
+
+Base.getindex(a::Annotations, column::Union{Symbol,String}) = get(()->throw(KeyError(column)), a, column)
+
+Base.getproperty(a::Annotations, column::Symbol) = a[column]
+Base.getproperty(a::Annotations, column::String) = a[column]
+
 function annotation_name(a::Annotations)
-	df = getfield(a,:df)
+	df = _get_df(a)
 	@assert size(df,2) == 2 "Expected annotations to object to have an ID column and a single data column, got columns: $(names(df))"
 	only(names(df,2))
 end
 
-function annotation_values(a::Annotations)
-	df = getfield(a,:df)
-	@assert size(df,2) == 2 "Expected annotations to object to have an ID column and a single data column, got columns: $(names(df))"
-	df[!,2]
-end
+# function annotation_values(a::Annotations)
+# 	df = _get_df(a)
+# 	@assert size(df,2) == 2 "Expected annotations to object to have an ID column and a single data column, got columns: $(names(df))"
+# 	df[!,2]
+# end
