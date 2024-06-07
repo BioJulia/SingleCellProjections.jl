@@ -127,8 +127,8 @@
 	Xtwo_std = std(Xtwo; dims=2)
 	Xtwo_s = Xtwo ./ Xtwo_std
 
-	external_annotations = Annotations(rename(normalized.obs, "group"=>"external_group", "value"=>"external_value"))
-	@show names(getfield(external_annotations,:df))
+	external_obs = Annotations(rename(normalized.obs, "group"=>"external_group", "value"=>"external_value"))
+	@show names(getfield(external_obs,:df))
 
 	@testset "normalize" begin
 		n = normalize_matrix(transformed)
@@ -150,11 +150,13 @@
 		@test materialize(project(transformed_proj,n)) ≈ Xcat_s[:,proj_obs_indices] rtol=1e-3
 		@test n.var.scaling ≈ 1.0./Xcat_std
 
-		n = normalize_matrix(transformed, external_annotations.external_group)
+		@test_throws ["ArgumentError", "exactly one ID column", "one value column"] normalize_matrix(transformed, external_obs)
+
+		n = normalize_matrix(transformed, external_obs.external_group)
 		@test materialize(n) ≈ Xcat
 		@test_throws ["ArgumentError", "external_group"] project(transformed_proj,n)
-		@test materialize(project(transformed_proj,n; annotations=external_annotations.external_group)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
-		@test materialize(project(transformed_proj,n; annotations=external_annotations)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
+		@test materialize(project(transformed_proj,n; external_obs=external_obs.external_group)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
+		@test materialize(project(transformed_proj,n; external_obs)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
 
 		n = normalize_matrix(transformed, "value")
 		@test materialize(n) ≈ Xnum
@@ -164,11 +166,11 @@
 		@test materialize(project(transformed_proj,n)) ≈ Xnum_s[:,proj_obs_indices] rtol=1e-3
 		@test n.var.scaling ≈ 1.0./Xnum_std
 
-		n = normalize_matrix(transformed, external_annotations.external_value)
+		n = normalize_matrix(transformed, external_obs.external_value)
 		@test materialize(n) ≈ Xnum
 		@test_throws ["ArgumentError", "external_value"] project(transformed_proj,n)
-		@test materialize(project(transformed_proj,n; annotations=external_annotations.external_value)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
-		@test materialize(project(transformed_proj,n; annotations=external_annotations)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
+		@test materialize(project(transformed_proj,n; external_obs=external_obs.external_value)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
+		@test materialize(project(transformed_proj,n; external_obs)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
 
 		n = normalize_matrix(transformed, "group", "value")
 		@test materialize(n) ≈ Xcom

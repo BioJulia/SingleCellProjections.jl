@@ -123,7 +123,7 @@ _get_name(c::CovariateDesc) = annotation_name(c.src)
 _get_values(obs::DataFrame, c::CovariateDesc{String}) = c.src, obs[!,c.src]
 function _get_values(obs::DataFrame, c::CovariateDesc)
 	df = _get_df(c.src) # TODO: avoid "internal" function
-	@assert size(df,2) == 2
+	size(df,2) == 2 || throw(ArgumentError("Covariate must have exactly one ID column and one value column."))
 
 	obs = select(obs,1)
 	leftjoin!(obs, df; on=names(obs,1)) # TODO: create and use some utility function for Annotations, instead of using DataFrame here

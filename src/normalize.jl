@@ -218,8 +218,8 @@ function project_impl(data::DataMatrix, model::NormalizationModel, design::Desig
 
 	update_matrix(data, matrix, model; var, model.obs)
 end
-function project_impl(data::DataMatrix, model::NormalizationModel; annotations=nothing, kwargs...)
-	value_vectors = [_get_value_vector(data,cov,annotations) for cov in model.covariates]
+function project_impl(data::DataMatrix, model::NormalizationModel; external_obs=nothing, kwargs...)
+	value_vectors = [_get_value_vector(data,cov,external_obs) for cov in model.covariates]
 	design = designmatrix(data, model.covariates, value_vectors)
 	project_impl(data, model, design; kwargs...)
 end
