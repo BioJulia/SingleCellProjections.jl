@@ -134,26 +134,26 @@ _named_matrix(A, name::Symbol) = MatrixRef(name=>A)
 
 
 # TODO: Move these to somewhere else? Perhaps useful for other projections too.
-function _get_value_vector_from_annotations(data::DataMatrix, name::String, annotations::Annotations)
+function _get_value_vector_from_external_obs(data::DataMatrix, name::String, external_obs::Annotations)
 	obs = select(data.obs,1)
-	leftjoin!(obs, _get_df(annotations[name]); on=names(obs,1))
+	leftjoin!(obs, _get_df(external_obs[name]); on=names(obs,1))
 	obs[!,2]
 
 end
-function _get_value_vector_from_annotations(data::DataMatrix, name::String, annotations::AbstractVector)
-	for a in annotations
-		v = _get_value_vector_from_annotations(name, a)
+function _get_value_vector_from_external_obs(data::DataMatrix, name::String, external_obs::AbstractVector)
+	for a in external_obs
+		v = _get_value_vector_from_external_obs(name, a)
 		v !== nothing && return v
 	end
 	nothing
 end
-_get_value_vector_from_annotations(::DataMatrix, ::String, annotations::Nothing) = nothing
+_get_value_vector_from_external_obs(::DataMatrix, ::String, external_obs::Nothing) = nothing
 
-function _get_value_vector(data::DataMatrix, cov::AbstractCovariate, annotations)
+function _get_value_vector(data::DataMatrix, cov::AbstractCovariate, external_obs)
 	cov isa InterceptCovariate && return nothing
 	cov.external == false && return data.obs[!,cov.name]
-	v = _get_value_vector_from_annotations(data, cov.name, annotations)
-	v === nothing && throw(ArgumentError("External annotation \"$(cov.name)\" missing, please provide annotations when projecting."))
+	v = _get_value_vector_from_external_obs(data, cov.name, external_obs)
+	v === nothing && throw(ArgumentError("External annotation \"$(cov.name)\" missing, please provide external_obs when projecting."))
 	v
 end
 
