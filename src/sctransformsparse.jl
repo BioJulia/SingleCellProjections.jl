@@ -91,6 +91,7 @@ end
 function sctransformsparse(::Type{T}, X::SparseMatrixCSC, features, params;
                            transpose = false,
                            feature_id_columns = [:id,:feature_type],
+                           feature_mask,
                            cell_ind = 1:size(X,2),
                            clip=sqrt(size(X,2)/30), kwargs...) where T
 
@@ -114,7 +115,7 @@ function sctransformsparse(::Type{T}, X::SparseMatrixCSC, features, params;
 	feature_ind = Int.(feature_ind) # get rid of Nothing in eltype
 
 
-	logCellCounts = SCTransform.logcellcounts(X)[cell_ind]
+	logCellCounts = SCTransform.logcellcounts(X, feature_mask)[cell_ind]
 
 	# create new Float64-valued sparse matrix with selected rows/columns
 

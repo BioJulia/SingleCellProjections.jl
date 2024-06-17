@@ -321,6 +321,10 @@ function SCTransformModel(::Type{T}, counts::DataMatrix;
                           kwargs...) where T
 	nvar = size(counts,1)
 
+
+	# 1. create var_match - which decides feature_indices
+
+
 	if var_filter === nothing
 		feature_mask = trues(nvar)
 	else
@@ -395,8 +399,11 @@ function project_impl(counts::DataMatrix, model::SCTransformModel{T}; external_p
 		end
 	end
 
+	feature_mask = trues(size(counts,1)) # TODO: use var_match
+
 	X,var = sctransformsparse(T, counts.matrix, counts.var, params;
 	                          feature_id_columns=[model.var_id_col],
+	                          feature_mask,
 	                          cell_ind=J,
 	                          model.clip, model.rtol, model.atol)
 
