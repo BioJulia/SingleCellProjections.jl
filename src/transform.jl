@@ -1,3 +1,27 @@
+function _var_match_for_transform(var; var_filter, var_filter_cols, external_var)
+	if var_filter_cols === nothing
+		var_match = select(var, 1)
+	elseif var_filter_cols isa Tuple || var_filter_cols isa AbstractArray
+		var_match = select(var, Cols(1, var_filter_cols...))
+	else
+		var_match = select(var, Cols(1, var_filter_cols))
+	end
+
+	if var_filter !== nothing
+		if external_var !== nothing
+			ind = _filter_indices(var, var_filter, external_var)
+		else
+			ind = _filter_indices(var, var_filter)
+		end
+		var_match = var_match[ind,:]
+	else
+		ind = 1:size(var,1)
+	end
+	var_match, ind
+end
+
+
+
 struct LogTransformModel{T} <: ProjectionModel
 	scale_factor::Float64
 	var_match::DataFrame
@@ -5,14 +29,11 @@ struct LogTransformModel{T} <: ProjectionModel
 	obs::Symbol
 end
 function LogTransformModel(::Type{T}, counts::DataMatrix;
-                           var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
+                           var_filter = hasproperty(counts.var, "feature_type") ? "feature_type" => isequal("Gene Expression") : nothing,
+                           var_filter_cols = hasproperty(counts.var, "feature_type") ? "feature_type" : nothing,
                            external_var = nothing,
                            scale_factor=10_000, var=:copy, obs=:copy) where T
-	var_match = select(counts.var, 1)
-	if var_filter !== nothing
-		ind = external_var !== nothing ? _filter_indices(counts.var, var_filter, external_var) : _filter_indices(counts.var, var_filter)
-		var_match = var_match[ind,:]
-	end
+	var_match,_ = _var_match_for_transform(counts.var; var_filter, var_filter_cols, external_var)
 	LogTransformModel{T}(scale_factor, var_match, var, obs)
 end
 LogTransformModel(counts::DataMatrix; kwargs...) = LogTransformModel(Float64, counts; kwargs...)
@@ -73,7 +94,8 @@ end
 
 """
 	logtransform([T=Float64], counts::DataMatrix;
-	             var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
+	             var_filter = hasproperty(counts.var, "feature_type") ? "feature_type" => isequal("Gene Expression") : nothing,
+	             var_filter_cols = hasproperty(counts.var, "feature_type") ? "feature_type" : nothing,
 	             external_var = nothing,
 	             scale_factor=10_000,
 	             var=:copy,
@@ -87,7 +109,8 @@ Log₂-transform `counts` using the formula:
 Optionally, `T` can be specified to control the `eltype` of the sparse transformed matrix.
 `T=Float32` can be used to lower the memory usage, with little impact on the results, since downstream analysis is still done with Float64.
 
-* `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `:feature_type => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
+* `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `"feature_type" => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
+* `var_filter_cols` - Additional columns used to ensure features are unique. Defaults to "feature_type" if present in `counts.var`. Use a Tuple/Vector for specifying multiple columns. Can be set to `nothing` to not include any additional columns.
 * `external_var` - If given, these annotations are used instead of `data.var` when applying `var_filter`. NB: The IDs of `external_var` must match IDs in `data.var`.
 * `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
 * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
@@ -118,18 +141,17 @@ struct TFIDFTransformModel{T} <: ProjectionModel
 	obs::Symbol
 end
 function TFIDFTransformModel(::Type{T}, counts::DataMatrix;
-                             var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
+                             var_filter = hasproperty(counts.var, "feature_type") ? "feature_type" => isequal("Gene Expression") : nothing,
+                             var_filter_cols = hasproperty(counts.var, "feature_type") ? "feature_type" : nothing,
                              external_var = nothing,
                              scale_factor=10_000,
                              idf=vec(size(counts,2) ./ max.(1,sum(counts.matrix; dims=2))),
                              annotate=true,
                              var=:copy, obs=:copy) where T
-	var_match = select(counts.var, 1)
-	if var_filter !== nothing
-		ind = external_var !== nothing ? _filter_indices(counts.var, var_filter, external_var) : _filter_indices(counts.var, var_filter)
-		var_match = var_match[ind,:]
-		idf = idf[ind]
-	end
+	@assert length(idf) == size(counts,1)
+	var_match,ind = _var_match_for_transform(counts.var; var_filter, var_filter_cols, external_var)
+	ind != 1:size(counts,1) && (idf = idf[ind]) # subset idf if needed
+
 	TFIDFTransformModel{T}(scale_factor, idf, var_match, annotate, var, obs)
 end
 TFIDFTransformModel(counts::DataMatrix; kwargs...) =
@@ -207,7 +229,8 @@ end
 
 """
 	tf_idf_transform([T=Float64], counts::DataMatrix;
-	                 var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
+	                 var_filter = hasproperty(counts.var, "feature_type") ? "feature_type" => isequal("Gene Expression") : nothing,
+	                 var_filter_cols = hasproperty(counts.var, "feature_type") ? "feature_type" : nothing,
 	                 external_var,
 	                 scale_factor = 10_000,
 	                 idf = vec(size(counts,2) ./ max.(1,sum(counts.matrix; dims=2))),
@@ -221,7 +244,8 @@ the formula `log( 1 + scale_factor * tf * idf )` where `tf` is the term frequenc
 Optionally, `T` can be specified to control the `eltype` of the sparse transformed matrix.
 `T=Float32` can be used to lower the memory usage, with little impact on the results, since downstream analysis is still done with Float64.
 
-* `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `:feature_type => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
+* `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `"feature_type" => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
+* `var_filter_cols` - Additional columns used to ensure features are unique. Defaults to "feature_type" if present in `counts.var`. Use a Tuple/Vector for specifying multiple columns. Can be set to `nothing` to not include any additional columns.
 * `external_var` - If given, these annotations are used instead of `data.var` when applying `var_filter`. NB: The IDs of `external_var` must match IDs in `data.var`.
 * `annotate` - If true, `idf` will be added as a `var` annotation.
 * `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
@@ -239,7 +263,7 @@ scparams(counts::DataMatrix; kwargs...) = scparams(counts.matrix, counts.var; kw
 
 struct SCTransformModel{T} <: ProjectionModel
 	params::DataFrame
-	var_id_col::String
+	var_id_col::String # TODO: remove / replace with var_match
 	clip::Float64
 	rtol::Float64
 	atol::Float64
@@ -261,7 +285,7 @@ Defaults to only using "Gene Expression" features.
 Optionally, `T` can be specified to control the `eltype` of the sparse transformed matrix.
 `T=Float32` can be used to lower the memory usage, with little impact on the results, since downstream analysis is still done with Float64.
 
-* `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `:feature_type => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
+* `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `"feature_type" => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
 * `external_var` - If given, these annotations are used instead of `data.var` when applying `var_filter`. NB: The IDs of `external_var` must match IDs in `data.var`.
 * `rtol` - Relative tolerance when constructing low rank approximation.
 * `atol` - Absolute tolerance when constructing low rank approximation.

@@ -147,6 +147,42 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 		@test materialize(t2) ≈ sct rtol=1e-3
 
+
+
+
+		# WIP
+		# # Variable subsetting
+		# var_mask = counts.var.name .> "C"
+		# es = expected_sparse[var_mask,:]
+		# params2 = scparams(es, DataFrame(id=expected_feature_ids, name=expected_feature_names, feature_type=expected_feature_types)[var_mask,:]; use_cache=false)
+		# sct = sctransform(es, counts.var[var_mask,:], params2)
+		# @testset "var_filter (external_var::$VT)" for VT in (Annotations,DataFrame)
+		# 	var2 = VT==DataFrame ? var2_df : VT(var2_df)
+
+		# 	@test_throws ["ArgumentError","external_name"] sctransform(T, counts; use_cache=false, var_filter="external_name"=>>("C"))
+		# 	@test_throws ["ArgumentError","External annotation","\"name\"","missing."] sctransform(T, counts; use_cache=false, var_filter="name"=>>("C"), external_var=var2)
+
+		# 	t2 = sctransform(T, counts; use_cache=false, var_filter="name"=>>("C"))
+		# 	t2_proj = project(counts_proj, t2)
+
+
+		# 	@test params2.logGeneMean ≈ t2.var.logGeneMean
+
+		# 	@test size(t2.matrix) == size(sct)
+		# 	@test eltype(t2.matrix.terms[1].matrix) == T
+		# 	@test materialize(t2) ≈ sct rtol=1e-3
+
+		# 	@test eltype(t2_proj.matrix.terms[1].matrix) == T
+		# 	@test materialize(t2_proj) ≈ sct[:,proj_obs_indices] rtol=1e-3
+
+		# 	@test params2.logGeneMean ≈ t2_proj.var.logGeneMean
+
+		# 	t3 = sctransform(T, counts; use_cache=false, var_filter="external_name"=>>("C"), external_var=var2)
+		# 	@test materialize(t3) ≈ sct rtol=1e-3
+		# end
+
+
+
 		# TODO: test sctransform with kwargs: post_var_filter, post_obs_filter, external_var, external_post_var, external_obs
 	end
 
