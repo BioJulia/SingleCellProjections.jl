@@ -24,6 +24,7 @@ Base.get(a::Annotations, column::Symbol, default) = get(a,String(column), defaul
 
 Base.getindex(a::Annotations, column::Union{Symbol,String}) = get(()->throw(KeyError(column)), a, column)
 
+Base.propertynames(a::Annotations, private::Bool) = propertynames(get_table(a), private)
 Base.getproperty(a::Annotations, column::Symbol) = a[column]
 Base.getproperty(a::Annotations, column::String) = a[column]
 
