@@ -30,12 +30,12 @@ Base.getproperty(a::Annotations, column::String) = a[column]
 
 function annotation_name(a::Annotations)
 	df = get_table(a)
-	@assert size(df,2) == 2 "Expected annotations to object to have an ID column and a single data column, got columns: $(names(df))"
+	@assert size(df,2) == 2 "Expected annotations object to have an ID column and a single data column, got columns: $(names(df))"
 	only(names(df,2))
 end
 
 # function annotation_values(a::Annotations)
 # 	df = get_table(a)
-# 	@assert size(df,2) == 2 "Expected annotations to object to have an ID column and a single data column, got columns: $(names(df))"
+# 	@assert size(df,2) == 2 "Expected annotations object to have an ID column and a single data column, got columns: $(names(df))"
 # 	df[!,2]
 # end
