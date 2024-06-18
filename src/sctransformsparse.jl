@@ -97,6 +97,8 @@ function sctransformsparse(::Type{T}, X::SparseMatrixCSC, features, params;
 
 	@assert size(X,1)==length(getproperty(features,first(propertynames(features)))) "The number of rows in X and features must match"
 
+	feature_mask = convert(BitVector, feature_mask)
+
 	β0 = params.beta0
 	β1 = params.beta1
 	θ  = params.theta
