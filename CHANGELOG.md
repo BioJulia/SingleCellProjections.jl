@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 * Add compat for weakdeps (UMAP, TSne, PrincipalMomentAnalysis).
+* SVDModel now only stores `U` and `S` since `V` is not needed for projection.
 
 ## [0.3.9] - 2024-03-04
 

@@ -328,7 +328,8 @@ function SCTransformModel(::Type{T}, counts::DataMatrix;
 	feature_mask = falses(nvar)
 	feature_mask[ind] .= true
 
-	params = scparams(counts; feature_mask, kwargs...)
+	feature_names = hasproperty(counts.var, "name") ? counts.var.name : counts.var[1,:] # NB: This is only used for informative error messages
+	params = scparams(counts; feature_mask, feature_names, kwargs...)
 	clip = sqrt(size(counts,2)/30)
 	post_filter = FilterModel(params, post_var_filter, post_obs_filter; var=:copy, obs, external_var=external_post_var, use_external_obs=external_post_obs!==nothing)
 	SCTransformModel{T}(var_match, params, clip, rtol, atol, annotate, post_filter)
