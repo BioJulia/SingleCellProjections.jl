@@ -31,9 +31,9 @@
 		end
 		new_gene_ids = copy(expected_feature_ids)
 		rename_genes && (new_gene_ids[1:4:end] .= string.("NEW_", new_gene_ids[1:4:end]))
-		renamed_mask = startswith.(ref_var.id,"NEW_")
 		ref_var = DataFrame(id=new_gene_ids, feature_type=expected_feature_types)[gene_ind,:]
 		ref_mat = expected_sparse[gene_ind,:]
+		renamed_mask = startswith.(ref_var.id,"NEW_")
 
 
 		counts_proj2 = counts[gene_ind,:]
