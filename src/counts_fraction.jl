@@ -88,12 +88,12 @@ Examples
 
 Compute the fraction of reads in MT- genes, considering only "Gene Expression" features (and not e.g. "Antibody Capture").
 ```
-var_counts_fraction!(counts, "name"=>contains(r"^MT-"), "feature_type"=>isequal("Gene Expression"), "fraction_mt")
+var_counts_fraction!(counts, "name"=>startswith("MT-"), "feature_type"=>isequal("Gene Expression"), "fraction_mt")
 ```
 
 Compute the fraction of reads in MT- genes, when there is no `feature_type` annotation (i.e. all variables are genes).
 ```
-var_counts_fraction!(counts, "name"=>contains(r"^MT-"), Returns(true), "fraction_mt")
+var_counts_fraction!(counts, "name"=>startswith("MT-"), Returns(true), "fraction_mt")
 ```
 
 See also: [`var_counts_fraction`](@ref)
@@ -128,12 +128,12 @@ Examples
 
 Compute the fraction of reads in MT- genes, considering only "Gene Expression" features (and not e.g. "Antibody Capture").
 ```
-var_counts_fraction(counts, "name"=>contains(r"^MT-"), "feature_type"=>isequal("Gene Expression"), "fraction_mt")
+var_counts_fraction(counts, "name"=>startswith("MT-"), "feature_type"=>isequal("Gene Expression"), "fraction_mt")
 ```
 
 Compute the fraction of reads in MT- genes, when there is no `feature_type` annotation (i.e. all variables are genes).
 ```
-var_counts_fraction(counts, "name"=>contains(r"^MT-"), Returns(true), "fraction_mt")
+var_counts_fraction(counts, "name"=>startswith("MT-"), Returns(true), "fraction_mt")
 ```
 
 See also: [`var_counts_fraction!`](@ref)
