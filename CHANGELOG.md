@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `load10x` - default to using first column (barcode) as unique identifier.
 * `load10x` - no longer supports `copy_obs_col` kwarg.
 
+### Added
+
+* `var_counts_fraction` - Just like `var_counts_fraction!`, but not modifying the object in place.
+
 ### Fixed
 
 * Add compat for weakdeps (UMAP, TSne, PrincipalMomentAnalysis).

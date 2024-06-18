@@ -569,19 +569,38 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 		c = copy(counts)
 
+		@test_throws ArgumentError var_counts_fraction(c, "name"=>startswith("NOTAGENE"), Returns(true), "C")
+		@test_throws ArgumentError var_counts_fraction!(c, "name"=>startswith("NOTAGENE"), Returns(true), "C")
+		@test "C" ∉ names(c.obs)
+
+		# --- non-mutating ---
+		c2 = var_counts_fraction(c, "name"=>startswith("A"), Returns(true), "A")
+		@test c2.obs.A == nA ./ nTot
+		c2 = var_counts_fraction(c, "name"=>startswith("AC"), "name"=>startswith("A"), "B")
+		@test c2.obs.B == nAC ./ max.(1,nA)
+
+		c2 = var_counts_fraction(c, "name"=>startswith("NOTAGENE"), Returns(true), "C"; check=false)
+		@test all(iszero, c2.obs.C)
+
+		c2_proj = project(counts_proj, c2)
+		@test "A" ∉ names(c2_proj.obs)
+		@test "B" ∉ names(c2_proj.obs)
+		@test "C" ∈ names(c2_proj.obs)
+		@test c2_proj.obs.C == c2.obs.C[proj_obs_indices]
+
+		test_show(c2; obs=vcat(names(counts.obs), "C"), models="VarCountsFractionModel")
+
+		# --- mutating ---
 		var_counts_fraction!(c, "name"=>startswith("A"), Returns(true), "A")
 		@test c.obs.A == nA ./ nTot
 
 		var_counts_fraction!(c, "name"=>startswith("AC"), "name"=>startswith("A"), "B")
 		@test c.obs.B == nAC ./ max.(1,nA)
 
-		@test_throws ArgumentError var_counts_fraction!(c, "name"=>startswith("NOTAGENE"), Returns(true), "C")
-		@test "C" ∉ names(c.obs)
-
 		var_counts_fraction!(c, "name"=>startswith("NOTAGENE"), Returns(true), "C"; check=false)
 		@test all(iszero, c.obs.C)
 
-		c_proj = project(counts_proj, c)
+		c_proj = project(copy(counts_proj), c) # copy counts_proj since it will be modified due to var=:keep in the model
 		@test c_proj.obs.A == c.obs.A[proj_obs_indices]
 		@test c_proj.obs.B == c.obs.B[proj_obs_indices]
 		@test c_proj.obs.C == c.obs.C[proj_obs_indices]
@@ -593,14 +612,31 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			var2 = T==DataFrame ? var2_df : T(var2_df)
 
 			c = copy(counts)
-			@test_throws ["ArgumentError","external_name"] var_counts_fraction!(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A")
-			@test_throws ["ArgumentError","external_name"] var_counts_fraction!(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A"; external_var_sub=var2)
-			@test_throws ["ArgumentError","external_name"] var_counts_fraction!(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A"; external_var_tot=var2)
+			@testset "$f" for f in (var_counts_fraction!, var_counts_fraction)
+				@test_throws ["ArgumentError","external_name"] f(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A")
+				@test_throws ["ArgumentError","external_name"] f(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A"; external_var_sub=var2)
+				@test_throws ["ArgumentError","external_name"] f(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A"; external_var_tot=var2)
 
-			@test_throws ["ArgumentError","External annotation","\"name\"","missing."] var_counts_fraction!(c, "name"=>startswith("AC"), "name"=>startswith("A"), "A"; external_var=var2)
-			@test_throws ["ArgumentError","External annotation","\"name\"","missing."] var_counts_fraction!(c, "name"=>startswith("AC"), "name"=>startswith("A"), "A"; external_var_sub=var2)
-			@test_throws ["ArgumentError","External annotation","\"name\"","missing."] var_counts_fraction!(c, "name"=>startswith("AC"), "name"=>startswith("A"), "A"; external_var_tot=var2)
+				@test_throws ["ArgumentError","External annotation","\"name\"","missing."] f(c, "name"=>startswith("AC"), "name"=>startswith("A"), "A"; external_var=var2)
+				@test_throws ["ArgumentError","External annotation","\"name\"","missing."] f(c, "name"=>startswith("AC"), "name"=>startswith("A"), "A"; external_var_sub=var2)
+				@test_throws ["ArgumentError","External annotation","\"name\"","missing."] f(c, "name"=>startswith("AC"), "name"=>startswith("A"), "A"; external_var_tot=var2)
+			end
 
+			# --- non-mutating ---
+			c2 = var_counts_fraction(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A"; external_var=var2)
+			@test c2.obs.A == nAC ./ max.(1,nA)
+			c2 = var_counts_fraction(c, "external_name"=>startswith("AC"), "name"=>startswith("A"), "B"; external_var_sub=var2)
+			@test c2.obs.B == nAC ./ max.(1,nA)
+			c2 = var_counts_fraction(c, "name"=>startswith("AC"), "external_name"=>startswith("A"), "C"; external_var_tot=var2)
+			@test c2.obs.C == nAC ./ max.(1,nA)
+
+			c2_proj = project(counts_proj, c2)
+			@test "A" ∉ names(c2_proj.obs)
+			@test "B" ∉ names(c2_proj.obs)
+			@test "C" ∈ names(c2_proj.obs)
+			@test c2_proj.obs.C == c2.obs.C[proj_obs_indices]
+
+			# --- mutating ---
 			var_counts_fraction!(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A"; external_var=var2)
 			@test c.obs.A == nAC ./ max.(1,nA)
 			var_counts_fraction!(c, "external_name"=>startswith("AC"), "name"=>startswith("A"), "B"; external_var_sub=var2)
@@ -608,7 +644,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			var_counts_fraction!(c, "name"=>startswith("AC"), "external_name"=>startswith("A"), "C"; external_var_tot=var2)
 			@test c.obs.C == nAC ./ max.(1,nA)
 
-			c_proj = project(counts_proj, c)
+			c_proj = project(copy(counts_proj), c) # copy counts_proj since it will be modified due to var=:keep in the model
 			@test c_proj.obs.A == c.obs.A[proj_obs_indices]
 			@test c_proj.obs.B == c.obs.B[proj_obs_indices]
 			@test c_proj.obs.C == c.obs.C[proj_obs_indices]

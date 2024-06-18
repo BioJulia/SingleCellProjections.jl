@@ -67,13 +67,15 @@ end
 
 
 """
-	var_counts_fraction!(counts::DataMatrix, sub_filter, tot_filter, col; check=true, external_var, external_var_sub, external_var_tot)
+	var_counts_fraction!(counts::DataMatrix, sub_filter, tot_filter, col; check=true, var=:keep, obs=:keep, external_var, external_var_sub, external_var_tot)
 
 For each observation, compute the fraction of counts that match a specific variable pattern.
 * `sub_filter` decides which variables are counted.
 * `tot_filter` decides which variables to include in the total.
 
 kwargs:
+* `var` - Use this to set `var` in the `ProjectionModel`.
+* `obs` - Use this to set `obs` in the `ProjectionModel`. Note that `counts.obs` is changed in place, regardless of the value of `obs`.
 * `external_var_sub` - If given, these annotations are used instead of `data.var` when applying `filter_sub`. NB: The IDs of `external_var_sub` must match IDs in `data.var`.
 * `external_var_tot` - If given, these annotations are used instead of `data.var` when applying `filter_tot`. NB: The IDs of `external_var_tot` must match IDs in `data.var`.
 * `external_var` - Used this as a shorthand to define both `external_var_sub` and `external_var_tot`.
@@ -93,6 +95,8 @@ Compute the fraction of reads in MT- genes, when there is no `feature_type` anno
 ```
 var_counts_fraction!(counts, "name"=>contains(r"^MT-"), Returns(true), "fraction_mt")
 ```
+
+See also: [`var_counts_fraction`](@ref)
 """
 function var_counts_fraction!(counts::DataMatrix{<:AbstractMatrix{<:Integer}}, args...; kwargs...)
 	model = VarCountsFractionModel(counts, args...; var=:keep, obs=:keep, matrix=:keep, kwargs...)
@@ -100,6 +104,46 @@ function var_counts_fraction!(counts::DataMatrix{<:AbstractMatrix{<:Integer}}, a
 	push!(counts.models, model)
 	counts
 end
+
+
+"""
+	var_counts_fraction(counts::DataMatrix, sub_filter, tot_filter, col; check=true, var=:copy, obs=:copy, external_var, external_var_sub, external_var_tot)
+
+For each observation, compute the fraction of counts that match a specific variable pattern.
+* `sub_filter` decides which variables are counted.
+* `tot_filter` decides which variables to include in the total.
+
+kwargs:
+* `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
+* `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
+* `external_var_sub` - If given, these annotations are used instead of `data.var` when applying `filter_sub`. NB: The IDs of `external_var_sub` must match IDs in `data.var`.
+* `external_var_tot` - If given, these annotations are used instead of `data.var` when applying `filter_tot`. NB: The IDs of `external_var_tot` must match IDs in `data.var`.
+* `external_var` - Used this as a shorthand to define both `external_var_sub` and `external_var_tot`.
+If `check=true`, an error will be thrown if no variables match the patterns.
+
+For more information on filtering syntax, see examples below and the documentation on [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter).
+
+Examples
+=========
+
+Compute the fraction of reads in MT- genes, considering only "Gene Expression" features (and not e.g. "Antibody Capture").
+```
+var_counts_fraction(counts, "name"=>contains(r"^MT-"), "feature_type"=>isequal("Gene Expression"), "fraction_mt")
+```
+
+Compute the fraction of reads in MT- genes, when there is no `feature_type` annotation (i.e. all variables are genes).
+```
+var_counts_fraction(counts, "name"=>contains(r"^MT-"), Returns(true), "fraction_mt")
+```
+
+See also: [`var_counts_fraction!`](@ref)
+"""
+function var_counts_fraction(counts::DataMatrix{<:AbstractMatrix{<:Integer}}, args...; kwargs...)
+	model = VarCountsFractionModel(counts, args...; var=:copy, obs=:copy, matrix=:keep, kwargs...)
+	project(counts, model)
+end
+
+
 
 function project_impl(counts::DataMatrix{<:AbstractMatrix{<:Integer}}, model::VarCountsFractionModel; verbose=true)
 	frac = _var_counts_fraction(counts, model)

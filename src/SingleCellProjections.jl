@@ -39,6 +39,7 @@ export
 	var_to_obs,
 	var_to_obs_table,
 	var_counts_fraction!,
+	var_counts_fraction,
 	pseudobulk,
 	local_outlier_factor!,
 	local_outlier_factor_projection!,
