@@ -28,7 +28,7 @@ Fields:
 * `obs::To` - Observation annotations.
 * `models::Vector{ProjectionModel}` - Models used in the creation of this `DataMatrix`.
 
-The rows of the `var` and `obs` tables must be unique, considering only the `var_id_cols`/`obs_id_cols`.
+The first column of the `var` and `obs` tables should contain unique IDs.
 """
 struct DataMatrix{T,Tv,To}
 	matrix::T

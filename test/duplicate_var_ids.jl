@@ -58,12 +58,17 @@
 		end
 	end
 
-	# @testset "SCTransform" begin
-	# 	t = sctransform(c)
-	# 	t2 = sctransform(cRNA)
+	@testset "SCTransform" begin
+		s = sctransform(c; use_cache=false)
+		s2 = sctransform(cRNA; use_cache=false)
+		p = project(c,s2)
+		p2 = project(cRNA,s)
 
-	# 	@test t==t2
-	# end	
-
-
+		@testset "$name" for (name,a,b) in (("s",s,s2),("proj1",p,s2),("proj2",s,p2))
+			@test a.matrix == b.matrix
+			@test a.obs == b.obs
+			@test sort(names(a.var)) == sort(names(b.var)) # var should be equal
+			@test a.var == select(b.var, names(a.var))     # (up to order of columns)
+		end
+	end
 end

@@ -262,8 +262,8 @@ tf_idf_transform(counts::DataMatrix; kwargs...) =
 scparams(counts::DataMatrix; kwargs...) = scparams(counts.matrix, counts.var; kwargs...)
 
 struct SCTransformModel{T} <: ProjectionModel
+	var_match::DataFrame
 	params::DataFrame
-	var_id_col::String # TODO: remove / replace with var_match
 	clip::Float64
 	rtol::Float64
 	atol::Float64
@@ -286,6 +286,7 @@ Optionally, `T` can be specified to control the `eltype` of the sparse transform
 `T=Float32` can be used to lower the memory usage, with little impact on the results, since downstream analysis is still done with Float64.
 
 * `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `"feature_type" => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
+* `var_filter_cols` - Additional columns used to ensure features are unique. Defaults to "feature_type" if present in `counts.var`. Use a Tuple/Vector for specifying multiple columns. Can be set to `nothing` to not include any additional columns.
 * `external_var` - If given, these annotations are used instead of `data.var` when applying `var_filter`. NB: The IDs of `external_var` must match IDs in `data.var`.
 * `rtol` - Relative tolerance when constructing low rank approximation.
 * `atol` - Absolute tolerance when constructing low rank approximation.
@@ -312,6 +313,7 @@ See also: [`sctransform`](@ref), [`SCTransform.scparams`](https://github.com/ras
 """
 function SCTransformModel(::Type{T}, counts::DataMatrix;
                           var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
+                          var_filter_cols = hasproperty(counts.var, "feature_type") ? "feature_type" : nothing,
                           external_var = nothing,
                           rtol=1e-3, atol=0.0, annotate=true,
                           post_var_filter=:, post_obs_filter=:,
@@ -322,29 +324,22 @@ function SCTransformModel(::Type{T}, counts::DataMatrix;
 	nvar = size(counts,1)
 
 
-	# 1. create var_match - which decides feature_indices
-
-
-	if var_filter === nothing
-		feature_mask = trues(nvar)
-	else
-		ind = external_var !== nothing ? _filter_indices(counts.var, var_filter, external_var) : _filter_indices(counts.var, var_filter)
-		feature_mask = falses(nvar)
-		feature_mask[ind] .= true
-	end
+	var_match,ind = _var_match_for_transform(counts.var; var_filter, var_filter_cols, external_var)
+	feature_mask = falses(nvar)
+	feature_mask[ind] .= true
 
 	params = scparams(counts; feature_mask, kwargs...)
 	clip = sqrt(size(counts,2)/30)
 	post_filter = FilterModel(params, post_var_filter, post_obs_filter; var=:copy, obs, external_var=external_post_var, use_external_obs=external_post_obs!==nothing)
-	SCTransformModel{T}(params, only(names(counts.var,1)), clip, rtol, atol, annotate, post_filter)
+	SCTransformModel{T}(var_match, params, clip, rtol, atol, annotate, post_filter)
 end
 SCTransformModel(counts::DataMatrix; kwargs...) =
 	SCTransformModel(Float64, counts; kwargs...)
 
 function projection_isequal(m1::SCTransformModel{T1}, m2::SCTransformModel{T2}) where {T1,T2}
 	T1 === T2 &&
+	m1.var_match == m2.var_match &&
 	m1.params == m2.params &&
-	m1.var_id_col == m2.var_id_col &&
 	m1.clip == m2.clip &&
 	m1.rtol == m2.rtol &&
 	m1.atol == m2.atol &&
@@ -366,7 +361,7 @@ function update_model(m::SCTransformModel{T};
 	post_obs_filter === nothing && (post_obs_filter = m.post_filter.obs_filter)
 
 	post_filter = FilterModel(post_var_filter, post_obs_filter, m.post_filter.var_match, m.post_filter.use_external_obs, m.post_filter.var, obs) # TODO: support external_var here?
-	model = SCTransformModel{T}(m.params, m.var_id_col, clip, rtol, atol, annotate, post_filter)
+	model = SCTransformModel{T}(m.var_match, m.params, clip, rtol, atol, annotate, post_filter)
 	(model, (;allow_obs_indexing, kwargs...))
 end
 
@@ -379,9 +374,10 @@ function project_impl(counts::DataMatrix, model::SCTransformModel{T}; external_p
 	J = model.post_filter.use_external_obs ?  _filter_indices(counts.obs, model.post_filter.obs_filter, external_post_obs) : _filter_indices(counts.obs, model.post_filter.obs_filter)
 	params = model.params[I,:]
 
-	# Remove any variables not found in counts
-	only(names(counts.var,1)) == model.var_id_col || error("Expected variable id column $(model.var_id_col), got $(only(names(counts.var,1)))")
-	var_ind = table_indexin(params, counts.var; cols=model.var_id_col)
+	# Remove rows from `params` that doesn't match any variables in `counts`
+	missing_cols = setdiff(names(model.var_match), names(counts.var))
+	isempty(missing_cols) || error("The following columns are missing in var: $missing_cols. Unable to match variables.")
+	var_ind = table_indexin(params, counts.var; cols=names(model.var_match))
 	var_mask = var_ind.!==nothing
 	var_ind2 = var_ind[var_mask]
 
@@ -399,10 +395,11 @@ function project_impl(counts::DataMatrix, model::SCTransformModel{T}; external_p
 		end
 	end
 
-	feature_mask = trues(size(counts,1)) # TODO: use var_match
+	# Use var_match do decide which features to include (affects computation of logcellcounts)
+	feature_mask = table_indexin(counts.var, model.var_match; cols=names(model.var_match)) .!== nothing
 
 	X,var = sctransformsparse(T, counts.matrix, counts.var, params;
-	                          feature_id_columns=[model.var_id_col],
+	                          feature_id_columns=names(model.var_match),
 	                          feature_mask,
 	                          cell_ind=J,
 	                          model.clip, model.rtol, model.atol)
