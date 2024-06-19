@@ -12,6 +12,7 @@ export
 	NearestNeighborModel,
 	ObsAnnotationModel,
 	VarCountsFractionModel,
+	VarCountsSumModel,
 	PseudoBulkModel,
 	project,
 	set_var_id_col!,
@@ -40,6 +41,8 @@ export
 	var_to_obs_table,
 	var_counts_fraction!,
 	var_counts_fraction,
+	var_counts_sum!,
+	var_counts_sum,
 	pseudobulk,
 	local_outlier_factor!,
 	local_outlier_factor_projection!,
@@ -120,6 +123,7 @@ include("reduce.jl")
 include("annotate.jl")
 include("statistical_tests.jl")
 include("counts_fraction.jl")
+include("counts_sum.jl")
 include("pseudobulk.jl")
 
 include("local_outlier_factor.jl")

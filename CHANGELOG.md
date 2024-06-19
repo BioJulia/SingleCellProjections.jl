@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 * `var_counts_fraction` - Just like `var_counts_fraction!`, but not modifying the object in place.
+* `var_counts_sum` and `var_counts_sum!` - For summing over selected variables. Useful for counting e.g. total RNA expression and finding number of expressed features.
 
 ### Fixed
 

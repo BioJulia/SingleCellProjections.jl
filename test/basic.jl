@@ -60,6 +60,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		end
 	end
 
+
 	@testset "tf-idf scale_factor=$scale_factor T=$T" for scale_factor in (10_000, 1_000), T in (Float64,Float32)
 		idf = simple_idf(expected_mat)
 		X = simple_tf_idf_transform(expected_mat, idf, scale_factor)
@@ -110,6 +111,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		end
 	end
 
+
 	transformed_proj = project(counts_proj, transformed)
 	@testset "sctransform T=$T" for T in (Float64,Float32)
 		sct = sctransform(expected_sparse, counts.var, params)
@@ -148,8 +150,6 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		@test materialize(t2) ≈ sct rtol=1e-3
 
 
-
-
 		# Variable subsetting
 		var_mask = counts.var.name .> "C"
 		es = expected_sparse[var_mask,:]
@@ -180,10 +180,9 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			@test materialize(t3) ≈ sct rtol=1e-3
 		end
 
-
-
 		# TODO: test sctransform with kwargs: post_var_filter, post_obs_filter, external_post_var, external_post_obs
 	end
+
 
 	X = materialize(transformed)
 	Xc = (X.-mean(X; dims=2))
@@ -268,6 +267,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		@test_throws "No values" project(transformed_proj,n)
 	end
 
+
 	@testset "normalize (external_obs::$T)" for T in (Annotations,DataFrame)
 		if T==DataFrame
 			obs2 = obs2_df
@@ -313,7 +313,6 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 
 	normalized_proj = project(transformed_proj,normalized)
-
 	@testset "svd" begin
 		reduced = svd(normalized; nsv=3, subspacedims=24, niter=4, seed=102)
 		F = svd(Xcom)
@@ -337,6 +336,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 		test_show(reduced; matrix="SVD (3 dimensions)", models="SVDModel")
 	end
+
 
 	@testset "PrincipalMomentAnalysis" begin
 		G = groupsimplices(normalized.obs.group)
@@ -370,7 +370,6 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 
 	reduced_proj = project(normalized_proj, reduced)
-
 	@testset "filter $name" for (name,data,data_proj) in (("counts",counts,counts_proj), ("normalized",normalized,normalized_proj), ("reduced",reduced,reduced_proj))
 		P2 = size(data,1)
 		X = materialize(data)
@@ -520,8 +519,6 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 	end
 
 
-
-
 	@testset "force layout seed=$seed" for seed in 1:5
 		fl = force_layout(reduced; ndim=3, k=10, seed)
 		# Sanity check output by checking that there is a descent overlap between nearest neighbors
@@ -533,6 +530,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 		test_show(fl; matrix="Matrix{Float64}", models="NearestNeighborModel")
 	end
+
 
 	@testset "UMAP" begin
 		umapped = umap(reduced, 3)
@@ -549,6 +547,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		test_show(umapped; matrix="Matrix{Float64}", models="UMAPModel")
 	end
 
+
 	@testset "t-SNE" begin
 		t = tsne(reduced, 3)
 		# Sanity check output by checking that there is a descent overlap between nearest neighbors
@@ -560,6 +559,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 		test_show(t; matrix="Matrix{Float64}", models="NearestNeighborModel")
 	end
+
 
 	@testset "var_counts_fraction" begin
 		X = counts.matrix
@@ -578,7 +578,6 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		@test c2.obs.A == nA ./ nTot
 		c2 = var_counts_fraction(c, "name"=>startswith("AC"), "name"=>startswith("A"), "B")
 		@test c2.obs.B == nAC ./ max.(1,nA)
-
 		c2 = var_counts_fraction(c, "name"=>startswith("NOTAGENE"), Returns(true), "C"; check=false)
 		@test all(iszero, c2.obs.C)
 
@@ -593,10 +592,8 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		# --- mutating ---
 		var_counts_fraction!(c, "name"=>startswith("A"), Returns(true), "A")
 		@test c.obs.A == nA ./ nTot
-
 		var_counts_fraction!(c, "name"=>startswith("AC"), "name"=>startswith("A"), "B")
 		@test c.obs.B == nAC ./ max.(1,nA)
-
 		var_counts_fraction!(c, "name"=>startswith("NOTAGENE"), Returns(true), "C"; check=false)
 		@test all(iszero, c.obs.C)
 
@@ -649,8 +646,84 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			@test c_proj.obs.B == c.obs.B[proj_obs_indices]
 			@test c_proj.obs.C == c.obs.C[proj_obs_indices]
 		end
-
 	end
+
+
+	@testset "var_counts_sum" begin
+		X = counts.matrix
+		nA = vec(sum(X[startswith.(counts.var.name,"A"),:]; dims=1))
+		nzA = vec(sum(!iszero, X[startswith.(counts.var.name,"A"),:]; dims=1))
+
+		c = copy(counts)
+
+		@test_throws ArgumentError var_counts_sum(c, "name"=>startswith("NOTAGENE"), "C")
+		@test_throws ArgumentError var_counts_sum!(c, "name"=>startswith("NOTAGENE"), "C")
+		@test "C" ∉ names(c.obs)
+
+		# --- non-mutating ---
+		c2 = var_counts_sum(c, "name"=>startswith("A"), "A")
+		@test c2.obs.A == nA
+		c2 = var_counts_sum(!iszero, c, "name"=>startswith("A"), "B")
+		@test c2.obs.B == nzA
+		c2 = var_counts_sum(c, "name"=>startswith("NOTAGENE"), "C"; check=false)
+		@test all(iszero, c2.obs.C)
+
+		c2_proj = project(counts_proj, c2)
+		@test "A" ∉ names(c2_proj.obs)
+		@test "B" ∉ names(c2_proj.obs)
+		@test "C" ∈ names(c2_proj.obs)
+		@test c2_proj.obs.C == c2.obs.C[proj_obs_indices]
+
+		test_show(c2; obs=vcat(names(counts.obs), "C"), models="VarCountsSumModel")
+
+		# --- mutating ---
+		var_counts_sum!(c, "name"=>startswith("A"), "A")
+		@test c.obs.A == nA
+		var_counts_sum!(!iszero, c, "name"=>startswith("A"), "B")
+		@test c.obs.B == nzA
+		var_counts_sum!(c, "name"=>startswith("NOTAGENE"), "C"; check=false)
+		@test all(iszero, c.obs.C)
+
+		c_proj = project(copy(counts_proj), c) # copy counts_proj since it will be modified due to var=:keep in the model
+		@test c_proj.obs.A == c.obs.A[proj_obs_indices]
+		@test c_proj.obs.B == c.obs.B[proj_obs_indices]
+		@test c_proj.obs.C == c.obs.C[proj_obs_indices]
+
+		test_show(c; obs=vcat(names(counts.obs), ["A","B","C"]), models="VarCountsSumModel")
+
+
+		@testset "external_obs::$T" for T in (Annotations,DataFrame)
+			var2 = T==DataFrame ? var2_df : T(var2_df)
+
+			c = copy(counts)
+			@testset "$f" for f in (var_counts_sum!, var_counts_sum)
+				@test_throws ["ArgumentError","external_name"] f(c, "external_name"=>startswith("A"), "A")
+				@test_throws ["ArgumentError","External annotation","\"name\"","missing."] f(c, "name"=>startswith("A"), "A"; external_var=var2)
+			end
+
+			# --- non-mutating ---
+			c2 = var_counts_sum(c, "external_name"=>startswith("A"), "A"; external_var=var2)
+			@test c2.obs.A == nA
+			c2 = var_counts_sum(!iszero, c, "external_name"=>startswith("A"), "B"; external_var=var2)
+			@test c2.obs.B == nzA
+
+			c2_proj = project(counts_proj, c2)
+			@test "A" ∉ names(c2_proj.obs)
+			@test "B" ∈ names(c2_proj.obs)
+			@test c2_proj.obs.B == c2.obs.B[proj_obs_indices]
+
+			# --- mutating ---
+			var_counts_sum!(c, "external_name"=>startswith("A"), "A"; external_var=var2)
+			@test c.obs.A == nA
+			var_counts_sum!(!iszero, c, "external_name"=>startswith("A"), "B"; external_var=var2)
+			@test c.obs.B == nzA
+
+			c_proj = project(copy(counts_proj), c) # copy counts_proj since it will be modified due to var=:keep in the model
+			@test c_proj.obs.A == c.obs.A[proj_obs_indices]
+			@test c_proj.obs.B == c.obs.B[proj_obs_indices]
+		end
+	end
+
 
 	@testset "pseudobulk $name" for (name,data,data_proj) in (("counts",counts,counts_proj), ("transformed",transformed,transformed_proj))
 	# TODO: Make pseudobulk work with data.matrix::Factorization

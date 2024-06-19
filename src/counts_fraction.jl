@@ -42,7 +42,7 @@ update_model(m::VarCountsFractionModel; col=m.col, var=m.var, obs=m.obs, matrix=
 
 # TODO: make general table utility function?
 function _matching_var_mask(v, sub)
-	bad_ind = findfirst(isnothing, table_indexin(sub,v; cols=	names(sub)))
+	bad_ind = findfirst(isnothing, table_indexin(sub,v; cols=names(sub)))
 	if bad_ind !== nothing
 		error("Row with contents (", join(sub[bad_ind,:],","), ") not found in var.")
 	end
