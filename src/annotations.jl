@@ -24,6 +24,25 @@ Base.get(a::Annotations, column::Symbol, default) = get(a,String(column), defaul
 
 Base.getindex(a::Annotations, column::Union{Symbol,String}) = get(()->throw(KeyError(column)), a, column)
 
+function Base.getindex(a::Annotations, columns::AbstractVector{String})
+	df = get_table(a)
+	for column in columns
+		hasproperty(df, column) || throw(KeyError(column))
+	end
+
+	id_column = names(df,1)
+	id_ind = findfirst(isequal(only(id_column)), columns)
+	if id_ind !== nothing # ID column present? Move it first and keep the relative order between the others.
+		cols = append!(id_column, @view(columns[1:id_ind-1]))
+		cols = append!(id_column, @view(columns[id_ind+1:end]))
+	else # ID column not present? Add it to the beginning.
+		cols = append!(id_column, columns)
+	end
+	Annotations(select(df,cols; copycols=false))
+end
+Base.getindex(a::Annotations, columns::AbstractVector{<:Union{Symbol,String}}) = a[String.(columns)]
+
+
 Base.propertynames(a::Annotations, private::Bool) = propertynames(get_table(a), private)
 Base.getproperty(a::Annotations, column::Symbol) = a[column]
 Base.getproperty(a::Annotations, column::String) = a[column]
