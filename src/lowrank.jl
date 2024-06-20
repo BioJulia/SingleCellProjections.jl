@@ -1,4 +1,5 @@
 const Index = Union{AbstractVector, Colon}
+struct InvalidIndex end
 
 """
 	LowRank

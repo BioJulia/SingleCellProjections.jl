@@ -38,14 +38,11 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		test_show(lproj; matrix="SparseMatrixCSC", var=names(counts_proj.var), obs=names(counts_proj.obs), models="LogTransformModel")
 
 		# Variable subsetting
-		var_mask = counts.var.name .> "L"
-		X = T.(simple_logtransform(expected_mat[var_mask,:], scale_factor))
-		@testset "var_filter (external_var::$VT)" for VT in (Annotations,DataFrame)
-			var2 = VT==DataFrame ? var2_df : VT(var2_df)
+		@testset "var_filter" begin
+			var_mask = counts.var.name .> "L"
+			X = T.(simple_logtransform(expected_mat[var_mask,:], scale_factor))
 
 			@test_throws ["ArgumentError","external_name"] logtransform(T, counts; var_filter="external_name"=>>("L"), kwargs...)
-			@test_throws ["ArgumentError","External annotation","\"name\"","missing."] logtransform(T, counts; var_filter="name"=>>("L"), external_var=var2, kwargs...)
-
 			l = logtransform(T, counts; var_filter="name"=>>("L"), kwargs...)
 
 			@test l.matrix.matrix ≈ X
@@ -55,8 +52,15 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			@test lproj.matrix.matrix ≈ X[:,proj_obs_indices]
 			@test eltype(lproj.matrix.matrix) == T
 
-			l2 = logtransform(T, counts; var_filter="external_name"=>>("L"), external_var=var2, kwargs...)
-			@test l.matrix.matrix ≈ l2.matrix.matrix
+			@testset "Annotations" begin
+				var2 = Annotations(var2_df)
+				l2 = logtransform(T, counts; var_filter=var2.external_name=>>("L"), kwargs...)
+				@test l.matrix.matrix ≈ l2.matrix.matrix
+			end
+			@testset "DataFrame" begin
+				l2 = logtransform(T, counts; var_filter=select(var2_df,Cols(1,"external_name"))=>>("L"), kwargs...)
+				@test l.matrix.matrix ≈ l2.matrix.matrix
+			end
 		end
 	end
 
@@ -85,9 +89,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		test_show(tf_proj; matrix="SparseMatrixCSC", var=vcat(names(counts_proj.var),"idf"), obs=names(counts_proj.obs), models="TFIDFTransformModel")
 
 		# Variable subsetting
-		@testset "var_filter (external_var::$VT)" for VT in (Annotations,DataFrame)
-			var2 = VT==DataFrame ? var2_df : VT(var2_df)
-
+		@testset "var_filter" begin
 			var_mask = counts.var.name .> "F"
 
 			idf = simple_idf(expected_mat[var_mask,:])
@@ -95,7 +97,6 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			X = T.(X)
 
 			@test_throws ["ArgumentError","external_name"] tf_idf_transform(T, counts; var_filter="external_name"=>>("F"), kwargs...)
-			@test_throws ["ArgumentError","External annotation","\"name\"","missing."] tf_idf_transform(T, counts; var_filter="name"=>>("F"), external_var=var2, kwargs...)
 
 			tf = tf_idf_transform(T, counts; var_filter="name"=>>("F"), kwargs...)
 
@@ -106,8 +107,15 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			@test tf_proj.matrix.matrix ≈ X[:,proj_obs_indices]
 			@test eltype(tf_proj.matrix.matrix) == T
 
-			tf2 = tf_idf_transform(T, counts; var_filter="external_name"=>>("F"), external_var=var2, kwargs...)
-			@test tf.matrix.matrix ≈ tf2.matrix.matrix
+			@testset "Annotations" begin
+				var2 = Annotations(var2_df)
+				tf2 = tf_idf_transform(T, counts; var_filter=var2.external_name=>>("F"), kwargs...)
+				@test tf.matrix.matrix ≈ tf2.matrix.matrix
+			end
+			@testset "DataFrame" begin
+				tf2 = tf_idf_transform(T, counts; var_filter=select(var2_df,Cols(1,"external_name"))=>>("F"), kwargs...)
+				@test tf.matrix.matrix ≈ tf2.matrix.matrix
+			end
 		end
 	end
 
@@ -151,19 +159,16 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 
 		# Variable subsetting
-		var_mask = counts.var.name .> "C"
-		es = expected_sparse[var_mask,:]
-		params2 = scparams(es, DataFrame(id=expected_feature_ids, name=expected_feature_names, feature_type=expected_feature_types)[var_mask,:]; use_cache=false)
-		sct = sctransform(es, counts.var[var_mask,:], params2)
-		@testset "var_filter (external_var::$VT)" for VT in (Annotations,DataFrame)
-			var2 = VT==DataFrame ? var2_df : VT(var2_df)
+		@testset "var_filter" begin
+			var_mask = counts.var.name .> "C"
+			es = expected_sparse[var_mask,:]
+			params2 = scparams(es, DataFrame(id=expected_feature_ids, name=expected_feature_names, feature_type=expected_feature_types)[var_mask,:]; use_cache=false)
+			sct = sctransform(es, counts.var[var_mask,:], params2)
 
 			@test_throws ["ArgumentError","external_name"] sctransform(T, counts; use_cache=false, var_filter="external_name"=>>("C"))
-			@test_throws ["ArgumentError","External annotation","\"name\"","missing."] sctransform(T, counts; use_cache=false, var_filter="name"=>>("C"), external_var=var2)
 
 			t2 = sctransform(T, counts; use_cache=false, var_filter="name"=>>("C"))
 			t2_proj = project(counts_proj, t2)
-
 
 			@test params2.logGeneMean ≈ t2.var.logGeneMean
 
@@ -176,8 +181,15 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 			@test params2.logGeneMean ≈ t2_proj.var.logGeneMean
 
-			t3 = sctransform(T, counts; use_cache=false, var_filter="external_name"=>>("C"), external_var=var2)
-			@test materialize(t3) ≈ sct rtol=1e-3
+			@testset "Annotations" begin
+				var2 = Annotations(var2_df)
+				t3 = sctransform(T, counts; use_cache=false, var_filter=var2.external_name=>>("C"))
+				@test materialize(t3) ≈ sct rtol=1e-3
+			end
+			@testset "DataFrame" begin
+				t3 = sctransform(T, counts; use_cache=false, var_filter=select(var2_df,Cols(1,"external_name"))=>>("C"))
+				@test materialize(t3) ≈ sct rtol=1e-3
+			end
 		end
 
 		# TODO: test sctransform with kwargs: post_var_filter, post_obs_filter, external_post_var, external_post_obs
@@ -484,19 +496,22 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		@test f_proj.obs == obs_proj_ans[obs_ind, :]
 		@test f_proj.var == data.var[data.var.name.>"D", :]
 
-
 		@testset "external_obs::$T" for T in (Annotations,DataFrame)
-			if T==DataFrame
-				obs2 = obs2_df
-				obs2_proj = obs2_proj_df
-				var2 = var2_df
-			else
+			if T == Annotations
 				obs2 = T(obs2_df)
 				obs2_proj = T(obs2_proj_df)
 				var2 = T(var2_df)
+			else
+				obs2 = obs2_df
+				obs2_proj = obs2_proj_df
+				var2 = var2_df
 			end
 
-			f = filter_obs("external_group"=>==("A"), data; external_obs=obs2)
+			if T == Annotations
+				f = filter_obs(obs2.external_group=>==("A"), data)
+			else
+				f = filter_obs(select(obs2,Cols(1,"external_group"))=>==("A"), data)
+			end
 			@test materialize(f) ≈ X[:, g.=="A"]
 			@test f.obs == data.obs[g.=="A", :]
 			@test f.var == data.var
@@ -507,7 +522,11 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			@test f_proj.obs == obs_proj_ans[obs_ind, :]
 			@test f_proj.var == data.var
 
-			f = filter_var("external_name"=>>("D"), data; external_var=var2)
+			if T == Annotations
+				f = filter_var(var2.external_name=>>("D"), data)
+			else
+				f = filter_var(select(var2,Cols(1,"external_name"))=>>("D"), data)
+			end
 			@test materialize(f) ≈ X[data.var.name.>="D", :]
 			@test f.obs == data.obs
 			@test f.var == data.var[data.var.name.>="D", :]
@@ -569,9 +588,14 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 		c = copy(counts)
 
-		@test_throws ArgumentError var_counts_fraction(c, "name"=>startswith("NOTAGENE"), Returns(true), "C")
-		@test_throws ArgumentError var_counts_fraction!(c, "name"=>startswith("NOTAGENE"), Returns(true), "C")
-		@test "C" ∉ names(c.obs)
+		@testset "$f" for f in (var_counts_fraction!, var_counts_fraction)
+			@test_throws ArgumentError f(c, "name"=>startswith("NOTAGENE"), Returns(true), "C")
+			@test "C" ∉ names(c.obs)
+
+			@test_throws ["ArgumentError","external_name"] f(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A")
+			@test_throws ["ArgumentError","external_name"] f(c, "external_name"=>startswith("AC"), "name"=>startswith("A"), "A")
+			@test_throws ["ArgumentError","external_name"] f(c, "name"=>startswith("AC"), "external_name"=>startswith("A"), "A")
+		end
 
 		# --- non-mutating ---
 		c2 = var_counts_fraction(c, "name"=>startswith("A"), Returns(true), "A")
@@ -606,25 +630,21 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 
 		@testset "external_obs::$T" for T in (Annotations,DataFrame)
-			var2 = T==DataFrame ? var2_df : T(var2_df)
-
-			c = copy(counts)
-			@testset "$f" for f in (var_counts_fraction!, var_counts_fraction)
-				@test_throws ["ArgumentError","external_name"] f(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A")
-				@test_throws ["ArgumentError","external_name"] f(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A"; external_var_sub=var2)
-				@test_throws ["ArgumentError","external_name"] f(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A"; external_var_tot=var2)
-
-				@test_throws ["ArgumentError","External annotation","\"name\"","missing."] f(c, "name"=>startswith("AC"), "name"=>startswith("A"), "A"; external_var=var2)
-				@test_throws ["ArgumentError","External annotation","\"name\"","missing."] f(c, "name"=>startswith("AC"), "name"=>startswith("A"), "A"; external_var_sub=var2)
-				@test_throws ["ArgumentError","External annotation","\"name\"","missing."] f(c, "name"=>startswith("AC"), "name"=>startswith("A"), "A"; external_var_tot=var2)
+			if T == Annotations
+				var2 = Annotations(var2_df)
+				external = var2.external_name
+			else
+				external = select(var2_df, Cols(1,"external_name"))
 			end
 
+			c = copy(counts)
+
 			# --- non-mutating ---
-			c2 = var_counts_fraction(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A"; external_var=var2)
+			c2 = var_counts_fraction(c, external=>startswith("AC"), external=>startswith("A"), "A")
 			@test c2.obs.A == nAC ./ max.(1,nA)
-			c2 = var_counts_fraction(c, "external_name"=>startswith("AC"), "name"=>startswith("A"), "B"; external_var_sub=var2)
+			c2 = var_counts_fraction(c, external=>startswith("AC"), "name"=>startswith("A"), "B")
 			@test c2.obs.B == nAC ./ max.(1,nA)
-			c2 = var_counts_fraction(c, "name"=>startswith("AC"), "external_name"=>startswith("A"), "C"; external_var_tot=var2)
+			c2 = var_counts_fraction(c, "name"=>startswith("AC"), external=>startswith("A"), "C")
 			@test c2.obs.C == nAC ./ max.(1,nA)
 
 			c2_proj = project(counts_proj, c2)
@@ -634,11 +654,11 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			@test c2_proj.obs.C == c2.obs.C[proj_obs_indices]
 
 			# --- mutating ---
-			var_counts_fraction!(c, "external_name"=>startswith("AC"), "external_name"=>startswith("A"), "A"; external_var=var2)
+			var_counts_fraction!(c, external=>startswith("AC"), external=>startswith("A"), "A")
 			@test c.obs.A == nAC ./ max.(1,nA)
-			var_counts_fraction!(c, "external_name"=>startswith("AC"), "name"=>startswith("A"), "B"; external_var_sub=var2)
+			var_counts_fraction!(c, external=>startswith("AC"), "name"=>startswith("A"), "B")
 			@test c.obs.B == nAC ./ max.(1,nA)
-			var_counts_fraction!(c, "name"=>startswith("AC"), "external_name"=>startswith("A"), "C"; external_var_tot=var2)
+			var_counts_fraction!(c, "name"=>startswith("AC"), external=>startswith("A"), "C")
 			@test c.obs.C == nAC ./ max.(1,nA)
 
 			c_proj = project(copy(counts_proj), c) # copy counts_proj since it will be modified due to var=:keep in the model
@@ -656,9 +676,12 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 		c = copy(counts)
 
-		@test_throws ArgumentError var_counts_sum(c, "name"=>startswith("NOTAGENE"), "C")
-		@test_throws ArgumentError var_counts_sum!(c, "name"=>startswith("NOTAGENE"), "C")
-		@test "C" ∉ names(c.obs)
+		@testset "$f" for f in (var_counts_sum!, var_counts_sum)
+			@test_throws ArgumentError f(c, "name"=>startswith("NOTAGENE"), "C")
+			@test "C" ∉ names(c.obs)
+
+			@test_throws ["ArgumentError","external_name"] f(c, "external_name"=>startswith("A"), "A")
+		end
 
 		# --- non-mutating ---
 		c2 = var_counts_sum(c, "name"=>startswith("A"), "A")
@@ -693,18 +716,19 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 
 		@testset "external_obs::$T" for T in (Annotations,DataFrame)
-			var2 = T==DataFrame ? var2_df : T(var2_df)
-
-			c = copy(counts)
-			@testset "$f" for f in (var_counts_sum!, var_counts_sum)
-				@test_throws ["ArgumentError","external_name"] f(c, "external_name"=>startswith("A"), "A")
-				@test_throws ["ArgumentError","External annotation","\"name\"","missing."] f(c, "name"=>startswith("A"), "A"; external_var=var2)
+			if T == Annotations
+				var2 = Annotations(var2_df)
+				external = var2.external_name
+			else
+				external = select(var2_df, Cols(1,"external_name"))
 			end
 
+			c = copy(counts)
+
 			# --- non-mutating ---
-			c2 = var_counts_sum(c, "external_name"=>startswith("A"), "A"; external_var=var2)
+			c2 = var_counts_sum(c, external=>startswith("A"), "A")
 			@test c2.obs.A == nA
-			c2 = var_counts_sum(!iszero, c, "external_name"=>startswith("A"), "B"; external_var=var2)
+			c2 = var_counts_sum(!iszero, c, external=>startswith("A"), "B")
 			@test c2.obs.B == nzA
 
 			c2_proj = project(counts_proj, c2)
@@ -713,9 +737,9 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			@test c2_proj.obs.B == c2.obs.B[proj_obs_indices]
 
 			# --- mutating ---
-			var_counts_sum!(c, "external_name"=>startswith("A"), "A"; external_var=var2)
+			var_counts_sum!(c, external=>startswith("A"), "A")
 			@test c.obs.A == nA
-			var_counts_sum!(!iszero, c, "external_name"=>startswith("A"), "B"; external_var=var2)
+			var_counts_sum!(!iszero, c, external=>startswith("A"), "B")
 			@test c.obs.B == nzA
 
 			c_proj = project(copy(counts_proj), c) # copy counts_proj since it will be modified due to var=:keep in the model

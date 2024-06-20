@@ -1,4 +1,4 @@
-function _var_match_for_transform(var; var_filter, var_filter_cols, external_var)
+function _var_match_for_transform(var; var_filter, var_filter_cols)
 	if var_filter_cols === nothing
 		var_match = select(var, 1)
 	elseif var_filter_cols isa Tuple || var_filter_cols isa AbstractArray
@@ -8,11 +8,7 @@ function _var_match_for_transform(var; var_filter, var_filter_cols, external_var
 	end
 
 	if var_filter !== nothing
-		if external_var !== nothing
-			ind = _filter_indices(var, var_filter, external_var)
-		else
-			ind = _filter_indices(var, var_filter)
-		end
+		ind = _filter_indices(var, var_filter)
 		var_match = var_match[ind,:]
 	else
 		ind = 1:size(var,1)
@@ -31,9 +27,8 @@ end
 function LogTransformModel(::Type{T}, counts::DataMatrix;
                            var_filter = hasproperty(counts.var, "feature_type") ? "feature_type" => isequal("Gene Expression") : nothing,
                            var_filter_cols = hasproperty(counts.var, "feature_type") ? "feature_type" : nothing,
-                           external_var = nothing,
                            scale_factor=10_000, var=:copy, obs=:copy) where T
-	var_match,_ = _var_match_for_transform(counts.var; var_filter, var_filter_cols, external_var)
+	var_match,_ = _var_match_for_transform(counts.var; var_filter, var_filter_cols)
 	LogTransformModel{T}(scale_factor, var_match, var, obs)
 end
 LogTransformModel(counts::DataMatrix; kwargs...) = LogTransformModel(Float64, counts; kwargs...)
@@ -96,7 +91,6 @@ end
 	logtransform([T=Float64], counts::DataMatrix;
 	             var_filter = hasproperty(counts.var, "feature_type") ? "feature_type" => isequal("Gene Expression") : nothing,
 	             var_filter_cols = hasproperty(counts.var, "feature_type") ? "feature_type" : nothing,
-	             external_var = nothing,
 	             scale_factor=10_000,
 	             var=:copy,
 	             obs=:copy)
@@ -111,7 +105,6 @@ Optionally, `T` can be specified to control the `eltype` of the sparse transform
 
 * `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `"feature_type" => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
 * `var_filter_cols` - Additional columns used to ensure features are unique. Defaults to "feature_type" if present in `counts.var`. Use a Tuple/Vector for specifying multiple columns. Can be set to `nothing` to not include any additional columns.
-* `external_var` - If given, these annotations are used instead of `data.var` when applying `var_filter`. NB: The IDs of `external_var` must match IDs in `data.var`.
 * `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
 * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
 
@@ -143,13 +136,12 @@ end
 function TFIDFTransformModel(::Type{T}, counts::DataMatrix;
                              var_filter = hasproperty(counts.var, "feature_type") ? "feature_type" => isequal("Gene Expression") : nothing,
                              var_filter_cols = hasproperty(counts.var, "feature_type") ? "feature_type" : nothing,
-                             external_var = nothing,
                              scale_factor=10_000,
                              idf=vec(size(counts,2) ./ max.(1,sum(counts.matrix; dims=2))),
                              annotate=true,
                              var=:copy, obs=:copy) where T
 	@assert length(idf) == size(counts,1)
-	var_match,ind = _var_match_for_transform(counts.var; var_filter, var_filter_cols, external_var)
+	var_match,ind = _var_match_for_transform(counts.var; var_filter, var_filter_cols)
 	ind != 1:size(counts,1) && (idf = idf[ind]) # subset idf if needed
 
 	TFIDFTransformModel{T}(scale_factor, idf, var_match, annotate, var, obs)
@@ -231,7 +223,6 @@ end
 	tf_idf_transform([T=Float64], counts::DataMatrix;
 	                 var_filter = hasproperty(counts.var, "feature_type") ? "feature_type" => isequal("Gene Expression") : nothing,
 	                 var_filter_cols = hasproperty(counts.var, "feature_type") ? "feature_type" : nothing,
-	                 external_var,
 	                 scale_factor = 10_000,
 	                 idf = vec(size(counts,2) ./ max.(1,sum(counts.matrix; dims=2))),
 	                 annotate = true,
@@ -246,7 +237,6 @@ Optionally, `T` can be specified to control the `eltype` of the sparse transform
 
 * `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `"feature_type" => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
 * `var_filter_cols` - Additional columns used to ensure features are unique. Defaults to "feature_type" if present in `counts.var`. Use a Tuple/Vector for specifying multiple columns. Can be set to `nothing` to not include any additional columns.
-* `external_var` - If given, these annotations are used instead of `data.var` when applying `var_filter`. NB: The IDs of `external_var` must match IDs in `data.var`.
 * `annotate` - If true, `idf` will be added as a `var` annotation.
 * `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
 * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
@@ -287,14 +277,11 @@ Optionally, `T` can be specified to control the `eltype` of the sparse transform
 
 * `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `"feature_type" => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
 * `var_filter_cols` - Additional columns used to ensure features are unique. Defaults to "feature_type" if present in `counts.var`. Use a Tuple/Vector for specifying multiple columns. Can be set to `nothing` to not include any additional columns.
-* `external_var` - If given, these annotations are used instead of `data.var` when applying `var_filter`. NB: The IDs of `external_var` must match IDs in `data.var`.
 * `rtol` - Relative tolerance when constructing low rank approximation.
 * `atol` - Absolute tolerance when constructing low rank approximation.
 * `annotate` - Set to true to include SCTransform parameter estimates as feature annotations.
 * `post_var_filter` - Equivalent to applying variable (feature) filtering after sctransform, but computationally more efficient.
 * `post_obs_filter` - Equivalent to applying observation (cell) filtering after sctransform, but computationally more efficient.
-* `external_post_var` - If given, these annotations are used instead of `data.var` when applying `post_var_filter`. NB: The IDs of `external_post_var` must match IDs in `data.var`.
-* `external_post_obs` - If given, these annotations are used instead of `data.var` when applying `post_obs_filter`. NB: The IDs of `external_post_obs` must match IDs in `data.obs`.
 * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
 * `kwargs...` - Additional `kwargs` are passed on to [`SCTransform.scparams`](https://github.com/rasmushenningsson/SCTransform.jl).
 
@@ -314,24 +301,21 @@ See also: [`sctransform`](@ref), [`SCTransform.scparams`](https://github.com/ras
 function SCTransformModel(::Type{T}, counts::DataMatrix;
                           var_filter = hasproperty(counts.var, :feature_type) ? :feature_type => isequal("Gene Expression") : nothing,
                           var_filter_cols = hasproperty(counts.var, "feature_type") ? "feature_type" : nothing,
-                          external_var = nothing,
                           rtol=1e-3, atol=0.0, annotate=true,
                           post_var_filter=:, post_obs_filter=:,
-                          external_post_var = nothing,
-                          external_post_obs = nothing,
                           obs=:copy,
                           kwargs...) where T
 	nvar = size(counts,1)
 
 
-	var_match,ind = _var_match_for_transform(counts.var; var_filter, var_filter_cols, external_var)
+	var_match,ind = _var_match_for_transform(counts.var; var_filter, var_filter_cols)
 	feature_mask = falses(nvar)
 	feature_mask[ind] .= true
 
 	feature_names = hasproperty(counts.var, "name") ? counts.var.name : counts.var[1,:] # NB: This is only used for informative error messages
 	params = scparams(counts; feature_mask, feature_names, kwargs...)
 	clip = sqrt(size(counts,2)/30)
-	post_filter = FilterModel(params, post_var_filter, post_obs_filter; var=:copy, obs, external_var=external_post_var, use_external_obs=external_post_obs!==nothing)
+	post_filter = FilterModel(params, post_var_filter, post_obs_filter; var=:copy, obs)
 	SCTransformModel{T}(var_match, params, clip, rtol, atol, annotate, post_filter)
 end
 SCTransformModel(counts::DataMatrix; kwargs...) =
@@ -358,22 +342,33 @@ function update_model(m::SCTransformModel{T};
                      ) where T
 	post_var_filter = _filter_indices(m.params, post_var_filter)
 
-	allow_obs_indexing = post_obs_filter !== nothing
-	post_obs_filter === nothing && (post_obs_filter = m.post_filter.obs_filter)
+	if post_obs_filter !== nothing
+		post_obs_filter_externalized, use_external_obs = _externalize_filter(post_obs_filter)
+		post_filter = FilterModel(post_var_filter, post_obs_filter_externalized, m.var_match, use_external_obs, m.post_filter.var, obs)
+		kwargs = (;original_post_obs_filter=post_obs_filter, kwargs...)
+	else
+		post_filter = FilterModel(post_var_filter, m.post_filter.obs_filter, m.post_filter.var_match, m.post_filter.use_external_obs, m.post_filter.var, obs)
+	end
 
-	post_filter = FilterModel(post_var_filter, post_obs_filter, m.post_filter.var_match, m.post_filter.use_external_obs, m.post_filter.var, obs) # TODO: support external_var here?
 	model = SCTransformModel{T}(m.var_match, m.params, clip, rtol, atol, annotate, post_filter)
-	(model, (;allow_obs_indexing, kwargs...))
+	(model, kwargs)
 end
 
 
-function project_impl(counts::DataMatrix, model::SCTransformModel{T}; external_post_obs=nothing, allow_obs_indexing=false, verbose=true) where T
+function project_impl(counts::DataMatrix, model::SCTransformModel{T}; external_post_obs=nothing, original_post_obs_filter=nothing, verbose=true) where T
 	# use post_filter to figure out variable and observations subsetting
-	_validate(model.params, model.post_filter, allow_obs_indexing, SCTransformModel, "post_obs_filter")
+	_validate(model.params, model.post_filter, original_post_obs_filter, SCTransformModel, "post_obs_filter")
 
 	I = _filter_indices(model.params, model.post_filter.var_filter)
-	J = model.post_filter.use_external_obs ?  _filter_indices(counts.obs, model.post_filter.obs_filter, external_post_obs) : _filter_indices(counts.obs, model.post_filter.obs_filter)
 	params = model.params[I,:]
+
+	if original_post_obs_filter !== nothing
+		J = _filter_indices(counts.obs, original_post_obs_filter)
+	elseif model.post_filter.use_external_obs
+		J = _filter_indices_external(counts.obs, model.post_filter.obs_filter, external_post_obs)
+	else
+		J = _filter_indices(counts.obs, model.post_filter.obs_filter)
+	end
 
 	# Remove rows from `params` that doesn't match any variables in `counts`
 	missing_cols = setdiff(names(model.var_match), names(counts.var))
@@ -446,8 +441,10 @@ julia> sctransform(Float32, counts)
 
 See also: [`SCTransformModel`](@ref), [`SCTransform.scparams`](https://github.com/rasmushenningsson/SCTransform.jl)
 """
-sctransform(::Type{T}, counts::DataMatrix; verbose=true, kwargs...) where T =
-	project_impl(counts, SCTransformModel(T, counts; verbose, kwargs...); verbose, allow_obs_indexing=true)
+function sctransform(::Type{T}, counts::DataMatrix; post_obs_filter=:, verbose=true, kwargs...) where T
+	model = SCTransformModel(T, counts; post_obs_filter, verbose, kwargs...)
+	project_impl(counts, model; verbose, original_post_obs_filter=post_obs_filter)
+end
 sctransform(counts::DataMatrix; kwargs...) = sctransform(Float64, counts; kwargs...)
 
 # - show -
