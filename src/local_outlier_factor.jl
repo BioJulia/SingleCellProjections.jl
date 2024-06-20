@@ -252,10 +252,10 @@ See `local_outlier_factor_projection!` for documentation. This returns a DataFra
 See also: [`local_outlier_factor_projection!`](@ref), [`local_outlier_factor_projection`](@ref), [`local_outlier_factor_table`](@ref)
 """
 function local_outlier_factor_projection_table(data::DataMatrix, full::DataMatrix,
-                                    base::DataMatrix, base_full::DataMatrix;
-                                    k=10,
-                                    col="LOF_projection")
-	df = select(base.obs, 1)
+                                               base::DataMatrix, base_full::DataMatrix;
+                                               k=10,
+                                               col="LOF_projection")
+	df = select(data.obs, 1)
 	df[:,col] = _local_outlier_factor_projection(data, full, base, base_full; k)
 	df
 end

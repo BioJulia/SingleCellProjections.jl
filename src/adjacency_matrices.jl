@@ -42,13 +42,13 @@ end
 
 
 function knn_adjacency_matrix(data::DataMatrix; kwargs...)
-	adj = knn_adjacency_matrix(obs_coordinates(data.matrix); kwargs...)
+	adj = knn_adjacency_matrix(obs_coordinates(data); kwargs...)
 	obs = copy(data.obs)
 	DataMatrix(adj, obs, obs)
 end
 
 function knn_adjacency_matrix(X::DataMatrix, Y::DataMatrix; kwargs...)
-	adj = knn_adjacency_matrix(obs_coordinates(X.matrix), obs_coordinates(Y.matrix); kwargs...)
+	adj = knn_adjacency_matrix(obs_coordinates(X), obs_coordinates(Y); kwargs...)
 	DataMatrix(adj, copy(X.obs), copy(Y.obs))
 end
 
