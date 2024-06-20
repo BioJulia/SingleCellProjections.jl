@@ -9,13 +9,10 @@ end
 function VarCountsFractionModel(counts::DataMatrix{<:AbstractMatrix{<:Integer}},
                                 sub_filter, tot_filter, col;
                                 var=:keep, obs=:keep, matrix=:keep,
-                                external_var=nothing,
-                                external_var_sub=external_var,
-                                external_var_tot=external_var,
                                 check=true)
 	var_annot = counts.var
-	sub_ind = external_var_sub !== nothing ? _filter_indices(var_annot, sub_filter, external_var_sub) : _filter_indices(var_annot, sub_filter)
-	tot_ind = external_var_tot !== nothing ? _filter_indices(var_annot, tot_filter, external_var_tot) : _filter_indices(var_annot, tot_filter)
+	sub_ind = _filter_indices(var_annot, sub_filter)
+	tot_ind = _filter_indices(var_annot, tot_filter)
 
 	var_id = select(var_annot, 1)
 	var_match_sub = var_id[sub_ind, :]
@@ -67,7 +64,7 @@ end
 
 
 """
-	var_counts_fraction!(counts::DataMatrix, sub_filter, tot_filter, col; check=true, var=:keep, obs=:keep, external_var, external_var_sub, external_var_tot)
+	var_counts_fraction!(counts::DataMatrix, sub_filter, tot_filter, col; check=true, var=:keep, obs=:keep)
 
 For each observation, compute the fraction of counts that match a specific variable pattern.
 * `sub_filter` decides which variables are counted.
@@ -76,9 +73,6 @@ For each observation, compute the fraction of counts that match a specific varia
 kwargs:
 * `var` - Use this to set `var` in the `ProjectionModel`.
 * `obs` - Use this to set `obs` in the `ProjectionModel`. Note that `counts.obs` is changed in place, regardless of the value of `obs`.
-* `external_var_sub` - If given, these annotations are used instead of `data.var` when applying `filter_sub`. NB: The IDs of `external_var_sub` must match IDs in `data.var`.
-* `external_var_tot` - If given, these annotations are used instead of `data.var` when applying `filter_tot`. NB: The IDs of `external_var_tot` must match IDs in `data.var`.
-* `external_var` - Used this as a shorthand to define both `external_var_sub` and `external_var_tot`.
 If `check=true`, an error will be thrown if no variables match the patterns.
 
 For more information on filtering syntax, see examples below and the documentation on [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter).
@@ -107,7 +101,7 @@ end
 
 
 """
-	var_counts_fraction(counts::DataMatrix, sub_filter, tot_filter, col; check=true, var=:copy, obs=:copy, external_var, external_var_sub, external_var_tot)
+	var_counts_fraction(counts::DataMatrix, sub_filter, tot_filter, col; check=true, var=:copy, obs=:copy)
 
 For each observation, compute the fraction of counts that match a specific variable pattern.
 * `sub_filter` decides which variables are counted.
@@ -116,9 +110,6 @@ For each observation, compute the fraction of counts that match a specific varia
 kwargs:
 * `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
 * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
-* `external_var_sub` - If given, these annotations are used instead of `data.var` when applying `filter_sub`. NB: The IDs of `external_var_sub` must match IDs in `data.var`.
-* `external_var_tot` - If given, these annotations are used instead of `data.var` when applying `filter_tot`. NB: The IDs of `external_var_tot` must match IDs in `data.var`.
-* `external_var` - Used this as a shorthand to define both `external_var_sub` and `external_var_tot`.
 If `check=true`, an error will be thrown if no variables match the patterns.
 
 For more information on filtering syntax, see examples below and the documentation on [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter).

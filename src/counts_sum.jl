@@ -10,10 +10,9 @@ function VarCountsSumModel(counts::DataMatrix{<:AbstractMatrix},
                            filter, col;
                            f = identity,
                            var=:keep, obs=:keep, matrix=:keep,
-                           external_var=nothing,
                            check=true)
 	var_annot = counts.var
-	ind = external_var !== nothing ? _filter_indices(var_annot, filter, external_var) : _filter_indices(var_annot, filter)
+	ind = _filter_indices(var_annot, filter)
 
 	var_id = select(var_annot, 1)
 	var_match = var_id[ind, :]
@@ -64,7 +63,7 @@ end
 
 
 """
-	var_counts_sum!([f=identity], counts::DataMatrix, filter, col; check=true, var=:keep, obs=:keep, external_var)
+	var_counts_sum!([f=identity], counts::DataMatrix, filter, col; check=true, var=:keep, obs=:keep)
 
 For each observation, compute the sum of counts matching the `filter`.
 
@@ -73,7 +72,6 @@ If `f` is specified, it is applied to each element before summing. (Similar to `
 kwargs:
 * `var` - Use this to set `var` in the `ProjectionModel`.
 * `obs` - Use this to set `obs` in the `ProjectionModel`. Note that `counts.obs` is changed in place, regardless of the value of `obs`.
-* `external_var` - If given, these annotations are used instead of `data.var` when applying `filter`. NB: The IDs of `external_var` must match IDs in `data.var`.
 If `check=true`, an error will be thrown if no variables match the pattern.
 
 For more information on filtering syntax, see examples below and the documentation on [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter).
@@ -105,7 +103,7 @@ var_counts_sum!(counts::DataMatrix{<:AbstractMatrix}, args...; kwargs...) =
 
 
 """
-	var_counts_sum([f=identity], counts::DataMatrix, filter, col; check=true, var=:keep, obs=:keep, external_var)
+	var_counts_sum([f=identity], counts::DataMatrix, filter, col; check=true, var=:keep, obs=:keep)
 
 For each observation, compute the sum of counts matching the `filter`.
 
@@ -114,7 +112,6 @@ If `f` is specified, it is applied to each element before summing. (Similar to `
 kwargs:
 * `var` - Use this to set `var` in the `ProjectionModel`.
 * `obs` - Use this to set `obs` in the `ProjectionModel`. Note that `counts.obs` is changed in place, regardless of the value of `obs`.
-* `external_var` - If given, these annotations are used instead of `data.var` when applying `filter`. NB: The IDs of `external_var` must match IDs in `data.var`.
 If `check=true`, an error will be thrown if no variables match the pattern.
 
 For more information on filtering syntax, see examples below and the documentation on [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter).
