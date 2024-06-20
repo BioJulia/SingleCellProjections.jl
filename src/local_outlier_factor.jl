@@ -42,6 +42,15 @@ function _local_outlier_factor(adj::AbstractSparseMatrix, lrdX::AbstractVector, 
 end
 
 
+function _local_outlier_factor(data::DataMatrix, full::DataMatrix; k)
+	adj = knn_adjacency_matrix(data; k, make_symmetric=false)
+	dists = adjacency_distances(adj, full)
+	kdists = vec(maximum(dists.matrix; dims=1))
+	lrd = local_reachability_density(dists.matrix, kdists);
+	_local_outlier_factor(dists.matrix, lrd)
+end
+
+
 
 
 
@@ -86,16 +95,64 @@ julia> reduced = svd(normalized; nsv=10)
 julia> local_outlier_factor!(reduced, normalized; k=10)
 ```
 
-See also: [`local_outlier_factor_projection!`](@ref)
+See also: [`local_outlier_factor`](@ref), [`local_outlier_factor_table`](@ref), [`local_outlier_factor_projection!`](@ref)
 """
 function local_outlier_factor!(data::DataMatrix, full::DataMatrix; k=10, col="LOF")
-	adj = knn_adjacency_matrix(data; k, make_symmetric=false)
-	dists = adjacency_distances(adj, full)
-	kdists = vec(maximum(dists.matrix; dims=1))
-	lrd = local_reachability_density(dists.matrix, kdists);
-	data.obs[:,col] = _local_outlier_factor(dists.matrix, lrd)
+	data.obs[:,col] = _local_outlier_factor(data, full; k)
 	data
 end
+
+
+"""
+	local_outlier_factor(data::DataMatrix, full::DataMatrix; k=10, col="LOF", matrix=:keep, var=:copy)
+
+See `local_outlier_factor!` for documentation. This version does not modify `data` in place.
+
+See also: [`local_outlier_factor!`](@ref), [`local_outlier_factor_table`](@ref), [`local_outlier_factor_projection`](@ref)
+"""
+function local_outlier_factor(data::DataMatrix, full::DataMatrix; k=10, col="LOF", matrix=:keep, var=:copy, kwargs...)
+	obs = copy(data.obs)
+	obs[:,col] = _local_outlier_factor(data, full; k)
+	X = matrix == :keep ? data.matrix : copy(data.matrix)
+	var = _update_annot(data.var, var, size(matrix,1))
+	DataMatrix(X, var, obs, data.models; kwargs...)
+end
+
+
+"""
+	local_outlier_factor_table(data::DataMatrix, full::DataMatrix; k=10, col="LOF")
+
+See `local_outlier_factor!` for documentation. This returns a DataFrame with observation IDs and a column `col` with LOF values.
+
+See also: [`local_outlier_factor!`](@ref), [`local_outlier_factor`](@ref), [`local_outlier_factor_projection_table`](@ref)
+"""
+function local_outlier_factor_table(data::DataMatrix, full::DataMatrix; k=10, col="LOF")
+	df = select(data.obs, 1)
+	df[:,col] = _local_outlier_factor(data, full; k)
+	df
+end
+
+
+
+
+
+function _local_outlier_factor_projection(data::DataMatrix, full::DataMatrix,
+                                          base::DataMatrix, base_full::DataMatrix;
+                                          k=10)
+	adj_X = knn_adjacency_matrix(base; k, make_symmetric=false)
+	adj_XY = knn_adjacency_matrix(base, data; k)
+
+	dists_X = adjacency_distances(adj_X, base_full)
+	dists_XY = adjacency_distances(adj_XY, base_full, full)
+
+	kdists = vec(maximum(dists_X.matrix; dims=1))
+
+	lrd_X = local_reachability_density(dists_X.matrix, kdists);
+	lrd_XY = local_reachability_density(dists_XY.matrix, kdists);
+
+	_local_outlier_factor(dists_XY.matrix, lrd_X, lrd_XY)
+end
+
 
 """
 	local_outlier_factor_projection!(data::DataMatrix, full::DataMatrix, base::DataMatrix, base_full::DataMatrix; k=10, col="LOF_projection")
@@ -152,23 +209,53 @@ julia> reduced = project(normalized, base_reduced);
 julia> local_outlier_factor!(reduced, normalized, base_reduced, base_normalized; k=10)
 ```
 
-See also: [`local_outlier_factor!`](@ref)
+See also: [`local_outlier_factor_projection`](@ref), [`local_outlier_factor_projection_table`](@ref), [`local_outlier_factor!`](@ref)
 """
 function local_outlier_factor_projection!(data::DataMatrix, full::DataMatrix,
                                           base::DataMatrix, base_full::DataMatrix;
                                           k=10,
                                           col="LOF_projection")
-	adj_X = knn_adjacency_matrix(base; k, make_symmetric=false)
-	adj_XY = knn_adjacency_matrix(base, data; k)
-
-	dists_X = adjacency_distances(adj_X, base_full)
-	dists_XY = adjacency_distances(adj_XY, base_full, full)
-
-	kdists = vec(maximum(dists_X.matrix; dims=1))
-	
-	lrd_X = local_reachability_density(dists_X.matrix, kdists);
-	lrd_XY = local_reachability_density(dists_XY.matrix, kdists);
-
-	data.obs[:,col] = _local_outlier_factor(dists_XY.matrix, lrd_X, lrd_XY)
+	data.obs[:,col] = _local_outlier_factor_projection(data, full, base, base_full; k)
 	data
+end
+
+
+
+
+"""
+	local_outlier_factor_projection(data::DataMatrix, full::DataMatrix, base::DataMatrix, base_full::DataMatrix; k=10, col="LOF_projection", matrix=:keep, var=:copy)
+
+See `local_outlier_factor_projection!` for documentation. This version does not modify `data` in place.
+
+See also: [`local_outlier_factor_projection!`](@ref), [`local_outlier_factor_projection_table`](@ref), [`local_outlier_factor`](@ref)
+"""
+function local_outlier_factor_projection(data::DataMatrix, full::DataMatrix,
+                                         base::DataMatrix, base_full::DataMatrix;
+                                         k=10,
+                                         col="LOF_projection",
+                                         matrix = :keep,
+                                         var = :copy,
+                                         kwargs...)
+	obs = copy(data.obs)
+	obs[:,col] = _local_outlier_factor_projection(data, full, base, base_full; k)
+	X = matrix == :keep ? data.matrix : copy(data.matrix)
+	var = _update_annot(data.var, var, size(matrix,1))
+	DataMatrix(X, var, obs, data.models; kwargs...)
+end
+
+
+"""
+	local_outlier_factor_projection_table(data::DataMatrix, full::DataMatrix, base::DataMatrix, base_full::DataMatrix; k=10, col="LOF_projection", matrix=:keep, var=:copy)
+
+See `local_outlier_factor_projection!` for documentation. This returns a DataFrame with observation IDs and a column `col` with LOF values for the projection.
+
+See also: [`local_outlier_factor_projection!`](@ref), [`local_outlier_factor_projection`](@ref), [`local_outlier_factor_table`](@ref)
+"""
+function local_outlier_factor_projection_table(data::DataMatrix, full::DataMatrix,
+                                    base::DataMatrix, base_full::DataMatrix;
+                                    k=10,
+                                    col="LOF_projection")
+	df = select(base.obs, 1)
+	df[:,col] = _local_outlier_factor_projection(data, full, base, base_full; k)
+	df
 end

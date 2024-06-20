@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+* `local_outlier_factor`, `local_outlier_factor_table`, `local_outlier_factor_projection`, `local_outlier_factor_projection_table`
+
 ## [0.4.0] - 2024-06-20
 
 ### Breaking
