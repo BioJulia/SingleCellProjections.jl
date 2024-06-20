@@ -8,7 +8,7 @@ See also: [`pseudobulk`](@ref)
 """
 struct PseudoBulkModel <: ProjectionModel
 	obs_id_cols::Vector{String} # which columns to use when merging
-	merged_id::Union{Nothing,String}
+	merged_id::String
 	delim::Union{Nothing,Char,String}
 	var::Symbol
 
@@ -76,16 +76,11 @@ function project_impl(data::DataMatrix, model::PseudoBulkModel; verbose=true)
 
 	X = matrixproduct(_named_matrix(data.matrix,:A), :S=>S)
 
-	# Add merged id if requested
-	if model.merged_id !== nothing
-		ids = join.(eachrow(obs), model.delim)
-		insertcols!(obs, 1, model.merged_id=>ids)
-		obs_id_cols = [model.merged_id]
-	else
-		obs_id_cols = model.obs_id_cols
-	end
-
-	update_matrix(data, X, model; model.var, obs, obs_id_cols)
+	# Add merged ID
+	ids = join.(eachrow(obs), model.delim)
+	model.merged_id in names(obs) && select!(obs, Not(model.merged_id)) # remove ID column if existing so we can insert at position 1 below
+	insertcols!(obs, 1, model.merged_id=>ids)
+	update_matrix(data, X, model; model.var, obs)
 end
 
 # - show -

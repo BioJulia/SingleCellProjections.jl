@@ -115,7 +115,7 @@ function NormalizationModel(data::DataMatrix, design::DesignMatrix;
 	AU = A*F.U
 	negβT = (AU*negΣinv)*F.Vt
 
-	model = NormalizationModel(negβT, design.covariates, rank, select(data.var,data.var_id_cols), [], annotate, var, obs)
+	model = NormalizationModel(negβT, design.covariates, rank, select(data.var,1), [], annotate, var, obs)
 	_setscaling!(model, data, design, scale, min_std)
 end
 
@@ -130,9 +130,27 @@ end
 _named_matrix(A::MatrixExpression, ::Symbol) = A
 _named_matrix(A, name::Symbol) = MatrixRef(name=>A)
 
+
+
+
+
+function _get_value_vector(data::DataMatrix, cov::AbstractCovariate, external_obs)
+	cov isa InterceptCovariate && return nothing
+	cov.external == false && return data.obs[!,cov.name]
+
+	a = find_annotation(cov.name, external_obs)
+	a === nothing && throw(ArgumentError("External annotation \"$(cov.name)\" missing, please provide external_obs when projecting."))
+
+	obs = select(data.obs,1; copycols=false)
+	leftjoin!(obs, a; on=names(obs,1))
+	obs[!,2]
+end
+
+
+
 function project_impl(data::DataMatrix, model::NormalizationModel, design::DesignMatrix; verbose=true)
 	@assert model.var in (:keep, :copy)
-	@assert data.var_id_cols == names(model.var_match)
+	@assert names(data.var,1) == names(model.var_match)
 
 	@assert table_cols_equal(data.obs, design.obs_match) "Normalization expects design matrix and data matrix observations to be identical."
 
@@ -188,7 +206,11 @@ function project_impl(data::DataMatrix, model::NormalizationModel, design::Desig
 
 	update_matrix(data, matrix, model; var, model.obs)
 end
-project_impl(data::DataMatrix, model::NormalizationModel; kwargs...) = project_impl(data, model, designmatrix(data, model.covariates); kwargs...)
+function project_impl(data::DataMatrix, model::NormalizationModel; external_obs=nothing, kwargs...)
+	value_vectors = [_get_value_vector(data,cov,external_obs) for cov in model.covariates]
+	design = designmatrix(data, model.covariates, value_vectors)
+	project_impl(data, model, design; kwargs...)
+end
 
 
 """
@@ -241,11 +263,11 @@ end
 # - show -
 
 Base.show(io::IO, ::InterceptCovariate) = print(io, "1")
-Base.show(io::IO, c::NumericalCovariate) = print(io, "num(", c.name, ')')
-Base.show(io::IO, c::CategoricalCovariate) = print(io, "cat(", c.name, ')')
+Base.show(io::IO, c::NumericalCovariate) = print(io, "num(", c.name, c.external ? " (external)" : "", ')')
+Base.show(io::IO, c::CategoricalCovariate) = print(io, "cat(", c.name, c.external ? " (external)" : "", ')')
 Base.show(io::IO, ::MIME"text/plain", ::InterceptCovariate) = print(io, "1")
-Base.show(io::IO, ::MIME"text/plain", c::NumericalCovariate) = print(io, "num(", c.name, ')')
-Base.show(io::IO, ::MIME"text/plain", c::CategoricalCovariate) = print(io, "cat(", c.name, ",n=", length(c.values), ')')
+Base.show(io::IO, ::MIME"text/plain", c::NumericalCovariate) = print(io, "num(", c.name, c.external ? " (external)" : "", ')')
+Base.show(io::IO, ::MIME"text/plain", c::CategoricalCovariate) = print(io, "cat(", c.name, c.external ? " (external)" : "", ",n=", length(c.values), ')')
 
 function Base.show(io::IO, ::MIME"text/plain", model::NormalizationModel)
 	print(io, "NormalizationModel(rank=", model.rank)

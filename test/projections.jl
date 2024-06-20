@@ -33,6 +33,8 @@
 		rename_genes && (new_gene_ids[1:4:end] .= string.("NEW_", new_gene_ids[1:4:end]))
 		ref_var = DataFrame(id=new_gene_ids, feature_type=expected_feature_types)[gene_ind,:]
 		ref_mat = expected_sparse[gene_ind,:]
+		renamed_mask = startswith.(ref_var.id,"NEW_")
+
 
 		counts_proj2 = counts[gene_ind,:]
 		counts_proj2.var.id .= ref_var.id
@@ -43,7 +45,7 @@
 
 
 		@testset "logtransform" begin
-			log_mat = simple_logtransform(ref_mat[.!startswith.(ref_var.id,"NEW_"),:], 10_000)
+			log_mat = simple_logtransform(ref_mat[.!renamed_mask,:], 10_000)
 			l = logtransform(counts)
 			l_proj2 = project(counts_proj2, l)
 			@test issorted(indexin(l_proj2.var.id, l.var.id))
@@ -51,7 +53,7 @@
 		end
 
 		@testset "tf-idf" begin
-			X = ref_mat[.!startswith.(ref_var.id,"NEW_"),:]
+			X = ref_mat[.!renamed_mask,:]
 			idf = simple_idf(X)
 			tf_mat = simple_tf_idf_transform(X, idf, 10_000)
 			tf = tf_idf_transform(counts)
@@ -60,11 +62,10 @@
 			@test materialize(tf_proj2) ≈ tf_mat
 		end
 
-		transformed_proj2 = project(counts_proj2, transformed) # TODO: use me
-		# transformed_proj2 = project(counts_proj2, transformed; rtol=1e-9)
+		transformed_proj2 = project(counts_proj2, transformed)
 
 		@testset "sctransform" begin
-			ref_sct = sctransform(ref_mat, ref_var, params[in(ref_var.id).(params.id),:])
+			ref_sct = sctransform(ref_mat[.!renamed_mask,:], ref_var[.!renamed_mask,:], params[in(ref_var.id).(params.id),:])
 			@test materialize(transformed_proj2) ≈ ref_sct rtol=1e-3
 		end
 

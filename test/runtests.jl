@@ -1,4 +1,5 @@
 using SingleCellProjections
+using SingleCellProjections: Annotations
 using .SingleCellProjections.MatrixExpressions
 using Test
 using LinearAlgebra
@@ -33,6 +34,7 @@ include("common_data.jl")
 	include("datamatrix.jl")
 	include("load.jl")
 	include("basic.jl")
+	include("duplicate_var_ids.jl")
 	include("annotate.jl")
 	include("ftest_tests.jl")
 	include("ttest_tests.jl")

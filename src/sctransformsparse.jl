@@ -91,10 +91,13 @@ end
 function sctransformsparse(::Type{T}, X::SparseMatrixCSC, features, params;
                            transpose = false,
                            feature_id_columns = [:id,:feature_type],
+                           feature_mask,
                            cell_ind = 1:size(X,2),
                            clip=sqrt(size(X,2)/30), kwargs...) where T
 
 	@assert size(X,1)==length(getproperty(features,first(propertynames(features)))) "The number of rows in X and features must match"
+
+	feature_mask = convert(BitVector, feature_mask)
 
 	β0 = params.beta0
 	β1 = params.beta1
@@ -114,7 +117,7 @@ function sctransformsparse(::Type{T}, X::SparseMatrixCSC, features, params;
 	feature_ind = Int.(feature_ind) # get rid of Nothing in eltype
 
 
-	logCellCounts = SCTransform.logcellcounts(X)[cell_ind]
+	logCellCounts = SCTransform.logcellcounts(X, feature_mask)[cell_ind]
 
 	# create new Float64-valued sparse matrix with selected rows/columns
 

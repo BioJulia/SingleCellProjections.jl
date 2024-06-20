@@ -1,20 +1,21 @@
-function _detect_var_id_cols(var)
-	id_cols = String[]
-	push!(id_cols, hasproperty(var, "id") ? "id" : first(names(var)))
-	hasproperty(var, :feature_type) && push!(id_cols, "feature_type")
-	@assert allunique(id_cols)
-
-	v = select(var, id_cols; copycols=false)
-	@assert size(unique(v),1) == size(v,1) "Failed to autodetect unique variable IDs (tried $id_cols)."
-	id_cols
+function _get_nonunique(table, col)
+	bad_ind = findfirst(nonunique(table, col))
+	bad_ind !== nothing ? table[bad_ind,col] : nothing
 end
 
-function _detect_obs_id_cols(obs)
-	id_col = hasproperty(obs, "id") ? "id" : first(names(obs))
-	@assert allunique(obs[!,id_col]) "Failed to autodetect unique observation IDs (tried \"$id_col\")."
-	String[id_col]
+function _validateunique(table, col, report, suffix)
+	report == :ignore && return
+	@assert report in (:warn, :error)
+	bad_id = _get_nonunique(table,col)
+	bad_id === nothing && return
+	msg = string("ID \"", bad_id, "\" is not unique.", suffix)
+	report == :error && error(msg)
+	report == :warn && @warn(msg)
+	return
 end
 
+validateunique_var(table, col; report) = _validateunique(table,col,report," Use duplicate_var=x, where x is :error, :warn or :ignore to control behavior.")
+validateunique_obs(table, col; report) = _validateunique(table,col,report," Use duplicate_obs=x, where x is :error, :warn or :ignore to control behavior.")
 
 """
 	struct DataMatrix{T,Tv,To}
@@ -25,20 +26,16 @@ Fields:
 * `matrix::T` - The matrix.
 * `var::Tv` - Variable annotations.
 * `obs::To` - Observation annotations.
-* `var_id_cols::Vector{String}` - Which column(s) to use as IDs.
-* `obs_id_cols::Vector{String}` - Which column(s) to use as IDs.
 * `models::Vector{ProjectionModel}` - Models used in the creation of this `DataMatrix`.
 
-The rows of the `var` and `obs` tables must be unique, considering only the `var_id_cols`/`obs_id_cols`.
+The first column of the `var` and `obs` tables should contain unique IDs.
 """
 struct DataMatrix{T,Tv,To}
 	matrix::T
 	var::Tv
 	obs::To
-	var_id_cols::Vector{String}
-	obs_id_cols::Vector{String}
 	models::Vector{ProjectionModel}
-	function DataMatrix(matrix::T, var::Tv, obs::To, var_id_cols, obs_id_cols, models) where {T,Tv,To}
+	function DataMatrix(matrix::T, var::Tv, obs::To, models; duplicate_var=:warn, duplicate_obs=:warn) where {T,Tv,To}
 		P,N = size(matrix)
 		p = size(var,1)
 		n = size(obs,1)
@@ -46,29 +43,26 @@ struct DataMatrix{T,Tv,To}
 			throw(DimensionMismatch(string("Matrix has dimensions (",P,',',N,"), but there are ", p, " variable annotations and ", n, " observation annotations.")))
 		end
 
-		# NB: copy because we do not want different DataMatrices to share the same storage
-		var_id_cols = var_id_cols !== nothing ? copy(var_id_cols) : _detect_var_id_cols(var)
-		obs_id_cols = obs_id_cols !== nothing ? copy(obs_id_cols) : _detect_obs_id_cols(obs)
-
-		table_validatecols(var, var_id_cols)
-		table_validatecols(obs, obs_id_cols)
-		table_validateunique(var, var_id_cols)
-		table_validateunique(obs, obs_id_cols)
-		new{T,Tv,To}(matrix, var, obs, var_id_cols, obs_id_cols, models)
+		validateunique_var(var, 1; report=duplicate_var)
+		validateunique_var(obs, 1; report=duplicate_obs)
+		new{T,Tv,To}(matrix, var, obs, models)
 	end
 end
 
 
 """
-	DataMatrix(matrix, var, obs; var_id_cols=nothing, obs_id_cols=nothing)
+	DataMatrix(matrix, var, obs; kwargs...)
 
 Create a `DataMatrix` with the given `matrix`, `var` and `obs`.
 
-Columns to use for `var`/`obs` IDs can be explicitly set with `var_id_cols`/`obs_id_cols`.
-Otherwise, an attempt will be made to autodetect the ID columns.
+The first column of `var`/`obs` are used as IDs.
+
+Kwargs:
+* `duplicate_var` - Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate var IDs are found.
+* `duplicate_obs` - Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate obs IDs are found.
 """
-DataMatrix(matrix, var, obs; var_id_cols=nothing, obs_id_cols=nothing) =
-	DataMatrix(matrix, var, obs, var_id_cols, obs_id_cols, ProjectionModel[])
+DataMatrix(matrix, var, obs; kwargs...) =
+	DataMatrix(matrix, var, obs, ProjectionModel[]; kwargs...)
 
 
 """
@@ -106,33 +100,37 @@ function Base.copy(data::DataMatrix; var=:copy, obs=:copy, matrix=:keep)
 	v = var==:copy ? copy(data.var) : data.var
 	o = obs==:copy ? copy(data.obs) : data.obs
 
-	DataMatrix(X, v, o, data.var_id_cols, data.obs_id_cols, copy(data.models))
+	DataMatrix(X, v, o, copy(data.models))
 end
 
 
 
 """
-	set_var_id_cols!(data::DataMatrix, var_id_cols::Vector{String})
+	set_var_id_col!(data::DataMatrix, var_id_col::String; duplicate_var=:error)
 
-Set which column(s) to use as variable IDs.
-The rows of the `data.var` table must be unique, considering only the `var_id_cols` columns.
+Set which column to use as variable IDs. It will be moved to the first column of `data.var`.
+The rows of this column in `data.var` must be unique.
+
+* `duplicate_var` - Set to :ignore, :warn or :error to decide what happens if duplicate IDs are found.
 """
-function set_var_id_cols!(data::DataMatrix, var_id_cols::Vector{String})
-	table_validatecols(data.var, var_id_cols)
-	table_validateunique(data.var, var_id_cols)
-	copy!(data.var_id_cols, var_id_cols)
+function set_var_id_col!(data::DataMatrix, var_id_col::String; duplicate_var=:error)
+	table_validatecols(data.var, var_id_col)
+	validateunique_var(data.var, var_id_col; report=duplicate_var)
+	select!(data.var, var_id_col, Not(var_id_col)) # move var_id_col first
 end
 
 """
-	set_obs_id_cols!(data::DataMatrix, obs_id_cols::Vector{String})
+	set_obs_id_col!(data::DataMatrix, obs_id_col::String; duplicate_obs=:error)
 
-Set which column(s) to use as observation IDs.
-The rows of the `data.obs` table must be unique, considering only the `obs_id_cols` columns.
+Set which column to use as observation IDs. It will be moved to the first column of `data.obs`.
+The rows of this column in `data.obs` must be unique.
+
+* `duplicate_obs` - Set to :ignore, :warn or :error to decide what happens if duplicate IDs are found.
 """
-function set_obs_id_cols!(data::DataMatrix, obs_id_cols::Vector{String})
-	table_validatecols(data.obs, obs_id_cols)
-	table_validateunique(data.obs, obs_id_cols)
-	copy!(data.obs_id_cols, obs_id_cols)
+function set_obs_id_col!(data::DataMatrix, obs_id_col::String; duplicate_obs=:error)
+	table_validatecols(data.obs, obs_id_col)
+	validateunique_var(data.obs, obs_id_col; report=duplicate_obs)
+	select!(data.obs, obs_id_col, Not(obs_id_col)) # move obs_id_col first
 end
 
 
@@ -345,9 +343,7 @@ _update_annot(::Any, prefix::String, n::Int) = DataFrame(id=string.(prefix, 1:n)
 """
 	update_matrix(data::DataMatrix, matrix, model=nothing;
 	              var::Union{Symbol,String,DataFrame} = "",
-	              obs::Union{Symbol,String,DataFrame} = "",
-	              var_id_cols,
-	              obs_id_cols)
+	              obs::Union{Symbol,String,DataFrame} = "")
 
 Create a new `DataMatrix` by replacing parts of `data` with new values.
 Mostly useful when implementing new `ProjectionModel`s.
@@ -362,19 +358,16 @@ Kwargs:
   * `::DataFrame` - Replace with a new table with variable annotations.
   * `prefix::String` - Prefix, the new variables will be named prefix1, prefix2, etc.
 * `obs` See `var`.
-* `var_id_cols` - New ID columns. Defaults to the same as data, or "id" if new variables were generated using the "prefix" above.
-* `obs_id_cols` - See `var_id_cols`.
 
 """
 function update_matrix(data::DataMatrix, matrix, model=nothing;
                        var::Union{Symbol,String,DataFrame} = "",
                        obs::Union{Symbol,String,DataFrame} = "",
-                       var_id_cols = var isa String ? ["id"] : data.var_id_cols,
-                       obs_id_cols = obs isa String ? ["id"] : data.obs_id_cols)
+                       kwargs...)
 	models = model !== nothing ? vcat(data.models,model) : ProjectionModel[]
 	var = _update_annot(data.var, var, size(matrix,1))
 	obs = _update_annot(data.obs, obs, size(matrix,2))
-	DataMatrix(matrix, var, obs, var_id_cols, obs_id_cols, models)
+	DataMatrix(matrix, var, obs, models; kwargs...)
 end
 
 
@@ -396,30 +389,15 @@ function _printannotation(io, name, show_delim; kwargs...)
 	show_delim && print(io, ", ")
 	printstyled(io, name; kwargs...)
 end
-function _showannotations(io, annotations, id_cols, header)
-	n = names(annotations)
+function _showannotations(io, annotations, header)
 	print(io, header, ": ")
-	actual_id_cols = intersect(n, id_cols)
-	bad_id_cols = setdiff(id_cols, actual_id_cols)
-	other_cols = setdiff(n, actual_id_cols)
-
-	c = 0
-	for name in actual_id_cols
-		_printannotation(io, name, c>0; underline=true)
-		c += 1
-	end
-	for name in bad_id_cols
-		_printannotation(io, name, c>0; underline=true, reverse=true)
-		c += 1
-	end
-	for name in other_cols
+	for (c,name) in enumerate(names(annotations))
 		c>=10 && (print(io, ", ..."); break)
-		_printannotation(io, name, c>0)
-		c += 1
+		_printannotation(io, name, c>1; underline=c==1, reverse=c==1 && !allunique(annotations[!,name])) # reverse if ID columns doesn't have unique values
 	end
 end
-_showvar(io, data) = _showannotations(io, data.var, data.var_id_cols, "Variables")
-_showobs(io, data) = _showannotations(io, data.obs, data.obs_id_cols, "Observations")
+_showvar(io, data) = _showannotations(io, data.var, "Variables")
+_showobs(io, data) = _showannotations(io, data.obs, "Observations")
 
 function _showmodels(io, models)
 	print(io, "Models: ")

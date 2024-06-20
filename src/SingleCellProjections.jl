@@ -12,10 +12,11 @@ export
 	NearestNeighborModel,
 	ObsAnnotationModel,
 	VarCountsFractionModel,
+	VarCountsSumModel,
 	PseudoBulkModel,
 	project,
-	set_var_id_cols!,
-	set_obs_id_cols!,
+	set_var_id_col!,
+	set_obs_id_col!,
 	var_coordinates,
 	obs_coordinates,
 	load10x,
@@ -39,6 +40,9 @@ export
 	var_to_obs,
 	var_to_obs_table,
 	var_counts_fraction!,
+	var_counts_fraction,
+	var_counts_sum!,
+	var_counts_sum,
 	pseudobulk,
 	local_outlier_factor!,
 	local_outlier_factor_projection!,
@@ -92,6 +96,9 @@ include("sctransformsparse.jl")
 
 include("implicitsvd.jl")
 
+include("annotations.jl")
+include("annotation_utils.jl")
+
 include("lowrank.jl")
 include("projectionmodels.jl")
 include("datamatrix.jl")
@@ -116,6 +123,7 @@ include("reduce.jl")
 include("annotate.jl")
 include("statistical_tests.jl")
 include("counts_fraction.jl")
+include("counts_sum.jl")
 include("pseudobulk.jl")
 
 include("local_outlier_factor.jl")

@@ -7,18 +7,17 @@ Normally created using `svd(::DataMatrix)`.
 See also: [`svd`](@ref)
 """
 struct SVDModel <: ProjectionModel
-	F::SVD
+	U::Matrix{Float64}
+	S::Vector{Float64}
 	var_match::DataFrame
 	var::Symbol
 	obs::Symbol
 end
 
-# NB: Require Factorizations to be ===. This is faster and more reasonable.
-# Because of numerical issues, we should never expect Factorizations to be equal if they are not identical.
-projection_isequal(m1::SVDModel, m2::SVDModel) = m1.F == m2.F && m1.var_match == m2.var_match
+projection_isequal(m1::SVDModel, m2::SVDModel) = m1.U == m2.U && m1.S == m2.S && m1.var_match == m2.var_match
 
 
-update_model(m::SVDModel; var=m.var, obs=m.obs, kwargs...) = (SVDModel(m.F, m.var_match, var, obs), kwargs)
+update_model(m::SVDModel; var=m.var, obs=m.obs, kwargs...) = (SVDModel(m.U, m.S, m.var_match, var, obs), kwargs)
 
 
 """
@@ -37,7 +36,7 @@ See also: [`SingleCellProjections.implicitsvd`](@ref)
 """
 function LinearAlgebra.svd(data::DataMatrix; nsv=3, var=:copy, obs=:copy, kwargs...)
 	F = implicitsvd(data.matrix; nsv=nsv, kwargs...)
-	model = SVDModel(F, select(data.var,data.var_id_cols), var, obs)
+	model = SVDModel(F.U, F.S, select(data.var,1), var, obs)
 	update_matrix(data, F, model; model.var, model.obs)
 end
 
@@ -45,12 +44,13 @@ end
 function project_impl(data::DataMatrix, model::SVDModel; verbose=true)
 	@assert table_cols_equal(data.var, model.var_match) "SVD projection expects model and data variables to be identical."
 
-	F = model.F
+	U = model.U
+	S = model.S
 	X = data.matrix
 
-	V = X'F.U # TODO: compute F.U'X instead to get Vt directly
-	V ./= max.(F.S,1e-100)' # To avoid NaNs if any singular value is zero
-	matrix = SVD(F.U,F.S,Matrix(V'))
+	V = X'U # TODO: compute F.U'X instead to get Vt directly
+	V ./= max.(S,1e-100)' # To avoid NaNs if any singular value is zero
+	matrix = SVD(U,S,Matrix(V'))
 	update_matrix(data, matrix, model; model.obs, model.var)
 end
 
@@ -65,7 +65,7 @@ struct NearestNeighborModel <: ProjectionModel
 	obs::Symbol
 end
 NearestNeighborModel(name, pre::DataMatrix, post; k, var, obs) =
-	NearestNeighborModel(name, obs_coordinates(pre), post, select(pre.var,pre.var_id_cols), k, var, obs)
+	NearestNeighborModel(name, obs_coordinates(pre), post, select(pre.var,1), k, var, obs)
 NearestNeighborModel(name, pre::DataMatrix, post::DataMatrix; kwargs...) =
 	NearestNeighborModel(name, pre, obs_coordinates(post); kwargs...)
 
@@ -161,7 +161,7 @@ end
 
 # - show -
 function Base.show(io::IO, ::MIME"text/plain", model::SVDModel)
-	print(io, "SVDModel(nsv=", innersize(model.F), ')')
+	print(io, "SVDModel(nsv=", length(model.S), ')')
 end
 function Base.show(io::IO, ::MIME"text/plain", model::NearestNeighborModel)
 	print(io, "NearestNeighborModel(base=\"", model.name, "\", k=", model.k, ')')

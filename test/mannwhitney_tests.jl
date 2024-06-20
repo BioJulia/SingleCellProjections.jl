@@ -48,7 +48,7 @@
 				@test df[:,u_col] == mwU
 				@test df[:,p_col] ≈ mwP
 
-				if any(ismissing, data.obs[:,covariate(h1...).name])
+				if any(ismissing, data.obs[:,covariate(h1...).src])
 					@test_throws "missing values" f(data, h1...; h1_missing=:error)
 				else
 					data2 = f==mannwhitney! ? copy(l) : l

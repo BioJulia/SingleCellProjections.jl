@@ -1,12 +1,5 @@
-table_hascols(table, cols) = all(x->hasproperty(table,x), cols)
-
-table_validatecols(table, cols) =
-	table_hascols(table, cols) || throw(ArgumentError("ID columns $cols not found in table with columns $(join(names(table)))."))
-
-function table_validateunique(table, cols)
-	bad_ind = findfirst(nonunique(table, cols))
-	bad_ind !== nothing && error("ID [", join(table[bad_ind,cols],", "), "] is not unique.")
-end
+table_validatecols(table, col) =
+	hasproperty(table, Symbol(col)) || throw(ArgumentError("ID column $col not found in table with columns $(join(names(table)))."))
 
 table_cols_equal(a, b; cols=names(b)) =
 	isequal(select(a, cols; copycols=false), select(b, cols; copycols=false))

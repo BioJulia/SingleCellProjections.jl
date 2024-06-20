@@ -3,6 +3,9 @@ pbmc_path = joinpath(pkgdir(SingleCellProjections), "test/data/500_PBMC_3p_LT_Ch
 h5_path = joinpath(pbmc_path, "filtered_feature_bc_matrix.h5")
 mtx_path = joinpath(pbmc_path, "filtered_feature_bc_matrix/matrix.mtx.gz")
 
+rna_adt_h5_path = joinpath(pkgdir(SingleCellProjections), "test/data/GSE164378_RNA_ADT_3P_P1_subsetted.h5")
+rna_h5_path = joinpath(pkgdir(SingleCellProjections), "test/data/GSE164378_RNA_3P_P1_subsetted.h5")
+
 # Ground truth
 expected_mat = read_matrix(joinpath(pbmc_path,"expected_matrix.csv"))
 expected_nnz = count(!iszero, expected_mat)
