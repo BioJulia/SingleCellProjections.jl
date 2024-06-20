@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2024-06-20
+
 ### Breaking
 
 * DataMatrix will now always use the first column of var/obs annotations as ID. (Multiple ID columns are no longer supported.)
@@ -14,11 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `load10x` - default to using only first column (id) as unique identifier. Specify e.g. `var_id="var_id"=>["id", "feature_type"]` to merge multiple columns to create the ID.
 * `load10x` - default to using first column (barcode) as unique identifier.
 * `load10x` - no longer supports `copy_obs_col` kwarg.
+* `set_var_id_cols!` is replaced with `set_var_id_col!` (since there is only one ID column).
+* `set_obs_id_cols!` is replaced with `set_obs_id_col!` (since there is only one ID column).
+* Update to SCTransform 0.2, which handles `logcellcounts` better when there are multiple modalities (e.g. RNA and antibody counts) present in the data.
 
 ### Added
 
 * `var_counts_fraction` - Just like `var_counts_fraction!`, but not modifying the object in place.
 * `var_counts_sum` and `var_counts_sum!` - For summing over selected variables. Useful for counting e.g. total RNA expression and finding number of expressed features.
+* Added support for using external annotations where applicable (filter, transforms, normalization, statistical tests, var_counts_fraction!, var_counts_sum!)
+* Added experimental (thus yet unexported) `Annotations` struct, that wraps a `DataFrame` with IDs in the first column, and ensures that ID remain when accessing columns. (So that the resulting object can be leftjoined to `data.obs`/`data.var`.)
 
 ### Fixed
 

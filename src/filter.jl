@@ -270,6 +270,6 @@ function Base.show(io::IO, ::MIME"text/plain", model::FilterModel)
 	print(io, "FilterModel(")
 	_show_filter(io, model.var_filter)
 	print(io, ", ")
-	_show_filter(io, model.obs_filter, model.use_external_obs) # TODO: simplify when obs_filter is a Pair with external annotation (i.e. first in pair is DataFrame or Annotations object)
+	_show_filter(io, model.obs_filter, model.use_external_obs)
 	print(io, ')')
 end

@@ -17,8 +17,6 @@ function _create_mannwhitney_groups(obs, h1::CovariateDesc{T}; h1_missing) where
 	@assert h1.type == :twogroup
 	@assert h1_missing in (:skip,:error)
 
-	# name, group_a, group_b = h1.name, h1.group_a, h1.group_b
-	# v = obs[!,name]
 	group_a, group_b = h1.group_a, h1.group_b
 	name,v = _get_values(obs,h1)
 

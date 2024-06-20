@@ -4,7 +4,6 @@
 		n = size(c.obs,2)
 
 		table = var_to_obs_table(:name=>==("GPR22"), c; names="OutName")
-		@show names(table)
 		@test table.OutName == c.matrix[findfirst(==("GPR22"),c.var.name),:]
 		@test eltype(table.OutName) <: Integer
 
@@ -42,7 +41,6 @@
 
 		var_to_obs!([3], c)
 		n += 1
-		@show names(c.obs)
 		@test c.obs[:,"ENSG00000184924"] == c.matrix[3,:]
 		@test size(c.obs,2) == n
 
