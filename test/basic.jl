@@ -196,188 +196,190 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 	end
 
 
-	X = materialize(transformed)
-	Xc = (X.-mean(X; dims=2))
-	X_std = std(X; dims=2)
-	Xs = Xc ./ X_std
+	normalized_proj = project(transformed_proj,normalized)
 
-	# categorical
-	Xcat = copy(X)
-	g = transformed.obs.group
-	for c in unique(g)
-		Xcat[:, c.==g] .-= mean(Xcat[:, c.==g]; dims=2)
-	end
-	Xcat_std = std(Xcat; dims=2)
-	Xcat_s = Xcat ./ Xcat_std
+	let
+		X = materialize(transformed)
+		Xc = (X.-mean(X; dims=2))
+		X_std = std(X; dims=2)
+		Xs = Xc ./ X_std
 
-	# numerical
-	v = transformed.obs.value .- mean(transformed.obs.value)
-	β = Xc/v'
-	Xnum = Xc .- β*v'
-	Xnum_std = std(Xnum; dims=2)
-	Xnum_s = Xnum ./ Xnum_std
+		# categorical
+		Xcat = copy(X)
+		g = transformed.obs.group
+		for c in unique(g)
+			Xcat[:, c.==g] .-= mean(Xcat[:, c.==g]; dims=2)
+		end
+		Xcat_std = std(Xcat; dims=2)
+		Xcat_s = Xcat ./ Xcat_std
 
-	# combined
-	D = [g.=="A" g.=="B" g.=="C" v]
-	β = X / D'
-	Xcom = X .- β*D'
-	Xcom_std = std(Xcom; dims=2)
-	Xcom_s = Xcom ./ Xcom_std
+		# numerical
+		v = transformed.obs.value .- mean(transformed.obs.value)
+		β = Xc/v'
+		Xnum = Xc .- β*v'
+		Xnum_std = std(Xnum; dims=2)
+		Xnum_s = Xnum ./ Xnum_std
 
-	# two-group
-	D = [g.=="C" g.!="C"]
-	β = X / D'
-	Xtwo = X .- β*D'
-	Xtwo_std = std(Xtwo; dims=2)
-	Xtwo_s = Xtwo ./ Xtwo_std
+		# combined
+		D = [g.=="A" g.=="B" g.=="C" v]
+		β = X / D'
+		Xcom = X .- β*D'
+		Xcom_std = std(Xcom; dims=2)
+		Xcom_s = Xcom ./ Xcom_std
 
-	@testset "normalize" begin
-		n = normalize_matrix(transformed)
-		@test materialize(n) ≈ Xc
-		@test materialize(project(counts_proj,n)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
-		@test materialize(project(transformed_proj,n)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
-		test_show(n; matrix=r"^A\+B₁B₂B₃\+\(-β\)X'$", models="NormalizationModel")
-		n = normalize_matrix(transformed; scale=true)
-		@test materialize(n) ≈ Xs
-		@test materialize(project(transformed_proj,n)) ≈ Xs[:,proj_obs_indices] rtol=1e-3
-		@test n.var.scaling ≈ 1.0./X_std
-		test_show(n; matrix=r"^D\(A\+B₁B₂B₃\+\(-β\)X'\)$", models="NormalizationModel")
+		# two-group
+		D = [g.=="C" g.!="C"]
+		β = X / D'
+		Xtwo = X .- β*D'
+		Xtwo_std = std(Xtwo; dims=2)
+		Xtwo_s = Xtwo ./ Xtwo_std
 
-		n = normalize_matrix(transformed, "group")
-		@test materialize(n) ≈ Xcat
-		@test materialize(project(transformed_proj,n)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
-		n = normalize_matrix(transformed, "group"; scale=true)
-		@test materialize(n) ≈ Xcat_s
-		@test materialize(project(transformed_proj,n)) ≈ Xcat_s[:,proj_obs_indices] rtol=1e-3
-		@test n.var.scaling ≈ 1.0./Xcat_std
+		@testset "normalize" begin
+			n = normalize_matrix(transformed)
+			@test materialize(n) ≈ Xc
+			@test materialize(project(counts_proj,n)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
+			@test materialize(project(transformed_proj,n)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
+			test_show(n; matrix=r"^A\+B₁B₂B₃\+\(-β\)X'$", models="NormalizationModel")
+			n = normalize_matrix(transformed; scale=true)
+			@test materialize(n) ≈ Xs
+			@test materialize(project(transformed_proj,n)) ≈ Xs[:,proj_obs_indices] rtol=1e-3
+			@test n.var.scaling ≈ 1.0./X_std
+			test_show(n; matrix=r"^D\(A\+B₁B₂B₃\+\(-β\)X'\)$", models="NormalizationModel")
 
-		n = normalize_matrix(transformed, "value")
-		@test materialize(n) ≈ Xnum
-		@test materialize(project(transformed_proj,n)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
-		n = normalize_matrix(transformed, "value"; scale=true)
-		@test materialize(n) ≈ Xnum_s
-		@test materialize(project(transformed_proj,n)) ≈ Xnum_s[:,proj_obs_indices] rtol=1e-3
-		@test n.var.scaling ≈ 1.0./Xnum_std
+			n = normalize_matrix(transformed, "group")
+			@test materialize(n) ≈ Xcat
+			@test materialize(project(transformed_proj,n)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
+			n = normalize_matrix(transformed, "group"; scale=true)
+			@test materialize(n) ≈ Xcat_s
+			@test materialize(project(transformed_proj,n)) ≈ Xcat_s[:,proj_obs_indices] rtol=1e-3
+			@test n.var.scaling ≈ 1.0./Xcat_std
 
-		n = normalize_matrix(transformed, "group", "value")
-		@test materialize(n) ≈ Xcom
-		@test materialize(project(transformed_proj,n)) ≈ Xcom[:,proj_obs_indices] rtol=1e-3
-		n = normalize_matrix(transformed, "group", "value"; scale=true)
-		@test materialize(n) ≈ Xcom_s
-		@test materialize(project(transformed_proj,n)) ≈ Xcom_s[:,proj_obs_indices] rtol=1e-3
-		@test n.var.scaling ≈ 1.0./Xcom_std
+			n = normalize_matrix(transformed, "value")
+			@test materialize(n) ≈ Xnum
+			@test materialize(project(transformed_proj,n)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
+			n = normalize_matrix(transformed, "value"; scale=true)
+			@test materialize(n) ≈ Xnum_s
+			@test materialize(project(transformed_proj,n)) ≈ Xnum_s[:,proj_obs_indices] rtol=1e-3
+			@test n.var.scaling ≈ 1.0./Xnum_std
 
-		n = normalize_matrix(transformed, covariate("group","C"))
-		@test materialize(n) ≈ Xtwo
-		@test materialize(project(transformed_proj,n)) ≈ Xtwo[:,proj_obs_indices] rtol=1e-3
-		n = normalize_matrix(transformed, covariate("group","C"); scale=true)
-		@test materialize(n) ≈ Xtwo_s
-		@test materialize(project(transformed_proj,n)) ≈ Xtwo_s[:,proj_obs_indices] rtol=1e-3
-		@test n.var.scaling ≈ 1.0./Xtwo_std
+			n = normalize_matrix(transformed, "group", "value")
+			@test materialize(n) ≈ Xcom
+			@test materialize(project(transformed_proj,n)) ≈ Xcom[:,proj_obs_indices] rtol=1e-3
+			n = normalize_matrix(transformed, "group", "value"; scale=true)
+			@test materialize(n) ≈ Xcom_s
+			@test materialize(project(transformed_proj,n)) ≈ Xcom_s[:,proj_obs_indices] rtol=1e-3
+			@test n.var.scaling ≈ 1.0./Xcom_std
 
-		n = normalize_matrix(transformed, covariate("group","B"))
-		@test_throws "No values" project(transformed_proj,n)
-	end
+			n = normalize_matrix(transformed, covariate("group","C"))
+			@test materialize(n) ≈ Xtwo
+			@test materialize(project(transformed_proj,n)) ≈ Xtwo[:,proj_obs_indices] rtol=1e-3
+			n = normalize_matrix(transformed, covariate("group","C"); scale=true)
+			@test materialize(n) ≈ Xtwo_s
+			@test materialize(project(transformed_proj,n)) ≈ Xtwo_s[:,proj_obs_indices] rtol=1e-3
+			@test n.var.scaling ≈ 1.0./Xtwo_std
 
-
-	@testset "normalize (external_obs::$T)" for T in (Annotations,DataFrame)
-		if T==DataFrame
-			obs2 = obs2_df
-			obs2_proj = obs2_proj_df
-			obs2_eg = select(obs2, ["barcode","external_group"])
-			obs2_ev = select(obs2, ["barcode","external_value"])
-			obs2_proj_eg = select(obs2_proj, ["barcode","external_group"])
-			obs2_proj_ev = select(obs2_proj, ["barcode","external_value"])
-		else
-			obs2 = T(obs2_df)
-			obs2_proj = T(obs2_proj_df)
-			obs2_eg = obs2.external_group
-			obs2_ev = obs2.external_value
-			obs2_proj_eg = obs2_proj.external_group
-			obs2_proj_ev = obs2_proj.external_value
+			n = normalize_matrix(transformed, covariate("group","B"))
+			@test_throws "No values" project(transformed_proj,n)
 		end
 
-		@test_throws ["ArgumentError", "exactly one ID column", "one value column"] normalize_matrix(transformed, obs2)
 
-		n = normalize_matrix(transformed, obs2_eg)
-		@test materialize(n) ≈ Xcat
-		@test_throws ["ArgumentError", "external_group"] project(transformed_proj,n)
-		@test materialize(project(transformed_proj,n; external_obs=obs2_proj_eg)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
-		@test materialize(project(transformed_proj,n; external_obs=obs2_proj)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
+		@testset "normalize (external_obs::$T)" for T in (Annotations,DataFrame)
+			if T==DataFrame
+				obs2 = obs2_df
+				obs2_proj = obs2_proj_df
+				obs2_eg = select(obs2, ["barcode","external_group"])
+				obs2_ev = select(obs2, ["barcode","external_value"])
+				obs2_proj_eg = select(obs2_proj, ["barcode","external_group"])
+				obs2_proj_ev = select(obs2_proj, ["barcode","external_value"])
+			else
+				obs2 = T(obs2_df)
+				obs2_proj = T(obs2_proj_df)
+				obs2_eg = obs2.external_group
+				obs2_ev = obs2.external_value
+				obs2_proj_eg = obs2_proj.external_group
+				obs2_proj_ev = obs2_proj.external_value
+			end
 
-		n = normalize_matrix(transformed, obs2_ev)
-		@test materialize(n) ≈ Xnum
-		@test_throws ["ArgumentError", "external_value"] project(transformed_proj,n)
-		@test materialize(project(transformed_proj,n; external_obs=obs2_proj_ev)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
-		@test materialize(project(transformed_proj,n; external_obs=obs2_proj)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
+			@test_throws ["ArgumentError", "exactly one ID column", "one value column"] normalize_matrix(transformed, obs2)
 
-		n = normalize_matrix(transformed, covariate(obs2_eg,"C"))
-		@test materialize(n) ≈ Xtwo
-		@test_throws ["ArgumentError", "external_group"] project(transformed_proj,n)
-		@test materialize(project(transformed_proj,n; external_obs=obs2_proj_eg)) ≈ Xtwo[:,proj_obs_indices] rtol=1e-3
-		@test materialize(project(transformed_proj,n; external_obs=obs2_proj)) ≈ Xtwo[:,proj_obs_indices] rtol=1e-3
+			n = normalize_matrix(transformed, obs2_eg)
+			@test materialize(n) ≈ Xcat
+			@test_throws ["ArgumentError", "external_group"] project(transformed_proj,n)
+			@test materialize(project(transformed_proj,n; external_obs=obs2_proj_eg)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
+			@test materialize(project(transformed_proj,n; external_obs=obs2_proj)) ≈ Xcat[:,proj_obs_indices] rtol=1e-3
 
-		n = normalize_matrix(transformed, covariate(obs2_eg,"B"))
-		@test_throws ["ArgumentError", "external_group"] project(transformed_proj,n)
-		@test_throws "No values" project(transformed_proj,n; external_obs=obs2_proj_eg)
-		@test_throws "No values" project(transformed_proj,n; external_obs=obs2_proj)
-	end
+			n = normalize_matrix(transformed, obs2_ev)
+			@test materialize(n) ≈ Xnum
+			@test_throws ["ArgumentError", "external_value"] project(transformed_proj,n)
+			@test materialize(project(transformed_proj,n; external_obs=obs2_proj_ev)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
+			@test materialize(project(transformed_proj,n; external_obs=obs2_proj)) ≈ Xnum[:,proj_obs_indices] rtol=1e-3
+
+			n = normalize_matrix(transformed, covariate(obs2_eg,"C"))
+			@test materialize(n) ≈ Xtwo
+			@test_throws ["ArgumentError", "external_group"] project(transformed_proj,n)
+			@test materialize(project(transformed_proj,n; external_obs=obs2_proj_eg)) ≈ Xtwo[:,proj_obs_indices] rtol=1e-3
+			@test materialize(project(transformed_proj,n; external_obs=obs2_proj)) ≈ Xtwo[:,proj_obs_indices] rtol=1e-3
+
+			n = normalize_matrix(transformed, covariate(obs2_eg,"B"))
+			@test_throws ["ArgumentError", "external_group"] project(transformed_proj,n)
+			@test_throws "No values" project(transformed_proj,n; external_obs=obs2_proj_eg)
+			@test_throws "No values" project(transformed_proj,n; external_obs=obs2_proj)
+		end
+
+		@testset "svd" begin
+			reduced = svd(normalized; nsv=3, subspacedims=24, niter=4, seed=102)
+			F = svd(Xcom)
+			@test size(reduced)==size(normalized)
+			@test reduced.matrix.S ≈ F.S[1:3] rtol=1e-3
+			@test abs.(reduced.matrix.U'F.U[:,1:3]) ≈ I(3) rtol=1e-3
+			@test abs.(reduced.matrix.V'F.V[:,1:3]) ≈ I(3) rtol=1e-3
+
+			U = reduced.matrix.U
+			@test all(>(0.0), sum(U;dims=1))
+
+			@test var_coordinates(reduced) == reduced.matrix.U
+
+			X = materialize(reduced)
+			reduced_proj = project(normalized_proj, reduced)
+			Xproj = materialize(reduced_proj)
+			@test Xproj ≈ X[:,proj_obs_indices] rtol=1e-3
+
+			U_proj = reduced_proj.matrix.U
+			@test all(>(0.0), sum(U_proj;dims=1))
+
+			test_show(reduced; matrix="SVD (3 dimensions)", models="SVDModel")
+		end
 
 
-	normalized_proj = project(transformed_proj,normalized)
-	@testset "svd" begin
-		reduced = svd(normalized; nsv=3, subspacedims=24, niter=4, seed=102)
-		F = svd(Xcom)
-		@test size(reduced)==size(normalized)
-		@test reduced.matrix.S ≈ F.S[1:3] rtol=1e-3
-		@test abs.(reduced.matrix.U'F.U[:,1:3]) ≈ I(3) rtol=1e-3
-		@test abs.(reduced.matrix.V'F.V[:,1:3]) ≈ I(3) rtol=1e-3
+		@testset "PrincipalMomentAnalysis" begin
+			G = groupsimplices(normalized.obs.group)
+			p = pma(normalized, G; nsv=3, subspacedims=24, niter=8, rng=StableRNG(102))
 
-		U = reduced.matrix.U
-		@test all(>(0.0), sum(U;dims=1))
+			F = pma(Xcom, G; nsv=3)
+			@test size(p)==size(normalized)
+			@test p.matrix.S ≈ F.S rtol=1e-3
 
-		@test var_coordinates(reduced) == reduced.matrix.U
+			@test abs.(p.matrix.U'F.U) ≈ I(3) rtol=1e-3
 
-		X = materialize(reduced)
-		reduced_proj = project(normalized_proj, reduced)
-		Xproj = materialize(reduced_proj)
-		@test Xproj ≈ X[:,proj_obs_indices] rtol=1e-3
+			signs = 2 .* (diag(p.matrix.U'F.U) .> 0) .- 1
+			FV = F.V*Diagonal(signs)
+			@test p.matrix.V ≈ FV rtol=1e-3
 
-		U_proj = reduced_proj.matrix.U
-		@test all(>(0.0), sum(U_proj;dims=1))
+			U = p.matrix.U
+			@test all(>(0.0), sum(U;dims=1))
 
-		test_show(reduced; matrix="SVD (3 dimensions)", models="SVDModel")
-	end
+			@test var_coordinates(p) == p.matrix.U
 
+			X = materialize(p)
+			p_proj = project(normalized_proj, p)
+			Xproj = materialize(p_proj)
+			@test Xproj ≈ X[:,proj_obs_indices] rtol=1e-3
 
-	@testset "PrincipalMomentAnalysis" begin
-		G = groupsimplices(normalized.obs.group)
-		p = pma(normalized, G; nsv=3, subspacedims=24, niter=8, rng=StableRNG(102))
+			U_proj = p_proj.matrix.U
+			@test all(>(0.0), sum(U_proj;dims=1))
 
-		F = pma(Xcom, G; nsv=3)
-		@test size(p)==size(normalized)
-		@test p.matrix.S ≈ F.S rtol=1e-3
-
-		@test abs.(p.matrix.U'F.U) ≈ I(3) rtol=1e-3
-
-		signs = 2 .* (diag(p.matrix.U'F.U) .> 0) .- 1
-		FV = F.V*Diagonal(signs)
-		@test p.matrix.V ≈ FV rtol=1e-3
-
-		U = p.matrix.U
-		@test all(>(0.0), sum(U;dims=1))
-
-		@test var_coordinates(p) == p.matrix.U
-
-		X = materialize(p)
-		p_proj = project(normalized_proj, p)
-		Xproj = materialize(p_proj)
-		@test Xproj ≈ X[:,proj_obs_indices] rtol=1e-3
-
-		U_proj = p_proj.matrix.U
-		@test all(>(0.0), sum(U_proj;dims=1))
-
-		test_show(p; matrix="PMA (3 dimensions)", models="PMAModel")
+			test_show(p; matrix="PMA (3 dimensions)", models="PMAModel")
+		end
 	end
 
 
@@ -385,6 +387,8 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 	@testset "filter $name" for (name,data,data_proj) in (("counts",counts,counts_proj), ("normalized",normalized,normalized_proj), ("reduced",reduced,reduced_proj))
 		P2 = size(data,1)
 		X = materialize(data)
+		g = data.obs.group
+		v = data.obs.value
 
 		obs_proj_ans = add_id_prefix(data.obs, "proj_")
 
@@ -438,6 +442,16 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		@test f.var == data.var
 		f_proj = project(data_proj, f)
 		obs_ind = intersect(findall(g.=="A"),proj_obs_indices)
+		@test materialize(f_proj) ≈ X[:, obs_ind] rtol=1e-3
+		@test f_proj.obs == obs_proj_ans[obs_ind, :]
+		@test f_proj.var == data.var
+
+		f = filter_obs(["group","value"]=>(g,v)->g=="A" && v<1.0, data)
+		@test materialize(f) ≈ X[:, (g.=="A") .& (v.<1.0)]
+		@test f.obs == data.obs[(g.=="A") .& (v.<1.0), :]
+		@test f.var == data.var
+		f_proj = project(data_proj, f)
+		obs_ind = intersect(findall((g.=="A") .& (v.<1.0)),proj_obs_indices)
 		@test materialize(f_proj) ≈ X[:, obs_ind] rtol=1e-3
 		@test f_proj.obs == obs_proj_ans[obs_ind, :]
 		@test f_proj.var == data.var
@@ -501,17 +515,23 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 				obs2 = T(obs2_df)
 				obs2_proj = T(obs2_proj_df)
 				var2 = T(var2_df)
+
+				obs2_eg = obs2.external_group
+				obs2_ev = obs2.external_value
+				obs2_egv = obs2[["external_group","external_value"]]
+				var2_en = var2.external_name
 			else
 				obs2 = obs2_df
 				obs2_proj = obs2_proj_df
 				var2 = var2_df
+
+				obs2_eg = select(obs2, Cols(1,"external_group"))
+				obs2_ev = select(obs2, Cols(1,"external_value"))
+				obs2_egv = select(obs2, Cols(1,"external_group","external_value"))
+				var2_en = select(var2, Cols(1,"external_name"))
 			end
 
-			if T == Annotations
-				f = filter_obs(obs2.external_group=>==("A"), data)
-			else
-				f = filter_obs(select(obs2,Cols(1,"external_group"))=>==("A"), data)
-			end
+			f = filter_obs(obs2_eg=>==("A"), data)
 			@test materialize(f) ≈ X[:, g.=="A"]
 			@test f.obs == data.obs[g.=="A", :]
 			@test f.var == data.var
@@ -522,11 +542,21 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			@test f_proj.obs == obs_proj_ans[obs_ind, :]
 			@test f_proj.var == data.var
 
-			if T == Annotations
-				f = filter_var(var2.external_name=>>("D"), data)
-			else
-				f = filter_var(select(var2,Cols(1,"external_name"))=>>("D"), data)
-			end
+			f = filter_obs(obs2_egv=>(g,v)->g=="A" && v<1.0, data)
+			@test materialize(f) ≈ X[:, (g.=="A") .& (v.<1.0)]
+			@test f.obs == data.obs[(g.=="A") .& (v.<1.0), :]
+			@test f.var == data.var
+			@test_throws ["ArgumentError","External annotation","external_group","missing."] project(data_proj, f)
+			@test_throws ["ArgumentError","External annotation","external_group","missing."] project(data_proj, f; external_obs=obs2_ev)
+			@test_throws ["ArgumentError","External annotation","external_value","missing."] project(data_proj, f; external_obs=obs2_eg)
+			f_proj = project(data_proj, f; external_obs=obs2_proj)
+			obs_ind = intersect(findall((g.=="A") .& (v.<1.0)),proj_obs_indices)
+			@test materialize(f_proj) ≈ X[:, obs_ind] rtol=1e-3
+			@test f_proj.obs == obs_proj_ans[obs_ind, :]
+			@test f_proj.var == data.var
+
+
+			f = filter_var(var2_en=>>("D"), data)
 			@test materialize(f) ≈ X[data.var.name.>="D", :]
 			@test f.obs == data.obs
 			@test f.var == data.var[data.var.name.>="D", :]
