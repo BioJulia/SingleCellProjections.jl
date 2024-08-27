@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2024-08-27
+
 ### Added
+
 * `local_outlier_factor`, `local_outlier_factor_table`, `local_outlier_factor_projection`, `local_outlier_factor_projection_table`
+
+### Fixed
+
+* Updated tutorial to reflect changes in SingleCellProjections v0.4.
 
 ## [0.4.0] - 2024-06-20
 
