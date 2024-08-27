@@ -35,12 +35,12 @@ function load_counts(args...; sample_names, kwargs...) # Shadow SingleCellProjec
 
     v_id[33497:33509] .= string.("MT-", 1:13)
 
-    o_id = vcat(["P1_L1_AAACCCAAGACATACA", "P1_L1_AAACCCACATCGGTTA", "P1_L1_AAACCCAGTGGAACAC", "P1_L1_AAACCCATCTGCGGAC", "P1_L1_AAACGAAAGTTACTCG", "P1_L1_AAACGAACAATGAGCG", "P1_L1_AAACGAACACTCCTTG", "P1_L1_AAACGAACAGCATCTA", "P1_L1_AAACGAATCCTCACCA", "P1_L1_AAACGAATCTCACTCG"], string.("dummy_", 1:N-20), ["P2_L5_TTTGGTTGTCCGAAAG", "P2_L5_TTTGGTTTCCTCTAGC", "P2_L5_TTTGGTTTCGTAGGGA", "P2_L5_TTTGGTTTCTTTGATC", "P2_L5_TTTGTTGAGTGTACCT", "P2_L5_TTTGTTGGTACGATCT", "P2_L5_TTTGTTGGTCCTTAAG", "P2_L5_TTTGTTGTCAACACCA", "P2_L5_TTTGTTGTCATGCATG", "P2_L5_TTTGTTGTCCGTGCGA"])
+    o_cell_id = vcat(["P1_L1_AAACCCAAGACATACA", "P1_L1_AAACCCACATCGGTTA", "P1_L1_AAACCCAGTGGAACAC", "P1_L1_AAACCCATCTGCGGAC", "P1_L1_AAACGAAAGTTACTCG", "P1_L1_AAACGAACAATGAGCG", "P1_L1_AAACGAACACTCCTTG", "P1_L1_AAACGAACAGCATCTA", "P1_L1_AAACGAATCCTCACCA", "P1_L1_AAACGAATCTCACTCG"], string.("dummy_", 1:N-20), ["P2_L5_TTTGGTTGTCCGAAAG", "P2_L5_TTTGGTTTCCTCTAGC", "P2_L5_TTTGGTTTCGTAGGGA", "P2_L5_TTTGGTTTCTTTGATC", "P2_L5_TTTGTTGAGTGTACCT", "P2_L5_TTTGTTGGTACGATCT", "P2_L5_TTTGTTGGTCCTTAAG", "P2_L5_TTTGTTGTCAACACCA", "P2_L5_TTTGTTGTCATGCATG", "P2_L5_TTTGTTGTCCGTGCGA"])
     o_sampleName = vcat(fill("P1",18135), fill("P2", N-18135))
     o_barcode = vcat(["L1_AAACCCAAGACATACA", "L1_AAACCCACATCGGTTA", "L1_AAACCCAGTGGAACAC", "L1_AAACCCATCTGCGGAC", "L1_AAACGAAAGTTACTCG", "L1_AAACGAACAATGAGCG", "L1_AAACGAACACTCCTTG", "L1_AAACGAACAGCATCTA", "L1_AAACGAATCCTCACCA", "L1_AAACGAATCTCACTCG"], string.("dummy_", 1:N-20), ["L5_TTTGGTTGTCCGAAAG", "L5_TTTGGTTTCCTCTAGC", "L5_TTTGGTTTCGTAGGGA", "L5_TTTGGTTTCTTTGATC", "L5_TTTGTTGAGTGTACCT", "L5_TTTGTTGGTACGATCT", "L5_TTTGTTGGTCCTTAAG", "L5_TTTGTTGTCAACACCA", "L5_TTTGTTGTCATGCATG", "L5_TTTGTTGTCCGTGCGA"])
 
     v = DataFrame(id=v_id, feature_type=v_feature_type, name=v_id, genome="hg19", read="", pattern="", sequence="")
-    o = DataFrame(id=o_id, sampleName=o_sampleName, barcode=o_barcode)
+    o = DataFrame(cell_id=o_cell_id, sampleName=o_sampleName, barcode=o_barcode)
     counts = DataMatrix(X, v, o)
 end
 
@@ -65,15 +65,15 @@ For this example we will use PBMC (Peripheral Blood Mononuclear Cell) data from 
 You can find the original data [here](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE164378), in MatrixMarker (.mtx) format.
 For convenience, you can [download the samples recompressed as .h5 files](https://github.com/rasmushenningsson/SingleCellExampleData).
 Direct links:
-* [Cell annotations (.csv.gz)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P/GSE164378_RNA_ADT_3P.csv.gz)
-* [Donor P1 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P/GSE164378_RNA_ADT_3P_P1.h5)
-* [Donor P2 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P/GSE164378_RNA_ADT_3P_P2.h5)
-* [Donor P3 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P/GSE164378_RNA_ADT_3P_P3.h5)
-* [Donor P4 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P/GSE164378_RNA_ADT_3P_P4.h5)
-* [Donor P5 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P/GSE164378_RNA_ADT_3P_P5.h5)
-* [Donor P6 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P/GSE164378_RNA_ADT_3P_P6.h5)
-* [Donor P7 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P/GSE164378_RNA_ADT_3P_P7.h5)
-* [Donor P8 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P/GSE164378_RNA_ADT_3P_P8.h5)
+* [Cell annotations (.csv.gz)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P.csv.gz)
+* [Donor P1 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P1.h5)
+* [Donor P2 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P2.h5)
+* [Donor P3 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P3.h5)
+* [Donor P4 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P4.h5)
+* [Donor P5 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P5.h5)
+* [Donor P6 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P6.h5)
+* [Donor P7 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P7.h5)
+* [Donor P8 (.h5)](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P8.h5)
 
 First we load `SingleCellProjections` and the packages `DataFrames` and `CSV` for handling annotations.
 ```@repl fake
@@ -104,7 +104,7 @@ To access the different parts, use:
 ## Cell Annotations
 Here we compute a new `obs` annotation where we count the fraction of reads coming from Mitochondrial genes for each cell:
 ```@repl fake
-var_counts_fraction!(counts, "name"=>contains(r"^MT-"), "feature_type"=>isequal("Gene Expression"), "fraction_mt")
+var_counts_fraction!(counts, "name"=>startswith("MT-"), "feature_type"=>isequal("Gene Expression"), "fraction_mt")
 ```
 Note that the new annotation `fraction_mt` is present in the output.
 
@@ -145,7 +145,7 @@ counts.obs[34639+1:end,"celltype.l1"] .= "other"
 
 Let's look at some annotations for the first few cells:
 ```@repl fake
-counts.obs[1:5,["id","sampleName","barcode","fraction_mt","celltype.l1"]]
+counts.obs[1:5,["cell_id","sampleName","barcode","fraction_mt","celltype.l1"]]
 ```
 
 ## Transformation
