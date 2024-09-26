@@ -41,7 +41,7 @@ function LinearAlgebra.svd(data::DataMatrix; nsv=3, var=:copy, obs=:copy, kwargs
 end
 
 
-function project_impl(data::DataMatrix, model::SVDModel; verbose=true)
+function project_impl(data::DataMatrix, model::SVDModel; verbose=true, kwargs...)
 	@assert table_cols_equal(data.var, model.var_match) "SVD projection expects model and data variables to be identical."
 
 	U = model.U
@@ -78,7 +78,7 @@ update_model(m::NearestNeighborModel; k=m.k, var=m.var, obs=m.obs, kwargs...) =
 	(NearestNeighborModel(m.name, m.pre, m.post, m.var_match, k, var, obs), kwargs)
 
 
-function project_impl(data::DataMatrix, model::NearestNeighborModel; adj_out=nothing, verbose=true)
+function project_impl(data::DataMatrix, model::NearestNeighborModel; adj_out=nothing, verbose=true, kwargs...)
 	@assert table_cols_equal(data.var, model.var_match) "Nearest Neighbor projection expects model and data variables to be identical."
 
 	adj, matrix = embed_points(model.pre, model.post, obs_coordinates(data); model.k)

@@ -59,7 +59,7 @@ function logtransform_impl(X, model::LogTransformModel{T}) where T
 	MatrixRef(:A=>A)
 end
 
-function project_impl(counts::DataMatrix, model::LogTransformModel; verbose=true)
+function project_impl(counts::DataMatrix, model::LogTransformModel; verbose=true, kwargs...)
 	matrix = counts.matrix
 	var = model.var
 	if !table_cols_equal(counts.var, model.var_match)
@@ -180,7 +180,7 @@ function tf_idf_transform_impl(::Type{T}, X, scale_factor, idf) where T
 	MatrixRef(:A=>A)
 end
 
-function project_impl(counts::DataMatrix, model::TFIDFTransformModel{T}; verbose=true) where T
+function project_impl(counts::DataMatrix, model::TFIDFTransformModel{T}; verbose=true, kwargs...) where T
 	# TODO: share this code with LogTransformModel - the only difference is idf
 	matrix = counts.matrix
 	var = model.var
@@ -355,7 +355,7 @@ function update_model(m::SCTransformModel{T};
 end
 
 
-function project_impl(counts::DataMatrix, model::SCTransformModel{T}; external_post_obs=nothing, original_post_obs_filter=nothing, verbose=true) where T
+function project_impl(counts::DataMatrix, model::SCTransformModel{T}; external_post_obs=nothing, original_post_obs_filter=nothing, verbose=true, kwargs...) where T
 	# use post_filter to figure out variable and observations subsetting
 	_validate(model.params, model.post_filter, original_post_obs_filter, SCTransformModel, "post_obs_filter")
 

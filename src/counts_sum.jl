@@ -141,7 +141,7 @@ var_counts_sum(counts::DataMatrix{<:AbstractMatrix}, args...; kwargs...) =
 
 
 
-function project_impl(counts::DataMatrix{<:AbstractMatrix}, model::VarCountsSumModel; verbose=true)
+function project_impl(counts::DataMatrix{<:AbstractMatrix}, model::VarCountsSumModel; verbose=true, kwargs...)
 	s = _var_counts_sum(counts, model)
 
 	matrix = model.matrix == :keep ? counts.matrix : copy(counts.matrix)

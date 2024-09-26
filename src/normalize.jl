@@ -148,7 +148,7 @@ end
 
 
 
-function project_impl(data::DataMatrix, model::NormalizationModel, design::DesignMatrix; verbose=true)
+function project_impl(data::DataMatrix, model::NormalizationModel, design::DesignMatrix; verbose=true, kwargs...)
 	@assert model.var in (:keep, :copy)
 	@assert names(data.var,1) == names(model.var_match)
 

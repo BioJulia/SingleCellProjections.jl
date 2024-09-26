@@ -136,7 +136,7 @@ end
 
 
 
-function project_impl(counts::DataMatrix{<:AbstractMatrix{<:Integer}}, model::VarCountsFractionModel; verbose=true)
+function project_impl(counts::DataMatrix{<:AbstractMatrix{<:Integer}}, model::VarCountsFractionModel; verbose=true, kwargs...)
 	frac = _var_counts_fraction(counts, model)
 
 	matrix = model.matrix == :keep ? counts.matrix : copy(counts.matrix)

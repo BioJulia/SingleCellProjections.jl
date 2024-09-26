@@ -94,7 +94,7 @@ end
 
 
 
-function project_impl(data::DataMatrix, model::ObsAnnotationModel; verbose=true)
+function project_impl(data::DataMatrix, model::ObsAnnotationModel; verbose=true, kwargs...)
 	obs = data.obs
 	model.obs == :copy && (obs = copy(obs))
 

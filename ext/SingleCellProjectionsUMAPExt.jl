@@ -32,7 +32,7 @@ function UMAP.umap(data::DataMatrix, args...; obs=:copy, kwargs...)
 	update_matrix(data, model.m.embedding, model; var="UMAP", model.obs)
 end
 
-function SingleCellProjections.project_impl(data::DataMatrix, model::UMAPModel; verbose=true)
+function SingleCellProjections.project_impl(data::DataMatrix, model::UMAPModel; verbose=true, kwargs...)
 	@assert SingleCellProjections.table_cols_equal(data.var, model.var_match) "UMAP projection expects model and data variables to be identical."
 
 	matrix = UMAP.transform(model.m, obs_coordinates(data))

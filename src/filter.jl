@@ -137,7 +137,7 @@ function _reordered_var_ind(I, var, var_match; verbose)
 	out_ind
 end
 
-function project_impl(data::DataMatrix, model::FilterModel; external_obs=nothing, original_obs_filter=nothing, verbose=true)
+function project_impl(data::DataMatrix, model::FilterModel; external_obs=nothing, original_obs_filter=nothing, verbose=true, kwargs...)
 	_validate(data.var, model, original_obs_filter)
 
 	I = _filter_indices(data.var, model.var_filter)

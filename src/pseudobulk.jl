@@ -53,7 +53,7 @@ pseudobulk(data::DataMatrix, obs_col, args::String...; kwargs...) =
 
 
 
-function project_impl(data::DataMatrix, model::PseudoBulkModel; verbose=true)
+function project_impl(data::DataMatrix, model::PseudoBulkModel; verbose=true, kwargs...)
 	@assert all(in(names(data.obs)), model.obs_id_cols)
 
 	obs = select(data.obs, model.obs_id_cols)
