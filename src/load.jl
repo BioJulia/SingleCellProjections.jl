@@ -235,6 +235,8 @@ function _merge_features(features, var_id_cols)
 	id_col_names = only.(names.(features, 1))
 	@assert all(==(first(id_col_names)), id_col_names) "Variable ID columns must match"
 
+	# Consider trying to create a merged list of features that respect the order of all samples (when possible).
+
 	c = coalesce.(vcat(features..., cols=:union),"")
 	g = groupby(c, var_id_cols)
 
@@ -293,10 +295,23 @@ function _insert_matrix!(colptr, rowval, nzval, colptr_offset, nnz_offset, featu
 	# Figure out how to map feature indices in sample to global feature indices
 	sf_ind = select(sf, var_id_cols)
 	leftjoin!(sf_ind, feature_ind; on=var_id_cols)
-	row_ind = sf_ind.__row__
+	row_ind = identity.(sf_ind.__row__) # identity narrows type to Int (i.e. exludes Missing)
 
-	rowval[nnz_offset .+ (1:nnz(A))] .= getindex.(Ref(row_ind),rv)
-	nzval[nnz_offset .+ (1:nnz(A))] .= nz
+	if issorted(row_ind)
+		rowval[nnz_offset .+ (1:nnz(A))] .= getindex.(Ref(row_ind),rv)
+		nzval[nnz_offset .+ (1:nnz(A))] .= nz
+	else
+		# rowvals might be out of order after remapping, sort within each column
+		# TODO: avoid allocations below by using scratch spaces?
+		for j in 1:size(A,2)
+			rng = cp[j]:cp[j+1]-1
+			rv_j = row_ind[rv[rng]] # remapped row indices, not guaranteed to be sorted
+			nz_j = @view nz[rng]
+			perm = sortperm(rv_j)
+			rowval[rng.+nnz_offset] .= rv_j[perm]
+			nzval[rng.+nnz_offset] .= nz_j[perm]
+		end
+	end
 end
 
 
