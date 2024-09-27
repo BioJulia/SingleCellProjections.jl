@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2024-09-27
+
 ### Fixed
 
 * Fix bug when merging samples with different sets of features, which sometimes could cause unsorted row values and thus sparse matrices with invalid internal representation.
-* `project` now handles `kwargs` that are only needed for some of the projection steps - by simply ignoring when not needed.
+* `project` now handles `kwargs` that are only needed for some of the projection steps (by simply ignoring them when not needed).
 
 ## [0.4.1] - 2024-08-27
 
