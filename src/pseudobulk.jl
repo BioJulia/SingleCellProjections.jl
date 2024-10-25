@@ -40,12 +40,12 @@ Create a new `DataMatrix` by averging over groups, as specified by the categoric
 
 Create a pseudobulk representation of each sample:
 ```julia
-julia> pseudobulk(transformed; "sampleName")
+julia> pseudobulk(transformed, "sampleName")
 ```
 
 Create a pseudobulk representation for each celltype in each sample:
 ```julia
-julia> pseudobulk(transformed; "sampleName", "celltype")
+julia> pseudobulk(transformed, "sampleName", "celltype")
 ```
 """
 pseudobulk(data::DataMatrix, obs_col, args::String...; kwargs...) =
