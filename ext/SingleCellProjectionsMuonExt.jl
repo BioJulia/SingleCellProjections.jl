@@ -125,7 +125,7 @@ DataMatrix (123 variables and 456 observations)
 ```julia
 julia> create_datamatrix(a.obsm, "UMAP")
 DataMatrix (2 variables and 456 observations)
-  SparseMatrixCSC{Float64, Int32}
+  Matrix{Float64}
   Variables: id
   Observations: cell_id
 ```
