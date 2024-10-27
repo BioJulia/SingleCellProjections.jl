@@ -1,4 +1,6 @@
 function create_datamatrix end
+function create_var end
+function create_obs end
 
 
 _readh5ad_dataframe_string_array(g) = read(g)

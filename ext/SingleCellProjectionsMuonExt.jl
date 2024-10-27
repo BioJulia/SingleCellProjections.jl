@@ -20,27 +20,15 @@ function aligned_mapping_type(am::AlignedMapping)
 	throw(ArgumentError("Unknown AlignedMapping"))
 end
 
+create_var(a::AnnData) =
+	insertcols(a.var, 1, :id=>collect(a.var_names); makeunique=true)
+create_obs(a::AnnData) =
+	insertcols(a.obs, 1, :cell_id=>collect(a.obs_names); makeunique=true)
 
-function get_var(a::AnnData; add_var)
-	id = collect(a.var_names)
-	if add_var
-		var = a.var
-		var = insertcols(var, 1, :id=>id; makeunique=true)
-		return var
-	else
-		return DataFrame(; id)
-	end
-end
-function get_obs(a::AnnData; add_obs)
-	cell_id = collect(a.obs_names)
-	if add_obs
-		obs = a.obs
-		obs = insertcols(obs, 1, :cell_id=>cell_id; makeunique=true)
-		return obs
-	else
-		return DataFrame(; cell_id)
-	end
-end
+get_var(a::AnnData; add_var) =
+	add_var ? create_var(a) : DataFrame(; id=collect(a.var_names))
+get_obs(a::AnnData; add_obs) =
+	add_obs ? create_obs(a) : DataFrame(; cell_id=collect(a.obs_names))
 
 
 function convert_matrix(::Type{T}, X) where T
@@ -50,8 +38,16 @@ end
 
 
 
+function _transpose(X::PermutedDimsArray)
+	Xt = parent(X)
+	@assert PermutedDimsArray(Xt, (2,1)) === X
+	Xt
+end
+_transpose(X) = X'
+
+
 function SingleCellProjections.create_datamatrix(::Type{T}, a::AnnData; add_var=false, add_obs=false) where T
-	X = a.X'
+	X = _transpose(a.X)
 	var = get_var(a; add_var)
 	obs = get_obs(a; add_obs)
 	X = convert_matrix(T, X)
@@ -59,29 +55,35 @@ function SingleCellProjections.create_datamatrix(::Type{T}, a::AnnData; add_var=
 end
 SingleCellProjections.create_datamatrix(a::AnnData; kwargs...) = create_datamatrix(Any, a; kwargs...)
 
-
 function SingleCellProjections.create_datamatrix(::Type{T}, am::AlignedMapping, name; add_var=false, add_obs=false) where T
 	a = am.ref
 	am_type = aligned_mapping_type(am)
-
 	X = am[name]
-	if am_type in (:layers, :obsm, :obsp)
+
+	new_ids = nothing
+	if X isa DataFrame
+		new_ids = names(X)
+		X = Matrix(X)
 	end
 
+	@assert ndims(X) == 2 "Expected DataMatrix to have 2 dimensions, got $(ndims(X))"
+
 	if am_type == :layers
-		X = X'
+		X = _transpose(X)
 		var = get_var(a; add_var)
 		obs = get_obs(a; add_obs)
 	elseif am_type == :obsm
-		X = X'
-		var = DataFrame(; id=string.("Dim", 1:size(X,1)))
+		X = _transpose(X)
+		id = @something new_ids string.("Dim", 1:size(X,1))
+		var = DataFrame(; id)
 		obs = get_obs(a; add_obs)
 	elseif am_type == :obsp
-		X = X'
+		X = _transpose(X)
 		var = obs = get_obs(a; add_obs)
 	elseif am_type == :varm
-		dim1 = get_var(a; add_var)
-		dim2 = DataFrame(; id=string.("Dim", 1:size(X,2)))
+		var = get_var(a; add_var)
+		id = @something new_ids string.("Dim", 1:size(X,2))
+		obs = DataFrame(; id)
 	elseif am_type == :varp
 		var = obs = get_var(a; add_var)
 	end

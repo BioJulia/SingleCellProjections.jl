@@ -59,7 +59,9 @@ export
 	mannwhitney!,
 	mannwhitney,
 	mannwhitney_table,
-	create_datamatrix
+	create_datamatrix,
+	create_var,
+	create_obs
 
 using LinearAlgebra
 import LinearAlgebra: svd
