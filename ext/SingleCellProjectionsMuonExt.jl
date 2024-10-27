@@ -20,9 +20,24 @@ function aligned_mapping_type(am::AlignedMapping)
 	throw(ArgumentError("Unknown AlignedMapping"))
 end
 
-create_var(a::AnnData) =
+"""
+    create_var(a::AnnData)
+
+Create a `DataFrame` where the first column contains `var` IDs and the remaining columns contain the `var` annotations from the `AnnData` object.
+
+See also: [`create_datamatrix`](@ref), [`create_obs`](@ref)
+"""
+SingleCellProjections.create_var(a::AnnData) =
 	insertcols(a.var, 1, :id=>collect(a.var_names); makeunique=true)
-create_obs(a::AnnData) =
+
+"""
+	create_obs(a::AnnData)
+
+Create a `DataFrame` where the first column contains `obs` IDs and the remaining columns contain the `obs` annotations from the `AnnData` object.
+
+See also: [`create_datamatrix`](@ref), [`create_var`](@ref)
+"""
+SingleCellProjections.create_obs(a::AnnData) =
 	insertcols(a.obs, 1, :cell_id=>collect(a.obs_names); makeunique=true)
 
 get_var(a::AnnData; add_var) =
@@ -46,6 +61,77 @@ end
 _transpose(X) = X'
 
 
+"""
+	create_datamatrix([T], a::AnnData; add_var=false, add_obs=false)
+	create_datamatrix([T], am::AlignedMapping, name; add_var=false, add_obs=false)
+
+Creates a `DataMatrix` from an `AnnData` object.
+By default, the main matrix `X` is retrieved from `a::AnnData`.
+It is also possible to create `DataMatrices` from named objects in: `a.layers`, `a.obsm`, `a.obsp`, `a.varm` and `a.varp`. See examples below.
+
+The optional parameter `T` determines the `eltype` of the returned matrix. If specified, the matrix will be converted to have this `eltype`.
+
+kwargs:
+* add_var: Add `var` from the AnnData object to the returned `DataMatrix` (when applicable).
+* add_obs: Add `obs` from the AnnData object to the returned `DataMatrix` (when applicable).
+
+
+# Examples
+
+All examples below assume that an AnnData object has been loaded first:
+```julia
+julia> using Muon
+
+julia> a = readh5ad("path/to/file.h5ad");
+```
+
+* Load the main matrix `X` from an AnnData object.
+```julia
+julia> create_datamatrix(a)
+DataMatrix (123 variables and 456 observations)
+  SparseMatrixCSC{Float32, Int32}
+  Variables: id
+  Observations: cell_id
+```
+
+* Load the main matrix `X` from an AnnData object, and add `var`/`obs` annotations.
+```julia
+julia> create_datamatrix(a; add_var=true, add_obs=true)
+DataMatrix (123 variables and 456 observations)
+  SparseMatrixCSC{Float32, Int32}
+  Variables: id, feature_type, ...
+  Observations: cell_id, cell_type, ...
+```
+
+* Load the main matrix `X` from an AnnData object, with eltype `Int`. NB: This will fail if the matrix is not a count matrix.
+```julia
+julia> create_datamatrix(Int, a)
+DataMatrix (123 variables and 456 observations)
+  SparseMatrixCSC{Int64, Int32}
+  Variables: id
+  Observations: cell_id
+```
+
+* Load the matrix named `raw_counts` from `layers`, with eltype `Int`. NB: This will fail if the matrix is not a count matrix.
+```julia
+julia> create_datamatrix(Int, a.layers, "raw_counts")
+DataMatrix (123 variables and 456 observations)
+  SparseMatrixCSC{Int64, Int32}
+  Variables: id
+  Observations: cell_id
+```
+
+* Load the matrix named `UMAP` from `obsm`.
+```julia
+julia> create_datamatrix(a.obsm, "UMAP")
+DataMatrix (2 variables and 456 observations)
+  SparseMatrixCSC{Float64, Int32}
+  Variables: id
+  Observations: cell_id
+```
+
+See also: [`create_var`](@ref), [`create_obs`](@ref)
+"""
 function SingleCellProjections.create_datamatrix(::Type{T}, a::AnnData; add_var=false, add_obs=false) where T
 	X = _transpose(a.X)
 	var = get_var(a; add_var)

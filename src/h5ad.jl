@@ -57,8 +57,13 @@ end
 	loadh5ad(filename; var_id_column=:id, obs_id_column=:id)
 
 Experimental loading of .h5ad files.
+
+!!! note
+	This function is deprecated. Load `Muon.jl` and see help for `create_datamatrix`.
 """
 function loadh5ad(filename; obs_id_column=:id, var_id_col=:id)
+	@warn "loadh5ad is deprecated, please load Muon.jl and see help for `create_datamatrix`." maxlog=1
+
 	h5open(filename) do h5
 		@assert read(attributes(h5), "encoding-type") == "anndata"
 
