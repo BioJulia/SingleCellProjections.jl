@@ -74,14 +74,14 @@ function SingleCellProjections.create_datamatrix(::Type{T}, am::AlignedMapping, 
 		obs = get_obs(a; add_obs)
 	elseif am_type == :obsm
 		X = X'
-		var = string.("Dim", 1:size(X,1))
+		var = DataFrame(; id=string.("Dim", 1:size(X,1)))
 		obs = get_obs(a; add_obs)
 	elseif am_type == :obsp
 		X = X'
 		var = obs = get_obs(a; add_obs)
 	elseif am_type == :varm
 		dim1 = get_var(a; add_var)
-		dim2 = string.("Dim", 1:size(X,2))
+		dim2 = DataFrame(; id=string.("Dim", 1:size(X,2)))
 	elseif am_type == :varp
 		var = obs = get_var(a; add_var)
 	end

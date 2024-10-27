@@ -44,7 +44,7 @@ struct DataMatrix{T,Tv,To}
 		end
 
 		validateunique_var(var, 1; report=duplicate_var)
-		validateunique_var(obs, 1; report=duplicate_obs)
+		validateunique_obs(obs, 1; report=duplicate_obs)
 		new{T,Tv,To}(matrix, var, obs, models)
 	end
 end
