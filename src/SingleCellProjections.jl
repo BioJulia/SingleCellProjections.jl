@@ -58,7 +58,8 @@ export
 	ttest_table,
 	mannwhitney!,
 	mannwhitney,
-	mannwhitney_table
+	mannwhitney_table,
+	create_datamatrix
 
 using LinearAlgebra
 import LinearAlgebra: svd

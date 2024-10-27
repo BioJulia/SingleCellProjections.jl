@@ -43,16 +43,24 @@ function get_obs(a::AnnData; add_obs)
 end
 
 
-
-function SingleCellProjections.create_datamatrix(a::AnnData; add_var=false, add_obs=false)
-	X = a.X'
-	var = get_var(a; add_var)
-	obs = get_obs(a; add_obs)
-	DataMatrix(X, var, obs)
+function convert_matrix(::Type{T}, X) where T
+	eltype(X) <: T && return X
+	convert.(T, X) # handles both sparse and dense cases, gets rid of transposes
 end
 
 
-function SingleCellProjections.create_datamatrix(am::AlignedMapping, name; add_var=false, add_obs=false)
+
+function SingleCellProjections.create_datamatrix(::Type{T}, a::AnnData; add_var=false, add_obs=false) where T
+	X = a.X'
+	var = get_var(a; add_var)
+	obs = get_obs(a; add_obs)
+	X = convert_matrix(T, X)
+	DataMatrix(X, var, obs)
+end
+SingleCellProjections.create_datamatrix(a::AnnData; kwargs...) = create_datamatrix(Any, a; kwargs...)
+
+
+function SingleCellProjections.create_datamatrix(::Type{T}, am::AlignedMapping, name; add_var=false, add_obs=false) where T
 	a = am.ref
 	am_type = aligned_mapping_type(am)
 
@@ -78,8 +86,11 @@ function SingleCellProjections.create_datamatrix(am::AlignedMapping, name; add_v
 		var = obs = get_var(a; add_var)
 	end
 
+	X = convert_matrix(T, X)
 	DataMatrix(X, var, obs)
 end
+SingleCellProjections.create_datamatrix(am::AlignedMapping, name; kwargs...) = create_datamatrix(Any, am, name; kwargs...)
+
 
 
 
