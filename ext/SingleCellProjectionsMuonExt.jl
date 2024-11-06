@@ -25,6 +25,9 @@ end
 
 Create a `DataFrame` where the first column contains `var` IDs and the remaining columns contain the `var` annotations from the `AnnData` object.
 
+!!! note
+	The interface for loading data from .h5ad files is still considered experimental and might change in a non-breaking release.
+
 See also: [`create_datamatrix`](@ref), [`create_obs`](@ref)
 """
 SingleCellProjections.create_var(a::AnnData) =
@@ -34,6 +37,9 @@ SingleCellProjections.create_var(a::AnnData) =
 	create_obs(a::AnnData)
 
 Create a `DataFrame` where the first column contains `obs` IDs and the remaining columns contain the `obs` annotations from the `AnnData` object.
+
+!!! note
+	The interface for loading data from .h5ad files is still considered experimental and might change in a non-breaking release.
 
 See also: [`create_datamatrix`](@ref), [`create_var`](@ref)
 """
@@ -76,7 +82,7 @@ kwargs:
 * add_obs: Add `obs` from the AnnData object to the returned `DataMatrix` (when applicable).
 
 !!! note
-	The interface for loading from .h5ad files is still considered experimental and might change in a non-breaking release.
+	The interface for loading data from .h5ad files is still considered experimental and might change in a non-breaking release.
 
 # Examples
 
