@@ -75,6 +75,8 @@ kwargs:
 * add_var: Add `var` from the AnnData object to the returned `DataMatrix` (when applicable).
 * add_obs: Add `obs` from the AnnData object to the returned `DataMatrix` (when applicable).
 
+!!! note
+	The interface for loading from .h5ad files is still considered experimental and might change in a non-breaking release.
 
 # Examples
 

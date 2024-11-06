@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2024-11-06
+
+### Added
+
+* Package extension for `Muon.jl` that allows loading data from .h5ad files using the functions `create_datamatrix`, `create_var` and `create_obs`.
+
+### Fixed
+
+* Deprecated old `loadh5ad` function that only supported some versions of the .h5ad format.
+
 ## [0.4.2] - 2024-09-27
 
 ### Fixed
