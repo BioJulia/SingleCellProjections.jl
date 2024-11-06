@@ -58,7 +58,10 @@ export
 	ttest_table,
 	mannwhitney!,
 	mannwhitney,
-	mannwhitney_table
+	mannwhitney_table,
+	create_datamatrix,
+	create_var,
+	create_obs
 
 using LinearAlgebra
 import LinearAlgebra: svd
@@ -140,6 +143,7 @@ include("precompile.jl")
 		@require TSne="24678dba-d5e9-5843-a4c6-250288b04835" include("../ext/SingleCellProjectionsTSneExt.jl")
 		@require PrincipalMomentAnalysis="6a3ba550-3b7f-11e9-2734-d9178ad1e8db" include("../ext/SingleCellProjectionsPrincipalMomentAnalysisExt.jl")
 		@require StableRNGs="860ef19b-820b-49d6-a774-d7a799459cd3" include("../ext/SingleCellProjectionsStableRNGsExt.jl")
+		@require Muon="446846d7-b4ce-489d-bf74-72da18fe3629" include("../ext/SingleCellProjectionsMuonExt.jl")
 	end
 end
 
