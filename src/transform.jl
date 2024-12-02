@@ -20,24 +20,33 @@ end
 
 struct LogTransformModel{T} <: ProjectionModel
 	scale_factor::Float64
-	var_match::DataFrame
-	var::Symbol
-	obs::Symbol
+	# TODO: Make var_ids ReadOnlyVector probably
+	var_ids::Vector{String} # TODO: figure out if we should assume Vector{String} or not.
+
+	# var_match::DataFrame
+	# var::Symbol
+	# obs::Symbol
 end
 function LogTransformModel(::Type{T}, counts::DataMatrix;
-                           var_filter = hasproperty(counts.var, "feature_type") ? "feature_type" => isequal("Gene Expression") : nothing,
-                           var_filter_cols = hasproperty(counts.var, "feature_type") ? "feature_type" : nothing,
-                           scale_factor=10_000, var=:copy, obs=:copy) where T
-	var_match,_ = _var_match_for_transform(counts.var; var_filter, var_filter_cols)
-	LogTransformModel{T}(scale_factor, var_match, var, obs)
+                           var_filter = nothing, # TODO: support
+                           scale_factor=10_000) where T
+	var_ids = counts.var[:,1] # TODO: use var_filter
+	LogTransformModel{T}(scale_factor, var_ids)
 end
+# function LogTransformModel(::Type{T}, counts::DataMatrix;
+#                            var_filter = hasproperty(counts.var, "feature_type") ? "feature_type" => isequal("Gene Expression") : nothing,
+#                            var_filter_cols = hasproperty(counts.var, "feature_type") ? "feature_type" : nothing,
+#                            scale_factor=10_000, var=:copy, obs=:copy) where T
+# 	var_match,_ = _var_match_for_transform(counts.var; var_filter, var_filter_cols)
+# 	LogTransformModel{T}(scale_factor, var_match, var, obs)
+# end
 LogTransformModel(counts::DataMatrix; kwargs...) = LogTransformModel(Float64, counts; kwargs...)
 
-projection_isequal(m1::LogTransformModel{T1}, m2::LogTransformModel{T2}) where {T1,T2} =
-	T1 === T2 && m1.scale_factor == m2.scale_factor && m1.var_match == m2.var_match
+# projection_isequal(m1::LogTransformModel{T1}, m2::LogTransformModel{T2}) where {T1,T2} =
+# 	T1 === T2 && m1.scale_factor == m2.scale_factor && m1.var_match == m2.var_match
 
-update_model(m::LogTransformModel{T}; scale_factor=m.scale_factor, var=m.var, obs=m.obs, kwargs...) where T =
-	(LogTransformModel{T}(scale_factor, m.var_match, var, obs), kwargs)
+# update_model(m::LogTransformModel{T}; scale_factor=m.scale_factor, var=m.var, obs=m.obs, kwargs...) where T =
+# 	(LogTransformModel{T}(scale_factor, m.var_match, var, obs), kwargs)
 
 
 function logtransform_impl(X, model::LogTransformModel{T}) where T
@@ -59,19 +68,52 @@ function logtransform_impl(X, model::LogTransformModel{T}) where T
 	MatrixRef(:A=>A)
 end
 
+# function project_impl(counts::DataMatrix, model::LogTransformModel; verbose=true, kwargs...)
+# 	matrix = counts.matrix
+# 	var = model.var
+# 	if !table_cols_equal(counts.var, model.var_match)
+# 		# variables are not identical, we need to: reorder, skip missing, get rid of extra
+# 		var_ind = table_indexin(model.var_match, counts.var; cols=names(model.var_match))
+# 		var_mask = var_ind.!==nothing
+# 		var_ind2 = var_ind[var_mask]
+
+# 		matrix = matrix[var_ind2,:]
+
+# 		# reordering variable annotations - we have to ignore :keep
+# 		var = counts.var[var_ind2,:]
+
+# 		if verbose
+# 			# - show info -
+# 			n_missing = length(var_ind) - length(var_ind2)
+# 			n_removed = size(counts.var,1) - length(var_ind2)
+# 			n_removed>0 && @info "- Removed $n_removed variables that where not found in Model"
+# 			n_missing>0 && @info "- Skipped $n_missing missing variables"
+# 			issorted(var_ind2) || @info "- Reordered variables to match Model"
+# 		end
+# 	end
+
+# 	matrix = logtransform_impl(matrix, model)
+# 	update_matrix(counts, matrix, model; var, model.obs)
+# end
+
 function project_impl(counts::DataMatrix, model::LogTransformModel; verbose=true, kwargs...)
 	matrix = counts.matrix
-	var = model.var
-	if !table_cols_equal(counts.var, model.var_match)
+	var = counts.var
+
+	# TODO: This should be moved to some utility function. Not unique for LogTransform.
+	if var[:,1] != model.var_ids
 		# variables are not identical, we need to: reorder, skip missing, get rid of extra
-		var_ind = table_indexin(model.var_match, counts.var; cols=names(model.var_match))
+
+
+		# var_ind = table_indexin(model.var_match, counts.var; cols=names(model.var_match))
+		var_ind = indexin(model.var_ids, var[:,1])
 		var_mask = var_ind.!==nothing
 		var_ind2 = var_ind[var_mask]
 
 		matrix = matrix[var_ind2,:]
 
-		# reordering variable annotations - we have to ignore :keep
-		var = counts.var[var_ind2,:]
+		# reordering variable annotations
+		var = var[var_ind2, :]
 
 		if verbose
 			# - show info -
@@ -84,16 +126,15 @@ function project_impl(counts::DataMatrix, model::LogTransformModel; verbose=true
 	end
 
 	matrix = logtransform_impl(matrix, model)
-	update_matrix(counts, matrix, model; var, model.obs)
+	update_matrix(counts, matrix, model; var, obs=:keep)
 end
+
 
 """
 	logtransform([T=Float64], counts::DataMatrix;
 	             var_filter = hasproperty(counts.var, "feature_type") ? "feature_type" => isequal("Gene Expression") : nothing,
 	             var_filter_cols = hasproperty(counts.var, "feature_type") ? "feature_type" : nothing,
-	             scale_factor=10_000,
-	             var=:copy,
-	             obs=:copy)
+	             scale_factor=10_000)
 
 Log₂-transform `counts` using the formula:
 ```
@@ -105,8 +146,6 @@ Optionally, `T` can be specified to control the `eltype` of the sparse transform
 
 * `var_filter` - Control which variables (features) to use for parameter estimation. Defaults to `"feature_type" => isequal("Gene Expression")`, if a `feature_type` column is present in `counts.var`. Can be set to `nothing` to disable filtering. See [`DataFrames.filter`](https://dataframes.juliadata.org/stable/lib/functions/#Base.filter) for how to specify filters.
 * `var_filter_cols` - Additional columns used to ensure features are unique. Defaults to "feature_type" if present in `counts.var`. Use a Tuple/Vector for specifying multiple columns. Can be set to `nothing` to not include any additional columns.
-* `var` - Can be `:copy` (make a copy of source `var`) or `:keep` (share the source `var` object).
-* `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
 
 # Examples
 ```julia
