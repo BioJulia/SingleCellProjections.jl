@@ -7,6 +7,7 @@ export
 	LogTransformModel,
 	TFIDFTransformModel,
 	SCTransformModel,
+	CenteringModel, # TEMP
 	NormalizationModel,
 	SVDModel,
 	NearestNeighborModel,
@@ -27,6 +28,7 @@ export
 	filter_var,
 	filter_obs,
 	covariate,
+	center_matrix, # TEMP
 	designmatrix,
 	normalize_matrix,
 	svd,

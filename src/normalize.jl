@@ -31,6 +31,35 @@ See also: [`variable_var`](@ref), [`normalize_matrix`](@ref)
 variable_std(data::DataMatrix) = sqrt.(variable_var(data))
 
 
+
+# TEMP simplified normalization for testing projections via Specs
+struct CenteringModel <: ProjectionModel
+	negβT::Matrix{Float64}
+	var_ids::Vector{String}
+end
+function CenteringModel(data::DataMatrix)
+	N = size(data,2)
+	X = ones(N,1)
+	negβT = (data.matrix*X) .* (-1/N)
+	CenteringModel(negβT, data.var[:,1])
+end
+
+
+function project_impl(data::DataMatrix, model::CenteringModel; kwargs...)
+	@assert data.var[:,1] == model.var_ids # SIMPLICIFACTION SINCE THIS CODE WILL NOT ACTUALLY BE USED
+	N = size(data,2)
+	X = ones(N,1)
+	matrix = matrixsum(_named_matrix(data.matrix,:A), matrixproduct(Symbol("(-β)")=>model.negβT, :X=>X'))
+	update_matrix(data, matrix, model; var=:keep, obs=:keep)
+end
+
+center_matrix(data::DataMatrix; kwargs...) =
+	project(data, CenteringModel(data); kwargs...)
+
+
+
+
+
 struct NormalizationModel <: ProjectionModel
 	negβT::Matrix{Float64}
 	covariates::Vector{AbstractCovariate}
