@@ -9,15 +9,23 @@ See also: [`svd`](@ref)
 struct SVDModel <: ProjectionModel
 	U::Matrix{Float64}
 	S::Vector{Float64}
-	var_match::DataFrame
-	var::Symbol
-	obs::Symbol
+	var_ids::Vector{String}
+	# var_match::DataFrame
+	# var::Symbol
+	# obs::Symbol
 end
 
-projection_isequal(m1::SVDModel, m2::SVDModel) = m1.U == m2.U && m1.S == m2.S && m1.var_match == m2.var_match
 
 
-update_model(m::SVDModel; var=m.var, obs=m.obs, kwargs...) = (SVDModel(m.U, m.S, m.var_match, var, obs), kwargs)
+function SVDModel(data::DataMatrix{<:SVD})
+	F = data.matrix
+	SVDModel(F.U, F.S, data.var[:,1])
+end
+
+# projection_isequal(m1::SVDModel, m2::SVDModel) = m1.U == m2.U && m1.S == m2.S && m1.var_match == m2.var_match
+
+
+# update_model(m::SVDModel; var=m.var, obs=m.obs, kwargs...) = (SVDModel(m.U, m.S, m.var_match, var, obs), kwargs)
 
 
 """
@@ -34,15 +42,17 @@ Additional kwargs related to numerical precision are passed to `SingleCellProjec
 
 See also: [`SingleCellProjections.implicitsvd`](@ref)
 """
-function LinearAlgebra.svd(data::DataMatrix; nsv=3, var=:copy, obs=:copy, kwargs...)
+function LinearAlgebra.svd(data::DataMatrix; nsv=3, kwargs...)
 	F = implicitsvd(data.matrix; nsv=nsv, kwargs...)
-	model = SVDModel(F.U, F.S, select(data.var,1), var, obs)
-	update_matrix(data, F, model; model.var, model.obs)
+	# model = SVDModel(F.U, F.S, select(data.var,1), var, obs)
+	model = SVDModel(F.U, F.S, data.var[:,1])
+	update_matrix(data, F, model; var=:keep, obs=:keep)
 end
 
 
 function project_impl(data::DataMatrix, model::SVDModel; verbose=true, kwargs...)
-	@assert table_cols_equal(data.var, model.var_match) "SVD projection expects model and data variables to be identical."
+	# @assert table_cols_equal(data.var, model.var_match) "SVD projection expects model and data variables to be identical."
+	@assert data.var[:,1] == model.var_ids "SVD projection expects model and data variables to be identical."
 
 	U = model.U
 	S = model.S
@@ -51,7 +61,7 @@ function project_impl(data::DataMatrix, model::SVDModel; verbose=true, kwargs...
 	V = X'U # TODO: compute F.U'X instead to get Vt directly
 	V ./= max.(S,1e-100)' # To avoid NaNs if any singular value is zero
 	matrix = SVD(U,S,Matrix(V'))
-	update_matrix(data, matrix, model; model.obs, model.var)
+	update_matrix(data, matrix, model; obs=:keep, var=:keep)
 end
 
 
