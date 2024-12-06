@@ -8,7 +8,9 @@ export
 	TFIDFTransformModel,
 	SCTransformModel,
 	CenteringModel, # TEMP
+	DesignMatrixModel,
 	NormalizationModel,
+	NormalizationModel2, # TEMP
 	SVDModel,
 	NearestNeighborModel,
 	ObsAnnotationModel,

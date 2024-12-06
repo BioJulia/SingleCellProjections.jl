@@ -59,6 +59,42 @@ center_matrix(data::DataMatrix; kwargs...) =
 
 
 
+# Testing new NormalizationModel
+struct NormalizationModel2
+	negβT::DataMatrix{Matrix{Float64},DataFrame,DataFrame}
+	rank::Int # Just for `show`
+end
+
+function NormalizationModel2(data::DataMatrix, design::DataMatrix; rtol=sqrt(eps()))
+	@assert data.obs[:,1] == design.var[:,1]
+
+	A = data.matrix
+	X = design.matrix
+
+	# TODO: No need to run svd etc. if there just is an intercept.
+	F = svd(X)
+	negΣinv = Diagonal([σ>rtol ? -1.0/σ : 0.0 for σ in F.S]) # cutoff for numerical stability
+	rank = count(!iszero, negΣinv)
+	AU = A*F.U
+	negβT = (AU*negΣinv)*F.Vt
+
+	NormalizationModel2(DataMatrix(negβT, data.var, design.obs), rank)
+end
+
+
+function project_impl(data::DataMatrix, design::DataMatrix, model::NormalizationModel2; verbose=true, kwargs...)
+	# TODO: Reorder variables if needed
+	# TODO: Handle missing variables in design matrix (we can reconstruct them if centering is enabled)
+
+	@assert data.var[:,1] == model.negβT.var[:,1]
+	@assert data.obs[:,1] == design.var[:,1]
+	@assert design.obs[:,1] == model.negβT.obs[:,1]
+
+	matrix = matrixsum(_named_matrix(data.matrix,:A), matrixproduct(Symbol("(-β)")=>model.negβT.matrix, :X=>design.matrix'))
+end
+
+
+
 
 struct NormalizationModel <: ProjectionModel
 	negβT::Matrix{Float64}
