@@ -1,5 +1,3 @@
-# TODO: Ensure Covariates are only using the values for the desired obs_ids
-
 # Maybe these should be considered models?
 abstract type AbstractCovariate2 end
 struct InterceptCovariate2 <: AbstractCovariate2 end
@@ -183,7 +181,7 @@ end
 
 
 
-struct DesignMatrixModel
+struct DesignMatrixModel <: ProjectionModel2
 	covariates::Vector{AbstractCovariate2}
 end
 
@@ -251,8 +249,9 @@ function covariate_design!(A, t::TwoGroupCovariate2, v::AbstractVector)
 end
 
 
-# TODO: exact interface will change
-function project_impl(obs_id::DataFrame, annotations, model::DesignMatrixModel; verbose=true, kwargs...)
+
+# TODO: exact interface might change
+function project2(obs_id::DataFrame, model::DesignMatrixModel, annotations::DataFrame...)
 	C = sum(_length, model.covariates; init=0)
 	# N = size(data,2) # ah. This is needed if there are no annotations. Or maybe rather the obs_id are needed (to leftjoin annotations).
 	N = size(obs_id,1)
@@ -260,21 +259,42 @@ function project_impl(obs_id::DataFrame, annotations, model::DesignMatrixModel; 
 	A = zeros(N,C) # might want to transpose this?
 	covariate_id = fill("", C)
 
+
+	id_col = only(names(obs_id))
+	obs = copy(obs_id; copy_cols=false)
+
+
+	# Gather names of columns we need
+	cols_needed = String[id_col]
+	for c in model.covariates
+		c isa InterceptCovariate2 || push!(cols_needed, c.name)
+	end
+
+	# Extract colunmns we need from each DataFrame, and leftjoin to get same order as obs_id
+	for a in annotations
+		if only(names(a,1)) == id_col # ID column name must match
+			cols_found = intersect(names(a), cols_needed)
+			if length(cols_found) >= 2 # must be ID + at least one more column
+				leftjoin!(obs, select(a, cols_found); on=id_col) # TODO: Give a nice error message if column appear twice
+			end
+		end
+	end
+
+
+
 	i = 1
 	# for (c,v) in zip(covariates,value_vectors)
-	for (c,a) in zip(model.covariates,annotations) # Maybe not assume same order?
+	# for (c,a) in zip(model.covariates,annotations) # Maybe not assume same order?
+	for c in model.covariates
 		len = _length(c)
 
 		# get vector of values
 		if c isa InterceptCovariate2
-			v = nothing
 			name = "intercept"
+			v = nothing
 		else
 			name = c.name
-			@assert _annotation_name(a) == name
-			df = _get_table(a)
-			ind = indexin(df[!,1], obs_id[!,1])
-			v = df[ind,2]
+			v = obs[!,name]
 		end
 
 		covariate_design!(view(A,:,i:i+len-1), c, v)
@@ -294,8 +314,8 @@ function project_impl(obs_id::DataFrame, annotations, model::DesignMatrixModel; 
 	DataMatrix(A, obs_id, DataFrame(;covariate_id))
 end
 
-project_impl(data::DataMatrix, annotations, model::DesignMatrixModel; kwargs...) =
-	project_impl(select(data.obs,1), annotations, model; kwargs...)
+project2(data::DataMatrix, model::DesignMatrixModel, args...; kwargs...) =
+	project2(select(data.obs,1), model, args...; kwargs...)
 
 
 
