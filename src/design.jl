@@ -57,10 +57,11 @@ CategoricalCovariateModel(v::CategoricalValueVector) = CategoricalCovariateModel
 # TODO: Add TwoGroupCovariateModel?
 
 
-project2(::InterceptCovariateModel, N::Int, args...) = ones(N)
+project2(::InterceptCovariateModel, N::Int, args...) = ones(N,1)
 function project2(m::NumericalCovariateModel, N::Int, v::NumericalValueVector)
 	@assert length(v.values) == N
-	(v.values .- m.mean)./m.scale
+	x = reshape(v.values, N, 1) # So we return a N×1 matrix
+	(x .- m.mean)./m.scale
 end
 function project2(m::CategoricalCovariateModel, N::Int, v::CategoricalValueVector)
 	@assert length(v.values) == N
@@ -68,8 +69,21 @@ function project2(m::CategoricalCovariateModel, N::Int, v::CategoricalValueVecto
 end
 
 
+struct MergeCovariatesModel <: ProjectionModel
+	N::Int
+end
+
+function project2(m::MergeCovariatesModel, args...)::Matrix{Float64}
+	isempty(args) && return zeros(m.N, 0)
+	X = reduce(hcat, args)
+	@assert size(X,1) == N
+	X
+end
 
 
+
+
+# --- Old ----------------------------------------------------------------------
 
 
 
