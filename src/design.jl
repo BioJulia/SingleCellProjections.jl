@@ -69,6 +69,7 @@ function project2(m::CategoricalCovariateModel, N::Int, v::CategoricalValueVecto
 end
 
 
+# TODO: Rename to HCatModel?
 struct MergeCovariatesModel <: ProjectionModel
 	N::Int
 end
