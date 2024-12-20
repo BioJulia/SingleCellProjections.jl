@@ -15,37 +15,12 @@ struct CategoricalValueVectorModel{T} <: ProjectionModel
 	end
 end
 
-
-# _numerical_value_vector(v) = NumericalValueVector(convert(Vector{Float64},v))
-# function _categorical_value_vector(v)
-# 	CategoricalValueVector()
-# end
-
-# # No. This reordering should be a separate step to make projections work well.
-# function _value_vector_reorder(obs_id::DataFrame, v)
-# 	df = _get_table(v)
-# 	@assert size(obs_id,2) == 1
-# 	@assert size(df,2) == 2
-# 	@assert names(obs_id,1) == names(df,1)
-
-# 	ind = indexin(obs_id[!,1], df[!,1])
-# 	if any(isnothing, ind)
-# 		n = count(isnothing, ind)
-# 		i = findfirst(isnothing,ind)
-# 		throw(ArgumentError("Error creating ValueVector, found $n missing IDs (first missing ID=\"$(obs_id[i,1]))\"."))
-# 	end
-
-# 	ind = identity.(ind) # get rid of Nothings
-# 	df[ind,2]
-# end
-
-function numerical_value_vector(obs_id::DataFrame, v)
-	vv = _value_vector_reorder(obs_id, v)
-end
-function categorical_value_vector(obs_id::DataFrame, v)
-	vv = _value_vector_reorder(obs_id, v)
-	model = CategoricalValueVectorModel(vv)
-	project(vv, model)
+project2(::NumericalValueVectorModel, v) = NumericalValueVector(convert(Vector{Float64}),v)
+function project2(m::CategorialValueVectorModel, v)
+	ind = indexin(v, m.categories)
+	new_values = setdiff(unique(v), c.values)
+	isempty(new_values) || error("Categorical vector has values not present in model. Got [", join(new_value, ','), "], but expected [", join(m.categories, ','), "].")
+	CategoricalValueVector(ind)
 end
 
 
