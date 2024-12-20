@@ -82,7 +82,7 @@ function NormalizationModel2(data::DataMatrix, design::DataMatrix; rtol=sqrt(eps
 end
 
 
-function project2(data::DataMatrix, model::NormalizationModel2; design::DataMatrix)
+function project2(model::NormalizationModel2, data::DataMatrix; design::DataMatrix)
 	# TODO: Reorder variables if needed
 	# TODO: Handle missing variables in design matrix (we can reconstruct them if centering is enabled)
 

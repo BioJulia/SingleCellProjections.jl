@@ -7,11 +7,11 @@ struct CategoricalValueVector <: ValueVector
 	v::Vector{Int}
 end
 
-struct NumericalValueVectorModel <: ProjectionModel2 end
-struct CategoricalValueVectorModel{T} <: ProjectionModel2
+struct NumericalValueVectorModel <: ProjectionModel end
+struct CategoricalValueVectorModel{T} <: ProjectionModel
 	categories::Vector{T}
 	function CategoricalValueVectorModel(v::Vector{T}) where T
-		new(unique(v))
+		new{T}(unique(v))
 	end
 end
 
@@ -307,7 +307,7 @@ end
 
 
 # TODO: exact interface might change
-function project2(obs_id::DataFrame, model::DesignMatrixModel, annotations::DataFrame...)
+function project2(model::DesignMatrixModel, obs_id::DataFrame, annotations::DataFrame...)
 	C = sum(_length, model.covariates; init=0)
 	# N = size(data,2) # ah. This is needed if there are no annotations. Or maybe rather the obs_id are needed (to leftjoin annotations).
 	N = size(obs_id,1)
@@ -370,8 +370,8 @@ function project2(obs_id::DataFrame, model::DesignMatrixModel, annotations::Data
 	DataMatrix(A, obs_id, DataFrame(;covariate_id))
 end
 
-project2(data::DataMatrix, model::DesignMatrixModel, args...; kwargs...) =
-	project2(select(data.obs,1), model, args...; kwargs...)
+project2(model::DesignMatrixModel, data::DataMatrix, args...; kwargs...) =
+	project2(model, select(data.obs,1), args...; kwargs...)
 
 
 

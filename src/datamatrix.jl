@@ -330,7 +330,7 @@ project(data::DataMatrix, base::DataMatrix, args...; from=nothing, kwargs...) = 
 
 
 # Just a fallback until I've refactored everything
-function project2(data::DataMatrix, model::ProjectionModel, args...; kwargs...)
+function project2(model::ProjectionModel, data::DataMatrix, args...; kwargs...)
 	project_impl(data, model, args...; kwargs...)
 end
 

@@ -1,4 +1,4 @@
-struct AnnotationVectorModel <: ProjectionModel2 end
+struct AnnotationVectorModel <: ProjectionModel end
 
 # No. This reordering should be a separate step to make projections work well.
 function _value_vector_reorder(obs_id::DataFrame, v)
@@ -19,7 +19,7 @@ function _value_vector_reorder(obs_id::DataFrame, v)
 end
 
 
-function project2(id::DataFrame, ::AnnotationVectorModel, v)
+function project2(::AnnotationVectorModel, id::DataFrame, v)
 	df = _get_table(v)
 
 	@assert size(obs_id,2) == 1
