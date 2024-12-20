@@ -60,7 +60,7 @@ center_matrix(data::DataMatrix; kwargs...) =
 
 
 # Testing new NormalizationModel
-struct NormalizationModel2
+struct NormalizationModel2 <: ProjectionModel
 	negβT::DataMatrix{Matrix{Float64},DataFrame,DataFrame}
 	rank::Int # Just for `show`
 end
@@ -82,7 +82,7 @@ function NormalizationModel2(data::DataMatrix, design::DataMatrix; rtol=sqrt(eps
 end
 
 
-function project_impl(data::DataMatrix, design::DataMatrix, model::NormalizationModel2; verbose=true, kwargs...)
+function project2(data::DataMatrix, model::NormalizationModel2; design::DataMatrix)
 	# TODO: Reorder variables if needed
 	# TODO: Handle missing variables in design matrix (we can reconstruct them if centering is enabled)
 

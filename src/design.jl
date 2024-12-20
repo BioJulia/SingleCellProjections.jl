@@ -181,7 +181,7 @@ end
 
 
 
-struct DesignMatrixModel <: ProjectionModel2
+struct DesignMatrixModel <: ProjectionModel
 	covariates::Vector{AbstractCovariate2}
 end
 
