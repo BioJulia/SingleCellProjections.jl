@@ -1,26 +1,70 @@
 abstract type ValueVector end
 
 struct NumericalValueVector <: ValueVector
-	v::Vector{Float64}
+	values::Vector{Float64}
 end
 struct CategoricalValueVector <: ValueVector
-	v::Vector{Int}
+	values::Vector{Int}
 end
 
 struct NumericalValueVectorModel <: ProjectionModel end
 struct CategoricalValueVectorModel{T} <: ProjectionModel
 	categories::Vector{T}
-	function CategoricalValueVectorModel(v::Vector{T}) where T
+	function CategoricalValueVectorModel(v::Vector{T}; max_categories=100) where T
+		uv = unique(v)
+		any(ismissing, uv) && throw(ArgumentError("Missing values not supported for categorical value vectors."))
+		len = length(uv)
+		len > max_categories && throw(ArgumentError("$len categories in categorical variable, was this intended? Change max_categories (", max_categories, ") if you want to increase the number of allowed categories."))
 		new{T}(unique(v))
 	end
 end
+# TODO: Add TwoGroupValueVector?
 
 project2(::NumericalValueVectorModel, v) = NumericalValueVector(convert(Vector{Float64}),v)
-function project2(m::CategorialValueVectorModel, v)
+function project2(m::CategoricalValueVectorModel, v)
 	ind = indexin(v, m.categories)
 	new_values = setdiff(unique(v), c.values)
 	isempty(new_values) || error("Categorical vector has values not present in model. Got [", join(new_value, ','), "], but expected [", join(m.categories, ','), "].")
 	CategoricalValueVector(ind)
+end
+
+
+
+# TODO: Does this serve a purpose?
+abstract type AbstractCovariateModel <: ProjectionModel end
+
+struct InterceptCovariateModel <: AbstractCovariateModel end
+
+struct NumericalCovariateModel <: AbstractCovariateModel
+	mean::Float64
+	scale::Float64
+end
+function NumericalCovariateModel(v::NumericalValueVector, center::Bool)
+	any(ismissing, v.values) && throw(ArgumentError("Missing values not supported for numerical covariates."))
+	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
+	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
+	m = center ? mean(v.values) : 0.0
+	s = max(1e-6, maximum(x->abs(x-m), v.values)) # Avoid scaling up if values are too small in absolute numbers
+	NumericalCovariateModel(m, s)
+end
+
+struct CategoricalCovariateModel <: AbstractCovariateModel
+	n_categories::Int
+end
+CategoricalCovariateModel(v::CategoricalValueVector) = CategoricalCovariateModel(maximum(v))
+
+
+# TODO: Add TwoGroupCovariateModel?
+
+
+project2(::InterceptCovariateModel, N::Int, args...) = ones(N)
+function project2(m::NumericalCovariateModel, N::Int, v::NumericalValueVector)
+	@assert length(v.values) == N
+	(v.values .- m.mean)./m.scale
+end
+function project2(m::CategoricalCovariateModel, N::Int, v::CategoricalValueVector)
+	@assert length(v.values) == N
+	isequal.(v.values, (1:m.n_categories)')
 end
 
 
