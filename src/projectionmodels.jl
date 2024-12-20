@@ -4,6 +4,16 @@ abstract type ProjectionModel end
 function project2 end
 
 
+
+struct StatelessModel{F} <: ProjectionModel
+	f::F
+end
+project2(m::StatelessModel{F}, args...; kwargs...) where F =
+	m.f(args...; kwargs...)
+
+
+
+
 # deprecated, will be removed
 projection_isequal(::ProjectionModel, ::ProjectionModel) = false
 projection_isequal(model::ProjectionModel) = Base.Fix2(projection_isequal, model)

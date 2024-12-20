@@ -105,6 +105,11 @@ end
 
 
 
+get_var_ids(data::DataMatrix) = data.var[!,1:1]
+get_obs_ids(data::DataMatrix) = data.obs[!,1:1]
+
+
+
 """
 	set_var_id_col!(data::DataMatrix, var_id_col::String; duplicate_var=:error)
 

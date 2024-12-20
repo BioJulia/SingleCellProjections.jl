@@ -3,6 +3,7 @@ module SingleCellProjections
 export
 	DataMatrix,
 	ProjectionModel,
+	StateLessModel,
 	FilterModel,
 	LogTransformModel,
 	TFIDFTransformModel,
@@ -18,6 +19,8 @@ export
 	VarCountsSumModel,
 	PseudoBulkModel,
 	project,
+	get_var_ids,
+	get_obs_ids,
 	set_var_id_col!,
 	set_obs_id_col!,
 	var_coordinates,
