@@ -3,7 +3,7 @@ module SingleCellProjections
 export
 	DataMatrix,
 	ProjectionModel,
-	StateLessModel,
+	StatelessModel,
 	FilterModel,
 	LogTransformModel,
 	TFIDFTransformModel,
