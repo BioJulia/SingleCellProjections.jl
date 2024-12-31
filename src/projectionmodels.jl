@@ -4,10 +4,13 @@ abstract type ProjectionModel end
 function project2 end
 
 
-
+# NB: StableHashTraits package extension ensures hashing is correct for F<:Function
 struct StatelessModel{F} <: ProjectionModel
 	f::F
 end
+StatelessModel(f::F) where {F<:Function} = StatelessModel{F}(f)
+StatelessModel(::Type{T}) where T = StatelessModel{Type{T}}(T)
+
 project2(m::StatelessModel{F}, args...; kwargs...) where F =
 	m.f(args...; kwargs...)
 
