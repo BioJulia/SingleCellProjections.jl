@@ -20,7 +20,15 @@ struct CategoricalValueVectorModel{T} <: ProjectionModel
 end
 # TODO: Add TwoGroupValueVector?
 
-project2(::NumericalValueVectorModel, v) = NumericalValueVector(convert(Vector{Float64}),v)
+# Hmm. Not perfect to rely on eltype. But I guess it works in practice.
+value_vector_model(v::AbstractVector{<:Union{Missing,Number}}; kwargs...) = NumericalValueVectorModel(; kwargs...)
+value_vector_model(v::AbstractVector; kwargs...) = CategoricalValueVectorModel(v; kwargs...)
+
+
+function project2(::NumericalValueVectorModel, v)
+	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
+	NumericalValueVector(convert(Vector{Float64},v))
+end
 function project2(m::CategoricalValueVectorModel, v)
 	ind = indexin(v, m.categories)
 	new_values = setdiff(unique(v), c.values)
@@ -40,10 +48,10 @@ struct NumericalCovariateModel <: AbstractCovariateModel
 	scale::Float64
 end
 function NumericalCovariateModel(v::NumericalValueVector, center::Bool)
-	any(ismissing, v.values) && throw(ArgumentError("Missing values not supported for numerical covariates."))
 	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
 	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
 	m = center ? mean(v.values) : 0.0
+	# Consider using `norm` or `std` to rescale instead
 	s = max(1e-6, maximum(x->abs(x-m), v.values)) # Avoid scaling up if values are too small in absolute numbers
 	NumericalCovariateModel(m, s)
 end
@@ -53,33 +61,51 @@ struct CategoricalCovariateModel <: AbstractCovariateModel
 end
 CategoricalCovariateModel(v::CategoricalValueVector) = CategoricalCovariateModel(maximum(v))
 
-
 # TODO: Add TwoGroupCovariateModel?
 
+covariate_model(v::NumericalValueVector; center::Bool) = NumericalCovariateModel(v, center)
+covariate_model(v::CategoricalValueVector; center::Bool) = CategoricalCovariateModel(v)
 
-project2(::InterceptCovariateModel, N::Int, args...) = ones(N,1)
-function project2(m::NumericalCovariateModel, N::Int, v::NumericalValueVector)
-	@assert length(v.values) == N
+
+
+# project2(::InterceptCovariateModel, N::Int, args...) = ones(N,1)
+# function project2(m::NumericalCovariateModel, N::Int, v::NumericalValueVector)
+# 	@assert length(v.values) == N
+# 	x = reshape(v.values, N, 1) # So we return a N×1 matrix
+# 	(x .- m.mean)./m.scale
+# end
+# function project2(m::CategoricalCovariateModel, N::Int, v::CategoricalValueVector)
+# 	@assert length(v.values) == N
+# 	isequal.(v.values, (1:m.n_categories)')
+# end
+
+# project2(::InterceptCovariateModel, N::Int, args...) = ones(N,1)
+function project2(m::NumericalCovariateModel, v::NumericalValueVector)
+	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
+	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
+	N = length(v.values)
 	x = reshape(v.values, N, 1) # So we return a N×1 matrix
 	(x .- m.mean)./m.scale
 end
-function project2(m::CategoricalCovariateModel, N::Int, v::CategoricalValueVector)
-	@assert length(v.values) == N
+function project2(m::CategoricalCovariateModel, v::CategoricalValueVector)
 	isequal.(v.values, (1:m.n_categories)')
 end
 
 
-# TODO: Rename to HCatModel?
-struct MergeCovariatesModel <: ProjectionModel
-	N::Int
-end
+# # TODO: Rename to HCatModel?
+# struct MergeCovariatesModel <: ProjectionModel
+# 	N::Int
+# end
 
-function project2(m::MergeCovariatesModel, args...)::Matrix{Float64}
-	isempty(args) && return zeros(m.N, 0)
-	X = reduce(hcat, args)
-	@assert size(X,1) == N
-	X
-end
+# function project2(m::MergeCovariatesModel, args...)::Matrix{Float64}
+# 	isempty(args) && return zeros(m.N, 0)
+# 	X = reduce(hcat, args)
+# 	@assert size(X,1) == N
+# 	X
+# end
+
+# Nah, just use StatelessModel{hcat}.
+
 
 
 
