@@ -28,15 +28,16 @@ function _update_model(model::ProjectionModel; kwargs...)
 	update_model(model; kwargs...)
 end
 
+# - show -
 
 # Just a fallback if we forget to define show for a model
 Base.show(io::IO, ::MIME"text/plain", model::T) where T<:ProjectionModel =
-	print(io, replace(string(nameof(T)),"Model"=>""))
+	print(io, nameof(T))
 
 function Base.show(io::IO, model::T) where T<:ProjectionModel
-	if get(io,:compact,false)
-		print(io, replace(string(nameof(T)),"Model"=>""))
-	else
-		show(io, MIME"text/plain"(), model)
-	end
+	show(io, MIME"text/plain"(), model)
 end
+
+
+Base.show(io::IO, ::MIME"text/plain", model::StatelessModel{F}) where F =
+	print(io, "StatelessModel(", model.f, ")")
