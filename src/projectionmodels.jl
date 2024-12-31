@@ -1,4 +1,5 @@
 abstract type ProjectionModel end
+Base.Broadcast.broadcastable(m::ProjectionModel) = Ref(m) # treat as scalar for broadcasting
 
 # TODO: rename to project
 function project2 end
