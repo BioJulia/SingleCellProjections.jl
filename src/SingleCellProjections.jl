@@ -130,7 +130,8 @@ include("h5ad.jl")
 
 include("mannwhitney.jl")
 
-include("filter.jl")
+include("filter.jl") # will be removed
+include("filter2.jl") # will be renamed to filter.jl
 include("load.jl")
 include("transform.jl")
 include("design.jl")
