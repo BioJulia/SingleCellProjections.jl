@@ -10,6 +10,7 @@ export
 	TFIDFTransformModel,
 	SCTransformModel,
 	CenteringModel, # TEMP
+	CenteringModel2, # TEMP
 	DesignMatrixModel,
 	NormalizationModel,
 	NormalizationModel2, # TEMP
@@ -141,6 +142,7 @@ include("transform.jl")
 include("transform2.jl")
 include("design.jl")
 include("normalize.jl")
+include("normalize2.jl")
 include("reduce.jl")
 include("annotate.jl")
 include("statistical_tests.jl")
