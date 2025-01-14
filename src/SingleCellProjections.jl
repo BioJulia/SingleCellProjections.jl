@@ -15,6 +15,7 @@ export
 	NormalizationModel,
 	NormalizationModel2, # TEMP
 	SVDModel,
+	SVDModel2,
 	NearestNeighborModel,
 	ObsAnnotationModel,
 	VarCountsFractionModel,
@@ -144,6 +145,7 @@ include("design.jl")
 include("normalize.jl")
 include("normalize2.jl")
 include("reduce.jl")
+include("reduce2.jl")
 include("annotate.jl")
 include("statistical_tests.jl")
 include("counts_fraction.jl")
