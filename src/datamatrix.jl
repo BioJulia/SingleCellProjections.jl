@@ -105,6 +105,10 @@ end
 
 
 
+get_matrix(data::DataMatrix) = data.matrix
+get_var(data::DataMatrix) = data.var
+get_obs(data::DataMatrix) = data.obs
+
 get_var_ids(data::DataMatrix) = data.var[!,1:1]
 get_obs_ids(data::DataMatrix) = data.obs[!,1:1]
 

@@ -6,6 +6,7 @@ export
 	StatelessModel,
 	FilterModel,
 	LogTransformModel,
+	LogTransformModel2, # TEMP
 	TFIDFTransformModel,
 	SCTransformModel,
 	CenteringModel, # TEMP
@@ -19,6 +20,9 @@ export
 	VarCountsSumModel,
 	PseudoBulkModel,
 	project,
+	get_matrix,
+	get_var,
+	get_obs,
 	get_var_ids,
 	get_obs_ids,
 	set_var_id_col!,
@@ -134,6 +138,7 @@ include("filter.jl") # will be removed
 include("filter2.jl") # will be renamed to filter.jl
 include("load.jl")
 include("transform.jl")
+include("transform2.jl")
 include("design.jl")
 include("normalize.jl")
 include("reduce.jl")
