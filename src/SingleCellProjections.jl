@@ -139,6 +139,7 @@ include("mannwhitney.jl")
 include("filter.jl") # will be removed
 include("filter2.jl") # will be renamed to filter.jl
 include("load.jl")
+include("load2.jl")
 include("transform.jl")
 include("transform2.jl")
 include("design.jl")
