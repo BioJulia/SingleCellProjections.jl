@@ -1,4 +1,29 @@
-# Intended to be public function in low-level API
+# WIP.
+# Intended to be public function in low-level API.
+function combine_obs(obs::Vector{DataFrame}, sample_names::Vector{String}, id_col="cell_id";
+                     id_delim='_')
+	@assert length(obs) == length(sample_names)
+
+	id_col_names = only.(names.(obs, 1))
+	@assert all(isequal(id_col_names[1]), id_col_names) "Observation ID columns must match"
+
+	old_id_col = id_col_names[1]
+
+	obs = copy.(obs; copycols=false) # share vectors, but make it possible to add columns
+	for (o,sn) in zip(obs, sample_names)
+		ids = string.(sn, id_delim, o[!,1])
+
+		if id_col == old_id_col
+			o[!,1] = ids # NB: [!,1] ensures we don't change the original column, but store a new vector just reusing the column name
+		else
+			insertcols!(o, 1, id_col=>ids)
+		end
+	end
+	vcat(obs..., cols=:union)
+end
+
+# WIP.
+# Intended to be public function in low-level API.
 function combine_var(var::Vector{DataFrame};
                      prefilter = "feature_type"=>isequal("Gene Expression"),
                      extra_id_cols = "feature_type")
@@ -79,29 +104,41 @@ end
 
 # WIP
 # Later intended to be public function in low-level API.
+# This function mostly makes sense in a Spec workflow, where the result of this is cached.
+function load_sample_matrix_metadata(args...)
+	# This could be optimized, by not actually performing the subsetting, but probably not worth it.
+	# We could also shortcut to use read10x_metadata if variables are kept as is.
+	X = load_sample_matrix(args...)
+	(size(X,1), size(X,2), nnz(X))
+end
+
+# Probably find a nicer way?
+read10x_matrix_int_int32(io) = read10x_matrix(io, SparseMatrixCSC{Int,Int32})
+
+
+# WIP
+# Later intended to be public function in low-level API.
 # f is function that loads raw sample matrix
 # io is filename or IO
 function load_sample_matrix(f, io, var_ind::Vector{<:Union{Int,Nothing}})
 	X = f(io)
 	subset_by_var_indices(X, var_ind; reuse_memory=true)
 end
-load_sample_matrix(io, var_ind) = load_sample_matrix(read10x_matrix, io, var_ind)
+load_sample_matrix(io, var_ind) = load_sample_matrix(read10x_matrix_int_int32, io, var_ind)
 
 
 # WIP
 # Later intended to be public function in low-level API.
-# fs:       Function (or vector of functions) invoked to load matrix
-# ios:      Vector of filenames/IO objects used to load matrix
-# Ns:       Vector with the number of observables for each matrix
-# nzs:      Vector with the number of nnz entries for each matrix
-# var_inds: Vector of var_ind for each matrix
-function load_hcat_sample_matrices(::Type{Tv}, ::Type{Ti},
-                                   fs, ios::Vector, Ns::Vector, nzs::Vector,
-                                   var_inds::Vector{Vector{<:Union{Int,Nothing}}}) where {Tv,Ti}
+# fs:               Function (or vector of functions) invoked to load matrix
+# ios:              Vector of filenames/IO objects used to load matrix
+# matrix_metadatas: Vector of (P,N,nnz) for each sample_matrix (after `subset_by_var_indices` has been applied)
+# var_inds:         Vector of var_ind for each matrix
+function load_hcat_sample_matrices(fs, ::Type{Tv}, ::Type{Ti},
+                                   ios::Vector, matrix_metadatas::Vector{Tuple{Int,Int,Int}},
+                                   var_inds::Vector{<:Vector{<:Union{Int,Nothing}}}) where {Tv,Ti}
 	n_samples = length(ios)
 	@assert n_samples >= 1
-	@assert length(Ns) == n_samples
-	@assert length(nzs) == n_samples
+	@assert length(matrix_metadatas) == n_samples
 	@assert length(var_inds) == n_samples
 	if fs isa AbstractVector
 		@assert length(fs) == n_samples
@@ -109,11 +146,11 @@ function load_hcat_sample_matrices(::Type{Tv}, ::Type{Ti},
 		fs = Iterators.repeated(fs, n_samples)
 	end
 
-	P = length(var_inds[1],1)
+	P = length(var_inds[1])
 	@assert all(x->length(x)==P, var_inds) "Number of variables do not match between sample matrices."
 
-	N = sum(Ns)
-	nnonzeros = sum(nzs)
+	N = sum(x->x[2], matrix_metadatas)
+	nnonzeros = sum(x->x[3], matrix_metadatas)
 
 	colptr = Vector{Ti}(undef, N+1)
 	rowval = Vector{Ti}(undef, nnonzeros)
@@ -122,10 +159,12 @@ function load_hcat_sample_matrices(::Type{Tv}, ::Type{Ti},
 	colptr_offset = 0
 	nnz_offset = 0
 
-	for (f,io,N_sample,nnz_sample,var_ind) in zip(fs,ios,Ns,nzs,var_inds)
+	for (f,io,(P_sample,N_sample,nnz_sample),var_ind) in zip(fs,ios,matrix_metadatas,var_inds)
+		@assert P_sample == P
 		X = load_sample_matrix(f, io, var_ind) # load matrix adapted to var_ind
 		X::SparseMatrixCSC{Tv,Ti}
 		@assert nnz(X) == nnz_sample
+		@assert size(X,1) == P_sample
 		@assert size(X,2) == N_sample
 
 		cp = SparseArrays.getcolptr(X)
@@ -139,5 +178,9 @@ function load_hcat_sample_matrices(::Type{Tv}, ::Type{Ti},
 
 	SparseMatrixCSC(P, N, colptr, rowval, nzval)
 end
-load_hcat_sample_matrices(fs, ios, Ns, nzs, var_inds) =
-	load_hcat_sample_matrices(Int, Int32, fs, ios, Ns, nzs, var_inds)
+load_hcat_sample_matrices(fs, ios, matrix_metadatas, var_inds) =
+	load_hcat_sample_matrices(fs, Int, Int32, ios, matrix_metadatas, var_inds)
+load_hcat_sample_matrices(Tv::DataType, Ti::DataType, ios, matrix_metadatas, var_inds) =
+	load_hcat_sample_matrices(read10x_matrix_int_int32, Tv, Ti, ios, matrix_metadatas, var_inds)
+load_hcat_sample_matrices(ios, matrix_metadatas, var_inds) =
+	load_hcat_sample_matrices(read10x_matrix_int_int32, ios, matrix_metadatas, var_inds)
