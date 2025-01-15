@@ -79,8 +79,65 @@ end
 
 # WIP
 # Later intended to be public function in low-level API.
-function load_sample_matrix(f, io, var_ind)
+# f is function that loads raw sample matrix
+# io is filename or IO
+function load_sample_matrix(f, io, var_ind::Vector{<:Union{Int,Nothing}})
 	X = f(io)
 	subset_by_var_indices(X, var_ind; reuse_memory=true)
 end
 load_sample_matrix(io, var_ind) = load_sample_matrix(read10x_matrix, io, var_ind)
+
+
+# WIP
+# Later intended to be public function in low-level API.
+# fs:       Function (or vector of functions) invoked to load matrix
+# ios:      Vector of filenames/IO objects used to load matrix
+# Ns:       Vector with the number of observables for each matrix
+# nzs:      Vector with the number of nnz entries for each matrix
+# var_inds: Vector of var_ind for each matrix
+function load_hcat_sample_matrices(::Type{Tv}, ::Type{Ti},
+                                   fs, ios::Vector, Ns::Vector, nzs::Vector,
+                                   var_inds::Vector{Vector{<:Union{Int,Nothing}}}) where {Tv,Ti}
+	n_samples = length(ios)
+	@assert n_samples >= 1
+	@assert length(Ns) == n_samples
+	@assert length(nzs) == n_samples
+	@assert length(var_inds) == n_samples
+	if fs isa AbstractVector
+		@assert length(fs) == n_samples
+	else
+		fs = Iterators.repeated(fs, n_samples)
+	end
+
+	P = length(var_inds[1],1)
+	@assert all(x->length(x)==P, var_inds) "Number of variables do not match between sample matrices."
+
+	N = sum(Ns)
+	nnonzeros = sum(nzs)
+
+	colptr = Vector{Ti}(undef, N+1)
+	rowval = Vector{Ti}(undef, nnonzeros)
+	nzval  = Vector{Tv}(undef, nnonzeros)
+
+	colptr_offset = 0
+	nnz_offset = 0
+
+	for (f,io,N_sample,nnz_sample,var_ind) in zip(fs,ios,Ns,nzs,var_inds)
+		X = load_sample_matrix(f, io, var_ind) # load matrix adapted to var_ind
+		X::SparseMatrixCSC{Tv,Ti}
+		@assert nnz(X) == nnz_sample
+		@assert size(X,2) == N_sample
+
+		cp = SparseArrays.getcolptr(X)
+		colptr[colptr_offset .+ (1:N_sample+1)] .= cp .+ nnz_offset
+		rowval[nnz_offset .+ (1:nnz_sample)] .= rowvals(X)
+		nzval[nnz_offset .+ (1:nnz_sample)] .= nonzeros(X)
+
+		colptr_offset += N_sample
+		nnz_offset += nnz_sample
+	end
+
+	SparseMatrixCSC(P, N, colptr, rowval, nzval)
+end
+load_hcat_sample_matrices(fs, ios, Ns, nzs, var_inds) =
+	load_hcat_sample_matrices(Int, Int32, fs, ios, Ns, nzs, var_inds)
