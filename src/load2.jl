@@ -1,7 +1,7 @@
 # WIP.
 # Intended to be public function in low-level API.
-function combine_obs(obs::Vector{DataFrame}, sample_names::Vector{String}, id_col="cell_id";
-                     id_delim='_')
+function combine_obs(obs::Vector{DataFrame}, sample_names::Vector{String};
+                     id_col="cell_id", id_delim='_')
 	@assert length(obs) == length(sample_names)
 
 	id_col_names = only.(names.(obs, 1))
