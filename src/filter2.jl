@@ -12,7 +12,6 @@ function ids_to_indices(df::DataFrame, ids::DataFrame)
 	@assert names(df, 1) == names(ids, 1)
 
 	ind = indexin(ids[!,1], df[!,1])
-	@show size(ind)
 	@assert all(!isnothing, ind) # TODO: Add boolean parameter allowing that only a subset is present
 	identity.(ind) # remove `Nothing` from eltype
 end
