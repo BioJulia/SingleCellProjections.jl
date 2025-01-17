@@ -28,7 +28,7 @@ function annotation_getindex(df::DataFrame, ind::Vector{Int})
 end
 
 # The name is chosen since it is akin to getindex
-function matrix_getindex(matrix, var_ind::Union{Vector{Int},Colon}, obs_ind::Union{Vector{Int},Colon})
+function matrix_getindex(matrix; var_ind::Union{Vector{Int},Colon}=:, obs_ind::Union{Vector{Int},Colon}=:)
 	if index_isnoop(var_ind, size(matrix,1)) && index_isnoop(obs_ind, size(matrix,2))
 		matrix # input is considered read-only, so we don't need to copy
 	else
