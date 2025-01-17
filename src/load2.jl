@@ -67,7 +67,9 @@ end
 
 # WIP.
 # Later intended to be public function in low-level API.
-function subset_by_var_indices(X::SparseMatrixCSC, var_ind::Vector{<:Union{Int,Nothing}}; reuse_memory=false)
+function subset_by_var_indices(X::SparseMatrixCSC{Tv,Ti},
+                               var_ind::Vector{<:Union{Integer,Nothing}};
+                               reuse_memory=false) where {Tv,Ti}
 	# Rows where `var_ind` is nothing, should be filled with zeros.
 	# Otherwise pick corresponding row from `X`.
 
@@ -88,8 +90,10 @@ function subset_by_var_indices(X::SparseMatrixCSC, var_ind::Vector{<:Union{Int,N
 		X = X[var_ind_matching,:] # this is faster when var_ind_matching is sorted
 	end
 
-	row_remapper = identity.(indexin(var_ind, var_ind_matching)) # We know all are matching, so we can remove Nothing from eltype
-	rv = getindex(Ref(row_remapper), rowvals(X)) # This is fine because the relative order of rows is kept
+	# We know all are matching, so we can remove Nothing from eltype.
+	# Also convert eltype to Ti to ensure output SparseMatrixCSC matches input SparseMatrixCSC.
+	row_remapper = convert(Vector{Ti}, indexin(var_ind, var_ind_matching))
+	rv = getindex.(Ref(row_remapper), rowvals(X)) # This is fine because the relative order of rows is kept
 
 	N = size(X,2)
 	colptr = SparseArrays.getcolptr(X) # annoying to have to use internal function
