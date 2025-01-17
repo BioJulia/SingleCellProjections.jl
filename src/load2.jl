@@ -82,7 +82,7 @@ function subset_by_var_indices(X::SparseMatrixCSC{Tv,Ti},
 	# 2. Manipulate/remap row indices to defacto insert rows of zeros
 	# 3. Use new row indices to create a sparse matrix of the right size
 
-	var_ind_matching = identity.(filter(!isnothing, var_ind)) # This removes Nothing from the eltype
+	var_ind_matching = something.(filter(!isnothing, var_ind)) # remove `Nothing` from eltype (and error if `nothing` is encountered)
 	# Duplicates not allowed - That is, the same row in sample_var is not allowed to map to multiple rows in var.
 	@assert allunique(var_ind_matching) "Each row in `sample_var` can match at most one row in `var`." # TODO: report ID of duplicates in error message
 

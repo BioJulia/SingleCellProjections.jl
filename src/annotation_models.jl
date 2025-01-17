@@ -12,7 +12,7 @@ function extract_annotation(id::DataFrame, v)
 		throw(ArgumentError("Error subsetting annotation, $n/$(size(df,1)) IDs are missing (first missing ID=\"$(id[i,1]))\"."))
 	end
 
-	ind = identity.(ind) # get rid of Nothings
+	ind = something.(ind) # remove `Nothing` from eltype (and error if `nothing` is encountered)
 	df[ind,2]
 end
 
@@ -34,6 +34,6 @@ end
 # 		throw(ArgumentError("Error subsetting annotation, $n/$(size(df,1)) IDs are missing (first missing ID=\"$(id[i,1]))\"."))
 # 	end
 
-# 	ind = identity.(ind) # get rid of Nothings
+# 	ind = something.(ind) # remove `Nothing` from eltype (and error if `nothing` is encountered)
 # 	df[ind,2]
 # end

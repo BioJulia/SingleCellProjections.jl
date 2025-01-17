@@ -295,7 +295,7 @@ function _insert_matrix!(colptr, rowval, nzval, colptr_offset, nnz_offset, featu
 	# Figure out how to map feature indices in sample to global feature indices
 	sf_ind = select(sf, var_id_cols)
 	leftjoin!(sf_ind, feature_ind; on=var_id_cols)
-	row_ind = identity.(sf_ind.__row__) # identity narrows type to Int (i.e. exludes Missing)
+	row_ind = coalesce.(sf_ind.__row__) # try to narrow eltype to Int (i.e. exludes Missing if there are no `missing` in the vector)
 
 	if issorted(row_ind)
 		rowval[nnz_offset .+ (1:nnz(A))] .= getindex.(Ref(row_ind),rv)

@@ -68,7 +68,7 @@ function project_impl(data::DataMatrix, model::PseudoBulkModel; verbose=true, kw
 
 	mask = obs_ind .!== nothing
 	I = (1:N)[mask]
-	J = identity.(obs_ind[mask])
+	J = something.(obs_ind[mask]) # remove `Nothing` from eltype (and error if `nothing` is encountered)
 	S = sparse(I, J, 1.0, N, size(obs,1))
 
 	# Make each column sum to one (so that we take mean for each group)

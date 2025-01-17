@@ -7,7 +7,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 	# dataset for projection - by using a subset of the obs in `counts`, we make unit testing simpler while still testing well. But rename obs IDs to ensure they are treated as separate obs.
 	counts_proj = filter_obs(row->row.group!="B" && row.value>0.6, counts)
 	empty!(counts_proj.models)
-	proj_obs_indices = identity.(indexin(counts_proj.obs.barcode, counts.obs.barcode))
+	proj_obs_indices = something.(indexin(counts_proj.obs.barcode, counts.obs.barcode)) # remove `Nothing` from eltype (and error if `nothing` is encountered)
 	add_id_prefix!(counts_proj.obs, "proj_")
 
 	obs2_df = rename(counts.obs, "group"=>"external_group", "value"=>"external_value")
