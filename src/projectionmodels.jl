@@ -5,6 +5,7 @@ Base.Broadcast.broadcastable(m::ProjectionModel) = Ref(m) # treat as scalar for 
 function project2 end
 
 
+# TODO: Remove StatelessModel - not needed after refactoring
 # NB: StableHashTraits package extension ensures hashing is correct for F<:Function
 struct StatelessModel{F} <: ProjectionModel
 	f::F
