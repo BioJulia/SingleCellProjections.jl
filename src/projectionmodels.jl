@@ -28,7 +28,3 @@ Base.show(io::IO, ::MIME"text/plain", model::T) where T<:ProjectionModel =
 function Base.show(io::IO, model::T) where T<:ProjectionModel
 	show(io, MIME"text/plain"(), model)
 end
-
-
-Base.show(io::IO, ::MIME"text/plain", model::StatelessModel{F}) where F =
-	print(io, "StatelessModel(", model.f, ")")
