@@ -31,7 +31,7 @@ function project2(::NumericalValueVectorModel, v)
 end
 function project2(m::CategoricalValueVectorModel, v)
 	ind = indexin(v, m.categories)
-	new_values = setdiff(unique(v), c.values)
+	new_values = setdiff(unique(v), m.categories)
 	isempty(new_values) || error("Categorical vector has values not present in model. Got [", join(new_value, ','), "], but expected [", join(m.categories, ','), "].")
 	CategoricalValueVector(ind)
 end
@@ -59,7 +59,7 @@ end
 struct CategoricalCovariateModel <: AbstractCovariateModel
 	n_categories::Int
 end
-CategoricalCovariateModel(v::CategoricalValueVector) = CategoricalCovariateModel(maximum(v))
+CategoricalCovariateModel(v::CategoricalValueVector) = CategoricalCovariateModel(maximum(v.values))
 
 # TODO: Add TwoGroupCovariateModel?
 
