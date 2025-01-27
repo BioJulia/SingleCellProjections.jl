@@ -61,8 +61,10 @@ struct CategoricalCovariateModel <: AbstractCovariateModel
 end
 CategoricalCovariateModel(v::CategoricalValueVector) = CategoricalCovariateModel(maximum(v.values))
 
+
 # TODO: Add TwoGroupCovariateModel?
 
+covariate_model(::Int; center::Bool) = (@assert center; InterceptCovariateModel()) # TODO: this isn't very beatiful, fix.
 covariate_model(v::NumericalValueVector; center::Bool) = NumericalCovariateModel(v, center)
 covariate_model(v::CategoricalValueVector; center::Bool) = CategoricalCovariateModel(v)
 
@@ -79,7 +81,7 @@ covariate_model(v::CategoricalValueVector; center::Bool) = CategoricalCovariateM
 # 	isequal.(v.values, (1:m.n_categories)')
 # end
 
-# project2(::InterceptCovariateModel, N::Int, args...) = ones(N,1)
+project2(::InterceptCovariateModel, N::Int) = ones(N,1)
 function project2(m::NumericalCovariateModel, v::NumericalValueVector)
 	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
 	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
