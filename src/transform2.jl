@@ -1,10 +1,10 @@
-struct LogTransformModel2{T} <: ProjectionModel
-	scale_factor::Float64
-end
-LogTransformModel2(::Type{T}; scale_factor=10_000) where T = LogTransformModel2{T}(scale_factor)
-LogTransformModel2(; kwargs...) = LogTransformModel2(Float64; kwargs...)
+# struct LogTransformModel2{T} <: ProjectionModel
+# 	scale_factor::Float64
+# end
+# LogTransformModel2(::Type{T}; scale_factor=10_000) where T = LogTransformModel2{T}(scale_factor)
+# LogTransformModel2(; kwargs...) = LogTransformModel2(Float64; kwargs...)
 
-function logtransform_matrix(::Type{T}, X::SparseMatrixCSC, scale_factor) where T
+function logtransform_matrix(::Type{T}, X::SparseMatrixCSC; scale_factor) where T
 	P,N = size(X)
 	s = max.(1, sum(X; dims=1))
 	nf = scale_factor ./ s
@@ -30,7 +30,7 @@ function logtransform_matrix(::Type{T}, X::Matrix, scale_factor) where T
 	MatrixRef(:A=>A)
 end
 
-logtransform_matrix(X, scale_factor) = logtransform_matrix(Float64, X, scale_factor)
+logtransform_matrix(X; scale_factor) = logtransform_matrix(Float64, X; scale_factor)
 
-project2(model::LogTransformModel2{T}, X) where T =
-	logtransform_matrix(T, X, model.scale_factor)
+# project2(model::LogTransformModel2{T}, X) where T =
+# 	logtransform_matrix(T, X, model.scale_factor)
