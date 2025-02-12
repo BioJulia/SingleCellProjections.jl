@@ -12,8 +12,6 @@ export
 	CenteringModel2, # TEMP
 	DesignMatrixModel,
 	NormalizationModel,
-	NormalizationModel2, # TEMP
-	NormalizationModel3, # TEMP
 	SVDModel,
 	SVDModel2,
 	NearestNeighborModel,
