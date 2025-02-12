@@ -13,7 +13,6 @@ export
 	DesignMatrixModel,
 	NormalizationModel,
 	SVDModel,
-	SVDModel2,
 	NearestNeighborModel,
 	ObsAnnotationModel,
 	VarCountsFractionModel,
