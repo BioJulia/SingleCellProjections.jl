@@ -122,7 +122,6 @@ include("annotation_utils.jl")
 include("lowrank.jl")
 include("projectionmodels.jl")
 include("datamatrix.jl")
-include("id_models.jl")
 include("annotation_models.jl")
 include("subset_expression.jl")
 

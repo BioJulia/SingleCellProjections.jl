@@ -10,7 +10,7 @@ struct CenteringModel2 <: ProjectionModel
 	end
 end
 
-function project2(model::CenteringModel2, A)
+function center_matrix_project(model::CenteringModel2, A)
 	N = size(A,2)
 	X = ones(N,1)
 	matrixsum(_named_matrix(A,:A), matrixproduct(Symbol("(-β)")=>model.negβT, :X=>X'))
@@ -38,5 +38,5 @@ function NormalizationModel3(matrix, dm::Matrix; rtol=sqrt(eps()))
 end
 
 
-project2(model::NormalizationModel3, matrix, dm) =
+normalize_matrix_project(model::NormalizationModel3, matrix, dm) =
 	matrixsum(_named_matrix(matrix,:A), matrixproduct(Symbol("(-β)")=>model.negβT, :X=>dm'))

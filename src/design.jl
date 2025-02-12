@@ -25,11 +25,11 @@ value_vector_model(v::AbstractVector{<:Union{Missing,Number}}; kwargs...) = Nume
 value_vector_model(v::AbstractVector; kwargs...) = CategoricalValueVectorModel(v; kwargs...)
 
 
-function project2(::NumericalValueVectorModel, v)
+function value_vector_project(::NumericalValueVectorModel, v)
 	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
 	NumericalValueVector(convert(Vector{Float64},v))
 end
-function project2(m::CategoricalValueVectorModel, v)
+function value_vector_project(m::CategoricalValueVectorModel, v)
 	ind = indexin(v, m.categories)
 	new_values = setdiff(unique(v), m.categories)
 	isempty(new_values) || error("Categorical vector has values not present in model. Got [", join(new_value, ','), "], but expected [", join(m.categories, ','), "].")
@@ -70,44 +70,28 @@ covariate_model(v::CategoricalValueVector; center::Bool) = CategoricalCovariateM
 
 
 
-# project2(::InterceptCovariateModel, N::Int, args...) = ones(N,1)
-# function project2(m::NumericalCovariateModel, N::Int, v::NumericalValueVector)
+# covariate_project(::InterceptCovariateModel, N::Int, args...) = ones(N,1)
+# function covariate_project(m::NumericalCovariateModel, N::Int, v::NumericalValueVector)
 # 	@assert length(v.values) == N
 # 	x = reshape(v.values, N, 1) # So we return a N×1 matrix
 # 	(x .- m.mean)./m.scale
 # end
-# function project2(m::CategoricalCovariateModel, N::Int, v::CategoricalValueVector)
+# function covariate_project(m::CategoricalCovariateModel, N::Int, v::CategoricalValueVector)
 # 	@assert length(v.values) == N
 # 	isequal.(v.values, (1:m.n_categories)')
 # end
 
-project2(::InterceptCovariateModel, N::Int) = ones(N,1)
-function project2(m::NumericalCovariateModel, v::NumericalValueVector)
+covariate_project(::InterceptCovariateModel, N::Int) = ones(N,1)
+function covariate_project(m::NumericalCovariateModel, v::NumericalValueVector)
 	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
 	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
 	N = length(v.values)
 	x = reshape(v.values, N, 1) # So we return a N×1 matrix
 	(x .- m.mean)./m.scale
 end
-function project2(m::CategoricalCovariateModel, v::CategoricalValueVector)
+function covariate_project(m::CategoricalCovariateModel, v::CategoricalValueVector)
 	isequal.(v.values, (1:m.n_categories)')
 end
-
-
-# # TODO: Rename to HCatModel?
-# struct MergeCovariatesModel <: ProjectionModel
-# 	N::Int
-# end
-
-# function project2(m::MergeCovariatesModel, args...)::Matrix{Float64}
-# 	isempty(args) && return zeros(m.N, 0)
-# 	X = reduce(hcat, args)
-# 	@assert size(X,1) == N
-# 	X
-# end
-
-# Nah, just use StatelessModel{hcat}.
-
 
 
 
@@ -369,7 +353,7 @@ end
 
 
 # TODO: exact interface might change
-function project2(model::DesignMatrixModel, obs_id::DataFrame, annotations::DataFrame...)
+function designmatrix_project(model::DesignMatrixModel, obs_id::DataFrame, annotations::DataFrame...)
 	C = sum(_length, model.covariates; init=0)
 	# N = size(data,2) # ah. This is needed if there are no annotations. Or maybe rather the obs_id are needed (to leftjoin annotations).
 	N = size(obs_id,1)
@@ -432,8 +416,8 @@ function project2(model::DesignMatrixModel, obs_id::DataFrame, annotations::Data
 	DataMatrix(A, obs_id, DataFrame(;covariate_id))
 end
 
-project2(model::DesignMatrixModel, data::DataMatrix, args...; kwargs...) =
-	project2(model, select(data.obs,1), args...; kwargs...)
+designmatrix_project(model::DesignMatrixModel, data::DataMatrix, args...; kwargs...) =
+	designmatrix_project(model, select(data.obs,1), args...; kwargs...)
 
 
 

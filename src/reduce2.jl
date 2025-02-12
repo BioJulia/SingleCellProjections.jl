@@ -4,7 +4,7 @@ struct SVDModel2 <: ProjectionModel
 end
 SVDModel2(F::SVD) = SVDModel2(F.U, F.S)
 
-function project2(model::SVDModel2, X)
+function svd_project(model::SVDModel2, X)
 	U = model.U
 	S = model.S
 	V = X'U # TODO: compute F.U'X instead to get Vt directly

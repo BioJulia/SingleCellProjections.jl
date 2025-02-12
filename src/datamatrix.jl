@@ -338,11 +338,6 @@ DataMatrix (3 variables and 4256 observations)
 project(data::DataMatrix, base::DataMatrix, args...; from=nothing, kwargs...) = project_from(data, base, from, args...; kwargs...)
 
 
-# Just a fallback until I've refactored everything
-function project2(model::ProjectionModel, data, args...; kwargs...)
-	project_impl(data, model, args...; kwargs...)
-end
-
 
 
 function _update_annot(old, update::Symbol)
