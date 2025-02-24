@@ -148,6 +148,7 @@ include("statistical_tests.jl")
 include("counts_fraction.jl")
 include("counts_fraction2.jl")
 include("counts_sum.jl")
+include("counts_sum2.jl")
 include("pseudobulk.jl")
 
 include("local_outlier_factor.jl")
