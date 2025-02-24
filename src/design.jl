@@ -7,6 +7,9 @@ struct CategoricalValueVector <: ValueVector
 	values::Vector{Int}
 end
 
+Base.:(==)(a::NumericalValueVector, b::NumericalValueVector) = a.values == b.values
+Base.:(==)(a::CategoricalValueVector, b::CategoricalValueVector) = a.values == b.values
+
 struct NumericalValueVectorModel <: ProjectionModel end
 struct CategoricalValueVectorModel{T} <: ProjectionModel
 	categories::Vector{T}
