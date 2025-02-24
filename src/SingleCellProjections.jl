@@ -146,6 +146,7 @@ include("reduce2.jl")
 include("annotate.jl")
 include("statistical_tests.jl")
 include("counts_fraction.jl")
+include("counts_fraction2.jl")
 include("counts_sum.jl")
 include("pseudobulk.jl")
 
