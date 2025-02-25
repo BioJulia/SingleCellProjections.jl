@@ -22,6 +22,7 @@ end
 # This is slightly complicated to avoid using large temporary arrays
 function _logtransform_reorder(::Type{T}, X::SparseMatrixCSC{Tv,Ti}; scale_factor, var_ind) where {T,Tv,Ti}
 	P,N = size(X) # original size
+	P_out = length(var_ind)
 	ind_map = something.(indexin(1:P, var_ind), 0)
 
 	R = rowvals(X)
@@ -46,7 +47,8 @@ function _logtransform_reorder(::Type{T}, X::SparseMatrixCSC{Tv,Ti}; scale_facto
 	nf = scale_factor ./ s
 
 	c[1] = 1 # colptr always starts at 1
-	colptr = cumsum(c)
+	# colptr = cumsum(c)
+	colptr = accumulate(+, c) # cumsum changes eltype which we don't want
 
 	nnz_out = colptr[end]-1
 	nzval_out = zeros(T, nnz_out)
@@ -75,10 +77,10 @@ function _logtransform_reorder(::Type{T}, X::SparseMatrixCSC{Tv,Ti}; scale_facto
 
 		rng_out = colptr[j]:colptr[j+1]-1
 		rowval_out[rng_out] .= is_out
-		nzval_out[rng_out] .= convert(T, log2.(1 .+ vs.*nf[j]))
+		nzval_out[rng_out] .= convert.(T, log2.(1 .+ vs.*nf[j]))
 	end
 
-	A = SparseMatrixCSC(P, N, colptr, rowval_out, nzval_out)
+	A = SparseMatrixCSC(P_out, N, colptr, rowval_out, nzval_out)
 	MatrixRef(:A=>A)
 end
 
