@@ -12,7 +12,15 @@ function ids_to_indices(df::DataFrame, ids::DataFrame)
 	@assert names(df, 1) == names(ids, 1)
 
 	ind = indexin(ids[!,1], df[!,1])
-	@assert all(!isnothing, ind) # TODO: Add boolean parameter allowing that only a subset is present
+	# @assert all(!isnothing, ind)
+	if any(isnothing,ind)
+		missing_ids = ids[ind .== nothing, 1]
+		n_missing = length(missing_ids)
+		n_total = size(ids,1)
+		msg = string("$n_missing/$n_total IDs where not found: ", join(missing_ids[1:10], ','), n_missing>10 ? "..." : "")
+		throw(ArgumentError(msg))
+	end
+
 	ind = something.(ind) # remove `Nothing` from eltype (and error if `nothing` is encountered)
 
 	if ind == 1:length(ind)
