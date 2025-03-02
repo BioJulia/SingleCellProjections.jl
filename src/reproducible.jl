@@ -1,4 +1,4 @@
-import .SingleCellProjectionsCore as SCP
+import .SingleCellProjectionsCore as SCPC
 import SingleCell10x
 using DataFrames
 import StableHashTraits
@@ -7,8 +7,8 @@ import LinearAlgebra
 using ReproducibleJobs
 using ReproducibleJobs: create_spec, ChecksummedFilePath, checksummedfilepath_job, ifelse_spec
 
-ReproducibleJobs.unmanage_rec(x::SCP.ValueVector) = x
-ReproducibleJobs.unmanage_rec(x::SCP.ProjectionModel) = x
+ReproducibleJobs.unmanage_rec(x::SCPC.ValueVector) = x
+ReproducibleJobs.unmanage_rec(x::SCPC.ProjectionModel) = x
 
 
 # TODO: This is a temporary solution when refactoring, remove
@@ -210,12 +210,12 @@ function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 		f = action(f)
 		df = action(df)
 	end
-	spec = create_spec(SCP.find_matching_ids, f, df; use_cache=true, __version=v"0.1.0")
+	spec = create_spec(SCPC.find_matching_ids, f, df; use_cache=true, __version=v"0.1.0")
 
 	if project_ids == :intersect
 		df = action(df)
 		# TODO: simplify ids2 spec by using a function for extracting IDs directly
-		ids2 = create_spec(SCP.find_matching_ids, Returns(true), df; use_cache=false, __version=v"0.1.0")
+		ids2 = create_spec(SCPC.find_matching_ids, Returns(true), df; use_cache=false, __version=v"0.1.0")
 		spec = create_spec(intersect_ids_impl, spec, ids2; use_cache=true, __version=v"0.1.0")
 	end
 	spec
@@ -231,19 +231,19 @@ Jobs.find_matching_ids(args...; kwargs...) =
 
 
 ids_to_indices(action::Action, args...) =
-	create_spec(SCP.ids_to_indices, action(args)...; use_cache=true, __version=v"0.1.0")
+	create_spec(SCPC.ids_to_indices, action(args)...; use_cache=true, __version=v"0.1.0")
 create_ids_to_indices_spec(df, ids) =
 	create_spec(Projectable(ids_to_indices), df, ids)
 
 annotation_getindex(action::Action, args...) =
-	create_spec(SCP.annotation_getindex, action(args)...; use_cache=true, __version=v"0.1.0")
+	create_spec(SCPC.annotation_getindex, action(args)...; use_cache=true, __version=v"0.1.0")
 create_annotation_getindex_spec(df, ind) =
 	create_spec(Projectable(annotation_getindex), df, ind; use_cache=false)
 
 
 
 matrix_getindex(action::Action, args...; kwargs...) =
-	create_spec(SCP.matrix_getindex, action(args)...; action(kwargs)..., use_cache=false, __version=v"0.1.0")
+	create_spec(SCPC.matrix_getindex, action(args)...; action(kwargs)..., use_cache=false, __version=v"0.1.0")
 function create_matrix_getindex_spec(data; kwargs...)
 	isempty(setdiff(keys(kwargs), (:var_ind,:obs_ind))) || throw(ArgumentError("Only allowed kwargs are `var_ind` and `obs_ind`, got: $(keys(kwargs))."))
 	create_spec(Projectable(matrix_getindex), data; kwargs...)
@@ -251,7 +251,7 @@ end
 
 
 extract_annotation(action::Action, args...) =
-	create_spec(SCP.extract_annotation, action(args)...; use_cache=false, __version=v"0.1.0")
+	create_spec(SCPC.extract_annotation, action(args)...; use_cache=false, __version=v"0.1.0")
 create_extract_annotation_spec(df, name) =
 	create_spec(Projectable(extract_annotation), df, name)
 
@@ -307,7 +307,7 @@ is_datamatrix_spec(::Any) = false
 function is_datamatrix_spec(spec::Spec)
 	f = spec.f
 	f isa DataMatrixFunc && return true
-	f == SCP.DataMatrix && return true
+	f == SCPC.DataMatrix && return true
 	if f == project
 		onto = spec.args[1]
 		return is_datamatrix_spec(onto)
@@ -318,9 +318,9 @@ end
 
 
 # These are needed by get_matrix etc.
-setup_datamatrix(::Mat, ::typeof(SCP.DataMatrix), spec) = spec.args[1]
-setup_datamatrix(::Var, ::typeof(SCP.DataMatrix), spec) = spec.args[2]
-setup_datamatrix(::Obs, ::typeof(SCP.DataMatrix), spec) = spec.args[3]
+setup_datamatrix(::Mat, ::typeof(SCPC.DataMatrix), spec) = spec.args[1]
+setup_datamatrix(::Var, ::typeof(SCPC.DataMatrix), spec) = spec.args[2]
+setup_datamatrix(::Obs, ::typeof(SCPC.DataMatrix), spec) = spec.args[3]
 
 # This is needed when replacing with something that itself is a projection
 setup_datamatrix(f::DataMatrixField, ::typeof(project), spec) = setup_datamatrix(f, project(spec, nothing))
@@ -332,21 +332,21 @@ setup_datamatrix(f::DataMatrixField, d::DataMatrixFunc{F}, spec) where F = d.f(f
 
 
 function get_matrix(action::Action, dm_spec)
-	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCP.get_matrix
+	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPC.get_matrix
 	action(setup_datamatrix(Mat(), dm_spec))
 end
 get_matrix_spec(x) = create_spec(Projectable(get_matrix), x; use_cache=false)
 Jobs.get_matrix(x) = Job(get_matrix_spec(x))
 
 function get_var(action::Action, dm_spec)
-	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCP.get_var
+	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPC.get_var
 	action(setup_datamatrix(Var(), dm_spec))
 end
 get_var_spec(x) = create_spec(Projectable(get_var), x; use_cache=false)
 Jobs.get_var(x) = Job(get_var_spec(x))
 
 function get_obs(action::Action, dm_spec)
-	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCP.get_obs
+	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPC.get_obs
 	action(setup_datamatrix(Obs(), dm_spec))
 end
 get_obs_spec(x) = create_spec(Projectable(get_obs), x; use_cache=false)
@@ -372,7 +372,7 @@ function (d::DataMatrixFunc{F})(args...; kwargs...) where F
 	matrix = d.f(Mat(), args...; kwargs...)
 	var = d.f(Var(), args...; kwargs...)
 	obs = d.f(Obs(), args...; kwargs...)
-	create_spec(SCP.DataMatrix, matrix, var, obs; use_cache=false, __version=v"0.1.0")
+	create_spec(SCPC.DataMatrix, matrix, var, obs; use_cache=false, __version=v"0.1.0")
 end
 
 # General projection handling
@@ -390,7 +390,7 @@ function setup_projection(replacements, ::DataMatrixFunc, spec::Spec)
 	or = get(replacements, obs_spec, nothing)
 	obs_spec = @something or _setup_projection(replacements, obs_spec)
 
-	create_spec(SCP.DataMatrix, matrix_spec, var_spec, obs_spec; use_cache=false, __version=v"0.1.0")
+	create_spec(SCPC.DataMatrix, matrix_spec, var_spec, obs_spec; use_cache=false, __version=v"0.1.0")
 end
 # ------------------------------------------------------------------------------
 
@@ -413,17 +413,17 @@ end
 load_obs_spec(filename; kwargs...) = create_spec(load_obs_impl, filename; use_cache=false, kwargs..., __version=v"0.1.0")
 
 combine_obs_spec(obs, sample_names; id_col="cell_id", id_delim='_', kwargs...) =
-	create_spec(SCP.combine_obs, obs, sample_names; id_col, id_delim, use_cache=true, kwargs..., __version=v"0.1.0") # TODO: Do we want use_cache=true here? Probably.
+	create_spec(SCPC.combine_obs, obs, sample_names; id_col, id_delim, use_cache=true, kwargs..., __version=v"0.1.0") # TODO: Do we want use_cache=true here? Probably.
 
-combine_var_spec(vars; kwargs...) = create_spec(SCP.combine_var, vars; use_cache=true, kwargs..., __version=v"0.1.0") # TODO: Do we want use_cache=true here? Probably.
+combine_var_spec(vars; kwargs...) = create_spec(SCPC.combine_var, vars; use_cache=true, kwargs..., __version=v"0.1.0") # TODO: Do we want use_cache=true here? Probably.
 
 sample_var_indices_spec(sample_var, var; kwargs...) =
-	create_spec(SCP.sample_var_indices, sample_var, var; use_cache=true, kwargs..., __version=v"0.1.0")
+	create_spec(SCPC.sample_var_indices, sample_var, var; use_cache=true, kwargs..., __version=v"0.1.0")
 
 function load_sample_matrix_metadata_impl(filename, var_ind)
 	@assert filename isa ChecksummedFilePath
 	filename = string(filename)
-	SCP.load_sample_matrix_metadata(filename, var_ind)
+	SCPC.load_sample_matrix_metadata(filename, var_ind)
 end
 load_sample_matrix_metadata_spec(filename, var_ind; kwargs...) =
 	create_spec(load_sample_matrix_metadata_impl, filename, var_ind; use_cache=true, kwargs..., __version=v"0.1.0")
@@ -431,7 +431,7 @@ load_sample_matrix_metadata_spec(filename, var_ind; kwargs...) =
 function load_hcat_sample_matrices_impl(filenames, args...; kwargs...)
 	@assert all(x->x isa ChecksummedFilePath, filenames)
 	filenames = string.(filenames)
-	SCP.load_hcat_sample_matrices(filenames, args...; kwargs...)
+	SCPC.load_hcat_sample_matrices(filenames, args...; kwargs...)
 end
 load_hcat_sample_matrices_spec(filenames, matrix_metadatas, var_inds; kwargs...) =
 	create_spec(load_hcat_sample_matrices_impl, filenames, matrix_metadatas, var_inds; use_cache=false, kwargs..., __version=v"0.1.0")
@@ -594,7 +594,7 @@ Jobs.filter_obs(fobs, data; project_ids=:no, kwargs...) =
 
 
 var_counts_fraction_impl(action::Action, counts, sub_ind, tot_ind) =
-	create_spec(SCP.var_counts_fraction2, action(counts), action(sub_ind), action(tot_ind); use_cache=true, __version=v"0.1.0")
+	create_spec(SCPC.var_counts_fraction2, action(counts), action(sub_ind), action(tot_ind); use_cache=true, __version=v"0.1.0")
 create_var_counts_fraction_impl_spec(counts, sub_ind, tot_ind) = create_spec(Projectable(var_counts_fraction_impl), counts, sub_ind, tot_ind)
 
 var_counts_fraction(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
@@ -614,7 +614,7 @@ end
 
 
 var_counts_sum_impl(action::Action, f, counts, ind) =
-	create_spec(SCP.var_counts_sum2, f, action(counts), action(ind); use_cache=true, __version=v"0.1.0")
+	create_spec(SCPC.var_counts_sum2, f, action(counts), action(ind); use_cache=true, __version=v"0.1.0")
 create_var_counts_sum_impl_spec(f, counts, ind) = create_spec(Projectable(var_counts_sum_impl), f, counts, ind)
 
 var_counts_sum(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
@@ -638,7 +638,7 @@ Jobs.var_counts_sum(counts, filter, col; kwargs...) = Jobs.var_counts_sum(identi
 function logtransform_matrix(action::Action, T::DataType, matrix; scale_factor, var_ind)
 	matrix = action(matrix)
 	var_ind = action(var_ind)
-	create_spec(SCP.logtransform_matrix, T, matrix; scale_factor, var_ind, use_cache=false, __version=v"0.1.0")
+	create_spec(SCPC.logtransform_matrix, T, matrix; scale_factor, var_ind, use_cache=false, __version=v"0.1.0")
 end
 
 function logtransform(f::Union{Mat,Var}, T::DataType, data; var_filter=Returns(true), project_var_ids=:intersect, kwargs...)
@@ -678,12 +678,12 @@ Jobs.logtransform(counts; kwargs...) = Jobs.logtransform(Float64, counts; kwargs
 
 # ------------------------------------------------------------------------------
 
-# It's confusing with center_matrix, Jobs.center_matrix and SCP.center_matrix being different functions having the same name.
+# It's confusing with center_matrix, Jobs.center_matrix and SCPC.center_matrix being different functions having the same name.
 # But we'll get rid of it so that doesn't matter!
 function center_matrix(action::Action, matrix)
 	# model is created from original data
-	model = create_spec(SCP.CenteringModel2, matrix; use_cache=true, __version=v"0.1.0")
-	create_spec(SCP.center_project, model, action(matrix); __version=v"0.1.0")
+	model = create_spec(SCPC.CenteringModel2, matrix; use_cache=true, __version=v"0.1.0")
+	create_spec(SCPC.center_project, model, action(matrix); __version=v"0.1.0")
 end
 
 
@@ -703,20 +703,20 @@ end
 # ------------------------------------------------------------------------------
 
 value_vector_model_spec(annot; kwargs...) =
-	create_spec(SCP.value_vector_model, annot; use_cache=true, kwargs..., __version=v"0.1.0")
+	create_spec(SCPC.value_vector_model, annot; use_cache=true, kwargs..., __version=v"0.1.0")
 
 
 function value_vector(action::Action, annot; kwargs...)
 	model = value_vector_model_spec(annot; kwargs...)
-	create_spec(SCP.value_vector_project, model, action(annot); __version=v"0.1.0")
+	create_spec(SCPC.value_vector_project, model, action(annot); __version=v"0.1.0")
 end
 value_vector_spec(annot; kwargs...) =
 	create_spec(Projectable(value_vector), annot; use_cache=true, kwargs...)
 
 
 function covariate(action::Action, args...; kwargs...)
-	model = create_spec(SCP.covariate_model, args...; use_cache=true, kwargs..., __version=v"0.1.0")
-	create_spec(SCP.covariate_project, model, action(args)...; __version=v"0.1.0")
+	model = create_spec(SCPC.covariate_model, args...; use_cache=true, kwargs..., __version=v"0.1.0")
+	create_spec(SCPC.covariate_project, model, action(args)...; __version=v"0.1.0")
 end
 covariate_spec(args...; kwargs...) =
 	create_spec(Projectable(covariate), args...; kwargs...)
@@ -724,12 +724,12 @@ covariate_spec(args...; kwargs...) =
 
 
 # TODO: Move these into SingleCellProjections.jl?
-function _add_covariate_names!(out, name, model::SCP.CategoricalValueVectorModel)
+function _add_covariate_names!(out, name, model::SCPC.CategoricalValueVectorModel)
 	for c in model.categories
 		push!(out, string(name, '_', c))
 	end
 end
-_add_covariate_names!(out, name, ::SCP.NumericalValueVectorModel) = push!(out, name)
+_add_covariate_names!(out, name, ::SCPC.NumericalValueVectorModel) = push!(out, name)
 function covariate_names_impl(v::Vector{<:Pair{String,<:Any}}; center::Bool)
 	cov_names = String[]
 	center && push!(cov_names, "Intercept")
@@ -794,7 +794,7 @@ end
 
 
 negative_regression_matrix_impl(::Action, data, dm; kwargs...) =
-	create_spec(SCP.negative_regression_matrix, data, dm; use_cache=true, kwargs..., __version=v"0.1.0") # NB: No action, always use original
+	create_spec(SCPC.negative_regression_matrix, data, dm; use_cache=true, kwargs..., __version=v"0.1.0") # NB: No action, always use original
 negative_regression_matrix_impl_spec(data, dm; kwargs...) =
 	create_spec(Projectable(negative_regression_matrix_impl), data, dm; kwargs...)
 
@@ -820,7 +820,7 @@ end
 
 
 normalize_matrix_impl(action::Action, data, negβT, dm) =
-	create_spec(SCP.normalize_matrix2, action(data), action(negβT), action(dm); use_cache=false, __version=v"0.1.0")
+	create_spec(SCPC.normalize_matrix2, action(data), action(negβT), action(dm); use_cache=false, __version=v"0.1.0")
 normalize_matrix_impl_spec(data, negβT, dm) =
 	create_spec(Projectable(normalize_matrix_impl), data, negβT, dm; use_cache=false)
 
@@ -844,12 +844,12 @@ end
 # SVD is an example where the model comes after the result. I.e. svd(data) => UΣVᵀ, but the model is just UΣ.
 function svd(action::Action, matrix; kwargs...)
 	# First SVD of unprojected
-	svd_spec = create_spec(SCP.implicitsvd, matrix; use_cache=true, kwargs..., __version=v"0.1.0")
+	svd_spec = create_spec(SCPC.implicitsvd, matrix; use_cache=true, kwargs..., __version=v"0.1.0")
 
 	if action isa Eval
 		return svd_spec
 	else# if action isa Projection
-		return create_spec(SCP.svd_project, svd_spec, action(matrix); use_cache=true, __version=v"0.1.0")
+		return create_spec(SCPC.svd_project, svd_spec, action(matrix); use_cache=true, __version=v"0.1.0")
 	end
 end
 
