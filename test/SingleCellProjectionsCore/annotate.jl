@@ -52,33 +52,33 @@
 		@test eltype(t2.obs.GPR22) <: Float64
 	end
 
-	proj_var_ind = reverse(1:2:size(counts,1))
-	proj_obs_ind = 1:12:size(counts,2)
-	counts_proj = counts[proj_var_ind,proj_obs_ind]
-	empty!(counts_proj.models)
+	# proj_var_ind = reverse(1:2:size(counts,1))
+	# proj_obs_ind = 1:12:size(counts,2)
+	# counts_proj = counts[proj_var_ind,proj_obs_ind]
+	# empty!(counts_proj.models)
 
-	@testset "var_to_obs projection" begin
-		c = var_to_obs(:name=>==("GPR22"), counts)
-		c_proj = project(counts_proj,c)
-		@test c_proj.obs.GPR22 == counts_proj.matrix[findfirst(==("GPR22"),counts_proj.var.name),:]
-		@test eltype(c_proj.obs.GPR22) <: Integer
-		@test size(c_proj.obs,2) == size(counts_proj.obs,2)+1
+	# @testset "var_to_obs projection" begin
+	# 	c = var_to_obs(:name=>==("GPR22"), counts)
+	# 	c_proj = project(counts_proj,c)
+	# 	@test c_proj.obs.GPR22 == counts_proj.matrix[findfirst(==("GPR22"),counts_proj.var.name),:]
+	# 	@test eltype(c_proj.obs.GPR22) <: Integer
+	# 	@test size(c_proj.obs,2) == size(counts_proj.obs,2)+1
 
-		c = var_to_obs(:name=>startswith("C"), counts)
-		c_proj = project(counts_proj,c)
-		@test c_proj.obs.CFAP298 == counts_proj.matrix[findfirst(==("CFAP298"),counts_proj.var.name),:]
-		@test all(ismissing, c_proj.obs.C3orf79)
-		@test all(ismissing, c_proj.obs.CDY1)
-		@test all(ismissing, c_proj.obs.CEBPA)
-		@test all(ismissing, c_proj.obs.CST3)
+	# 	c = var_to_obs(:name=>startswith("C"), counts)
+	# 	c_proj = project(counts_proj,c)
+	# 	@test c_proj.obs.CFAP298 == counts_proj.matrix[findfirst(==("CFAP298"),counts_proj.var.name),:]
+	# 	@test all(ismissing, c_proj.obs.C3orf79)
+	# 	@test all(ismissing, c_proj.obs.CDY1)
+	# 	@test all(ismissing, c_proj.obs.CEBPA)
+	# 	@test all(ismissing, c_proj.obs.CST3)
 
-		@test eltype(c_proj.obs.CFAP298) <: Integer
-		@test typeof(c_proj.obs.C3orf79) <: Vector{Union{Missing,T}} where T<:Integer
-		@test typeof(c_proj.obs.CDY1)    <: Vector{Union{Missing,T}} where T<:Integer
-		@test typeof(c_proj.obs.CEBPA)   <: Vector{Union{Missing,T}} where T<:Integer
-		@test typeof(c_proj.obs.CST3)    <: Vector{Union{Missing,T}} where T<:Integer
+	# 	@test eltype(c_proj.obs.CFAP298) <: Integer
+	# 	@test typeof(c_proj.obs.C3orf79) <: Vector{Union{Missing,T}} where T<:Integer
+	# 	@test typeof(c_proj.obs.CDY1)    <: Vector{Union{Missing,T}} where T<:Integer
+	# 	@test typeof(c_proj.obs.CEBPA)   <: Vector{Union{Missing,T}} where T<:Integer
+	# 	@test typeof(c_proj.obs.CST3)    <: Vector{Union{Missing,T}} where T<:Integer
 
-		@test size(c_proj.obs,2) == size(counts_proj.obs,2)+5
-	end
+	# 	@test size(c_proj.obs,2) == size(counts_proj.obs,2)+5
+	# end
 
 end

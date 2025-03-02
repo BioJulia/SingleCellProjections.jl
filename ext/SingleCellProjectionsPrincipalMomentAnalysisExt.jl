@@ -1,8 +1,9 @@
 module SingleCellProjectionsPrincipalMomentAnalysisExt
 
 using SingleCellProjections
-using SingleCellProjections: Index, LowRank, implicitsvd, innersize, var_coordinates, obs_coordinates, table_cols_equal
-using SingleCellProjections.MatrixExpressions
+using .SingleCellProjections.SingleCellProjectionsCore
+using .SingleCellProjectionsCore: Index, LowRank, implicitsvd, innersize, var_coordinates, obs_coordinates, table_cols_equal
+using .SingleCellProjectionsCore.MatrixExpressions
 
 using LinearAlgebra
 using DataFrames
@@ -38,17 +39,17 @@ implicitpma(A, G::AbstractMatrix{Bool}; kwargs...) = implicitpma(A, SimplexGraph
 
 
 
-SingleCellProjections.innersize(F::PMA) = length(F.S)
+SingleCellProjectionsCore.innersize(F::PMA) = length(F.S)
 
 
-SingleCellProjections.var_coordinates(F::PMA) = F.U
-SingleCellProjections.obs_coordinates(F::PMA) = Diagonal(F.S)*F.Vt
+SingleCellProjectionsCore.var_coordinates(F::PMA) = F.U
+SingleCellProjectionsCore.obs_coordinates(F::PMA) = Diagonal(F.S)*F.Vt
 
-SingleCellProjections.var_coordinates(data::DataMatrix{<:PMA}) = var_coordinates(data.matrix)
-SingleCellProjections.obs_coordinates(data::DataMatrix{<:PMA}) = obs_coordinates(data.matrix)
+SingleCellProjectionsCore.var_coordinates(data::DataMatrix{<:PMA}) = var_coordinates(data.matrix)
+SingleCellProjectionsCore.obs_coordinates(data::DataMatrix{<:PMA}) = obs_coordinates(data.matrix)
 
 
-function SingleCellProjections._subsetmatrix(F::PMA, I::Index, J::Index)
+function SingleCellProjectionsCore._subsetmatrix(F::PMA, I::Index, J::Index)
 	U = F.U[I,:]
 	Vt = F.Vt[:,J]
 	lmul!(Diagonal(F.S), Vt)
@@ -56,7 +57,7 @@ function SingleCellProjections._subsetmatrix(F::PMA, I::Index, J::Index)
 end
 
 
-SingleCellProjections._showmatrix(io, matrix::PMA) = print(io, "PMA (", innersize(matrix), " dimensions)")
+SingleCellProjectionsCore._showmatrix(io, matrix::PMA) = print(io, "PMA (", innersize(matrix), " dimensions)")
 
 
 struct PMAModel <: ProjectionModel
@@ -66,8 +67,8 @@ struct PMAModel <: ProjectionModel
 	obs::Symbol
 end
 
-SingleCellProjections.projection_isequal(m1::PMAModel, m2::PMAModel) = m1.F == m2.F && m1.var_match == m2.var_match
-SingleCellProjections.update_model(m::PMAModel; var=m.var, obs=m.obs, kwargs...) = (SVDModel(m.F, m.var_match, var, obs), kwargs)
+SingleCellProjectionsCore.projection_isequal(m1::PMAModel, m2::PMAModel) = m1.F == m2.F && m1.var_match == m2.var_match
+SingleCellProjectionsCore.update_model(m::PMAModel; var=m.var, obs=m.obs, kwargs...) = (SVDModel(m.F, m.var_match, var, obs), kwargs)
 
 """
 	pma(data::DataMatrix, G; nsv=3, obs=:copy, var=:copy, seed, rng, kwargs...)
@@ -81,7 +82,7 @@ Computes the Principal Moment Analysis of the DataMatrix `data`.
 * `rng` - Specify a custom RNG.
 
 The `G` parameter is handled as in `PrincipalMomentAnalysis.pma`. See [`PrincipalMomentAnalysis` documentation](https://principalmomentanalysis.github.io/PrincipalMomentAnalysis.jl/stable/) for more details.
-Additional kwargs related to numerical precision are passed to `SingleCellProjections.implicitsvd`.
+Additional kwargs related to numerical precision are passed to `SingleCellProjectionsCore.implicitsvd`.
 
 See also: [`PrincipalMomentAnalysis.pma`](https://principalmomentanalysis.github.io/PrincipalMomentAnalysis.jl/stable/reference/#PrincipalMomentAnalysis.pma)
 """
@@ -91,7 +92,7 @@ function PrincipalMomentAnalysis.pma(data::DataMatrix, args...; nsv=3, var=:copy
 	update_matrix(data, F, model; model.var, model.obs)
 end
 
-function SingleCellProjections.project_impl(data::DataMatrix, model::PMAModel; verbose=true, kwargs...)
+function SingleCellProjectionsCore.project_impl(data::DataMatrix, model::PMAModel; verbose=true, kwargs...)
 	@assert table_cols_equal(data.var, model.var_match) "PMA projection expects model and data variables to be identical."
 
 	F = model.F

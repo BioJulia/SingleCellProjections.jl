@@ -1,8 +1,9 @@
 module SingleCellProjectionsStableRNGsExt
 
 using SingleCellProjections
+using .SingleCellProjections.SingleCellProjectionsCore
 isdefined(Base, :get_extension) ? (using StableRNGs) : (using ..StableRNGs)
 
-SingleCellProjections.seed2rng(seed) = StableRNG(seed)
+SingleCellProjectionsCore.seed2rng(seed) = StableRNG(seed)
 
 end

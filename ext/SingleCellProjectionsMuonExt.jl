@@ -1,6 +1,7 @@
 module SingleCellProjectionsMuonExt
 
 using SingleCellProjections
+using .SingleCellProjections.SingleCellProjectionsCore
 using DataFrames
 
 if isdefined(Base, :get_extension)
@@ -30,7 +31,7 @@ Create a `DataFrame` where the first column contains `var` IDs and the remaining
 
 See also: [`create_datamatrix`](@ref), [`create_obs`](@ref)
 """
-SingleCellProjections.create_var(a::AnnData) =
+SingleCellProjectionsCore.create_var(a::AnnData) =
 	insertcols(a.var, 1, :id=>collect(a.var_names); makeunique=true)
 
 """
@@ -43,7 +44,7 @@ Create a `DataFrame` where the first column contains `obs` IDs and the remaining
 
 See also: [`create_datamatrix`](@ref), [`create_var`](@ref)
 """
-SingleCellProjections.create_obs(a::AnnData) =
+SingleCellProjectionsCore.create_obs(a::AnnData) =
 	insertcols(a.obs, 1, :cell_id=>collect(a.obs_names); makeunique=true)
 
 get_var(a::AnnData; add_var) =
@@ -140,16 +141,16 @@ DataMatrix (2 variables and 456 observations)
 
 See also: [`create_var`](@ref), [`create_obs`](@ref)
 """
-function SingleCellProjections.create_datamatrix(::Type{T}, a::AnnData; add_var=false, add_obs=false) where T
+function SingleCellProjectionsCore.create_datamatrix(::Type{T}, a::AnnData; add_var=false, add_obs=false) where T
 	X = _transpose(a.X)
 	var = get_var(a; add_var)
 	obs = get_obs(a; add_obs)
 	X = convert_matrix(T, X)
 	DataMatrix(X, var, obs)
 end
-SingleCellProjections.create_datamatrix(a::AnnData; kwargs...) = create_datamatrix(Any, a; kwargs...)
+SingleCellProjectionsCore.create_datamatrix(a::AnnData; kwargs...) = create_datamatrix(Any, a; kwargs...)
 
-function SingleCellProjections.create_datamatrix(::Type{T}, am::AlignedMapping, name; add_var=false, add_obs=false) where T
+function SingleCellProjectionsCore.create_datamatrix(::Type{T}, am::AlignedMapping, name; add_var=false, add_obs=false) where T
 	a = am.ref
 	am_type = aligned_mapping_type(am)
 	X = am[name]
@@ -185,7 +186,7 @@ function SingleCellProjections.create_datamatrix(::Type{T}, am::AlignedMapping, 
 	X = convert_matrix(T, X)
 	DataMatrix(X, var, obs)
 end
-SingleCellProjections.create_datamatrix(am::AlignedMapping, name; kwargs...) = create_datamatrix(Any, am, name; kwargs...)
+SingleCellProjectionsCore.create_datamatrix(am::AlignedMapping, name; kwargs...) = create_datamatrix(Any, am, name; kwargs...)
 
 
 

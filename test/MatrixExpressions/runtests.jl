@@ -1,8 +1,10 @@
 using SingleCellProjections
-using .SingleCellProjections.MatrixExpressions
+using .SingleCellProjections.SingleCellProjectionsCore
+using .SingleCellProjectionsCore.MatrixExpressions
 using LinearAlgebra
 using SparseArrays
 using Random
+using StableRNGs
 
 using .MatrixExpressions: ChainOrder,
                           adjoint_sparse_chain_mul, plan_adjoint_sparse_chain,

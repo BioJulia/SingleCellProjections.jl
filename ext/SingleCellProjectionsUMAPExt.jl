@@ -1,6 +1,7 @@
 module SingleCellProjectionsUMAPExt
 
 using SingleCellProjections
+using .SingleCellProjections.SingleCellProjectionsCore
 using DataFrames
 isdefined(Base, :get_extension) ? (using UMAP) : (using ..UMAP)
 
@@ -10,9 +11,9 @@ struct UMAPModel <: ProjectionModel
 	obs::Symbol
 end
 
-SingleCellProjections.projection_isequal(m1::UMAPModel, m2::UMAPModel) = m1.m == m2.m && m1.var_match == m2.var_match
+SingleCellProjectionsCore.projection_isequal(m1::UMAPModel, m2::UMAPModel) = m1.m == m2.m && m1.var_match == m2.var_match
 
-SingleCellProjections.update_model(m::UMAPModel; obs=m.obs, kwargs...) = (UMAPModel(m.m, m.var_match, obs), kwargs)
+SingleCellProjectionsCore.update_model(m::UMAPModel; obs=m.obs, kwargs...) = (UMAPModel(m.m, m.var_match, obs), kwargs)
 
 
 """
@@ -32,8 +33,8 @@ function UMAP.umap(data::DataMatrix, args...; obs=:copy, kwargs...)
 	update_matrix(data, model.m.embedding, model; var="UMAP", model.obs)
 end
 
-function SingleCellProjections.project_impl(data::DataMatrix, model::UMAPModel; verbose=true, kwargs...)
-	@assert SingleCellProjections.table_cols_equal(data.var, model.var_match) "UMAP projection expects model and data variables to be identical."
+function SingleCellProjectionsCore.project_impl(data::DataMatrix, model::UMAPModel; verbose=true, kwargs...)
+	@assert SingleCellProjectionsCore.table_cols_equal(data.var, model.var_match) "UMAP projection expects model and data variables to be identical."
 
 	matrix = UMAP.transform(model.m, obs_coordinates(data))
 	update_matrix(data, matrix, model; var="UMAP", model.obs)
