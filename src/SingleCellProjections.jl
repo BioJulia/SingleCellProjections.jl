@@ -19,6 +19,8 @@ import LinearAlgebra
 using ReproducibleJobs
 using ReproducibleJobs: create_spec, ChecksummedFilePath, checksummedfilepath_job, ifelse_spec
 
+ReproducibleJobs.unmanage_rec(x::SCPC.ValueVector) = x
+ReproducibleJobs.unmanage_rec(x::SCPC.ProjectionModel) = x
 
 
 # TODO: This is a temporary solution when refactoring, remove
@@ -64,7 +66,15 @@ end
 include("types.jl")
 include("projectables.jl")
 include("datamatrixfuncs.jl")
-include("reproducible.jl")
+include("internal.jl")
+include("load.jl")
+include("annotate.jl")
+include("filter.jl")
+include("transform.jl")
+include("design.jl")
+include("normalize.jl")
+include("reduce.jl")
+include("adjoint.jl")
 
 
 # include("precompile.jl")

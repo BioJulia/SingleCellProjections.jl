@@ -1,0 +1,71 @@
+
+# TODO: Find a better name?
+function annot_leftjoin_impl(annot::DataFrame, df)
+	id_col = only(names(annot,1))
+	df_id_col = only(names(df,1))
+	@assert id_col == df_id_col "Annotation IDs didn't match, got \"$df_id_col\", but expected \"$id_col\"."
+	annot = copy(annot; copycols=false)
+	leftjoin!(annot, df; on=id_col)
+end
+annot_leftjoin(action::Action, args...) =
+	create_spec(annot_leftjoin_impl, action(args)...; use_cache=false, __version=v"0.1.0")
+
+
+
+annotate(::Mat, data; kwargs...) = get_matrix_spec(data)
+function annotate(f::Union{Var,Obs}, data; kwargs...)
+	s = get_spec(f, data)
+	df = get(kwargs, f isa Var ? :var : :obs, nothing)
+	df === nothing && return s
+	return create_spec(Projectable(annot_leftjoin), s, df)
+end
+
+# These should perhaps have a parameter saying how projections should be handled.
+# Because modifications to base var we probably also want in proj var.
+# Or maybe this will be solved differently, some projection step might choose to replace proj var with base var, and then it's not a problem.
+Jobs.annotate_obs(data, df; kwargs...) =
+	Job(create_spec(DataMatrixFunc(annotate), data; use_cache=false, kwargs..., obs=df))
+Jobs.annotate_var(data, df; kwargs...) =
+	Job(create_spec(DataMatrixFunc(annotate), data; use_cache=false, kwargs..., var=df))
+Jobs.annotate(data, var_df, obs_df; kwargs...) =
+	Job(create_spec(DataMatrixFunc(annotate), data; use_cache=false, kwargs..., var=var_df, obs=obs_df))
+
+
+
+
+var_counts_fraction_impl(action::Action, counts, sub_ind, tot_ind) =
+	create_spec(SCPC.var_counts_fraction2, action(counts), action(sub_ind), action(tot_ind); use_cache=true, __version=v"0.1.0")
+create_var_counts_fraction_impl_spec(counts, sub_ind, tot_ind) = create_spec(Projectable(var_counts_fraction_impl), counts, sub_ind, tot_ind)
+
+var_counts_fraction(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
+var_counts_fraction(::Var, counts, args...; kwargs...) = get_var_spec(counts)
+function var_counts_fraction(::Obs, counts, sub_filter, tot_filter, col; project_ids)
+	sub_ind = prefetch(_filter_ind(Var(), counts; fvar=sub_filter, project_var_ids=project_ids))
+	tot_ind = prefetch(_filter_ind(Var(), counts; fvar=tot_filter, project_var_ids=project_ids))
+	values_spec = create_var_counts_fraction_impl_spec(get_matrix_spec(counts), sub_ind, tot_ind)
+	create_add_column_spec(get_obs_spec(counts), col, values_spec)
+end
+
+# TODO: project_ids should it be :yes or :intersect by default???
+function Jobs.var_counts_fraction(counts, sub_filter, tot_filter, col; project_ids=:intersect)
+	Job(create_spec(DataMatrixFunc(var_counts_fraction), counts, sub_filter, tot_filter, col; use_cache=false, project_ids))
+end
+
+
+var_counts_sum_impl(action::Action, f, counts, ind) =
+	create_spec(SCPC.var_counts_sum2, f, action(counts), action(ind); use_cache=true, __version=v"0.1.0")
+create_var_counts_sum_impl_spec(f, counts, ind) = create_spec(Projectable(var_counts_sum_impl), f, counts, ind)
+
+var_counts_sum(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
+var_counts_sum(::Var, counts, args...; kwargs...) = get_var_spec(counts)
+function var_counts_sum(::Obs, counts, filter, col; project_ids, f=identity)
+	ind = prefetch(_filter_ind(Var(), counts; fvar=filter, project_var_ids=project_ids))
+	values_spec = create_var_counts_sum_impl_spec(f, get_matrix_spec(counts), ind)
+	create_add_column_spec(get_obs_spec(counts), col, values_spec)
+end
+
+# TODO: project_ids should it be :yes or :intersect by default???
+function Jobs.var_counts_sum(f, counts, filter, col; project_ids=:intersect)
+	Job(create_spec(DataMatrixFunc(var_counts_sum), counts, filter, col; use_cache=false, f, project_ids))
+end
+Jobs.var_counts_sum(counts, filter, col; kwargs...) = Jobs.var_counts_sum(identity, counts, filter, col; kwargs...)
