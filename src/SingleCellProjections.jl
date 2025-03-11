@@ -8,13 +8,62 @@ export
 # This symbol is only defined on Julia versions that support extensions
 isdefined(Base, :get_extension) || using Requires
 
-
 include("SingleCellProjectionsCore/SingleCellProjectionsCore.jl")
-using .SingleCellProjectionsCore
+
+import .SingleCellProjectionsCore as SCPC
+import SingleCell10x
+using DataFrames
+import StableHashTraits
+import LinearAlgebra
+
+using ReproducibleJobs
+using ReproducibleJobs: create_spec, ChecksummedFilePath, checksummedfilepath_job, ifelse_spec
+
+
+
+# TODO: This is a temporary solution when refactoring, remove
+module Jobs
+	function load_counts end
+	function get_matrix end
+	function get_var end
+	function get_obs end
+	function annotate end
+	function annotate_var end
+	function annotate_obs end
+	function var_counts_fraction end
+	function var_counts_sum end
+	function find_matching_ids end
+	function subset_annotation end
+	function subset_var end
+	function subset_obs end
+	function subset_matrix end
+	function filter_annotations end
+	function filter_var end
+	function filter_obs end
+	function filter_matrix end
+	function sctransform end
+	function logtransform end
+	function tf_idf_transform end
+	function center_matrix end # TEMP
+	function designmatrix end
+	function negative_regression_matrix end
+	function normalize_matrix end
+	function svd end
+	function force_layout end
+	function transpose end
+	function umap end
+	function tsne end
+	function project end
+end
 
 
 
 
+
+
+include("types.jl")
+include("projectables.jl")
+include("datamatrixfuncs.jl")
 include("reproducible.jl")
 
 
