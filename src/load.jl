@@ -14,17 +14,17 @@ end
 load_obs_spec(filename; kwargs...) = create_spec(load_obs_impl, filename; use_cache=false, kwargs..., __version=v"0.1.0")
 
 combine_obs_spec(obs, sample_names; id_col="cell_id", id_delim='_', kwargs...) =
-	create_spec(SCPC.combine_obs, obs, sample_names; id_col, id_delim, use_cache=true, kwargs..., __version=v"0.1.0") # TODO: Do we want use_cache=true here? Probably.
+	create_spec(SCPCore.combine_obs, obs, sample_names; id_col, id_delim, use_cache=true, kwargs..., __version=v"0.1.0") # TODO: Do we want use_cache=true here? Probably.
 
-combine_var_spec(vars; kwargs...) = create_spec(SCPC.combine_var, vars; use_cache=true, kwargs..., __version=v"0.1.0") # TODO: Do we want use_cache=true here? Probably.
+combine_var_spec(vars; kwargs...) = create_spec(SCPCore.combine_var, vars; use_cache=true, kwargs..., __version=v"0.1.0") # TODO: Do we want use_cache=true here? Probably.
 
 sample_var_indices_spec(sample_var, var; kwargs...) =
-	create_spec(SCPC.sample_var_indices, sample_var, var; use_cache=true, kwargs..., __version=v"0.1.0")
+	create_spec(SCPCore.sample_var_indices, sample_var, var; use_cache=true, kwargs..., __version=v"0.1.0")
 
 function load_sample_matrix_metadata_impl(filename, var_ind)
 	@assert filename isa ChecksummedFilePath
 	filename = string(filename)
-	SCPC.load_sample_matrix_metadata(filename, var_ind)
+	SCPCore.load_sample_matrix_metadata(filename, var_ind)
 end
 load_sample_matrix_metadata_spec(filename, var_ind; kwargs...) =
 	create_spec(load_sample_matrix_metadata_impl, filename, var_ind; use_cache=true, kwargs..., __version=v"0.1.0")
@@ -32,7 +32,7 @@ load_sample_matrix_metadata_spec(filename, var_ind; kwargs...) =
 function load_hcat_sample_matrices_impl(filenames, args...; kwargs...)
 	@assert all(x->x isa ChecksummedFilePath, filenames)
 	filenames = string.(filenames)
-	SCPC.load_hcat_sample_matrices(filenames, args...; kwargs...)
+	SCPCore.load_hcat_sample_matrices(filenames, args...; kwargs...)
 end
 load_hcat_sample_matrices_spec(filenames, matrix_metadatas, var_inds; kwargs...) =
 	create_spec(load_hcat_sample_matrices_impl, filenames, matrix_metadatas, var_inds; use_cache=false, kwargs..., __version=v"0.1.0")

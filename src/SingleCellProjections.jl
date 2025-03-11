@@ -10,7 +10,7 @@ isdefined(Base, :get_extension) || using Requires
 
 include("SingleCellProjectionsCore/SingleCellProjectionsCore.jl")
 
-import .SingleCellProjectionsCore as SCPC
+import .SingleCellProjectionsCore as SCPCore
 import SingleCell10x
 using DataFrames
 import StableHashTraits
@@ -19,8 +19,8 @@ import LinearAlgebra
 using ReproducibleJobs
 using ReproducibleJobs: create_spec, ChecksummedFilePath, checksummedfilepath_job, ifelse_spec
 
-ReproducibleJobs.unmanage_rec(x::SCPC.ValueVector) = x
-ReproducibleJobs.unmanage_rec(x::SCPC.ProjectionModel) = x
+ReproducibleJobs.unmanage_rec(x::SCPCore.ValueVector) = x
+ReproducibleJobs.unmanage_rec(x::SCPCore.ProjectionModel) = x
 
 
 # TODO: This is a temporary solution when refactoring, remove

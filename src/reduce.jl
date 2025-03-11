@@ -1,12 +1,12 @@
 # SVD is an example where the model comes after the result. I.e. svd(data) => UΣVᵀ, but the model is just UΣ.
 function svd(action::Action, matrix; kwargs...)
 	# First SVD of unprojected
-	svd_spec = create_spec(SCPC.implicitsvd, matrix; use_cache=true, kwargs..., __version=v"0.1.0")
+	svd_spec = create_spec(SCPCore.implicitsvd, matrix; use_cache=true, kwargs..., __version=v"0.1.0")
 
 	if action isa Eval
 		return svd_spec
 	else# if action isa Projection
-		return create_spec(SCPC.svd_project, svd_spec, action(matrix); use_cache=true, __version=v"0.1.0")
+		return create_spec(SCPCore.svd_project, svd_spec, action(matrix); use_cache=true, __version=v"0.1.0")
 	end
 end
 
@@ -25,9 +25,9 @@ end
 
 
 
-# TODO: Get rid of this by passing the matrix object to SCPC.knn_adjacency_matrix instead?
+# TODO: Get rid of this by passing the matrix object to SCPCore.knn_adjacency_matrix instead?
 knn_adjacency_matrix_impl(matrix; kwargs...) =
-	SCPC.knn_adjacency_matrix(SCPC.obs_coordinates(matrix); kwargs...)
+	SCPCore.knn_adjacency_matrix(SCPCore.obs_coordinates(matrix); kwargs...)
 
 knn_adjacency_matrix(action::Action, matrix; kwargs...) =
 	create_spec(knn_adjacency_matrix_impl, action(matrix); kwargs..., use_cache=true, __version=v"0.1.0")
@@ -38,7 +38,7 @@ create_knn_adjacency_matrix_spec(matrix; kwargs...) =
 
 # Whoa. Shorten this name.
 function inv_dist_squared_adjacency_matrix2(X, Y; min_dist=1e-6, kwargs...)
-	SCPC.knn_adjacency_matrix2(SCPC.obs_coordinates(X), SCPC.obs_coordinates(Y); kwargs...) do x
+	SCPCore.knn_adjacency_matrix2(SCPCore.obs_coordinates(X), SCPCore.obs_coordinates(Y); kwargs...) do x
 		1.0 / max(min_dist, x)^2
 	end
 end
@@ -70,7 +70,7 @@ function force_layout(action::Action, matrix;
                      )
 	# First force layout of unprojected
 	adj_spec = create_knn_adjacency_matrix_spec(matrix; k, make_symmetric)
-	fl_spec = create_spec(SCPC.force_layout, adj_spec;
+	fl_spec = create_spec(SCPCore.force_layout, adj_spec;
 	                      ndim,
 	                      niter,
 	                      link_distance, link_strength,

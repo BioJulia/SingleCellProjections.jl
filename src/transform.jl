@@ -1,7 +1,7 @@
 function logtransform_matrix(action::Action, T::DataType, matrix; scale_factor, var_ind)
 	matrix = action(matrix)
 	var_ind = action(var_ind)
-	create_spec(SCPC.logtransform_matrix, T, matrix; scale_factor, var_ind, use_cache=false, __version=v"0.1.0")
+	create_spec(SCPCore.logtransform_matrix, T, matrix; scale_factor, var_ind, use_cache=false, __version=v"0.1.0")
 end
 
 function logtransform(f::Union{Mat,Var}, T::DataType, data; var_filter=Returns(true), project_var_ids=:intersect, kwargs...)

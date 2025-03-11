@@ -47,12 +47,12 @@ function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 		f = action(f)
 		df = action(df)
 	end
-	spec = create_spec(SCPC.find_matching_ids, f, df; use_cache=true, __version=v"0.1.0")
+	spec = create_spec(SCPCore.find_matching_ids, f, df; use_cache=true, __version=v"0.1.0")
 
 	if project_ids == :intersect
 		df = action(df)
 		# TODO: simplify ids2 spec by using a function for extracting IDs directly
-		ids2 = create_spec(SCPC.find_matching_ids, Returns(true), df; use_cache=false, __version=v"0.1.0")
+		ids2 = create_spec(SCPCore.find_matching_ids, Returns(true), df; use_cache=false, __version=v"0.1.0")
 		spec = create_spec(intersect_ids_impl, spec, ids2; use_cache=true, __version=v"0.1.0")
 	end
 	spec
@@ -68,19 +68,19 @@ Jobs.find_matching_ids(args...; kwargs...) =
 
 
 ids_to_indices(action::Action, args...) =
-	create_spec(SCPC.ids_to_indices, action(args)...; use_cache=true, __version=v"0.1.0")
+	create_spec(SCPCore.ids_to_indices, action(args)...; use_cache=true, __version=v"0.1.0")
 create_ids_to_indices_spec(df, ids) =
 	create_spec(Projectable(ids_to_indices), df, ids)
 
 annotation_getindex(action::Action, args...) =
-	create_spec(SCPC.annotation_getindex, action(args)...; use_cache=true, __version=v"0.1.0")
+	create_spec(SCPCore.annotation_getindex, action(args)...; use_cache=true, __version=v"0.1.0")
 create_annotation_getindex_spec(df, ind) =
 	create_spec(Projectable(annotation_getindex), df, ind)
 
 
 
 matrix_getindex(action::Action, args...; kwargs...) =
-	create_spec(SCPC.matrix_getindex, action(args)...; action(kwargs)..., use_cache=false, __version=v"0.1.0")
+	create_spec(SCPCore.matrix_getindex, action(args)...; action(kwargs)..., use_cache=false, __version=v"0.1.0")
 function create_matrix_getindex_spec(data; kwargs...)
 	isempty(setdiff(keys(kwargs), (:var_ind,:obs_ind))) || throw(ArgumentError("Only allowed kwargs are `var_ind` and `obs_ind`, got: $(keys(kwargs))."))
 	create_spec(Projectable(matrix_getindex), data; kwargs...)
@@ -88,7 +88,7 @@ end
 
 
 extract_annotation(action::Action, args...) =
-	create_spec(SCPC.extract_annotation, action(args)...; use_cache=false, __version=v"0.1.0")
+	create_spec(SCPCore.extract_annotation, action(args)...; use_cache=false, __version=v"0.1.0")
 create_extract_annotation_spec(df, name) =
 	create_spec(Projectable(extract_annotation), df, name)
 

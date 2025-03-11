@@ -1,9 +1,9 @@
-# It's confusing with center_matrix, Jobs.center_matrix and SCPC.center_matrix being different functions having the same name.
+# It's confusing with center_matrix, Jobs.center_matrix and SCPCore.center_matrix being different functions having the same name.
 # But we'll get rid of it so that doesn't matter!
 function center_matrix(action::Action, matrix)
 	# model is created from original data
-	model = create_spec(SCPC.CenteringModel2, matrix; use_cache=true, __version=v"0.1.0")
-	create_spec(SCPC.center_project, model, action(matrix); __version=v"0.1.0")
+	model = create_spec(SCPCore.CenteringModel2, matrix; use_cache=true, __version=v"0.1.0")
+	create_spec(SCPCore.center_project, model, action(matrix); __version=v"0.1.0")
 end
 
 
@@ -25,7 +25,7 @@ end
 
 
 negative_regression_matrix_impl(::Action, data, dm; kwargs...) =
-	create_spec(SCPC.negative_regression_matrix, data, dm; use_cache=true, kwargs..., __version=v"0.1.0") # NB: No action, always use original
+	create_spec(SCPCore.negative_regression_matrix, data, dm; use_cache=true, kwargs..., __version=v"0.1.0") # NB: No action, always use original
 negative_regression_matrix_impl_spec(data, dm; kwargs...) =
 	create_spec(Projectable(negative_regression_matrix_impl), data, dm; kwargs...)
 
@@ -49,7 +49,7 @@ end
 
 
 normalize_matrix_impl(action::Action, data, negβT, dm) =
-	create_spec(SCPC.normalize_matrix2, action(data), action(negβT), action(dm); use_cache=false, __version=v"0.1.0")
+	create_spec(SCPCore.normalize_matrix2, action(data), action(negβT), action(dm); use_cache=false, __version=v"0.1.0")
 normalize_matrix_impl_spec(data, negβT, dm) =
 	create_spec(Projectable(normalize_matrix_impl), data, negβT, dm; use_cache=false)
 

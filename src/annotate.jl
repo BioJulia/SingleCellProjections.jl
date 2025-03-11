@@ -33,7 +33,7 @@ Jobs.annotate(data, var_df, obs_df; kwargs...) =
 
 
 var_counts_fraction_impl(action::Action, counts, sub_ind, tot_ind) =
-	create_spec(SCPC.var_counts_fraction2, action(counts), action(sub_ind), action(tot_ind); use_cache=true, __version=v"0.1.0")
+	create_spec(SCPCore.var_counts_fraction2, action(counts), action(sub_ind), action(tot_ind); use_cache=true, __version=v"0.1.0")
 create_var_counts_fraction_impl_spec(counts, sub_ind, tot_ind) = create_spec(Projectable(var_counts_fraction_impl), counts, sub_ind, tot_ind)
 
 var_counts_fraction(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
@@ -52,7 +52,7 @@ end
 
 
 var_counts_sum_impl(action::Action, f, counts, ind) =
-	create_spec(SCPC.var_counts_sum2, f, action(counts), action(ind); use_cache=true, __version=v"0.1.0")
+	create_spec(SCPCore.var_counts_sum2, f, action(counts), action(ind); use_cache=true, __version=v"0.1.0")
 create_var_counts_sum_impl_spec(f, counts, ind) = create_spec(Projectable(var_counts_sum_impl), f, counts, ind)
 
 var_counts_sum(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
