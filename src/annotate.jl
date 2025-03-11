@@ -1,4 +1,3 @@
-
 # TODO: Find a better name?
 function annot_leftjoin_impl(annot::DataFrame, df)
 	id_col = only(names(annot,1))

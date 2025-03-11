@@ -45,6 +45,7 @@ export
 	sctransform,
 	tf_idf_transform,
 	knn_adjacency_matrix,
+	knn_adjacency_matrix2,
 	force_layout,
 	var_to_obs!,
 	var_to_obs,
@@ -124,6 +125,7 @@ include("annotation_models.jl")
 include("subset_expression.jl")
 
 include("adjacency_matrices.jl")
+include("adjacency_matrices2.jl")
 
 include("barnes_hut.jl")
 include("force_layout.jl")

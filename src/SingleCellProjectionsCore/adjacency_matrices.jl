@@ -1,7 +1,7 @@
-function knn_adjacency_matrix(X; k, make_symmetric)
+function knn_adjacency_matrix(X; k, make_symmetric, tree_fun=KDTree)
 	N = size(X,2)
 	k = min(k,N-1)
-	tree = KDTree(X)
+	tree = tree_fun(X)
 	indices,_ = knn(tree, X, k+1)
 
 	I = zeros(Int, k*N)

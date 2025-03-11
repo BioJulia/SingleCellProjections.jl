@@ -155,5 +155,5 @@ function force_layout(::Val{ndim}, adj::AbstractMatrix;
     reduce(hcat,pos)
 end
 
-force_layout(adj::AbstractMatrix; ndim::Int=2, kwargs...) =
+force_layout(adj::AbstractMatrix; ndim::Int=3, kwargs...) =
     force_layout(Val(ndim), adj; kwargs...)

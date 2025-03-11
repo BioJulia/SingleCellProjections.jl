@@ -75,7 +75,7 @@ create_ids_to_indices_spec(df, ids) =
 annotation_getindex(action::Action, args...) =
 	create_spec(SCPC.annotation_getindex, action(args)...; use_cache=true, __version=v"0.1.0")
 create_annotation_getindex_spec(df, ind) =
-	create_spec(Projectable(annotation_getindex), df, ind; use_cache=false)
+	create_spec(Projectable(annotation_getindex), df, ind)
 
 
 
@@ -113,3 +113,11 @@ add_column_impl(df::DataFrame, name, vals) = insertcols(df, name=>vals; copycols
 add_column(action::Action, df, name, vals) =
 	create_spec(add_column_impl, action(df), name, action(vals); use_cache=false, __version=v"0.1.0")
 create_add_column_spec(df, name, vals) = create_spec(Projectable(add_column), df, name, vals)
+
+
+
+prefixed_ids_impl(col::String, prefix::String, n::Int) = DataFrame(col=>string.(prefix, 1:n))
+prefixed_ids(action::Action, col, prefix, n) =
+	create_spec(prefixed_ids_impl, col, action(prefix), action(n); use_cache=false, __version=v"0.1.0")
+create_prefixed_ids_spec(col, prefix, n) =
+	create_spec(Projectable(prefixed_ids), col, prefix, n)
