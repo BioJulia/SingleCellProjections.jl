@@ -7,18 +7,6 @@ end
 function logtransform(f::Union{Mat,Var}, T::DataType, data; var_filter=Returns(true), project_var_ids=:intersect, kwargs...)
 	var_spec = get_var_spec(data)
 
-	# # --- Old ---
-	# # var_ids = create_find_matching_ids_spec(var_filter, var_spec; fix_ids=true)
-	# var_ids = create_find_matching_ids_spec(var_filter, var_spec; project_ids=:intersect) # project_ids should be param to logtransform
-
-	# # all_var_ids = create_find_matching_ids_spec(Returns(true), var_spec; fix_ids=false)
-	# all_var_ids = create_find_matching_ids_spec(Returns(true), var_spec; project_ids=:no)
-
-	# # All IDs in matching base case, in the same order as in base
-	# # intersected_var_ids_spec = create_intersect_ids_spec(var_ids)
-	# intersected_var_ids_spec = create_intersect_ids_spec(var_ids, all_var_ids)
-	# # ---------
-
 	var_ids = create_find_matching_ids_spec(var_filter, var_spec; project_ids=project_var_ids)
 	var_ind = prefetch(create_ids_to_indices_spec(var_spec, var_ids))
 
