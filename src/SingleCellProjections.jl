@@ -11,6 +11,7 @@ isdefined(Base, :get_extension) || using Requires
 include("SingleCellProjectionsCore/SingleCellProjectionsCore.jl")
 
 import .SingleCellProjectionsCore as SCPCore
+import SCTransform
 import SingleCell10x
 using DataFrames
 import StableHashTraits
@@ -34,6 +35,8 @@ module Jobs
 	function annotate_obs end
 	function var_counts_fraction end
 	function var_counts_sum end
+	function obs_counts_fraction end
+	function obs_counts_sum end
 	function find_matching_ids end
 	function subset_annotation end
 	function subset_var end

@@ -75,7 +75,6 @@ export
 	create_obs
 
 using LinearAlgebra
-import LinearAlgebra: svd
 
 using SparseArrays
 using Statistics

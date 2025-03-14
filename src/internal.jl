@@ -26,18 +26,21 @@ function intersect_ids_impl(ids::DataFrame, ids2::DataFrame)
 	DataFrame(id_col => intersect(ids[!,1],ids2[!,1]))
 end
 
-# function intersect_ids(action::Action, ids, ids2)
-# 	ids = action(ids)
-# 	ids2 = action(ids2)
-# 	ids === ids2 && return ids
+function intersect_ids(action::Action, ids, ids2; fix_first=true, fix_second=false)
+	ids = fix_first ? ids : action(ids)
+	ids2 = fix_second ? ids2 : action(ids2)
+	ids === ids2 && return ids
+	create_spec(intersect_ids_impl, ids, ids2; use_cache=false, __version=v"0.1.0")
+end
+create_intersect_ids_spec(ids, ids2; kwargs...) =
+	create_spec(Projectable(intersect_ids), ids, ids2; kwargs...)
 
-# 	spec = create_spec(intersect_ids_impl, ids, ids2; use_cache=false, __version=v"0.1.0")
 
-# 	# Here's the place for checking for missing and extra IDs!
-# 	check_missing_ids_spec(spec, ids, ids2)
-# end
-# create_intersect_ids_spec(ids, ids2) =
-# 	create_spec(Projectable(intersect_ids), ids, ids2)
+
+
+get_ids_impl(df) = select(df, 1; copycols=false)
+get_ids(action::Action, df) = create_spec(get_ids_impl, action(df); use_cache=false, __version=v"0.1.0")
+create_get_ids_spec(df) = create_spec(Projectable(get_ids), df)
 
 
 
@@ -49,11 +52,14 @@ function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 	end
 	spec = create_spec(SCPCore.find_matching_ids, f, df; use_cache=true, __version=v"0.1.0")
 
-	if project_ids == :intersect
-		df = action(df)
+	if project_ids == :intersect && action isa Projection
+		# df = action(df)
 		# TODO: simplify ids2 spec by using a function for extracting IDs directly
-		ids2 = create_spec(SCPCore.find_matching_ids, Returns(true), df; use_cache=false, __version=v"0.1.0")
-		spec = create_spec(intersect_ids_impl, spec, ids2; use_cache=true, __version=v"0.1.0")
+		# ids2 = create_spec(SCPCore.find_matching_ids, Returns(true), df; use_cache=false, __version=v"0.1.0")
+		# spec = create_spec(intersect_ids_impl, spec, ids2; use_cache=true, __version=v"0.1.0")
+
+		ids2 = create_get_ids_spec(df)
+		spec = create_spec(intersect_ids_impl, spec, action(ids2); use_cache=true, __version=v"0.1.0")
 	end
 	spec
 end
@@ -73,7 +79,7 @@ create_ids_to_indices_spec(df, ids) =
 	create_spec(Projectable(ids_to_indices), df, ids)
 
 annotation_getindex(action::Action, args...) =
-	create_spec(SCPCore.annotation_getindex, action(args)...; use_cache=true, __version=v"0.1.0")
+	create_spec(SCPCore.annotation_getindex, action(args)...; use_cache=false, __version=v"0.1.0")
 create_annotation_getindex_spec(df, ind) =
 	create_spec(Projectable(annotation_getindex), df, ind)
 
