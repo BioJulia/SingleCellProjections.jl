@@ -6,7 +6,7 @@ end
 
 function muoversigmafactorization(logCellCounts::AbstractVector, logGeneMean::AbstractVector,
                                   b0::Vector{Float64},b1::Vector{Float64},theta::Vector{Float64};
-                                  rtol=1e-3,atol=0)
+                                  rtol=1e-3,atol=0.0)
 	xValues = logCellCounts
 	yValues = logGeneMean
 
@@ -21,7 +21,7 @@ function muoversigmafactorization(logCellCounts::AbstractVector, logGeneMean::Ab
 
 	f(xI,yI) = -muoversigma(b0[yI],b1[yI],theta[yI],xValuesSorted[xI])
 
-	B,xIndUsed,yIndUsed = bilinearapproximation([1,length(xValuesSorted)],[1,length(yValuesSorted)],xValuesSorted,yValuesSorted,f; rtol=rtol, atol=atol)
+	B,xIndUsed,yIndUsed = bilinearapproximation([1,length(xValuesSorted)],[1,length(yValuesSorted)],xValuesSorted,yValuesSorted,f; rtol, atol)
 
 	A = linearinterpolationmatrix(yValues,yValuesSorted[yIndUsed],true)
 	C = linearinterpolationmatrix(xValues,xValuesSorted[xIndUsed],false)
@@ -141,3 +141,45 @@ function sctransformsparse(::Type{T}, X::SparseMatrixCSC, features, params;
 end
 sctransformsparse(X::SparseMatrixCSC, args...; kwargs...) =
 	sctransformsparse(Float64, X, args...; kwargs...)
+
+
+
+
+
+# assumes each column is a cell
+function sctransformsparse2(::Type{T}, X::SparseMatrixCSC, params, feature_ind;
+                            cell_ind = 1:size(X,2),
+                            clip=sqrt(size(X,2)/30), kwargs...) where T
+	# @assert size(X,1)==length(getproperty(features,first(propertynames(features)))) "The number of rows in X and features must match"
+	@assert size(params,1) == length(feature_ind)
+
+	feature_mask = falses(size(X,1))
+	feature_mask[feature_ind] .= true
+
+	β0 = params.beta0
+	β1 = params.beta1
+	θ  = params.theta
+	logGeneMean = params.logGeneMean
+
+	logCellCounts = SCTransform.logcellcounts(X, feature_mask)[cell_ind]
+
+	# create new Float64-valued sparse matrix with selected rows/columns
+
+	# X = convert.(Float64, X[feature_ind,cell_ind])
+
+	# A little trick to save memory by avoiding duplicating the rowval and colptr vectors
+	# Ideally, this could be done in one step to avoid duplicating nzval too
+	X = X[feature_ind,cell_ind]
+	X = SparseMatrixCSC(size(X)..., X.colptr, X.rowval, convert.(T,X.nzval))
+
+
+	# compute (approximate) factorization of matrix with elements -μᵢⱼ/σᵢⱼ
+	B1,B2,B3 = muoversigmafactorization(logCellCounts, logGeneMean, β0, β1, θ; kwargs...)
+	dividebysigma!(X,logCellCounts,β0,β1,θ; clip=clip)
+
+	Y = matrixproduct((:B₁,B1), (:B₂,B2), (:B₃,B3))
+	Z = matrixsum((:A,X), Y)
+	Z
+end
+sctransformsparse2(X::SparseMatrixCSC, args...; kwargs...) =
+	sctransformsparse2(Float64, X, args...; kwargs...)

@@ -9,6 +9,8 @@ end
 annot_leftjoin(action::Action, args...) =
 	create_spec(annot_leftjoin_impl, action(args)...; use_cache=false, __version=v"0.1.0")
 
+create_annot_leftjoin_spec(annot, df) = create_spec(Projectable(annot_leftjoin), annot, df)
+
 
 
 annotate(::Mat, data; kwargs...) = get_matrix_spec(data)
@@ -16,7 +18,7 @@ function annotate(f::Union{Var,Obs}, data; kwargs...)
 	s = get_spec(f, data)
 	df = get(kwargs, f isa Var ? :var : :obs, nothing)
 	df === nothing && return s
-	return create_spec(Projectable(annot_leftjoin), s, df)
+	return create_annot_leftjoin_spec(s, df)
 end
 
 # These should perhaps have a parameter saying how projections should be handled.

@@ -107,9 +107,9 @@ annotation_nrows_spec(df) =
 
 
 # TODO: Rename
-hcat_impl(action::Action, args...) =
-	create_spec(LinearAlgebra.hcat, action(args)...; use_cache=false, __version=v"0.1.0")
-create_hcat_spec(args...) = create_spec(Projectable(hcat_impl), args...)
+hcat_impl(action::Action, args...; kwargs...) =
+	create_spec(hcat, action(args)...; kwargs..., use_cache=false, __version=v"0.1.0")
+create_hcat_spec(args...; kwargs...) = create_spec(Projectable(hcat_impl), args...)
 
 
 
