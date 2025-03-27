@@ -2,8 +2,8 @@ module SingleCellProjections
 
 export
 	SingleCellProjectionsCore, # TODO: make public instead
+	DataMatrix,
 	Jobs # TODO: remove probably
-
 
 # This symbol is only defined on Julia versions that support extensions
 isdefined(Base, :get_extension) || using Requires
@@ -11,6 +11,7 @@ isdefined(Base, :get_extension) || using Requires
 include("SingleCellProjectionsCore/SingleCellProjectionsCore.jl")
 
 import .SingleCellProjectionsCore as SCPCore
+using .SCPCore: DataMatrix
 import SCTransform
 import SingleCell10x
 using DataFrames
@@ -60,9 +61,6 @@ module Jobs
 	function tsne end
 	function project end
 end
-
-
-
 
 
 
