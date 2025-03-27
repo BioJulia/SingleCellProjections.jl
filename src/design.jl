@@ -57,9 +57,10 @@ function design(f::Union{Mat,Obs}, data, args...; center)
 		if center
 			nrows_spec = prefetch(annotation_nrows_spec(obs))
 			intercept_spec = covariate_spec(nrows_spec; center)
-			covariate_specs = vcat(intercept_spec, covariate_specs)
+			return create_hcat_spec(intercept_spec, covariate_specs...)
+		else
+			return create_hcat_spec(covariate_specs...)
 		end
-		return create_hcat_spec(covariate_specs...)
 	else #if f isa Obs
 		value_vector_model_specs = value_vector_model_spec.(annotation_specs)
 		return covariate_names_spec(args .=> value_vector_model_specs; center)
