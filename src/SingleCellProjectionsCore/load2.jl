@@ -86,7 +86,7 @@ function subset_by_var_indices(X::SparseMatrixCSC{Tv,Ti},
 	# Duplicates not allowed - That is, the same row in sample_var is not allowed to map to multiple rows in var.
 	@assert allunique(var_ind_matching) "Each row in `sample_var` can match at most one row in `var`." # TODO: report ID of duplicates in error message
 
-	if var_ind_matching != 1:length(var_ind_matching)
+	if var_ind_matching != 1:size(X,1)
 		X = X[var_ind_matching,:] # this is faster when var_ind_matching is sorted
 	end
 
