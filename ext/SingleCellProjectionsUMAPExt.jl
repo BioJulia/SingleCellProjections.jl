@@ -1,19 +1,25 @@
 module SingleCellProjectionsUMAPExt
 
+using ReproducibleJobs
+using ReproducibleJobs: create_spec
 using SingleCellProjections
-using .SingleCellProjections.SingleCellProjectionsCore
+using SingleCellProjections: DataMatrixFunc, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_matrix_spec, get_spec, create_prefixed_ids_spec
+import .SingleCellProjectionsCore as SCPCore
+
 using DataFrames
+
+
 isdefined(Base, :get_extension) ? (using UMAP) : (using ..UMAP)
 
-struct UMAPModel <: ProjectionModel
+struct UMAPModel <: SCPCore.ProjectionModel
 	m::UMAP.UMAP_
 	var_match::DataFrame
 	obs::Symbol
 end
 
-SingleCellProjectionsCore.projection_isequal(m1::UMAPModel, m2::UMAPModel) = m1.m == m2.m && m1.var_match == m2.var_match
+SCPCore.projection_isequal(m1::UMAPModel, m2::UMAPModel) = m1.m == m2.m && m1.var_match == m2.var_match
 
-SingleCellProjectionsCore.update_model(m::UMAPModel; obs=m.obs, kwargs...) = (UMAPModel(m.m, m.var_match, obs), kwargs)
+SCPCore.update_model(m::UMAPModel; obs=m.obs, kwargs...) = (UMAPModel(m.m, m.var_match, obs), kwargs)
 
 
 """
@@ -29,16 +35,54 @@ The other `args...` and `kwargs...` are forwarded to `UMAP.umap`. See `UMAP` doc
 See also: [`UMAP.umap`](https://github.com/dillondaudert/UMAP.jl)
 """
 function UMAP.umap(data::DataMatrix, args...; obs=:copy, kwargs...)
-	model = UMAPModel(UMAP.UMAP_(obs_coordinates(data), args...; kwargs...), select(data.var,1), obs)
-	update_matrix(data, model.m.embedding, model; var="UMAP", model.obs)
+	model = UMAPModel(UMAP.UMAP_(SCPCore.obs_coordinates(data), args...; kwargs...), select(data.var,1), obs)
+	SCPCore.update_matrix(data, model.m.embedding, model; var="UMAP", model.obs)
 end
 
-function SingleCellProjectionsCore.project_impl(data::DataMatrix, model::UMAPModel; verbose=true, kwargs...)
-	@assert SingleCellProjectionsCore.table_cols_equal(data.var, model.var_match) "UMAP projection expects model and data variables to be identical."
+function SCPCore.project_impl(data::DataMatrix, model::UMAPModel; verbose=true, kwargs...)
+	@assert SCPCore.table_cols_equal(data.var, model.var_match) "UMAP projection expects model and data variables to be identical."
 
-	matrix = UMAP.transform(model.m, obs_coordinates(data))
-	update_matrix(data, matrix, model; var="UMAP", model.obs)
+	matrix = UMAP.transform(model.m, SCPCore.obs_coordinates(data))
+	SCPCore.update_matrix(data, matrix, model; var="UMAP", model.obs)
 end
+
+
+
+
+# ReproducibleJobs version
+
+umap_model(matrix; ndim::Int, kwargs...) = UMAP.UMAP_(SCPCore.obs_coordinates(matrix), ndim; kwargs...)
+umap_embedding(model::UMAP_) = model.embedding
+umap_project(model::UMAP_, matrix) = UMAP.transform(model, SCPCore.obs_coordinates(matrix))
+
+
+
+function umap_impl(action::Action, matrix; ndim, kwargs...)
+	# First create UMAP model
+	umap_model_spec = create_spec(umap_model, matrix; ndim, kwargs..., use_cache=true, __version=v"0.1.0")
+
+	if action isa Eval
+		return create_spec(umap_embedding, umap_model_spec; use_cache=false, __version=v"0.1.0")
+	else# if action isa Projection
+		return create_spec(umap_project, umap_model_spec, action(matrix); use_cache=true, __version=v"0.1.0")
+	end
+end
+
+
+function umap(::Mat, data; ndim, kwargs...)
+	matrix_spec = get_matrix_spec(data)
+	create_spec(Projectable(umap_impl), matrix_spec; ndim, kwargs...)
+end
+umap(::Obs, data; ndim, kwargs...) = get_spec(Obs(), data)
+umap(::Var, data; ndim, kwargs...) = create_prefixed_ids_spec("id", "UMAP ", ndim)
+
+
+function Jobs.umap(data; ndim, kwargs...)
+	Job(create_spec(DataMatrixFunc(umap), data; ndim, kwargs...))
+end
+
+
+
 
 # - show -
 function Base.show(io::IO, ::MIME"text/plain", model::UMAPModel)
