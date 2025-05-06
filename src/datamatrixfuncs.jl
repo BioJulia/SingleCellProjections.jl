@@ -32,7 +32,8 @@ setup_datamatrix(::Var, ::typeof(SCPCore.DataMatrix), spec) = spec.args[2]
 setup_datamatrix(::Obs, ::typeof(SCPCore.DataMatrix), spec) = spec.args[3]
 
 # This is needed when replacing with something that itself is a projection
-setup_datamatrix(f::DataMatrixField, ::typeof(project), spec) = setup_datamatrix(f, project(spec, nothing))
+# setup_datamatrix(f::DataMatrixField, ::typeof(project), spec) = setup_datamatrix(f, project(spec, nothing)) # this must be wrong
+setup_datamatrix(f::DataMatrixField, ::typeof(project), spec) = setup_datamatrix(f, project(spec)) # is this right?
 
 
 # WIP - perhaps spec should be unwrapped at an earlier point - perhaps in ReproducibleJobs?
