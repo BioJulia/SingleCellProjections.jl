@@ -13,8 +13,8 @@ function load_obs_impl(filename)
 end
 load_obs_spec(filename; kwargs...) = create_spec(load_obs_impl, filename; use_cache=false, kwargs..., __version=v"0.1.0")
 
-combine_obs_spec(obs, sample_names; id_col="cell_id", id_delim='_', kwargs...) =
-	create_spec(SCPCore.combine_obs, obs, sample_names; id_col, id_delim, use_cache=true, kwargs..., __version=v"0.1.0") # TODO: Do we want use_cache=true here? Probably.
+combine_obs_spec(obs, sample_names; id_col="cell_id", id_delim='_', sample_name_col="sample_name", kwargs...) =
+	create_spec(SCPCore.combine_obs, obs, sample_names; id_col, id_delim, sample_name_col, use_cache=true, kwargs..., __version=v"0.2.0") # TODO: Do we want use_cache=true here? Probably.
 
 combine_var_spec(vars; kwargs...) = create_spec(SCPCore.combine_var, vars; use_cache=true, kwargs..., __version=v"0.1.0") # TODO: Do we want use_cache=true here? Probably.
 

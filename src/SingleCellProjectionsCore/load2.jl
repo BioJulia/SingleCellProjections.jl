@@ -1,7 +1,8 @@
 # WIP.
 # Intended to be public function in low-level API.
 function combine_obs(obs::Vector{DataFrame}, sample_names::Vector{String};
-                     id_col="cell_id", id_delim='_')
+                     id_col = "cell_id", id_delim = '_',
+                     sample_name_col = "sample_name")
 	@assert length(obs) == length(sample_names)
 
 	id_col_names = only.(names.(obs, 1))
@@ -17,6 +18,10 @@ function combine_obs(obs::Vector{DataFrame}, sample_names::Vector{String};
 			o[!,1] = ids # NB: [!,1] ensures we don't change the original column, but store a new vector just reusing the column name
 		else
 			insertcols!(o, 1, id_col=>ids)
+		end
+
+		if sample_name_col !== nothing
+			insertcols!(o, 2, sample_name_col=>sn)
 		end
 	end
 	vcat(obs..., cols=:union)
