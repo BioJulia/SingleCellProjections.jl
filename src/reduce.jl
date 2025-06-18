@@ -22,15 +22,59 @@ function Jobs.svd(args...; seed=1234, kwargs...)
 end
 
 
+get_components_impl(F::LinearAlgebra.SVD) = LinearAlgebra.Diagonal(F.S)*F.Vt
+get_components(action::Action, matrix) =
+	create_spec(get_components_impl, action(matrix); use_cache=false, __version=v"0.1.0")
+
+get_loadings_impl(F::LinearAlgebra.SVD) = F.U
+get_loadings(action::Action, matrix) =
+	create_spec(get_loadings_impl, action(matrix); use_cache=false, __version=v"0.1.0")
 
 
 
-# TODO: Get rid of this by passing the matrix object to SCPCore.knn_adjacency_matrix instead?
-knn_adjacency_matrix_impl(matrix; kwargs...) =
-	SCPCore.knn_adjacency_matrix(SCPCore.obs_coordinates(matrix); kwargs...)
+function pca(::Mat, data; kwargs...)
+	# TODO: If `pca` is called on `svd`, we should just extract.
+
+	# Setup as svd followed by extracting ΣVᵀ
+	svd_spec = svd(Mat(), data; kwargs...)
+	create_spec(Projectable(get_components), svd_spec)
+end
+
+function pca(::Var, data; nsv, kwargs...)
+	# TODO: If `pca` is called on `svd`, we don't need `nsv` but should just use length(Σ) taken from the SVD object
+	create_prefixed_ids_spec("PC_id", "PC", nsv)
+end
+pca(::Obs, data; kwargs...) = get_spec(Obs(), data)
+
+function Jobs.pca(args...; nsv, seed=1234, kwargs...)
+	Job(create_spec(DataMatrixFunc(pca), args...; nsv, seed, kwargs...))
+end
+
+
+
+function loadings(::Mat, data; kwargs...)
+	# Setup as svd followed by extracting U
+	svd_spec = svd(Mat(), data; kwargs...)
+	create_spec(Projectable(get_loadings_components), svd_spec)
+end
+
+function loadings(::Obs, data; nsv, kwargs...)
+	# TODO: If `loadings` is called on `svd`, we don't need `nsv` but should just use length(Σ) taken from the SVD object
+	create_prefixed_ids_spec("loadings_id", "loadings", nsv)
+end
+loadings(::Var, data; kwargs...) = get_spec(Var(), data)
+
+function Jobs.loadings(args...; nsv, seed=1234, kwargs...)
+	Job(create_spec(DataMatrixFunc(loadings), args...; seed, kwargs...))
+end
+
+
+
+
+
 
 knn_adjacency_matrix(action::Action, matrix; kwargs...) =
-	create_spec(knn_adjacency_matrix_impl, action(matrix); kwargs..., use_cache=true, __version=v"0.1.0")
+	create_spec(SCPCore.knn_adjacency_matrix, action(matrix); kwargs..., use_cache=true, __version=v"0.1.0")
 create_knn_adjacency_matrix_spec(matrix; kwargs...) =
 	create_spec(Projectable(knn_adjacency_matrix), matrix; kwargs...)
 
@@ -38,7 +82,7 @@ create_knn_adjacency_matrix_spec(matrix; kwargs...) =
 
 # Whoa. Shorten this name.
 function inv_dist_squared_adjacency_matrix2(X, Y; min_dist=1e-6, kwargs...)
-	SCPCore.knn_adjacency_matrix2(SCPCore.obs_coordinates(X), SCPCore.obs_coordinates(Y); kwargs...) do x
+	SCPCore.knn_adjacency_matrix2(X, Y; kwargs...) do x
 		1.0 / max(min_dist, x)^2
 	end
 end

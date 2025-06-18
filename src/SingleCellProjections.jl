@@ -55,6 +55,8 @@ module Jobs
 	function negative_regression_matrix end
 	function normalize_matrix end
 	function svd end
+	function pca end
+	function loadings end
 	function force_layout end
 	function transpose end
 	function umap end

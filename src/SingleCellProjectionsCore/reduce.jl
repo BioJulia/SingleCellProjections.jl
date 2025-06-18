@@ -75,9 +75,9 @@ struct NearestNeighborModel <: ProjectionModel
 	obs::Symbol
 end
 NearestNeighborModel(name, pre::DataMatrix, post; k, var, obs) =
-	NearestNeighborModel(name, obs_coordinates(pre), post, select(pre.var,1), k, var, obs)
+	NearestNeighborModel(name, pre.matrix, post, select(pre.var,1), k, var, obs)
 NearestNeighborModel(name, pre::DataMatrix, post::DataMatrix; kwargs...) =
-	NearestNeighborModel(name, pre, obs_coordinates(post); kwargs...)
+	NearestNeighborModel(name, pre, post.matrix; kwargs...)
 
 function projection_isequal(m1::NearestNeighborModel, m2::NearestNeighborModel)
 	m1.name == m2.name && m1.pre == m2.pre && m1.post == m2.post &&
@@ -91,7 +91,7 @@ update_model(m::NearestNeighborModel; k=m.k, var=m.var, obs=m.obs, kwargs...) =
 function project_impl(data::DataMatrix, model::NearestNeighborModel; adj_out=nothing, verbose=true, kwargs...)
 	@assert table_cols_equal(data.var, model.var_match) "Nearest Neighbor projection expects model and data variables to be identical."
 
-	adj, matrix = embed_points(model.pre, model.post, obs_coordinates(data); model.k)
+	adj, matrix = embed_points(model.pre, model.post, data.matrix; model.k)
 	adj_out !== nothing && (adj_out[] = adj)
 
 	update_matrix(data, matrix, model; model.var, model.obs)

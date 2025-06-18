@@ -42,14 +42,13 @@ end
 
 
 function knn_adjacency_matrix(data::DataMatrix; kwargs...)
-	adj = knn_adjacency_matrix(obs_coordinates(data); kwargs...)
-	obs = copy(data.obs)
-	DataMatrix(adj, obs, obs)
+	adj = knn_adjacency_matrix(data.matrix; kwargs...)
+	DataMatrix(adj, data.obs, data.obs)
 end
 
 function knn_adjacency_matrix(X::DataMatrix, Y::DataMatrix; kwargs...)
-	adj = knn_adjacency_matrix(obs_coordinates(X), obs_coordinates(Y); kwargs...)
-	DataMatrix(adj, copy(X.obs), copy(Y.obs))
+	adj = knn_adjacency_matrix(X.matrix, Y.matrix; kwargs...)
+	DataMatrix(adj, X.obs, Y.obs)
 end
 
 
@@ -72,7 +71,7 @@ function adjacency_distances(adj::DataMatrix, X::DataMatrix, Y::DataMatrix=X)
 	table_cols_equal(adj.var, X.obs; cols=names(X.obs,1)) || error("Adjacency matrix and DataMatrix have different obs.")
 	table_cols_equal(adj.obs, Y.obs; cols=names(Y.obs,1)) || error("Adjacency matrix and DataMatrix have different obs.")
 	D = _adjacency_distances(adj.matrix, X, Y)
-	DataMatrix(D, copy(adj.var), copy(adj.obs))
+	DataMatrix(D, adj.var, adj.obs)
 end
 
 
