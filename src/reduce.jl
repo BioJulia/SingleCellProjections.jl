@@ -30,6 +30,8 @@ get_loadings_impl(F::LinearAlgebra.SVD) = F.U
 get_loadings(action::Action, matrix) =
 	create_spec(get_loadings_impl, action(matrix); use_cache=false, __version=v"0.1.0")
 
+# TODO: Should we add DataMatrix Jobs for `get_components` and `get_loadings`?
+#       Would be nice. But we would need to figure out how to name components/loadings differently for e.g. PCA and PMA.
 
 
 function pca(::Mat, data; kwargs...)
