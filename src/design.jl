@@ -51,11 +51,11 @@ function design(f::Union{Mat,Obs}, data, args...; center)
 	annotation_specs = [create_extract_annotation_spec(obs, a) for a in args]
 
 	if f isa Mat
-		value_vector_specs = prefetch.(value_vector_spec.(annotation_specs))
+		value_vector_specs = prefetched.(value_vector_spec.(annotation_specs))
 		covariate_specs = covariate_spec.(value_vector_specs; center)
 
 		if center
-			nrows_spec = prefetch(annotation_nrows_spec(obs))
+			nrows_spec = prefetched(annotation_nrows_spec(obs))
 			intercept_spec = covariate_spec(nrows_spec; center)
 			return create_hcat_spec(intercept_spec, covariate_specs...)
 		else

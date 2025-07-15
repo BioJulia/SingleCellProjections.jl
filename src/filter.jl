@@ -10,11 +10,11 @@ function subset_matrix(::Mat, data; kwargs...)
 	var_ind = _subset_ind(Var(), data; kwargs...)
 	obs_ind = _subset_ind(Obs(), data; kwargs...)
 	if var_ind !== nothing && obs_ind !== nothing
-		create_matrix_getindex_spec(matrix_spec; var_ind=prefetch(var_ind), obs_ind=prefetch(obs_ind))
+		create_matrix_getindex_spec(matrix_spec; var_ind=prefetched(var_ind), obs_ind=prefetched(obs_ind))
 	elseif var_ind !== nothing
-		create_matrix_getindex_spec(matrix_spec; var_ind=prefetch(var_ind))
+		create_matrix_getindex_spec(matrix_spec; var_ind=prefetched(var_ind))
 	elseif obs_ind !== nothing
-		create_matrix_getindex_spec(matrix_spec; obs_ind=prefetch(obs_ind))
+		create_matrix_getindex_spec(matrix_spec; obs_ind=prefetched(obs_ind))
 	else
 		matrix_spec
 	end
@@ -23,7 +23,7 @@ function subset_matrix(f::Union{Var,Obs}, data; kwargs...)
 	s = get_spec(f, data)
 	ind = _subset_ind(f, data; kwargs...)
 	ind === nothing && return s
-	create_annotation_getindex_spec(s, prefetch(ind))
+	create_annotation_getindex_spec(s, prefetched(ind))
 end
 
 
@@ -52,11 +52,11 @@ function filter_matrix(::Mat, data; kwargs...)
 	var_ind = _filter_ind(Var(), data; kwargs...)
 	obs_ind = _filter_ind(Obs(), data; kwargs...)
 	if var_ind !== nothing && obs_ind !== nothing
-		create_matrix_getindex_spec(matrix_spec; var_ind=prefetch(var_ind), obs_ind=prefetch(obs_ind))
+		create_matrix_getindex_spec(matrix_spec; var_ind=prefetched(var_ind), obs_ind=prefetched(obs_ind))
 	elseif var_ind !== nothing
-		create_matrix_getindex_spec(matrix_spec; var_ind=prefetch(var_ind))
+		create_matrix_getindex_spec(matrix_spec; var_ind=prefetched(var_ind))
 	elseif obs_ind !== nothing
-		create_matrix_getindex_spec(matrix_spec; obs_ind=prefetch(obs_ind))
+		create_matrix_getindex_spec(matrix_spec; obs_ind=prefetched(obs_ind))
 	else
 		matrix_spec
 	end
@@ -65,7 +65,7 @@ function filter_matrix(f::Union{Var,Obs}, data; kwargs...)
 	s = get_spec(f, data)
 	ind = _filter_ind(f, data; kwargs...)
 	ind === nothing && return s
-	create_annotation_getindex_spec(s, prefetch(ind))
+	create_annotation_getindex_spec(s, prefetched(ind))
 end
 
 
