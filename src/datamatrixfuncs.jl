@@ -32,7 +32,6 @@ setup_datamatrix(::Var, ::typeof(SCPCore.DataMatrix), spec) = spec.args[2]
 setup_datamatrix(::Obs, ::typeof(SCPCore.DataMatrix), spec) = spec.args[3]
 
 # This is needed when replacing with something that itself is a projection
-# setup_datamatrix(f::DataMatrixField, ::typeof(project), spec) = setup_datamatrix(f, project(spec, nothing)) # this must be wrong
 setup_datamatrix(f::DataMatrixField, ::typeof(project), spec) = setup_datamatrix(f, project(spec)) # is this right?
 
 
@@ -45,21 +44,21 @@ function get_matrix(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_matrix
 	action(setup_datamatrix(Mat(), dm_spec))
 end
-get_matrix_spec(x) = create_spec(Projectable(get_matrix), x; use_cache=false)
+get_matrix_spec(x) = create_spec(Projectable(get_matrix), x)
 Jobs.get_matrix(x) = Job(get_matrix_spec(x))
 
 function get_var(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_var
 	action(setup_datamatrix(Var(), dm_spec))
 end
-get_var_spec(x) = create_spec(Projectable(get_var), x; use_cache=false)
+get_var_spec(x) = create_spec(Projectable(get_var), x)
 Jobs.get_var(x) = Job(get_var_spec(x))
 
 function get_obs(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_obs
 	action(setup_datamatrix(Obs(), dm_spec))
 end
-get_obs_spec(x) = create_spec(Projectable(get_obs), x; use_cache=false)
+get_obs_spec(x) = create_spec(Projectable(get_obs), x)
 Jobs.get_obs(x) = Job(get_obs_spec(x))
 
 
@@ -82,7 +81,7 @@ function (d::DataMatrixFunc{F})(args...; kwargs...) where F
 	matrix = d.f(Mat(), args...; kwargs...)
 	var = d.f(Var(), args...; kwargs...)
 	obs = d.f(Obs(), args...; kwargs...)
-	create_spec(SCPCore.DataMatrix, matrix, var, obs; use_cache=false, __version=v"0.1.0")
+	create_spec(SCPCore.DataMatrix, matrix, var, obs; __use_cache=false, __version=v"0.1.0")
 end
 
 # General projection handling
@@ -100,5 +99,5 @@ function setup_projection(replacements, ::DataMatrixFunc, spec::Spec)
 	or = get(replacements, obs_spec, nothing)
 	obs_spec = @something or _setup_projection(replacements, obs_spec)
 
-	create_spec(SCPCore.DataMatrix, matrix_spec, var_spec, obs_spec; use_cache=false, __version=v"0.1.0")
+	create_spec(SCPCore.DataMatrix, matrix_spec, var_spec, obs_spec; __use_cache=false, __version=v"0.1.0")
 end

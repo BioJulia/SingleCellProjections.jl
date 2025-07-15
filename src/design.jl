@@ -1,18 +1,18 @@
 value_vector_model_spec(annot; kwargs...) =
-	create_spec(SCPCore.value_vector_model, annot; use_cache=true, kwargs..., __version=v"0.1.0")
+	create_spec(SCPCore.value_vector_model, annot; __use_cache=true, kwargs..., __version=v"0.1.0")
 
 
 function value_vector(action::Action, annot; kwargs...)
 	model = value_vector_model_spec(annot; kwargs...)
-	create_spec(SCPCore.value_vector_project, model, action(annot); __version=v"0.1.0")
+	create_spec(SCPCore.value_vector_project, model, action(annot); __use_cache=true, __version=v"0.1.0")
 end
 value_vector_spec(annot; kwargs...) =
-	create_spec(Projectable(value_vector), annot; use_cache=true, kwargs...)
+	create_spec(Projectable(value_vector), annot; kwargs...)
 
 
 function covariate(action::Action, args...; kwargs...)
-	model = create_spec(SCPCore.covariate_model, args...; use_cache=true, kwargs..., __version=v"0.1.0")
-	create_spec(SCPCore.covariate_project, model, action(args)...; __version=v"0.1.0")
+	model = create_spec(SCPCore.covariate_model, args...; __use_cache=true, kwargs..., __version=v"0.1.0")
+	create_spec(SCPCore.covariate_project, model, action(args)...; __use_cache=false, __version=v"0.1.0") # What should __use_cache be?
 end
 covariate_spec(args...; kwargs...) =
 	create_spec(Projectable(covariate), args...; kwargs...)
@@ -38,7 +38,7 @@ end
 
 
 covariate_names(action::Action, args...; center) =
-	create_spec(covariate_names_impl, action(args)...; center, use_cache=false, __version=v"0.1.0")
+	create_spec(covariate_names_impl, action(args)...; center, __use_cache=false, __version=v"0.1.0")
 covariate_names_spec(args...; center) =
 	create_spec(Projectable(covariate_names), args...; center)
 
@@ -79,7 +79,7 @@ end
 # TODO: Consider transposing
 # data::DataMatrix, args are covariates (names), center::Bool
 designmatrix_spec(data, args...; center=true, kwargs...) =
-	create_spec(DataMatrixFunc(design), data, args...; use_cache=false, center, kwargs...)
+	create_spec(DataMatrixFunc(design), data, args...; center, kwargs...)
 function Jobs.designmatrix(data, args...; kwargs...)
 	Job(designmatrix_spec(data, args...; kwargs...))
 end

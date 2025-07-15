@@ -59,12 +59,12 @@ umap_project(model::UMAP_, matrix) = UMAP.transform(model, SCPCore.obs_coordinat
 
 function umap_impl(action::Action, matrix; ndim, kwargs...)
 	# First create UMAP model
-	umap_model_spec = create_spec(umap_model, matrix; ndim, kwargs..., use_cache=true, __version=v"0.1.0")
+	umap_model_spec = create_spec(umap_model, matrix; ndim, kwargs..., __use_cache=true, __version=v"0.1.0")
 
 	if action isa Eval
-		return create_spec(umap_embedding, umap_model_spec; use_cache=false, __version=v"0.1.0")
+		return create_spec(umap_embedding, umap_model_spec; __use_cache=false, __version=v"0.1.0")
 	else# if action isa Projection
-		return create_spec(umap_project, umap_model_spec, action(matrix); use_cache=true, __version=v"0.1.0")
+		return create_spec(umap_project, umap_model_spec, action(matrix); __use_cache=true, __version=v"0.1.0")
 	end
 end
 

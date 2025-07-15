@@ -55,7 +55,8 @@ function setup_projection(replacements, p::Projectable{F}, spec::Spec) where F
 
 	# Pass prefetch along.
 	if res isa Spec
-		return Spec(res.ro, res.use_cache, res.forwarding_complete, res.prefetch || spec.prefetch)
+		op = spec.op === ReproducibleJobs.Prefetch() ? spec.op : res.op
+		return Spec(res.ro, op)
 	else
 		return res
 	end
@@ -72,9 +73,12 @@ function _setup_projection(replacements, spec::Spec)
 end
 
 
-function unmanage_key(m::ReproducibleJobs.Managed{<:Pair})
-	p = ReproducibleJobs.unsafe_unmanage(m)
-	p[1] => ReproducibleJobs.manage(p[2])
+# function unmanage_key(m::ReproducibleJobs.Managed{<:Pair})
+# 	p = ReproducibleJobs.unsafe_unmanage(m)
+# 	p[1] => ReproducibleJobs.manage(p[2])
+# end
+function unmanage_key(p::Pair)
+	ReproducibleJobs.unsafe_unmanage(p[1]) => p[2]
 end
 
 function _split_datamatrix_replacements(replacements::Vector{<:Pair})
@@ -97,7 +101,6 @@ function _split_datamatrix_replacements(replacements::Vector{<:Pair})
 end
 
 function project(onto, args...)
-	# Only unmanage the key, because keys are unmanaged in `replace_projection_inputs`
 	replacement_pairs = [unmanage_key(a) for a in args]
 	replacement_pairs = _split_datamatrix_replacements(replacement_pairs)
 	replacements = Dict(replacement_pairs)
@@ -107,7 +110,7 @@ end
 ReproducibleJobs.is_preprocessing(::typeof(project)) = true
 
 function Jobs.project(args...; kwargs...)
-	Job(create_spec(project, args...; use_cache=false, kwargs...))
+	Job(create_spec(project, args...; kwargs...))
 end
 
 

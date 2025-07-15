@@ -1,12 +1,12 @@
 # SVD is an example where the model comes after the result. I.e. svd(data) => UΣVᵀ, but the model is just UΣ.
 function svd(action::Action, matrix; kwargs...)
 	# First SVD of unprojected
-	svd_spec = create_spec(SCPCore.implicitsvd, matrix; use_cache=true, kwargs..., __version=v"0.1.0")
+	svd_spec = create_spec(SCPCore.implicitsvd, matrix; __use_cache=true, kwargs..., __version=v"0.1.0")
 
 	if action isa Eval
 		return svd_spec
 	else# if action isa Projection
-		return create_spec(SCPCore.svd_project, svd_spec, action(matrix); use_cache=true, __version=v"0.1.0")
+		return create_spec(SCPCore.svd_project, svd_spec, action(matrix); __use_cache=true, __version=v"0.1.0")
 	end
 end
 
@@ -24,11 +24,11 @@ end
 
 get_components_impl(F::LinearAlgebra.SVD) = LinearAlgebra.Diagonal(F.S)*F.Vt
 get_components(action::Action, matrix) =
-	create_spec(get_components_impl, action(matrix); use_cache=false, __version=v"0.1.0")
+	create_spec(get_components_impl, action(matrix); __use_cache=false, __version=v"0.1.0")
 
 get_loadings_impl(F::LinearAlgebra.SVD) = F.U
 get_loadings(action::Action, matrix) =
-	create_spec(get_loadings_impl, action(matrix); use_cache=false, __version=v"0.1.0")
+	create_spec(get_loadings_impl, action(matrix); __use_cache=false, __version=v"0.1.0")
 
 # TODO: Should we add DataMatrix Jobs for `get_components` and `get_loadings`?
 #       Would be nice. But we would need to figure out how to name components/loadings differently for e.g. PCA and PMA.
@@ -76,7 +76,7 @@ end
 
 
 knn_adjacency_matrix(action::Action, matrix; kwargs...) =
-	create_spec(SCPCore.knn_adjacency_matrix, action(matrix); kwargs..., use_cache=true, __version=v"0.1.0")
+	create_spec(SCPCore.knn_adjacency_matrix, action(matrix); kwargs..., __use_cache=true, __version=v"0.1.0")
 create_knn_adjacency_matrix_spec(matrix; kwargs...) =
 	create_spec(Projectable(knn_adjacency_matrix), matrix; kwargs...)
 
@@ -89,13 +89,13 @@ function inv_dist_squared_adjacency_matrix2(X, Y; min_dist=1e-6, kwargs...)
 	end
 end
 create_inv_dist_squared_adjacency_matrix2_spec(X, Y; kwargs...) =
-	create_spec(inv_dist_squared_adjacency_matrix2, X, Y; kwargs..., use_cache=true, __version=v"0.1.0")
+	create_spec(inv_dist_squared_adjacency_matrix2, X, Y; kwargs..., __use_cache=true, __version=v"0.1.0")
 
 
 
 embed_points(weighted_adj, matrix) = matrix*weighted_adj
 create_embed_points_spec(weighted_adj, matrix) =
-	create_spec(embed_points, weighted_adj, matrix; use_cache=true, __version=v"0.1.0")
+	create_spec(embed_points, weighted_adj, matrix; __use_cache=true, __version=v"0.1.0")
 
 
 
@@ -126,7 +126,7 @@ function force_layout(action::Action, matrix;
 	                      initialAlpha, finalAlpha,
 	                      initialScale,
 	                      seed,
-	                      use_cache=true,
+	                      __use_cache=true,
 	                      __version=v"0.1.0",
 	                     )
 
