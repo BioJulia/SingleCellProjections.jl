@@ -51,7 +51,6 @@ function get_matrix(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_matrix
 	action(setup_datamatrix(Mat(), dm_spec))
 end
-# get_matrix_spec(x) = create_spec(Projectable(get_matrix), x)
 get_matrix_spec(x) = create_spec(Projectable(get_matrix), forwarded(is_datamatrix_spec, x))
 Jobs.get_matrix(x) = Job(get_matrix_spec(x))
 
@@ -59,7 +58,6 @@ function get_var(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_var
 	action(setup_datamatrix(Var(), dm_spec))
 end
-# get_var_spec(x) = create_spec(Projectable(get_var), x)
 get_var_spec(x) = create_spec(Projectable(get_var), forwarded(is_datamatrix_spec, x))
 Jobs.get_var(x) = Job(get_var_spec(x))
 
@@ -67,7 +65,6 @@ function get_obs(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_obs
 	action(setup_datamatrix(Obs(), dm_spec))
 end
-# get_obs_spec(x) = create_spec(Projectable(get_obs), x)
 get_obs_spec(x) = create_spec(Projectable(get_obs), forwarded(is_datamatrix_spec, x))
 Jobs.get_obs(x) = Job(get_obs_spec(x))
 
