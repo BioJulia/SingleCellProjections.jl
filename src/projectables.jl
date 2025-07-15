@@ -16,6 +16,14 @@ end
 
 
 
+is_projectable_spec(::Any) = false
+function is_projectable_spec(sa::SpecArgs)
+	f = sa.f
+	f isa Projectable && return true
+	# TODO: Are there more cases that should return true?
+	return false
+end
+is_projectable_spec(spec::Spec) = is_projectable_spec(spec.ro.value)
 
 
 
@@ -114,8 +122,13 @@ function project(onto, args...)
 end
 ReproducibleJobs.is_preprocessing(::typeof(project)) = true
 
-function Jobs.project(args...; kwargs...)
-	Job(create_spec(project, args...; kwargs...))
+function create_project_spec(onto, args...; kwargs...)
+	onto = forwarded(is_projectable_or_datamatrix_spec, onto)
+	create_spec(project, onto, args...; kwargs...)
+end
+
+function Jobs.project(onto, args...; kwargs...)
+	Job(create_project_spec(onto, args...; kwargs...))
 end
 
 

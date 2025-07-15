@@ -27,6 +27,11 @@ end
 is_datamatrix_spec(spec::Spec) = is_datamatrix_spec(spec.ro.value)
 
 
+is_projectable_or_datamatrix_spec(x) = is_projectable_spec(x) || is_datamatrix_spec(x)
+
+
+
+
 
 # These are needed by get_matrix etc.
 setup_datamatrix(::Mat, ::typeof(SCPCore.DataMatrix), spec) = spec.args[1]
