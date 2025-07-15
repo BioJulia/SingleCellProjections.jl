@@ -35,14 +35,16 @@ The other `args...` and `kwargs...` are forwarded to `UMAP.umap`. See `UMAP` doc
 See also: [`UMAP.umap`](https://github.com/dillondaudert/UMAP.jl)
 """
 function UMAP.umap(data::DataMatrix, args...; obs=:copy, kwargs...)
-	model = UMAPModel(UMAP.UMAP_(SCPCore.obs_coordinates(data), args...; kwargs...), select(data.var,1), obs)
+	# model = UMAPModel(UMAP.UMAP_(SCPCore.obs_coordinates(data), args...; kwargs...), select(data.var,1), obs)
+	model = UMAPModel(UMAP.UMAP_(data.matrix, args...; kwargs...), select(data.var,1), obs)
 	SCPCore.update_matrix(data, model.m.embedding, model; var="UMAP", model.obs)
 end
 
 function SCPCore.project_impl(data::DataMatrix, model::UMAPModel; verbose=true, kwargs...)
 	@assert SCPCore.table_cols_equal(data.var, model.var_match) "UMAP projection expects model and data variables to be identical."
 
-	matrix = UMAP.transform(model.m, SCPCore.obs_coordinates(data))
+	# matrix = UMAP.transform(model.m, SCPCore.obs_coordinates(data))
+	matrix = UMAP.transform(model.m, data.matrix)
 	SCPCore.update_matrix(data, matrix, model; var="UMAP", model.obs)
 end
 
@@ -51,20 +53,20 @@ end
 
 # ReproducibleJobs version
 
-umap_model(matrix; ndim::Int, kwargs...) = UMAP.UMAP_(SCPCore.obs_coordinates(matrix), ndim; kwargs...)
+umap_model(matrix; ndim::Int, kwargs...) = UMAP.UMAP_(matrix, ndim; kwargs...)
 umap_embedding(model::UMAP_) = model.embedding
-umap_project(model::UMAP_, matrix) = UMAP.transform(model, SCPCore.obs_coordinates(matrix))
+umap_project(model::UMAP_, matrix) = UMAP.transform(model, matrix)
 
 
 
 function umap_impl(action::Action, matrix; ndim, kwargs...)
 	# First create UMAP model
-	umap_model_spec = create_spec(umap_model, matrix; ndim, kwargs..., __use_cache=true, __version=v"0.1.0")
+	umap_model_spec = create_spec(umap_model, matrix; ndim, kwargs..., __use_cache=true, __version=v"0.1.1")
 
 	if action isa Eval
 		return create_spec(umap_embedding, umap_model_spec; __use_cache=false, __version=v"0.1.0")
 	else# if action isa Projection
-		return create_spec(umap_project, umap_model_spec, action(matrix); __use_cache=true, __version=v"0.1.0")
+		return create_spec(umap_project, umap_model_spec, action(matrix); __use_cache=true, __version=v"0.1.1")
 	end
 end
 
