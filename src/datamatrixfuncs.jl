@@ -13,17 +13,19 @@ struct Obs <: DataMatrixField end
 
 
 is_datamatrix_spec(::Any) = false
-function is_datamatrix_spec(spec::Spec)
-	f = spec.f
+function is_datamatrix_spec(sa::SpecArgs)
+	f = sa.f
 	f isa DataMatrixFunc && return true
 	f == SCPCore.DataMatrix && return true
 	if f == project
-		onto = spec.args[1]
+		onto = sa.args[1]
 		return is_datamatrix_spec(onto)
 	end
 	# TODO: Are there more cases that should return true?
 	return false
 end
+is_datamatrix_spec(spec::Spec) = is_datamatrix_spec(spec.ro.value)
+
 
 
 # These are needed by get_matrix etc.
@@ -44,21 +46,24 @@ function get_matrix(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_matrix
 	action(setup_datamatrix(Mat(), dm_spec))
 end
-get_matrix_spec(x) = create_spec(Projectable(get_matrix), x)
+# get_matrix_spec(x) = create_spec(Projectable(get_matrix), x)
+get_matrix_spec(x) = create_spec(Projectable(get_matrix), forwarded(is_datamatrix_spec, x))
 Jobs.get_matrix(x) = Job(get_matrix_spec(x))
 
 function get_var(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_var
 	action(setup_datamatrix(Var(), dm_spec))
 end
-get_var_spec(x) = create_spec(Projectable(get_var), x)
+# get_var_spec(x) = create_spec(Projectable(get_var), x)
+get_var_spec(x) = create_spec(Projectable(get_var), forwarded(is_datamatrix_spec, x))
 Jobs.get_var(x) = Job(get_var_spec(x))
 
 function get_obs(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_obs
 	action(setup_datamatrix(Obs(), dm_spec))
 end
-get_obs_spec(x) = create_spec(Projectable(get_obs), x)
+# get_obs_spec(x) = create_spec(Projectable(get_obs), x)
+get_obs_spec(x) = create_spec(Projectable(get_obs), forwarded(is_datamatrix_spec, x))
 Jobs.get_obs(x) = Job(get_obs_spec(x))
 
 
