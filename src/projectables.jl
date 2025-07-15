@@ -26,17 +26,28 @@ end
 
 
 function do_replacement(replacements, x)
-	y = get(replacements, x, nothing)
-	y !== nothing && return y # It was replaced
-
 	if x isa Spec
+		y = get(replacements, x.ro, nothing)
+		if y !== nothing
+			if y isa ReproducibleJobs.ReadOnly{ReproducibleJobs.SpecArgs}
+				return Spec(y, x.op) # Keep the op
+			else
+				return y
+			end
+		end
 		return _setup_projection(replacements, x) # Not replaced, we need to project recursively.
-	elseif x isa DataFrame
+	end
+
+	y = get(replacements, x, nothing)
+	y !== nothing && return y
+
+	if x isa DataFrame
 		error("No replacement provided for DataFrame with columns $(names(x)).")
 	else
 		return x
 	end
 end
+
 
 function (proj::Projection)(x)
 	# unsafe_unmanage is OK since we are only reading from proj_args and proj_kwargs
@@ -53,10 +64,8 @@ end
 function setup_projection(replacements, p::Projectable{F}, spec::Spec) where F
 	res = p.f(Projection(replacements), spec.args...; spec.kwargs...)
 
-	# Pass prefetch along.
 	if res isa Spec
-		op = spec.op === ReproducibleJobs.Prefetch() ? spec.op : res.op
-		return Spec(res.ro, op)
+		return Spec(res.ro, spec.op) # Keep the op
 	else
 		return res
 	end
@@ -66,20 +75,14 @@ end
 
 
 
-# TODO: Rename this function
+# TODO: Rename this function?
 function _setup_projection(replacements, spec::Spec)
 	p = spec.f::Union{<:Projectable,<:DataMatrixFunc}
 	setup_projection(replacements, p, spec)
 end
 
 
-# function unmanage_key(m::ReproducibleJobs.Managed{<:Pair})
-# 	p = ReproducibleJobs.unsafe_unmanage(m)
-# 	p[1] => ReproducibleJobs.manage(p[2])
-# end
-function unmanage_key(p::Pair)
-	ReproducibleJobs.unsafe_unmanage(p[1]) => p[2]
-end
+unmanage_key(p::Pair) = ReproducibleJobs.unsafe_unmanage(p[1]) => p[2]
 
 function _split_datamatrix_replacements(replacements::Vector{<:Pair})
 	out = Pair[] # to complicated to predict type
@@ -90,11 +93,13 @@ function _split_datamatrix_replacements(replacements::Vector{<:Pair})
 		@assert k_is_dm == v_is_dm "Both old and new must be DataMatrices if one of them is."
 
 		if k_is_dm
-			push!(out, get_matrix_spec(k)=>get_matrix_spec(v))
-			push!(out, get_var_spec(k)=>get_var_spec(v))
-			push!(out, get_obs_spec(k)=>get_obs_spec(v))
+			push!(out, get_matrix_spec(k).ro=>get_matrix_spec(v).ro)
+			push!(out, get_var_spec(k).ro=>get_var_spec(v).ro)
+			push!(out, get_obs_spec(k).ro=>get_obs_spec(v).ro)
 		else
-			push!(out, k=>v)
+			k2 = k isa Spec ? k.ro : k
+			v2 = v isa Spec ? v.ro : v
+			push!(out, k2=>v2)
 		end
 	end
 	out
