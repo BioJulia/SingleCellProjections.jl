@@ -41,13 +41,12 @@ setup_datamatrix(::Obs, ::typeof(SCPCore.DataMatrix), spec) = spec.args[3]
 # This is needed when replacing with something that itself is a projection
 # setup_datamatrix(f::DataMatrixField, ::typeof(project), spec) = setup_datamatrix(f, project(spec)) # is this right?
 
-
+# This changes get_field(project()) to project(get_field())
 function setup_datamatrix(f::DataMatrixField, ::typeof(project), spec)
-	args = ReproducibleJobs.unsafe_unmanage(spec.args) # unsafe_unmanage is OK since we are only reading from args
-	onto = args[1]
-	field_spec = setup_datamatrix(f, onto)
-	project(field_spec, args[2:end]...)
+	onto = get_spec(f, spec.args[1])
+	create_project_spec(onto, spec.args[2:end]...)
 end
+
 
 
 # WIP - perhaps spec should be unwrapped at an earlier point - perhaps in ReproducibleJobs?
