@@ -65,7 +65,10 @@ end
 
 
 
-do_replacement(replacements, spec::Spec) = create_project_spec(spec, replacements...)
+function do_replacement(replacements, spec::Spec)
+	p_spec = create_project_spec(spec, replacements...)
+	Spec(p_spec.ro, spec.op) # Keep the op
+end
 function do_replacement(replacements, x)
 	for (k,v) in replacements
 		k == x && return v # replaced
