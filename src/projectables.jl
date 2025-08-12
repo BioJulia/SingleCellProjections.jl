@@ -9,7 +9,7 @@ Base.show(io::IO, p::Projectable{F}) where F = print(io, p.f)
 abstract type Action end
 struct Eval <: Action end
 struct Projection <: Action
-	replacements::Dict{Any,Any}
+	replacements::Vector{Pair} # Make concrete somehow? Or just use Vector{Any} to avoid copying the vector at construction?
 end
 
 
@@ -29,31 +29,48 @@ is_projectable_spec(spec::Spec) = is_projectable_spec(spec.ro.value)
 
 
 
-
 (::Eval)(x) = x
 
 
-function do_replacement(replacements, x)
-	if x isa Spec
-		y = get(replacements, x.ro, nothing)
-		if y !== nothing
-			if y isa ReproducibleJobs.ReadOnly{ReproducibleJobs.SpecArgs}
-				return Spec(y, x.op) # Keep the op
-			else
-				return y
-			end
+
+function (p::Projectable{F})(args...; kwargs...) where F
+	p.f(Eval(), args...; kwargs...)
+end
+
+
+
+function try_replace_spec_single(spec::Spec, ::Any, k::Spec, v)
+	if spec.ro == k.ro
+		if v isa Spec
+			return Spec(v.ro, spec.op) # Keep the op
+		else
+			return v # Replaced by a value, the op doesn't apply anymore
 		end
-		return _setup_projection(replacements, x) # Not replaced, we need to project recursively.
 	end
 
-	y = get(replacements, x, nothing)
-	y !== nothing && return y
+	return nothing
+end
 
-	if x isa DataFrame
-		error("No replacement provided for DataFrame with columns $(names(x)).")
-	else
-		return x
+function try_replace_spec(spec::Spec, f::F, args...) where F
+	for (k,v) in args
+		if k isa Spec
+			r = try_replace_spec_single(spec, f, k, v)
+			r !== nothing && return r
+		end
 	end
+
+	return nothing
+end
+
+
+
+
+do_replacement(replacements, spec::Spec) = create_project_spec(spec, replacements...)
+function do_replacement(replacements, x)
+	for (k,v) in replacements
+		k == x && return v # replaced
+	end
+	return x # not replaced
 end
 
 
@@ -64,62 +81,23 @@ function (proj::Projection)(x)
 end
 
 
-function (p::Projectable{F})(args...; kwargs...) where F
-	p.f(Eval(), args...; kwargs...)
-end
 
-# This might be removed since p.f can just be called directly (when refactoring is complete)
-function setup_projection(replacements, p::Projectable{F}, spec::Spec) where F
-	res = p.f(Projection(replacements), spec.args...; spec.kwargs...)
 
+function project(onto, p::Projectable{F}, args...) where F
+	replaced = try_replace_spec(onto, onto.f, args...)
+	replaced !== nothing && return replaced
+
+	# Not found in replacements, perform projection
+	res = p.f(Projection(collect(args)), onto.args...; onto.kwargs...)
 	if res isa Spec
-		return Spec(res.ro, spec.op) # Keep the op
+		return Spec(res.ro, onto.op) # Keep the op
 	else
 		return res
 	end
 end
 
 
-
-
-
-# TODO: Rename this function?
-function _setup_projection(replacements, spec::Spec)
-	p = spec.f::Union{<:Projectable,<:DataMatrixFunc}
-	setup_projection(replacements, p, spec)
-end
-
-
-unmanage_key(p::Pair) = ReproducibleJobs.unsafe_unmanage(p[1]) => p[2]
-
-function _split_datamatrix_replacements(replacements::Vector{<:Pair})
-	out = Pair[] # to complicated to predict type
-
-	for (k,v) in replacements
-		k_is_dm = is_datamatrix_spec(k)
-		v_is_dm = is_datamatrix_spec(v)
-		@assert k_is_dm == v_is_dm "Both old and new must be DataMatrices if one of them is."
-
-		if k_is_dm
-			push!(out, get_matrix_spec(k).ro=>get_matrix_spec(v).ro)
-			push!(out, get_var_spec(k).ro=>get_var_spec(v).ro)
-			push!(out, get_obs_spec(k).ro=>get_obs_spec(v).ro)
-		else
-			k2 = k isa Spec ? k.ro : k
-			v2 = v isa Spec ? v.ro : v
-			push!(out, k2=>v2)
-		end
-	end
-	out
-end
-
-function project(onto, args...)
-	replacement_pairs = [unmanage_key(a) for a in args]
-	replacement_pairs = _split_datamatrix_replacements(replacement_pairs)
-	replacements = Dict(replacement_pairs)
-
-	_setup_projection(replacements, onto)
-end
+project(onto, args...) = project(onto, onto.f, args...)
 ReproducibleJobs.is_preprocessing(::typeof(project)) = true
 
 function create_project_spec(onto, args...; kwargs...)

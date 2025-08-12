@@ -31,15 +31,14 @@ is_projectable_or_datamatrix_spec(x) = is_projectable_spec(x) || is_datamatrix_s
 
 
 
+create_datamatrix_spec(matrix, var, obs) = create_spec(SCPCore.DataMatrix, matrix, var, obs; __use_cache=false, __version=v"0.1.0")
+
 
 
 # These are needed by get_matrix etc.
 setup_datamatrix(::Mat, ::typeof(SCPCore.DataMatrix), spec) = spec.args[1]
 setup_datamatrix(::Var, ::typeof(SCPCore.DataMatrix), spec) = spec.args[2]
 setup_datamatrix(::Obs, ::typeof(SCPCore.DataMatrix), spec) = spec.args[3]
-
-# This is needed when replacing with something that itself is a projection
-# setup_datamatrix(f::DataMatrixField, ::typeof(project), spec) = setup_datamatrix(f, project(spec)) # is this right?
 
 # This changes get_field(project()) to project(get_field())
 function setup_datamatrix(f::DataMatrixField, ::typeof(project), spec)
@@ -95,23 +94,50 @@ function (d::DataMatrixFunc{F})(args...; kwargs...) where F
 	matrix = d.f(Mat(), args...; kwargs...)
 	var = d.f(Var(), args...; kwargs...)
 	obs = d.f(Obs(), args...; kwargs...)
-	create_spec(SCPCore.DataMatrix, matrix, var, obs; __use_cache=false, __version=v"0.1.0")
+	create_datamatrix_spec(matrix, var, obs)
 end
 
-# General projection handling
-function setup_projection(replacements, ::DataMatrixFunc, spec::Spec)
-	# Replacements work at the get_xyz level
-	matrix_spec = get_matrix_spec(spec)
-	var_spec = get_var_spec(spec)
-	obs_spec = get_obs_spec(spec)
 
-	# TODO: Should these be here? (Definitely needed right now.)
-	mr = get(replacements, matrix_spec, nothing)
-	matrix_spec = @something mr _setup_projection(replacements, matrix_spec)
-	vr = get(replacements, var_spec, nothing)
-	var_spec = @something vr _setup_projection(replacements, var_spec)
-	or = get(replacements, obs_spec, nothing)
-	obs_spec = @something or _setup_projection(replacements, obs_spec)
 
-	create_spec(SCPCore.DataMatrix, matrix_spec, var_spec, obs_spec; __use_cache=false, __version=v"0.1.0")
+
+# TODO: Merge these 3 functions
+function try_replace_spec_single(spec::Spec, p::Projectable{typeof(get_matrix)}, k::Spec, v)
+	if is_datamatrix_spec(k)
+		# Replace the inner spec
+		res = try_replace_spec_single(spec.args[1], nothing, k, v)
+		return res === nothing ? res : get_matrix_spec(res)
+	else
+		# Fallback to standard replace
+		return try_replace_spec_single(spec, nothing, k, v)
+	end
+end
+
+function try_replace_spec_single(spec::Spec, p::Projectable{typeof(get_var)}, k::Spec, v)
+	if is_datamatrix_spec(k)
+		# Replace the inner spec
+		res = try_replace_spec_single(spec.args[1], nothing, k, v)
+		return res === nothing ? res : get_var_spec(res)
+	else
+		# Fallback to standard replace
+		return try_replace_spec_single(spec, nothing, k, v)
+	end
+end
+
+function try_replace_spec_single(spec::Spec, p::Projectable{typeof(get_obs)}, k::Spec, v)
+	if is_datamatrix_spec(k)
+		# Replace the inner spec
+		res = try_replace_spec_single(spec.args[1], nothing, k, v)
+		return res === nothing ? res : get_obs_spec(res)
+	else
+		# Fallback to standard replace
+		return try_replace_spec_single(spec, nothing, k, v)
+	end
+end
+
+
+function project(onto, d::DataMatrixFunc, args...)
+	matrix = create_project_spec(get_matrix_spec(onto), args...)
+	var = create_project_spec(get_var_spec(onto), args...)
+	obs = create_project_spec(get_obs_spec(onto), args...)
+	create_datamatrix_spec(matrix, var, obs)
 end
