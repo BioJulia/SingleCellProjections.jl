@@ -99,40 +99,23 @@ end
 
 
 
-
-# TODO: Merge these 3 functions
-function try_replace_spec_single(spec::Spec, p::Projectable{typeof(get_matrix)}, k::Spec, v)
+function _try_replace_get_spec_single(f::DataMatrixField, spec::Spec, k::Spec, v)
 	if is_datamatrix_spec(k)
 		# Replace the inner spec
 		res = try_replace_spec_single(spec.args[1], nothing, k, v)
-		return res === nothing ? res : get_matrix_spec(res)
+		return res === nothing ? res : get_spec(f, res)
 	else
 		# Fallback to standard replace
 		return try_replace_spec_single(spec, nothing, k, v)
 	end
 end
 
-function try_replace_spec_single(spec::Spec, p::Projectable{typeof(get_var)}, k::Spec, v)
-	if is_datamatrix_spec(k)
-		# Replace the inner spec
-		res = try_replace_spec_single(spec.args[1], nothing, k, v)
-		return res === nothing ? res : get_var_spec(res)
-	else
-		# Fallback to standard replace
-		return try_replace_spec_single(spec, nothing, k, v)
-	end
-end
-
-function try_replace_spec_single(spec::Spec, p::Projectable{typeof(get_obs)}, k::Spec, v)
-	if is_datamatrix_spec(k)
-		# Replace the inner spec
-		res = try_replace_spec_single(spec.args[1], nothing, k, v)
-		return res === nothing ? res : get_obs_spec(res)
-	else
-		# Fallback to standard replace
-		return try_replace_spec_single(spec, nothing, k, v)
-	end
-end
+try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_matrix)}, k::Spec, v) =
+	_try_replace_get_spec_single(Mat(), spec, k, v)
+try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_var)}, k::Spec, v) =
+	_try_replace_get_spec_single(Var(), spec, k, v)
+try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_obs)}, k::Spec, v) =
+	_try_replace_get_spec_single(Obs(), spec, k, v)
 
 
 function project(onto, d::DataMatrixFunc, args...)
