@@ -14,9 +14,30 @@ MatrixRef(p::Pair{Symbol,T}) where T = MatrixRef(p...)
 
 struct MatrixProduct{T<:AbstractMatrixSum} <: MatrixExpression
 	factors::Vector{Union{MatrixRef,T}}
+
+	function MatrixProduct{T}(factors) where T
+		@assert !isempty(factors)
+		sz_prev = (0,size(first(factors),1))
+		for (i,f) in enumerate(factors)
+			sz_i = size(f)
+			sz_i[1] != sz_prev[2] && throw(DimensionMismatch("factors[$(i-1)] has size $sz_prev, factors[$i] has size $sz_i."))
+			sz_prev = sz_i
+		end
+		new{T}(factors)
+	end
 end
 struct MatrixSum <: AbstractMatrixSum
 	terms::Vector{Union{MatrixRef,MatrixProduct}}
+
+	function MatrixSum(terms)
+		@assert !isempty(terms)
+		sz = size(first(terms))
+		for (i,t) in enumerate(terms)
+			sz_i = size(t)
+			sz_i != sz && throw(DimensionMismatch("terms[1] has size $sz, terms[$i] has size $sz_i."))
+		end
+		new(terms)
+	end
 end
 
 MatrixProduct(factors) = MatrixProduct{MatrixSum}(factors)
@@ -68,24 +89,26 @@ matrixexpression(X::MatrixExpression) = X
 matrixexpression(X) = MatrixRef(X)
 
 
-_pushfactors!(A::MatrixProduct, X) = push!(A.factors, matrixexpression(X))
-_pushfactors!(A::MatrixProduct, X::MatrixProduct) = append!(A.factors,X.factors)
+
+_pushfactors!(factors, X) = push!(factors, matrixexpression(X))
+_pushfactors!(factors, X::MatrixProduct) = append!(factors, X.factors)
 
 function matrixproduct(args...)
-	A = MatrixProduct([])
+	factors = Union{MatrixRef,MatrixSum}[]
 	for x in args
-		_pushfactors!(A,x)
+		_pushfactors!(factors, x)
 	end
-	A
+	MatrixProduct(factors)
 end
 
-_pushterms!(A::MatrixSum, X) = push!(A.terms, matrixexpression(X))
-_pushterms!(A::MatrixSum, X::MatrixSum) = append!(A.terms,X.terms)
+
+_pushterms!(terms, X) = push!(terms, matrixexpression(X))
+_pushterms!(terms, X::MatrixSum) = append!(terms, X.terms)
 
 function matrixsum(args...)
-	A = MatrixSum([])
+	terms = Union{MatrixRef,MatrixProduct}[]
 	for x in args
-		_pushterms!(A,x)
+		_pushterms!(terms, x)
 	end
-	A
+	MatrixSum(terms)
 end
