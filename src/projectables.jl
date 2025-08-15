@@ -1,4 +1,5 @@
 # Why is this needed? Probably because of SingletonType.
+# Maybe change to using `StableHashTraits.transform_type` instead?
 StableHashTraits.transformer(::Type{Projectable{F}}) where F =
 	StableHashTraits.Transformer(x->x.f) # NB: pick_fields(:f) doesn't work.
 
