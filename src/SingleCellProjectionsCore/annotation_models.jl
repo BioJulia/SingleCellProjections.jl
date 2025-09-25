@@ -1,5 +1,15 @@
-extract_annotation(annotation::DataFrame, name::String) =
-	annotation[!,name]
+extract_annotation(annotations::DataFrame, name::String) =
+	annotations[!,name]
+
+function extract_annotation(annotations::DataFrame, external::DataFrame)
+	id_col = only(names(annotations,1))
+	@assert only(names(external,1)) == id_col
+	@assert size(external,2) == 2 # Allow exactly one value column
+
+	df = select(annotations, 1; copycols=false)
+	leftjoin!(df, external; on=id_col)
+	df[!,2]
+end
 
 
 
