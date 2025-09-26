@@ -86,12 +86,14 @@ Base.copy(A::Diag) = Diag(copy(A.A))
 
 
 matrixexpression(X::MatrixExpression) = X
+matrixexpression((_,X)::Pair{Symbol,<:MatrixExpression}) = X # ignore name - we cannot name an entire expression, the parts already have names
 matrixexpression(X) = MatrixRef(X)
 
 
 
 _pushfactors!(factors, X) = push!(factors, matrixexpression(X))
 _pushfactors!(factors, X::MatrixProduct) = append!(factors, X.factors)
+_pushfactors!(factors, (_,X)::Pair{Symbol,<:MatrixProduct}) = append!(terms, X.factors) # ignore name - we cannot name an entire expression, the parts already have names
 
 function matrixproduct(args...)
 	factors = Union{MatrixRef,MatrixSum}[]
@@ -104,6 +106,7 @@ end
 
 _pushterms!(terms, X) = push!(terms, matrixexpression(X))
 _pushterms!(terms, X::MatrixSum) = append!(terms, X.terms)
+_pushterms!(terms, (_,X)::Pair{Symbol,<:MatrixSum}) = append!(terms, X.terms) # ignore name - we cannot name an entire expression, the parts already have names
 
 function matrixsum(args...)
 	terms = Union{MatrixRef,MatrixProduct}[]
