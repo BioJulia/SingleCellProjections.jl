@@ -17,8 +17,10 @@ end
 adjoint_impl(::Var, data) = get_obs_spec(data)
 adjoint_impl(::Obs, data) = get_var_spec(data)
 
+adjoint_spec(data) = create_spec(DataMatrixFunc(adjoint_impl), data)
+
 # NB: We call it transpose even though we use adjoint internally.
 #     Because a user is more likely to use data' than transpose(data) even when they mean transposing.
 function Jobs.transpose(data)
-	Job(create_spec(DataMatrixFunc(adjoint_impl), data))
+	Job(adjoint_spec)
 end
