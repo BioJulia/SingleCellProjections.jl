@@ -28,7 +28,3 @@ function negative_regression_matrix(matrix, dm::Matrix; rtol=sqrt(eps()))
 	AU = A*F.U
 	(AU*negΣinv)*F.Vt
 end
-
-# # TODO: Replace this with direct calls to matrixsum and matrixproduct?
-# normalize_matrix2(matrix, negβT::Matrix, dm::Matrix) =
-# 	matrixsum(_named_matrix(matrix,:A), matrixproduct(Symbol("(-β)")=>negβT, :X=>dm'))

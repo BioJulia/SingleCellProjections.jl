@@ -31,6 +31,7 @@ negative_regression_matrix_impl_spec(data, dm; kwargs...) =
 
 
 function negative_regression_matrix(::Mat, data, dm; kwargs...)
+	# TODO: check that data and dm IDs match
 	negative_regression_matrix_impl_spec(get_matrix_spec(data), get_matrix_spec(dm); kwargs...)
 end
 negative_regression_matrix(::Var, data, dm; kwargs...) = get_spec(Var(), data)
@@ -47,24 +48,6 @@ end
 
 
 
-
-# normalize_matrix_impl(action::Action, data, negβT, dm) =
-# 	create_spec(SCPCore.normalize_matrix2, action(data), action(negβT), action(dm); __use_cache=false, __version=v"0.1.0")
-# normalize_matrix_impl_spec(data, negβT, dm) =
-# 	create_spec(Projectable(normalize_matrix_impl), data, negβT, dm)
-
-# function normalize_matrix(::Mat, data, args...; center=true, rtol=nothing)
-# 	# Maybe we should go for the matrix specs directly?
-# 	dm = designmatrix_spec(data, args...; center)
-# 	negβT = negative_regression_matrix_spec(data, dm; rtol)
-# 	normalize_matrix_impl_spec(get_matrix_spec(data), get_matrix_spec(negβT), get_matrix_spec(dm))
-# end
-# normalize_matrix(f::Union{Var,Obs}, data, args...; center=true) = get_spec(f, data)
-
-
-# function Jobs.normalize_matrix(data, args...; center=true, kwargs...)
-# 	Job(create_spec(DataMatrixFunc(normalize_matrix), data, args...; center, kwargs...))
-# end
 
 
 
