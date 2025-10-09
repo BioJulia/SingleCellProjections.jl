@@ -165,7 +165,7 @@ build_designmatrix_spec(data, names::Vector, value_vector_specs::Vector, value_v
 
 
 
-function designmatrix_pre(data, args...; center, kwargs...)
+function designmatrix(data, args...; center, kwargs...)
 	obs = get_obs_spec(data)
 
 	# Automatically center if there is an intercept covariate
@@ -191,7 +191,7 @@ end
 # TODO: Consider transposing
 # data::DataMatrix, args are covariates (names, two-column DataFrames with IDs+Values or covariate descriptions), center::Bool
 designmatrix_spec(data, args...; center=true, kwargs...) =
-	create_spec(Preprocess(designmatrix_pre), data, args...; center, kwargs...)
+	create_spec(Preprocess(designmatrix), data, args...; center, kwargs...)
 function Jobs.designmatrix(data, args...; kwargs...)
 	Job(designmatrix_spec(data, args...; kwargs...))
 end
