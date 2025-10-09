@@ -35,6 +35,9 @@ end
 
 struct InterceptValueVectorModel end
 
+Base.:(==)(a::CategoricalValueVectorModel, b::CategoricalValueVectorModel) = a.categories == b.categories
+
+
 # DEPRECATED - REMOVE
 value_vector_model(v::AbstractVector{<:Union{Missing,Number}}; kwargs...) = NumericalValueVectorModel(; kwargs...)
 value_vector_model(v::AbstractVector; kwargs...) = CategoricalValueVectorModel(v; kwargs...)
