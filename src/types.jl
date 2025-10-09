@@ -2,6 +2,6 @@ struct Projectable{F} <: AbstractPreprocess{F}
 	f::F
 end
 
-struct DataMatrixFunc{F} <: AbstractPreprocess{F} # TODO: Can we find a better/shorter name?
+struct DataMatrixFunction{F} <: AbstractPreprocess{F}
 	f::F
 end

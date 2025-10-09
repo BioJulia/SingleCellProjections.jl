@@ -8,7 +8,7 @@ create_adjoint_matrix_spec(X) =
 	create_spec(Projectable(adjoint_matrix), X)
 
 function adjoint_impl(::Mat, data)
-	if data.f == DataMatrixFunc(adjoint_impl)
+	if data.f == DataMatrixFunction(adjoint_impl)
 		get_matrix_spec(data.args[1]) # adjoint(adjoint(X)) == X
 	else
 		create_adjoint_matrix_spec(get_matrix_spec(data))
@@ -17,7 +17,7 @@ end
 adjoint_impl(::Var, data) = get_obs_spec(data)
 adjoint_impl(::Obs, data) = get_var_spec(data)
 
-adjoint_spec(data) = create_spec(DataMatrixFunc(adjoint_impl), data)
+adjoint_spec(data) = create_spec(DataMatrixFunction(adjoint_impl), data)
 
 # NB: We call it transpose even though we use adjoint internally.
 #     Because a user is more likely to use data' than transpose(data) even when they mean transposing.

@@ -21,7 +21,7 @@ logtransform(::Obs, ::DataType, data; kwargs...) = get_obs_spec(data)
 
 
 function Jobs.logtransform(T::DataType, counts; scale_factor=10_000, kwargs...)
-	Job(create_spec(DataMatrixFunc(logtransform), T, counts; scale_factor, kwargs...))
+	Job(create_spec(DataMatrixFunction(logtransform), T, counts; scale_factor, kwargs...))
 end
 Jobs.logtransform(counts; kwargs...) = Jobs.logtransform(Float64, counts; kwargs...)
 
@@ -130,6 +130,6 @@ sctransform(::Obs, ::DataType, counts; kwargs...) = get_obs_spec(counts)
 
 
 function Jobs.sctransform(T::DataType, counts; kwargs...)
-	Job(create_spec(DataMatrixFunc(sctransform), T, counts; kwargs...))
+	Job(create_spec(DataMatrixFunction(sctransform), T, counts; kwargs...))
 end
 Jobs.sctransform(counts; kwargs...) = Jobs.sctransform(Float64, counts; kwargs...)

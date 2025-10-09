@@ -22,7 +22,7 @@ matrix_product(::Obs, args...) = get_obs_spec(_get_value(last(args)))
 
 function matrix_product_spec(args...)
 	isempty(args) && throw(ArgumentError("An empty matrix product is not allowed."))
-	create_spec(DataMatrixFunc(matrix_product), args...)
+	create_spec(DataMatrixFunction(matrix_product), args...)
 end
 
 matrix_sum_impl(args...) = SCPCore.matrixsum(args...)
@@ -40,5 +40,5 @@ matrix_sum(::Obs, args...) = get_obs_spec(_get_value(first(args)))
 
 function matrix_sum_spec(args...)
 	isempty(args) && throw(ArgumentError("An empty matrix sum is not allowed."))
-	create_spec(DataMatrixFunc(matrix_sum), args...)
+	create_spec(DataMatrixFunction(matrix_sum), args...)
 end

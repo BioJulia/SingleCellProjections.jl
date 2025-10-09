@@ -18,7 +18,7 @@ end
 svd(f::Union{Var,Obs}, data; kwargs...) = get_spec(f, data)
 
 function Jobs.svd(args...; seed=1234, kwargs...)
-	Job(create_spec(DataMatrixFunc(svd), args...; seed, kwargs...))
+	Job(create_spec(DataMatrixFunction(svd), args...; seed, kwargs...))
 end
 
 
@@ -49,7 +49,7 @@ end
 pca(::Obs, data; kwargs...) = get_spec(Obs(), data)
 
 function Jobs.pca(args...; nsv, seed=1234, kwargs...)
-	Job(create_spec(DataMatrixFunc(pca), args...; nsv, seed, kwargs...))
+	Job(create_spec(DataMatrixFunction(pca), args...; nsv, seed, kwargs...))
 end
 
 
@@ -67,7 +67,7 @@ end
 loadings(::Var, data; kwargs...) = get_spec(Var(), data)
 
 function Jobs.loadings(args...; nsv, seed=1234, kwargs...)
-	Job(create_spec(DataMatrixFunc(loadings), args...; seed, kwargs...))
+	Job(create_spec(DataMatrixFunction(loadings), args...; seed, kwargs...))
 end
 
 
@@ -151,5 +151,5 @@ force_layout(::Obs, data; kwargs...) = get_spec(Obs(), data)
 force_layout(::Var, data; ndim, kwargs...) = create_prefixed_ids_spec("id", "Force Layout Dim ", ndim)
 
 function Jobs.force_layout(args...; ndim=3, kwargs...)
-	Job(create_spec(DataMatrixFunc(force_layout), args...; ndim, kwargs...))
+	Job(create_spec(DataMatrixFunction(force_layout), args...; ndim, kwargs...))
 end

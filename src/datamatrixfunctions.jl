@@ -7,7 +7,7 @@ struct Obs <: DataMatrixField end
 is_datamatrix_spec(::Any) = false
 function is_datamatrix_spec(sa::SpecArgs)
 	f = sa.f
-	f isa DataMatrixFunc && return true
+	f isa DataMatrixFunction && return true
 	f == SCPCore.DataMatrix && return true
 	if f == project
 		onto = sa.args[1]
@@ -41,7 +41,7 @@ end
 
 
 # WIP - perhaps spec should be unwrapped at an earlier point - perhaps in ReproducibleJobs?
-setup_datamatrix(f::DataMatrixField, d::DataMatrixFunc{F}, spec) where F = d.f(f, spec.args...; spec.kwargs...)
+setup_datamatrix(f::DataMatrixField, d::DataMatrixFunction{F}, spec) where F = d.f(f, spec.args...; spec.kwargs...)
 
 
 
@@ -90,8 +90,8 @@ setup_datamatrix(f::DataMatrixField, spec::Spec) = setup_datamatrix(f, spec.f, s
 
 
 
-# This evaluates the DataMatrixFunc by wrapping the subspecs in a DataMatrix
-function (d::DataMatrixFunc{F})(args...; kwargs...) where F
+# This evaluates the DataMatrixFunction by wrapping the subspecs in a DataMatrix
+function (d::DataMatrixFunction{F})(args...; kwargs...) where F
 	matrix = d.f(Mat(), args...; kwargs...)
 	var = d.f(Var(), args...; kwargs...)
 	obs = d.f(Obs(), args...; kwargs...)
@@ -119,7 +119,7 @@ try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_obs)}, k::Spec, v) 
 	_try_replace_get_spec_single(Obs(), spec, k, v)
 
 
-function project(onto, d::DataMatrixFunc, args...)
+function project(onto, d::DataMatrixFunction, args...)
 	matrix = create_project_spec(get_matrix_spec(onto), args...)
 	var = create_project_spec(get_var_spec(onto), args...)
 	obs = create_project_spec(get_obs_spec(onto), args...)

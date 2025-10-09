@@ -69,7 +69,7 @@ end
 
 include("types.jl")
 include("projectables.jl")
-include("datamatrixfuncs.jl")
+include("datamatrixfunctions.jl")
 include("internal.jl")
 include("matrix_arithmetic.jl")
 include("load.jl")

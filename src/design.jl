@@ -80,7 +80,7 @@ end
 # TODO: Consider transposing
 # data::DataMatrix, args are covariates (names), center::Bool
 # designmatrix_spec(data, args...; center=true, kwargs...) =
-# 	create_spec(DataMatrixFunc(design), data, args...; center, kwargs...)
+# 	create_spec(DataMatrixFunction(design), data, args...; center, kwargs...)
 # function Jobs.designmatrix(data, args...; kwargs...)
 # 	Job(designmatrix_spec(data, args...; kwargs...))
 # end
@@ -161,7 +161,7 @@ build_designmatrix(::Obs, data, names, ::Any, models; kwargs...) = covariate_nam
 build_designmatrix(::Var, data, ::Any, ::Any, ::Any; kwargs...) = get_obs_spec(data) # Yes this is correct. (See note below regarding transposing)
 
 build_designmatrix_spec(data, names::Vector, value_vector_specs::Vector, value_vector_model_specs::Vector; kwargs...) =
-	create_spec(DataMatrixFunc(build_designmatrix), data, names, value_vector_specs, value_vector_model_specs; kwargs...)
+	create_spec(DataMatrixFunction(build_designmatrix), data, names, value_vector_specs, value_vector_model_specs; kwargs...)
 
 
 

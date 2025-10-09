@@ -16,7 +16,7 @@ center_matrix(f::Union{Var,Obs}, data; kwargs...) = get_spec(f, data)
 
 # TEMP, use this as a simple example for testing out projections and specs
 function Jobs.center_matrix(args...; kwargs...)
-	Job(create_spec(DataMatrixFunc(center_matrix), args...; kwargs...))
+	Job(create_spec(DataMatrixFunction(center_matrix), args...; kwargs...))
 end
 
 
@@ -40,7 +40,7 @@ negative_regression_matrix(::Obs, data, dm; kwargs...) = get_spec(Obs(), dm)
 
 function negative_regression_matrix_spec(data, dm; rtol=nothing)
 	rtol = @something rtol sqrt(eps())
-	create_spec(DataMatrixFunc(negative_regression_matrix), data, dm; rtol)
+	create_spec(DataMatrixFunction(negative_regression_matrix), data, dm; rtol)
 end
 function Jobs.negative_regression_matrix(args...; kwargs...)
 	Job(negative_regression_matrix_spec(args...; kwargs...))

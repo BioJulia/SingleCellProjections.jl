@@ -3,7 +3,7 @@ module SingleCellProjectionsUMAPExt
 using ReproducibleJobs
 using ReproducibleJobs: create_spec
 using SingleCellProjections
-using SingleCellProjections: DataMatrixFunc, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_matrix_spec, get_spec, create_prefixed_ids_spec
+using SingleCellProjections: DataMatrixFunction, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_matrix_spec, get_spec, create_prefixed_ids_spec
 import .SingleCellProjectionsCore as SCPCore
 
 using DataFrames
@@ -80,7 +80,7 @@ umap(::Var, data; ndim, kwargs...) = create_prefixed_ids_spec("id", "UMAP ", ndi
 
 
 function Jobs.umap(data; ndim, kwargs...)
-	Job(create_spec(DataMatrixFunc(umap), data; ndim, kwargs...))
+	Job(create_spec(DataMatrixFunction(umap), data; ndim, kwargs...))
 end
 
 

@@ -28,11 +28,11 @@ end
 
 
 Jobs.subset_matrix(data, var_ids, obs_ids; kwargs...) =
-	Job(create_spec(DataMatrixFunc(subset_matrix), data; kwargs..., var_ids, obs_ids))
+	Job(create_spec(DataMatrixFunction(subset_matrix), data; kwargs..., var_ids, obs_ids))
 Jobs.subset_var(data, var_ids; kwargs...) =
-	Job(create_spec(DataMatrixFunc(subset_matrix), data; kwargs..., var_ids))
+	Job(create_spec(DataMatrixFunction(subset_matrix), data; kwargs..., var_ids))
 Jobs.subset_obs(data, obs_ids; kwargs...) =
-	Job(create_spec(DataMatrixFunc(subset_matrix), data; kwargs..., obs_ids))
+	Job(create_spec(DataMatrixFunction(subset_matrix), data; kwargs..., obs_ids))
 
 
 
@@ -72,8 +72,8 @@ end
 
 # Can we share more code with subset_ functions above?
 Jobs.filter_matrix(fvar, fobs, data; project_var_ids=:intersect, project_obs_ids=:no, kwargs...) =
-	Job(create_spec(DataMatrixFunc(filter_matrix), data;  kwargs..., fvar, fobs, project_var_ids, project_obs_ids))
+	Job(create_spec(DataMatrixFunction(filter_matrix), data;  kwargs..., fvar, fobs, project_var_ids, project_obs_ids))
 Jobs.filter_var(fvar, data; project_ids=:intersect, kwargs...) =
-	Job(create_spec(DataMatrixFunc(filter_matrix), data;  kwargs..., fvar, project_var_ids=project_ids))
+	Job(create_spec(DataMatrixFunction(filter_matrix), data;  kwargs..., fvar, project_var_ids=project_ids))
 Jobs.filter_obs(fobs, data; project_ids=:no, kwargs...) =
-	Job(create_spec(DataMatrixFunc(filter_matrix), data;  kwargs..., fobs, project_obs_ids=project_ids))
+	Job(create_spec(DataMatrixFunction(filter_matrix), data;  kwargs..., fobs, project_obs_ids=project_ids))
