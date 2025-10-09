@@ -45,35 +45,33 @@ setup_datamatrix(f::DataMatrixField, d::DataMatrixFunction{F}, spec) where F = d
 
 
 
-# TODO: rename `get_matrix` to `get_matrix_pr` (or similar) and `get_matrix_pre` to `get_matrix`
-
-function get_matrix(action::Action, dm_spec)
+function get_matrix_pr(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_matrix
 	action(setup_datamatrix(Mat(), dm_spec))
 end
-function get_var(action::Action, dm_spec)
+function get_var_pr(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_var
 	action(setup_datamatrix(Var(), dm_spec))
 end
-function get_obs(action::Action, dm_spec)
+function get_obs_pr(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_obs
 	action(setup_datamatrix(Obs(), dm_spec))
 end
 
 
-get_matrix_pre(dm_spec) = create_spec(Projectable(get_matrix), dm_spec)
-get_var_pre(dm_spec) = create_spec(Projectable(get_var), dm_spec)
-get_obs_pre(dm_spec) = create_spec(Projectable(get_obs), dm_spec)
+get_matrix(dm_spec) = create_spec(Projectable(get_matrix_pr), dm_spec)
+get_var(dm_spec) = create_spec(Projectable(get_var_pr), dm_spec)
+get_obs(dm_spec) = create_spec(Projectable(get_obs_pr), dm_spec)
 
 
 
-get_matrix_spec(x) = create_spec(Preprocess(get_matrix_pre), x)
+get_matrix_spec(x) = create_spec(Preprocess(get_matrix), x)
 Jobs.get_matrix(x) = Job(get_matrix_spec(x))
 
-get_var_spec(x) = create_spec(Preprocess(get_var_pre), x)
+get_var_spec(x) = create_spec(Preprocess(get_var), x)
 Jobs.get_var(x) = Job(get_var_spec(x))
 
-get_obs_spec(x) = create_spec(Preprocess(get_obs_pre), x)
+get_obs_spec(x) = create_spec(Preprocess(get_obs), x)
 Jobs.get_obs(x) = Job(get_obs_spec(x))
 
 get_spec(::Mat, x) = get_matrix_spec(x)
@@ -111,11 +109,11 @@ function _try_replace_get_spec_single(f::DataMatrixField, spec::Spec, k::Spec, v
 	end
 end
 
-try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_matrix)}, k::Spec, v) =
+try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_matrix_pr)}, k::Spec, v) =
 	_try_replace_get_spec_single(Mat(), spec, k, v)
-try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_var)}, k::Spec, v) =
+try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_var_pr)}, k::Spec, v) =
 	_try_replace_get_spec_single(Var(), spec, k, v)
-try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_obs)}, k::Spec, v) =
+try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_obs_pr)}, k::Spec, v) =
 	_try_replace_get_spec_single(Obs(), spec, k, v)
 
 
