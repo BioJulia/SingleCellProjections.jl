@@ -52,15 +52,14 @@ end
 
 
 
-function normalize_matrix_pre(data, args...; center, kwargs...)
+function normalize_matrix_pre(data, args...; center=true, kwargs...)
 	dm = designmatrix_spec(data, args...; center)
 	negβT = negative_regression_matrix_spec(data, dm; kwargs...)
-
 	dmT = adjoint_spec(dm)
 	matrix_sum_spec(:A=>data, matrix_product_spec(Symbol("(-β)")=>negβT, :X=>dmT))
 end
 
 
-function Jobs.normalize_matrix(data, args...; center=true, kwargs...)
-	Job(create_spec(Preprocess(normalize_matrix_pre), data, args...; center, kwargs...))
+function Jobs.normalize_matrix(data, args...; kwargs...)
+	Job(create_spec(Preprocess(normalize_matrix_pre), data, args...; kwargs...))
 end

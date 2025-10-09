@@ -106,6 +106,15 @@ annotation_nrows_spec(df) =
 	create_spec(Projectable(annotation_nrows), df)
 
 
+function annotation_name_impl(df)
+	@assert ncol(df)==2
+	only(names(df, 2))
+end
+annotation_name(action::Action, df) = create_spec(annotation_name_impl, action(df); __use_cache=false, __version=v"0.1.0")
+annotation_name_spec(df) = create_spec(Projectable(annotation_name), df)
+
+
+
 # TODO: Rename
 hcat_impl(action::Action, args...; kwargs...) =
 	create_spec(hcat, action(args)...; kwargs..., __use_cache=false, __version=v"0.1.0")

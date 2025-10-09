@@ -1,15 +1,7 @@
-# Why is this needed? Probably because of SingletonType.
-StableHashTraits.transformer(::Type{DataMatrixFunc{F}}) where F =
-	StableHashTraits.Transformer(x->x.f) # NB: pick_fields(:f) doesn't work.
-
-ReproducibleJobs.is_preprocessing(::DataMatrixFunc) = true
-Base.show(io::IO, d::DataMatrixFunc{F}) where F = print(io, d.f)
-
 abstract type DataMatrixField end
 struct Mat <: DataMatrixField end
 struct Var <: DataMatrixField end
 struct Obs <: DataMatrixField end
-
 
 
 is_datamatrix_spec(::Any) = false
@@ -19,7 +11,7 @@ function is_datamatrix_spec(sa::SpecArgs)
 	f == SCPCore.DataMatrix && return true
 	if f == project
 		onto = sa.args[1]
-		return is_datamatrix_spec(onto)
+		return is_datamatrix_spec(onto) # This will only work in general if `onto` has been preprocessed. Otherwise it could be a `Preprocess`. Needs a fix.
 	end
 	# TODO: Are there more cases that should return true?
 	return false
@@ -27,7 +19,7 @@ end
 is_datamatrix_spec(spec::Spec) = is_datamatrix_spec(spec.ro.value)
 
 
-is_projectable_or_datamatrix_spec(x) = is_projectable_spec(x) || is_datamatrix_spec(x)
+# is_projectable_or_datamatrix_spec(x) = is_projectable_spec(x) || is_datamatrix_spec(x)
 
 
 
@@ -53,27 +45,36 @@ setup_datamatrix(f::DataMatrixField, d::DataMatrixFunc{F}, spec) where F = d.f(f
 
 
 
+# TODO: rename `get_matrix` to `get_matrix_pr` (or similar) and `get_matrix_pre` to `get_matrix`
+
 function get_matrix(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_matrix
 	action(setup_datamatrix(Mat(), dm_spec))
 end
-get_matrix_spec(x) = create_spec(Projectable(get_matrix), forwarded(is_datamatrix_spec, x))
-Jobs.get_matrix(x) = Job(get_matrix_spec(x))
-
 function get_var(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_var
 	action(setup_datamatrix(Var(), dm_spec))
 end
-get_var_spec(x) = create_spec(Projectable(get_var), forwarded(is_datamatrix_spec, x))
-Jobs.get_var(x) = Job(get_var_spec(x))
-
 function get_obs(action::Action, dm_spec)
 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_obs
 	action(setup_datamatrix(Obs(), dm_spec))
 end
-get_obs_spec(x) = create_spec(Projectable(get_obs), forwarded(is_datamatrix_spec, x))
-Jobs.get_obs(x) = Job(get_obs_spec(x))
 
+
+get_matrix_pre(dm_spec) = create_spec(Projectable(get_matrix), dm_spec)
+get_var_pre(dm_spec) = create_spec(Projectable(get_var), dm_spec)
+get_obs_pre(dm_spec) = create_spec(Projectable(get_obs), dm_spec)
+
+
+
+get_matrix_spec(x) = create_spec(Preprocess(get_matrix_pre), x)
+Jobs.get_matrix(x) = Job(get_matrix_spec(x))
+
+get_var_spec(x) = create_spec(Preprocess(get_var_pre), x)
+Jobs.get_var(x) = Job(get_var_spec(x))
+
+get_obs_spec(x) = create_spec(Preprocess(get_obs_pre), x)
+Jobs.get_obs(x) = Job(get_obs_spec(x))
 
 get_spec(::Mat, x) = get_matrix_spec(x)
 get_spec(::Var, x) = get_var_spec(x)

@@ -1,12 +1,3 @@
-# Why is this needed? Probably because of SingletonType.
-# Maybe change to using `StableHashTraits.transform_type` instead?
-StableHashTraits.transformer(::Type{Projectable{F}}) where F =
-	StableHashTraits.Transformer(x->x.f) # NB: pick_fields(:f) doesn't work.
-
-ReproducibleJobs.is_preprocessing(::Projectable) = true
-Base.show(io::IO, p::Projectable{F}) where F = print(io, p.f)
-
-
 abstract type Action end
 struct Eval <: Action end
 struct Projection <: Action
@@ -17,14 +8,14 @@ end
 
 
 
-is_projectable_spec(::Any) = false
-function is_projectable_spec(sa::SpecArgs)
-	f = sa.f
-	f isa Projectable && return true
-	# TODO: Are there more cases that should return true?
-	return false
-end
-is_projectable_spec(spec::Spec) = is_projectable_spec(spec.ro.value)
+# is_projectable_spec(::Any) = false
+# function is_projectable_spec(sa::SpecArgs)
+# 	f = sa.f
+# 	f isa Projectable && return true
+# 	# TODO: Are there more cases that should return true?
+# 	return false
+# end
+# is_projectable_spec(spec::Spec) = is_projectable_spec(spec.ro.value)
 
 
 
@@ -102,12 +93,9 @@ end
 
 
 project(onto, args...) = project(onto, onto.f, args...)
-ReproducibleJobs.is_preprocessing(::typeof(project)) = true
 
-function create_project_spec(onto, args...; kwargs...)
-	onto = forwarded(is_projectable_or_datamatrix_spec, onto)
-	create_spec(project, onto, args...; kwargs...)
-end
+create_project_spec(onto, args...; kwargs...) =
+	create_spec(Preprocess(project), onto, args...; kwargs...)
 
 function Jobs.project(onto, args...; kwargs...)
 	Job(create_project_spec(onto, args...; kwargs...))

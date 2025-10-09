@@ -52,6 +52,7 @@ module Jobs
 	function tf_idf_transform end
 	function center_matrix end # TEMP
 	function designmatrix end
+	function designmatrix2 end # TEMP
 	function negative_regression_matrix end
 	function normalize_matrix end
 	function svd end
