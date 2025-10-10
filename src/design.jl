@@ -120,7 +120,7 @@ covariate_names_spec2(names, models) =
 
 
 
-function covariate_basename_spec((column,desc)::Pair)
+function _covariate_basename((column, desc)::Pair)
 	if desc === SCPCore.intercept_covariate()
 		@assert column == "Intercept" # Allow other names?
 		column
@@ -134,22 +134,23 @@ end
 
 
 
+value_vector_model_spec2(data, desc::SCPCore.InterceptCovariateDesc; kwargs...) =
+	SCPCore.InterceptValueVectorModel(; kwargs...)
 value_vector_model_spec2(data, desc; kwargs...) =
-	create_spec(SCPCore.value_vector_model, data, desc; __use_cache=true, kwargs..., __version=v"0.1.1")
+	create_spec(SCPCore.value_vector_model, data, desc; __use_cache=true, kwargs..., __version=v"0.1.2")
 
 value_vector2(action::Action, model, data; kwargs...) =
-	create_spec(SCPCore.value_vector_project, model, action(data); __use_cache=true, __version=v"0.1.1")
-
-function value_vector_spec2(obs, (column,desc)::Pair; kwargs...)
-	if desc === SCPCore.intercept_covariate()
-		data = annotation_nrows_spec(obs) # Special case for intercept, just the number of rows
-		model = SCPCore.InterceptValueVectorModel(; kwargs...)
-	else
-		data = create_extract_annotation_spec(obs, column) # the column values
-		model = prefetched(value_vector_model_spec2(data, desc; kwargs...))
-	end
+	create_spec(SCPCore.value_vector_project, model, action(data); __use_cache=true, __version=v"0.1.2")
+value_vector_spec2(model, data) =
 	create_spec(Projectable(value_vector2), model, data)
-end
+
+_value_vector_data_spec(obs, ::Any, ::SCPCore.InterceptCovariateDesc; kwargs...) =
+	annotation_nrows_spec(obs) # Special case for intercept, just the number of rows
+_value_vector_data_spec(obs, column, ::Any; kwargs...) =
+	create_extract_annotation_spec(obs, column) # the column values
+
+
+
 
 
 
@@ -184,13 +185,10 @@ function designmatrix(data, args...; center, kwargs...)
 		push!(covariate_descriptions, a)
 	end
 
-	base_name_specs = covariate_basename_spec.(covariate_descriptions)
-	vv_specs = value_vector_spec2.(Ref(obs), covariate_descriptions)
-	vv_model_specs = [s.args[1] for s in vv_specs] # TODO: Make this prettier, maybe creating models before value_vector_specs?
-
-	vv_specs = prefetched.(vv_specs)
-	vv_model_specs = prefetched.(vv_model_specs)
-
+	base_name_specs = _covariate_basename.(covariate_descriptions)
+	vv_data_specs = _value_vector_data_spec.(Ref(obs), first.(covariate_descriptions), last.(covariate_descriptions))
+	vv_model_specs = prefetched.(value_vector_model_spec2.(vv_data_specs, last.(covariate_descriptions)))
+	vv_specs = prefetched.(value_vector_spec2.(vv_model_specs, vv_data_specs))
 	build_designmatrix_spec(data, base_name_specs, vv_specs, vv_model_specs; center, kwargs...)
 end
 
