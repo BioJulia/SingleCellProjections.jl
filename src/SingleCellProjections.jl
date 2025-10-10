@@ -21,7 +21,8 @@ import LinearAlgebra
 using ReproducibleJobs
 using ReproducibleJobs: create_spec, ReadOnly, SpecArgs, ChecksummedFilePath, checksummedfilepath_job, ifelse_spec
 
-ReproducibleJobs.unmanage_rec(x::SCPCore.ValueVector) = x
+ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVector) = x
+ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVectorModel) = x
 ReproducibleJobs.unmanage_rec(x::SCPCore.ProjectionModel) = x
 
 
@@ -52,7 +53,6 @@ module Jobs
 	function tf_idf_transform end
 	function center_matrix end # TEMP
 	function designmatrix end
-	function designmatrix2 end # TEMP
 	function negative_regression_matrix end
 	function normalize_matrix end
 	function svd end

@@ -1,28 +1,50 @@
-# Will be renamed to just covariate
-covariate3(column; type::Symbol=:auto) = (@assert type in (:auto, :categorical, :numerical); (; type, column))
-covariate3(; type::Symbol) = (@assert type==:intercept; (; type))
-# TODO: Add two-group
+abstract type AbstractCovariateDesc end
 
-covariate3(nt::NamedTuple) = nt # no-op since we represent covariate descriptions using NamedTuples
+Base.copy(x::AbstractCovariateDesc) = x # Must be immutable, so this is fine.
 
 
+struct AutoCovariateDesc <: AbstractCovariateDesc end
+struct CategoricalCovariateDesc <: AbstractCovariateDesc end
+struct NumericalCovariateDesc <: AbstractCovariateDesc end
+struct InterceptCovariateDesc <: AbstractCovariateDesc end
+# TODO: Add TwoGroupCovariateDesc
 
 
-abstract type ValueVector end
+auto_covariate() = AutoCovariateDesc()
+categorical_covariate() = CategoricalCovariateDesc()
+numerical_covariate() = NumericalCovariateDesc()
+intercept_covariate() = InterceptCovariateDesc()
+# todo: TwoGroup
 
-struct NumericalValueVector <: ValueVector
-	values::Vector{Float64}
+
+
+
+abstract type AbstractValueVector end
+
+struct NumericalValueVector <: AbstractValueVector
+	values::Vector{Float64} # Change to ReadOnlyVector?
 end
-struct CategoricalValueVector <: ValueVector
-	values::Vector{Int}
+struct CategoricalValueVector <: AbstractValueVector
+	values::Vector{Int} # Change to ReadOnlyVector?
+end
+struct InterceptValueVector <: AbstractValueVector
+	n::Int
 end
 
 Base.:(==)(a::NumericalValueVector, b::NumericalValueVector) = a.values == b.values
 Base.:(==)(a::CategoricalValueVector, b::CategoricalValueVector) = a.values == b.values
 
-struct NumericalValueVectorModel end
-struct CategoricalValueVectorModel{T}
-	categories::Vector{T}
+
+
+abstract type AbstractValueVectorModel end
+
+Base.copy(x::AbstractValueVectorModel) = x # Must be immutable, so this is fine.
+
+
+
+struct NumericalValueVectorModel <: AbstractValueVectorModel end
+struct CategoricalValueVectorModel{T} <: AbstractValueVectorModel
+	categories::Vector{T} # Change to ReadOnlyVector?
 	function CategoricalValueVectorModel(v::Vector{T}; max_categories=100) where T
 		uv = unique(v)
 		any(ismissing, uv) && throw(ArgumentError("Missing values not supported for categorical value vectors."))
@@ -33,7 +55,7 @@ struct CategoricalValueVectorModel{T}
 end
 # TODO: Add TwoGroupValueVector?
 
-struct InterceptValueVectorModel end
+struct InterceptValueVectorModel <: AbstractValueVectorModel end
 
 Base.:(==)(a::CategoricalValueVectorModel, b::CategoricalValueVectorModel) = a.categories == b.categories
 
@@ -43,48 +65,19 @@ value_vector_model(v::AbstractVector{<:Union{Missing,Number}}; kwargs...) = Nume
 value_vector_model(v::AbstractVector; kwargs...) = CategoricalValueVectorModel(v; kwargs...)
 
 
+# Hmm. Not perfect to rely on eltype. But I guess it works in practice.
+value_vector_model(::AbstractVector{<:Union{Missing,Number}}, ::AutoCovariateDesc; kwargs...) = NumericalValueVectorModel(; kwargs...)
+value_vector_model(column::AbstractVector, ::AutoCovariateDesc; kwargs...) = CategoricalValueVectorModel(column; kwargs...)
 
-# # Hmm. Not perfect to rely on eltype. But I guess it works in practice.
-auto_value_vector_model(v::AbstractVector{<:Union{Missing,Number}}; kwargs...) = NumericalValueVectorModel(; kwargs...)
-auto_value_vector_model(v::AbstractVector; kwargs...) = CategoricalValueVectorModel(v; kwargs...)
+value_vector_model(column, ::CategoricalCovariateDesc; kwargs...) = CategoricalValueVectorModel(column; kwargs...)
+value_vector_model(::Any, ::NumericalCovariateDesc; kwargs...) = NumericalValueVectorModel(; kwargs...)
 
-function value_vector_model(covariate_desc; kwargs...)
-	if covariate_desc.type == :auto
-		auto_value_vector_model(covariate_desc.column)
-	elseif covariate_desc.type == :categorical
-		CategoricalValueVectorModel(covariate_desc.column; kwargs...)
-	elseif covariate_desc.type == :numerical
-		NumericalValueVectorModel(; kwargs...)
-	elseif covariate_desc.type == :intercept
-		InterceptValueVectorModel(; kwargs...)
-	else
-		error("Unknown covariate type: $(covariate_desc.type)")
-	end
-end
+# This is not really used, but might be good for consistency
+value_vector_model(::Any, ::InterceptCovariateDesc; kwargs...) = InterceptValueVectorModel(; kwargs...)
 
 
-function value_vector_project(::InterceptValueVectorModel, c::NamedTuple)
-	@assert c.type == :intercept
-	c.n
-end
-
-function value_vector_project(::NumericalValueVectorModel, c::NamedTuple)
-	@assert c.type in (:auto,:numerical)
-	v = c.column
-	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
-	NumericalValueVector(convert(Vector{Float64},v))
-end
-function value_vector_project(m::CategoricalValueVectorModel, c::NamedTuple)
-	@assert c.type in (:auto,:categorical)
-	v = c.column
-	ind = indexin(v, m.categories)
-	new_values = setdiff(unique(v), m.categories)
-	isempty(new_values) || error("Categorical vector has values not present in model. Got [", join(new_value, ','), "], but expected [", join(m.categories, ','), "].")
-	CategoricalValueVector(ind)
-end
 
 
-# DEPRECATED - REMOVE
 function value_vector_project(::NumericalValueVectorModel, v)
 	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
 	NumericalValueVector(convert(Vector{Float64},v))
@@ -96,10 +89,11 @@ function value_vector_project(m::CategoricalValueVectorModel, v)
 	CategoricalValueVector(ind)
 end
 
+value_vector_project(::InterceptValueVectorModel, n) = InterceptValueVector(n)
 
 
-# TODO: Does this serve a purpose?
-abstract type AbstractCovariateModel <: ProjectionModel end
+
+abstract type AbstractCovariateModel end
 
 struct InterceptCovariateModel <: AbstractCovariateModel end
 
@@ -124,24 +118,12 @@ CategoricalCovariateModel(v::CategoricalValueVector) = CategoricalCovariateModel
 
 # TODO: Add TwoGroupCovariateModel?
 
-covariate_model(::Int; center::Bool) = (@assert center; InterceptCovariateModel()) # TODO: this isn't very beatiful, fix.
 covariate_model(v::NumericalValueVector; center::Bool) = NumericalCovariateModel(v, center)
 covariate_model(v::CategoricalValueVector; center::Bool) = CategoricalCovariateModel(v)
+covariate_model(::InterceptValueVector; center::Bool) = (@assert center; InterceptCovariateModel())
 
 
-
-# covariate_project(::InterceptCovariateModel, N::Int, args...) = ones(N,1)
-# function covariate_project(m::NumericalCovariateModel, N::Int, v::NumericalValueVector)
-# 	@assert length(v.values) == N
-# 	x = reshape(v.values, N, 1) # So we return a N×1 matrix
-# 	(x .- m.mean)./m.scale
-# end
-# function covariate_project(m::CategoricalCovariateModel, N::Int, v::CategoricalValueVector)
-# 	@assert length(v.values) == N
-# 	isequal.(v.values, (1:m.n_categories)')
-# end
-
-covariate_project(::InterceptCovariateModel, N::Int) = ones(N,1)
+covariate_project(::InterceptCovariateModel, v::InterceptValueVector) = ones(v.n, 1)
 function covariate_project(m::NumericalCovariateModel, v::NumericalValueVector)
 	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
 	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
