@@ -4,7 +4,7 @@ value_vector_model_spec(annot; kwargs...) =
 
 function value_vector(action::Action, annot; kwargs...)
 	model = value_vector_model_spec(annot; kwargs...)
-	create_spec(SCPCore.value_vector_project, model, action(annot); __use_cache=true, __version=v"0.1.0")
+	create_spec(SCPCore.value_vector, model, action(annot); __use_cache=true, __version=v"0.1.0")
 end
 value_vector_spec(annot; kwargs...) =
 	create_spec(Projectable(value_vector), annot; kwargs...)
@@ -80,7 +80,7 @@ value_vector_model_spec2(data, desc; kwargs...) =
 	create_spec(SCPCore.value_vector_model, data, desc; __use_cache=true, kwargs..., __version=v"0.1.2")
 
 value_vector2(action::Action, model, data) =
-	create_spec(SCPCore.value_vector_project, model, action(data); __use_cache=true, __version=v"0.1.2")
+	create_spec(SCPCore.value_vector, model, action(data); __use_cache=true, __version=v"0.1.2")
 value_vector_spec2(model, data) =
 	create_spec(Projectable(value_vector2), model, data)
 

@@ -7,32 +7,17 @@ struct AutoCovariateDesc <: AbstractCovariateDesc end
 struct CategoricalCovariateDesc <: AbstractCovariateDesc end
 struct NumericalCovariateDesc <: AbstractCovariateDesc end
 struct InterceptCovariateDesc <: AbstractCovariateDesc end
-# TODO: Add TwoGroupCovariateDesc
+struct TwoGroupCovariateDesc{T} <: AbstractCovariateDesc
+	groupA::T
+	groupB::Union{T,Nothing} # optional
+end
 
 
 auto_covariate() = AutoCovariateDesc()
 categorical_covariate() = CategoricalCovariateDesc()
 numerical_covariate() = NumericalCovariateDesc()
 intercept_covariate() = InterceptCovariateDesc()
-# todo: TwoGroup
-
-
-
-
-abstract type AbstractValueVector end
-
-struct NumericalValueVector <: AbstractValueVector
-	values::Vector{Float64} # Change to ReadOnlyVector?
-end
-struct CategoricalValueVector <: AbstractValueVector
-	values::Vector{Int} # Change to ReadOnlyVector?
-end
-struct InterceptValueVector <: AbstractValueVector
-	n::Int
-end
-
-Base.:(==)(a::NumericalValueVector, b::NumericalValueVector) = a.values == b.values
-Base.:(==)(a::CategoricalValueVector, b::CategoricalValueVector) = a.values == b.values
+twogroup_covariate(groupA, groupB=nothing) = TwoGroupCovariateDesc(groupA, groupB)
 
 
 
@@ -53,7 +38,6 @@ struct CategoricalValueVectorModel{T} <: AbstractValueVectorModel
 		new{T}(unique(v))
 	end
 end
-# TODO: Add TwoGroupValueVector?
 
 struct InterceptValueVectorModel <: AbstractValueVectorModel end
 
@@ -78,18 +62,36 @@ value_vector_model(::Any, ::InterceptCovariateDesc; kwargs...) = InterceptValueV
 
 
 
-function value_vector_project(::NumericalValueVectorModel, v)
+abstract type AbstractValueVector end
+
+struct NumericalValueVector <: AbstractValueVector
+	values::Vector{Float64} # Change to ReadOnlyVector?
+end
+struct CategoricalValueVector <: AbstractValueVector
+	values::Vector{Int} # Change to ReadOnlyVector?
+end
+struct InterceptValueVector <: AbstractValueVector
+	n::Int
+end
+
+Base.:(==)(a::NumericalValueVector, b::NumericalValueVector) = a.values == b.values
+Base.:(==)(a::CategoricalValueVector, b::CategoricalValueVector) = a.values == b.values
+
+
+
+
+function value_vector(::NumericalValueVectorModel, v)
 	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
 	NumericalValueVector(convert(Vector{Float64},v))
 end
-function value_vector_project(m::CategoricalValueVectorModel, v)
+function value_vector(m::CategoricalValueVectorModel, v)
 	ind = indexin(v, m.categories)
 	new_values = setdiff(unique(v), m.categories)
 	isempty(new_values) || error("Categorical vector has values not present in model. Got [", join(new_value, ','), "], but expected [", join(m.categories, ','), "].")
 	CategoricalValueVector(ind)
 end
 
-value_vector_project(::InterceptValueVectorModel, n) = InterceptValueVector(n)
+value_vector(::InterceptValueVectorModel, n) = InterceptValueVector(n)
 
 
 
