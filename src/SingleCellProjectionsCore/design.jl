@@ -123,6 +123,10 @@ covariate_model(v::CategoricalValueVector; center::Bool) = CategoricalCovariateM
 covariate_model(::InterceptValueVector; center::Bool) = (@assert center; InterceptCovariateModel())
 
 
+
+covariate_scale(m::NumericalCovariateModel) = m.scale
+
+
 covariate_project(::InterceptCovariateModel, v::InterceptValueVector) = ones(v.n, 1)
 function covariate_project(m::NumericalCovariateModel, v::NumericalValueVector)
 	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))

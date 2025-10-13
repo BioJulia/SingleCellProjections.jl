@@ -63,6 +63,8 @@ module Jobs
 	function umap end
 	function tsne end
 	function project end
+	function ftest end
+	function ttest end
 end
 
 
@@ -80,6 +82,7 @@ include("design.jl")
 include("normalize.jl")
 include("reduce.jl")
 include("adjoint.jl")
+include("statistical_tests.jl")
 
 
 # include("precompile.jl")
