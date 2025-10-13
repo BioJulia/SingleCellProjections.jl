@@ -172,25 +172,25 @@ end
 covariate_scale(m::NumericalCovariateModel) = m.scale
 
 
-covariate_project(::InterceptCovariateModel, v::InterceptValueVector) = ones(v.n, 1)
-function covariate_project(m::CategoricalCovariateModel, v::CategoricalValueVector)
+covariate_matrix(::InterceptCovariateModel, v::InterceptValueVector) = ones(v.n, 1)
+function covariate_matrix(m::CategoricalCovariateModel, v::CategoricalValueVector)
 	isequal.(v.values, (1:m.n_categories)')
 end
 
 
-function _covariate_project(m::NumericalCovariateModel, v::Vector)
+function _covariate_matrix(m::NumericalCovariateModel, v::Vector)
 	N = length(v)
 	x = reshape(v, N, 1) # So we return a N×1 matrix
 	(x .- m.mean)./m.scale
 end
 
-function covariate_project(m::NumericalCovariateModel, v::NumericalValueVector)
+function covariate_matrix(m::NumericalCovariateModel, v::NumericalValueVector)
 	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
 	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
-	_covariate_project(m, v.values)
+	_covariate_matrix(m, v.values)
 end
-function covariate_project(m::NumericalCovariateModel, v::TwoGroupValueVector)
-	_covariate_project(m, v.values)
+function covariate_matrix(m::NumericalCovariateModel, v::TwoGroupValueVector)
+	_covariate_matrix(m, v.values)
 end
 
 

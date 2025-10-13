@@ -17,7 +17,7 @@ covariate_model_spec(value_vector; kwargs...) =
 	create_spec(Projectable(covariate_model), value_vector; kwargs...)
 
 covariate(action::Action, model, value_vector) =
-	create_spec(SCPCore.covariate_project, prefetched(model), action(value_vector); __use_cache=false, __version=v"0.1.1") # What should __use_cache be?
+	create_spec(SCPCore.covariate_matrix, prefetched(model), action(value_vector); __use_cache=false, __version=v"0.1.0") # What should __use_cache be?
 covariate_spec(model, value_vector) =
 	create_spec(Projectable(covariate), model, value_vector)
 
