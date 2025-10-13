@@ -3,7 +3,12 @@ module SingleCellProjections
 export
 	SingleCellProjectionsCore, # TODO: make public instead
 	DataMatrix,
-	Jobs # TODO: remove probably
+	Jobs, # TODO: remove probably
+	auto_covariate,
+	intercept_covariate,
+	categorical_covariate,
+	numerical_covariate,
+	twogroup_covariate
 
 # This symbol is only defined on Julia versions that support extensions
 isdefined(Base, :get_extension) || using Requires
@@ -11,7 +16,8 @@ isdefined(Base, :get_extension) || using Requires
 include("SingleCellProjectionsCore/SingleCellProjectionsCore.jl")
 
 import .SingleCellProjectionsCore as SCPCore
-using .SCPCore: DataMatrix
+using .SCPCore: DataMatrix, auto_covariate, intercept_covariate, categorical_covariate, numerical_covariate, twogroup_covariate
+
 import SCTransform
 import SingleCell10x
 using DataFrames

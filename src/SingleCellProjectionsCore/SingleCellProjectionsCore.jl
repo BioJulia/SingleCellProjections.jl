@@ -36,6 +36,11 @@ export
 	filter_var,
 	filter_obs,
 	covariate,
+	auto_covariate,
+	intercept_covariate,
+	categorical_covariate,
+	numerical_covariate,
+	twogroup_covariate,
 	center_matrix, # TEMP
 	designmatrix,
 	normalize_matrix,

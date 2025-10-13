@@ -4,20 +4,20 @@ Base.copy(x::AbstractCovariateDesc) = x # Must be immutable, so this is fine.
 
 
 struct AutoCovariateDesc <: AbstractCovariateDesc end
+struct InterceptCovariateDesc <: AbstractCovariateDesc end
 struct CategoricalCovariateDesc <: AbstractCovariateDesc end
 struct NumericalCovariateDesc <: AbstractCovariateDesc end
-struct InterceptCovariateDesc <: AbstractCovariateDesc end
 struct TwoGroupCovariateDesc{T} <: AbstractCovariateDesc
-	groupA::T
-	groupB::Union{T,Nothing} # optional
+	group_a::T
+	group_b::Union{T,Nothing} # optional
 end
 
 
 auto_covariate() = AutoCovariateDesc()
+intercept_covariate() = InterceptCovariateDesc()
 categorical_covariate() = CategoricalCovariateDesc()
 numerical_covariate() = NumericalCovariateDesc()
-intercept_covariate() = InterceptCovariateDesc()
-twogroup_covariate(groupA, groupB=nothing) = TwoGroupCovariateDesc(groupA, groupB)
+twogroup_covariate(group_a, group_b=nothing) = TwoGroupCovariateDesc(group_a, group_b)
 
 
 
@@ -27,6 +27,7 @@ Base.copy(x::AbstractValueVectorModel) = x # Must be immutable, so this is fine.
 
 
 
+struct InterceptValueVectorModel <: AbstractValueVectorModel end
 struct NumericalValueVectorModel <: AbstractValueVectorModel end
 struct CategoricalValueVectorModel{T} <: AbstractValueVectorModel
 	categories::Vector{T} # Change to ReadOnlyVector?
@@ -38,16 +39,32 @@ struct CategoricalValueVectorModel{T} <: AbstractValueVectorModel
 		new{T}(unique(v))
 	end
 end
+struct TwoGroupValueVectorModel{T} <: AbstractValueVectorModel
+	group_a::T
+	group_b::Union{T,Nothing}
+end
+function TwoGroupValueVectorModel(group_a::T, group_b::Union{T,Nothing}, v::Vector{T}) where T
+	uv = unique(v)
+	any(ismissing, uv) && throw(ArgumentError("Missing values not supported for twgroup value vectors."))
 
-struct InterceptValueVectorModel <: AbstractValueVectorModel end
+	if group_b !== nothing && any(x->!isequal(x,group_a) && !isequal(x,group_b), uv)
+		throw(ArgumentError("Expected only values $group_a (Group A) and $group_b (Group B), but got values $(join(uv, ", ", " and "))."))
+	end
 
-Base.:(==)(a::CategoricalValueVectorModel, b::CategoricalValueVectorModel) = a.categories == b.categories
+	TwoGroupValueVectorModel{T}(group_a, group_b)
+end
+
+
+Base.:(==)(a::TwoGroupValueVectorModel, b::TwoGroupValueVectorModel) = isequal(a.group_a, b.group_a) && isequal(a.group_b, b.group_b)
 
 
 # DEPRECATED - REMOVE
 value_vector_model(v::AbstractVector{<:Union{Missing,Number}}; kwargs...) = NumericalValueVectorModel(; kwargs...)
 value_vector_model(v::AbstractVector; kwargs...) = CategoricalValueVectorModel(v; kwargs...)
 
+
+# This is not really used, but might be good for consistency
+value_vector_model(::Any, ::InterceptCovariateDesc; kwargs...) = InterceptValueVectorModel(; kwargs...)
 
 # Hmm. Not perfect to rely on eltype. But I guess it works in practice.
 value_vector_model(::AbstractVector{<:Union{Missing,Number}}, ::AutoCovariateDesc; kwargs...) = NumericalValueVectorModel(; kwargs...)
@@ -56,29 +73,34 @@ value_vector_model(column::AbstractVector, ::AutoCovariateDesc; kwargs...) = Cat
 value_vector_model(column, ::CategoricalCovariateDesc; kwargs...) = CategoricalValueVectorModel(column; kwargs...)
 value_vector_model(::Any, ::NumericalCovariateDesc; kwargs...) = NumericalValueVectorModel(; kwargs...)
 
-# This is not really used, but might be good for consistency
-value_vector_model(::Any, ::InterceptCovariateDesc; kwargs...) = InterceptValueVectorModel(; kwargs...)
+
+value_vector_model(column, desc::TwoGroupCovariateDesc; kwargs...) = TwoGroupValueVectorModel(desc.group_a, desc.group_b, column; kwargs...)
 
 
 
 
 abstract type AbstractValueVector end
 
+struct InterceptValueVector <: AbstractValueVector
+	n::Int
+end
 struct NumericalValueVector <: AbstractValueVector
 	values::Vector{Float64} # Change to ReadOnlyVector?
 end
 struct CategoricalValueVector <: AbstractValueVector
 	values::Vector{Int} # Change to ReadOnlyVector?
 end
-struct InterceptValueVector <: AbstractValueVector
-	n::Int
+struct TwoGroupValueVector <: AbstractValueVector
+	values::Vector{Int} # with values 1 for groupA and 2 for groupB
 end
 
-Base.:(==)(a::NumericalValueVector, b::NumericalValueVector) = a.values == b.values
-Base.:(==)(a::CategoricalValueVector, b::CategoricalValueVector) = a.values == b.values
+Base.:(==)(a::NumericalValueVector, b::NumericalValueVector) = isequal(a.values, b.values)
+Base.:(==)(a::CategoricalValueVector, b::CategoricalValueVector) = isequal(a.values, b.values)
+Base.:(==)(a::TwoGroupValueVector, b::TwoGroupValueVector) = isequal(a.values, b.values)
 
 
 
+value_vector(::InterceptValueVectorModel, n) = InterceptValueVector(n)
 
 function value_vector(::NumericalValueVectorModel, v)
 	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
@@ -87,12 +109,36 @@ end
 function value_vector(m::CategoricalValueVectorModel, v)
 	ind = indexin(v, m.categories)
 	new_values = setdiff(unique(v), m.categories)
-	isempty(new_values) || error("Categorical vector has values not present in model. Got [", join(new_value, ','), "], but expected [", join(m.categories, ','), "].")
+	isempty(new_values) || error("Categorical vector has values not present in model. Got [", join(new_values, ','), "], but expected [", join(m.categories, ','), "].")
 	CategoricalValueVector(ind)
 end
 
-value_vector(::InterceptValueVectorModel, n) = InterceptValueVector(n)
+function value_vector(m::TwoGroupValueVectorModel, v)
+	if m.group_b === nothing
+		x = ifelse.(isequal.(v, m.group_a), 1, 2)
+		TwoGroupValueVector(x)
+	else
+		groups = [m.group_a, m.group_b]
+		ind = indexin(v, groups)
 
+		if any(isnothing, ind)
+			new_values = setdiff(unique(v), groups)
+			error("Two-group vector has values not present in model. Got [", join(new_values, ','), "], but expected $(m.group_a) and $(m.group_b).")
+		end
+
+		TwoGroupValueVector(ind)
+	end
+end
+
+
+
+
+function _mean_and_scale(v::Vector; center)
+	m = center ? mean(v) : 0.0
+	# Consider using `norm` or `std` to rescale instead
+	s = max(1e-6, maximum(x->abs(x-m), v)) # Avoid scaling up if values are too small in absolute numbers
+	m, s
+end
 
 
 abstract type AbstractCovariateModel end
@@ -103,26 +149,23 @@ struct NumericalCovariateModel <: AbstractCovariateModel
 	mean::Float64
 	scale::Float64
 end
-function NumericalCovariateModel(v::NumericalValueVector, center::Bool)
-	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
-	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
-	m = center ? mean(v.values) : 0.0
-	# Consider using `norm` or `std` to rescale instead
-	s = max(1e-6, maximum(x->abs(x-m), v.values)) # Avoid scaling up if values are too small in absolute numbers
-	NumericalCovariateModel(m, s)
-end
-
 struct CategoricalCovariateModel <: AbstractCovariateModel
 	n_categories::Int
 end
-CategoricalCovariateModel(v::CategoricalValueVector) = CategoricalCovariateModel(maximum(v.values))
 
 
-# TODO: Add TwoGroupCovariateModel?
-
-covariate_model(v::NumericalValueVector; center::Bool) = NumericalCovariateModel(v, center)
-covariate_model(v::CategoricalValueVector; center::Bool) = CategoricalCovariateModel(v)
 covariate_model(::InterceptValueVector; center::Bool) = (@assert center; InterceptCovariateModel())
+covariate_model(v::CategoricalValueVector; center::Bool) = CategoricalCovariateModel(maximum(v.values))
+function covariate_model(v::NumericalValueVector; center::Bool)
+	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
+	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
+	m,s = _mean_and_scale(v.values; center)
+	NumericalCovariateModel(m, s)
+end
+function covariate_model(v::TwoGroupValueVector; center::Bool)
+	m,s = _mean_and_scale(v.values; center)
+	NumericalCovariateModel(m, s)
+end
 
 
 
@@ -130,15 +173,24 @@ covariate_scale(m::NumericalCovariateModel) = m.scale
 
 
 covariate_project(::InterceptCovariateModel, v::InterceptValueVector) = ones(v.n, 1)
+function covariate_project(m::CategoricalCovariateModel, v::CategoricalValueVector)
+	isequal.(v.values, (1:m.n_categories)')
+end
+
+
+function _covariate_project(m::NumericalCovariateModel, v::Vector)
+	N = length(v)
+	x = reshape(v, N, 1) # So we return a N×1 matrix
+	(x .- m.mean)./m.scale
+end
+
 function covariate_project(m::NumericalCovariateModel, v::NumericalValueVector)
 	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
 	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
-	N = length(v.values)
-	x = reshape(v.values, N, 1) # So we return a N×1 matrix
-	(x .- m.mean)./m.scale
+	_covariate_project(m, v.values)
 end
-function covariate_project(m::CategoricalCovariateModel, v::CategoricalValueVector)
-	isequal.(v.values, (1:m.n_categories)')
+function covariate_project(m::NumericalCovariateModel, v::TwoGroupValueVector)
+	_covariate_project(m, v.values)
 end
 
 
