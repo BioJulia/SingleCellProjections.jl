@@ -17,6 +17,31 @@
 # end
 
 
+annotation_nrow_impl(df) = size(df,1)
+annotation_nrow(action::Action, df) =
+	create_spec(annotation_nrow_impl, action(df); __use_cache=false, __version=v"0.1.0")
+annotation_nrow_spec(df) =
+	create_spec(Projectable(annotation_nrow), df)
+
+
+datamatrix_nvar_spec(data) = annotation_nrow_spec(get_var_spec(data))
+datamatrix_nobs_spec(data) = annotation_nrow_spec(get_obs_spec(data))
+
+
+
+
+
+# TESTING
+index_isnoop_spec(ind, n) =
+	create_spec(SCPCore.index_isnoop, ind, n; __use_cache=false, __version=v"0.0.1")
+# simplify_ind_spec(ind, n) =
+# 	ReproducibleJobs.ifelse_spec(index_isnoop_spec(ind, n), Colon(), ind)
+simplify_ind_spec(ind, n) =
+	ind === Colon() ? Colon() : ReproducibleJobs.ifelse_spec(index_isnoop_spec(ind, n), Colon(), ind) # early out if is already known to be Colon
+
+
+
+
 
 function intersect_ids_impl(ids::DataFrame, ids2::DataFrame)
 	id_col = only(names(ids,1))
@@ -45,7 +70,15 @@ create_get_ids_spec(df) = create_spec(Projectable(get_ids), df)
 
 
 function find_matching_ids(action::Action, f, df; project_ids::Symbol)
-	@assert project_ids in (:no,:yes,:intersect)
+	# TODO: Consider having a simplified path when indexing with :
+	# We just need to handle different project_ids cases properly
+	# if f === : and project_ids != intersect
+	# 	- just return :
+	#	- or return the get_id_spec? feels wasteful to call find_matching_ids
+	# otherwise do what we do now
+
+
+	@assert project_ids in (:no, :yes, :intersect)
 	if project_ids == :no
 		f = action(f)
 		df = action(df)
@@ -73,24 +106,89 @@ Jobs.find_matching_ids(args...; kwargs...) =
 
 
 
-ids_to_indices(action::Action, args...) =
-	create_spec(SCPCore.ids_to_indices, action(args)...; __use_cache=true, __version=v"0.1.0")
+ids_to_indices(action::Action, df, ids) =
+	create_spec(SCPCore.ids_to_indices, action(df), action(ids); __use_cache=true, __version=v"0.1.1")
 create_ids_to_indices_spec(df, ids) =
 	create_spec(Projectable(ids_to_indices), df, ids)
 
-annotation_getindex(action::Action, args...) =
-	create_spec(SCPCore.annotation_getindex, action(args)...; __use_cache=false, __version=v"0.1.0")
-create_annotation_getindex_spec(df, ind) =
-	create_spec(Projectable(annotation_getindex), df, ind)
+# # TODO: Use `:` instead of `nothing` and get rid of it at a preprocessing step after projecting
+# annotation_getindex(action::Action, df, ind) =
+# 	create_spec(SCPCore.annotation_getindex, action(df), action(ind); __use_cache=false, __version=v"0.1.0")
+# create_annotation_getindex_spec(df, ind) =
+# 	create_spec(Projectable(annotation_getindex), df, ind)
 
-
-
-matrix_getindex(action::Action, args...; kwargs...) =
-	create_spec(SCPCore.matrix_getindex, action(args)...; action(kwargs)..., __use_cache=false, __version=v"0.1.0")
-function create_matrix_getindex_spec(data; kwargs...)
-	isempty(setdiff(keys(kwargs), (:var_ind,:obs_ind))) || throw(ArgumentError("Only allowed kwargs are `var_ind` and `obs_ind`, got: $(keys(kwargs))."))
-	create_spec(Projectable(matrix_getindex), data; kwargs...)
+annotation_getindex_impl(df, ind) =
+	create_spec(SCPCore.annotation_getindex, df, ind; __use_cache=false, __version=v"0.1.0")
+annotation_getindex_pre(df, ind) =
+	ind === Colon() ? df : annotation_getindex_impl(df, ind)
+function annotation_getindex_pr(action::Action, df, ind)
+	df = action(df)
+	ind = action(ind)
+	ind = simplify_ind_spec(ind, annotation_nrow_spec(df))
+	create_spec(Preprocess(annotation_getindex_pre), df, fetched(ind))
 end
+create_annotation_getindex_spec(df, ind) =
+	create_spec(Projectable(annotation_getindex_pr), df, ind)
+
+
+
+# matrix_getindex(action::Action, args...; kwargs...) =
+# 	create_spec(SCPCore.matrix_getindex, action(args)...; action(kwargs)..., __use_cache=false, __version=v"0.1.0")
+# function create_matrix_getindex_spec(data; kwargs...)
+# 	isempty(setdiff(keys(kwargs), (:var_ind,:obs_ind))) || throw(ArgumentError("Only allowed kwargs are `var_ind` and `obs_ind`, got: $(keys(kwargs))."))
+# 	create_spec(Projectable(matrix_getindex), data; kwargs...)
+# end
+
+
+matrix_getindex_impl(matrix; kwargs...) =
+	create_spec(SCPCore.matrix_getindex, matrix; kwargs..., __use_cache=false, __version=v"0.1.0")
+
+function matrix_getindex_pre(matrix; var_ind, obs_ind)
+	if var_ind == Colon() && obs_ind == Colon()
+		matrix
+	else
+		matrix_getindex_impl(matrix; var_ind, obs_ind)
+	end
+end
+
+function matrix_getindex_pr(action::Action, matrix; var_ind, obs_ind, nvar=nothing, nobs=nothing)
+	matrix = action(matrix)
+	var_ind = action(var_ind)
+	obs_ind = action(obs_ind)
+	nvar !== nothing && (var_ind = simplify_ind_spec(var_ind, nvar))
+	nobs !== nothing && (obs_ind = simplify_ind_spec(obs_ind, nobs))
+	var_ind = fetched(var_ind)
+	obs_ind = fetched(obs_ind)
+	create_spec(Preprocess(matrix_getindex_pre), matrix; var_ind, obs_ind)
+end
+
+function create_matrix_getindex_spec(matrix; var_ind=:, obs_ind=:, kwargs...)
+	create_spec(Projectable(matrix_getindex_pr), matrix; var_ind, obs_ind, kwargs...)
+end
+
+
+
+# TODO: Use `:` instead of `nothing` and get rid of it at a preprocessing step after projecting
+# datamatrix_getindex(::Mat, data; kwargs...) = create_matrix_getindex_spec(get_matrix_spec(data); kwargs...)
+datamatrix_getindex(::Mat, data; kwargs...) =
+	create_matrix_getindex_spec(get_matrix_spec(data); nvar=datamatrix_nvar_spec(data), nobs=datamatrix_nobs_spec(data), kwargs...)
+# function datamatrix_getindex(::Var, data; var_ind=nothing, kwargs...)
+# 	var_spec = get_var_spec(data)
+# 	var_ind === nothing ? var_spec : create_annotation_getindex_spec(var_spec, var_ind)
+# end
+# function datamatrix_getindex(::Obs, data; obs_ind=nothing, kwargs...)
+# 	obs_spec = get_obs_spec(data)
+# 	obs_ind === nothing ? obs_spec : create_annotation_getindex_spec(obs_spec, obs_ind)
+# end
+datamatrix_getindex(::Var, data; var_ind=:, kwargs...) =
+	create_annotation_getindex_spec(get_var_spec(data), var_ind)
+datamatrix_getindex(::Obs, data; obs_ind=:, kwargs...) =
+	create_annotation_getindex_spec(get_obs_spec(data), obs_ind)
+
+
+create_datamatrix_getindex_spec(data; kwargs...) =
+	create_spec(DataMatrixFunction(datamatrix_getindex), data; kwargs...)
+
 
 
 extract_annotation(action::Action, args...) =
@@ -98,12 +196,6 @@ extract_annotation(action::Action, args...) =
 create_extract_annotation_spec(df, name) =
 	create_spec(Projectable(extract_annotation), df, name)
 
-
-annotation_nrows_impl(df) = size(df,1)
-annotation_nrows(action::Action, df) =
-	create_spec(annotation_nrows_impl, action(df); __use_cache=false, __version=v"0.1.0")
-annotation_nrows_spec(df) =
-	create_spec(Projectable(annotation_nrows), df)
 
 
 function annotation_name_impl(df)
@@ -115,7 +207,7 @@ annotation_name_spec(df) = create_spec(Projectable(annotation_name), df)
 
 
 
-# TODO: Rename
+# TODO: Rename?
 hcat_impl(action::Action, args...; kwargs...) =
 	create_spec(hcat, action(args)...; kwargs..., __use_cache=false, __version=v"0.1.0")
 create_hcat_spec(args...; kwargs...) = create_spec(Projectable(hcat_impl), args...)

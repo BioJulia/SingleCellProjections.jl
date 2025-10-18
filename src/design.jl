@@ -85,7 +85,7 @@ value_vector_spec2(model, data) =
 	create_spec(Projectable(value_vector2), model, data)
 
 _value_vector_data_spec(obs, ::Any, ::SCPCore.InterceptCovariateDesc) =
-	annotation_nrows_spec(obs) # Special case for intercept, just the number of rows
+	annotation_nrow_spec(obs) # Special case for intercept, just the number of rows
 _value_vector_data_spec(obs, column, ::Any) =
 	create_extract_annotation_spec(obs, column) # the column values
 
@@ -103,8 +103,7 @@ build_designmatrix_spec(data, covariates::Vector, covariate_names) =
 	create_spec(DataMatrixFunction(build_designmatrix), data, covariates, covariate_names)
 
 
-
-function covariate_stages(obs, args...; center, kwargs...)
+function setup_covariate_descriptions(args...; center)
 	# Automatically center if there is an intercept covariate
 	center = center || any(a->a === SCPCore.intercept_covariate() || (a isa Pair && a.second === SCPCore.intercept_covariate()), args)
 
@@ -121,6 +120,11 @@ function covariate_stages(obs, args...; center, kwargs...)
 		push!(covariate_descriptions, a)
 	end
 
+	covariate_descriptions, center
+end
+
+
+function covariate_stages(obs, covariate_descriptions; center, kwargs...)
 	vv_data_specs = _value_vector_data_spec.(Ref(obs), first.(covariate_descriptions), last.(covariate_descriptions))
 	vv_model_specs = prefetched.(value_vector_model_spec2.(vv_data_specs, last.(covariate_descriptions)))
 	vv_specs = prefetched.(value_vector_spec2.(vv_model_specs, vv_data_specs))
@@ -136,9 +140,10 @@ end
 
 
 
-function designmatrix(data, args...; kwargs...)
+function designmatrix(data, args...; center, kwargs...)
 	obs = get_obs_spec(data)
-	(; covariate_specs, covariate_names) = covariate_stages(obs, args...; kwargs...)
+	covariate_descriptions, center = setup_covariate_descriptions(args...; center)
+	(; covariate_specs, covariate_names) = covariate_stages(obs, covariate_descriptions; center, kwargs...)
 	build_designmatrix_spec(data, covariate_specs, covariate_names)
 end
 

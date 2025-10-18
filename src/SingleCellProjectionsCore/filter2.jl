@@ -24,16 +24,18 @@ function ids_to_indices(df::DataFrame, ids::DataFrame)
 	ind = something.(ind) # remove `Nothing` from eltype (and error if `nothing` is encountered)
 
 	if ind == 1:length(ind)
-		return 1:length(ind) # Simplify common case.
+		# return 1:length(ind) # Simplify common case.
+		return Colon() # Simplify common case
 	else
 		return ind
 	end
 end
-ids_to_indices(df::DataFrame, ::Colon) = 1:size(df,1)
+# ids_to_indices(df::DataFrame, ::Colon) = 1:size(df,1)
+ids_to_indices(df::DataFrame, ::Colon) = Colon()
 
 
 # The name is chosen since it is akin to getindex.
-function annotation_getindex(df::DataFrame, ind::AbstractVector{Int})
+function annotation_getindex(df::DataFrame, ind::Union{<:AbstractVector{Int},Colon})
 	if index_isnoop(ind,size(df,1))
 		df # input is considered read-only, so we don't need to copy
 	else

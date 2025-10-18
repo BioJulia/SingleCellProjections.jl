@@ -55,6 +55,7 @@ function TwoGroupValueVectorModel(group_a::T, group_b::Union{T,Nothing}, v::Vect
 end
 
 
+Base.:(==)(a::CategoricalValueVectorModel, b::CategoricalValueVectorModel) = isequal(a.categories, b.categories)
 Base.:(==)(a::TwoGroupValueVectorModel, b::TwoGroupValueVectorModel) = isequal(a.group_a, b.group_a) && isequal(a.group_b, b.group_b)
 
 

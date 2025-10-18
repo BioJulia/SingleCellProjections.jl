@@ -96,8 +96,8 @@ end
 _logtransform_reorder(::Type{T}, X::Matrix; scale_factor, var_ind) where T =
 	_logtransform_simple(T, X[var_ind,:]; scale_factor)
 
-function logtransform_matrix(::Type{T}, X; scale_factor, var_ind=1:size(X,1)) where T
-	if var_ind == 1:size(X,1)
+function logtransform_matrix(::Type{T}, X; scale_factor, var_ind=:) where T
+	if var_ind == Colon() || var_ind == 1:size(X,1)
 		_logtransform_simple(T, X; scale_factor)
 	else
 		P = size(X,1)
