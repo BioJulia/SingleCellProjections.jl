@@ -51,7 +51,7 @@ function implicitsvd(::Type{T}, P, N, A, AT;
 	end
 
 	F = svdbyeigen(B; nsv=nsv)
-	F = SVD(Q*F.U,F.S,F.Vt)
+	F = SVD(Q*F.U,F.S,F.Vt) # Consider returning a factorization QUSV', because that is often leaner.
 	stabilize_sign && stabilize_sign!(F)
 	F
 end

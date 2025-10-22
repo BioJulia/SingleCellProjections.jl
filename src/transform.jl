@@ -1,7 +1,7 @@
 function logtransform_matrix(action::Action, T::DataType, matrix; scale_factor, var_ind)
 	matrix = action(matrix)
 	var_ind = action(var_ind)
-	create_spec(SCPCore.logtransform_matrix, T, matrix; scale_factor, var_ind, __use_cache=false, __version=v"0.1.0")
+	create_spec(SCPCore.logtransform_matrix, T, matrix; scale_factor, var_ind, __version=v"0.1.0")
 end
 
 function logtransform(f::Union{Mat,Var}, T::DataType, data; var_filter=Returns(true), project_var_ids=:intersect, kwargs...)
@@ -51,7 +51,7 @@ function logcellcounts(action::Action, X, var, var_ids; project_ids=:intersect)
 	end
 
 	var_ind = create_ids_to_indices_spec(action(var), var_ids2) # TODO: Avoid using Projectable here
-	create_spec(logcellcounts_impl, X, prefetched(var_ind); __use_cache=true, __version=v"0.1.0")
+	cached(create_spec(logcellcounts_impl, X, prefetched(var_ind); __version=v"0.1.0"))
 end
 create_logcellcounts_spec(X, var, var_ids; kwargs...) =
 	create_spec(Projectable(logcellcounts), X, var, var_ids; kwargs...)
@@ -63,7 +63,7 @@ function scparams_impl(matrix; var_ind, log_cell_counts)
 	DataFrame(SCTransform.compute_scparams(matrix; log_cell_counts, feature_mask))
 end
 create_scparams_impl_spec(matrix; var_ind, log_cell_counts) =
-	create_spec(scparams_impl, matrix; var_ind=prefetched(var_ind), log_cell_counts, __use_cache=true, __version=v"0.1.0")
+	cached(create_spec(scparams_impl, matrix; var_ind=prefetched(var_ind), log_cell_counts, __version=v"0.1.0"))
 
 
 function scparams(action::Action, matrix, var, var_ids; log_cell_counts)
@@ -75,7 +75,7 @@ function scparams(action::Action, matrix, var, var_ids; log_cell_counts)
 		return params
 	else#if actions is Projection
 		# subset IDs
-		var_ids_proj = create_spec(intersect_ids_impl, var_ids, action(var_ids); __use_cache=true, __version=v"0.1.0")
+		var_ids_proj = cached(create_spec(intersect_ids_impl, var_ids, action(var_ids); __version=v"0.1.0"))
 		var_ind_proj = create_ids_to_indices_spec(var_ids, var_ids_proj) # TODO: Avoid using Projectable here
 		return create_annotation_getindex_spec(params, prefetched(var_ind_proj)) # TODO: Avoid using Projectable here
 	end
@@ -92,7 +92,7 @@ function sctransform_matrix(action::Action, T::DataType, counts, params;
                            )
 	kwclip = clip===nothing ? (;) : (;clip)
 
-	create_spec(SCPCore.sctransform_matrix, T, action(counts), action(params), action(var_ind); kwclip..., rtol, atol, __use_cache=false, __version=v"0.1.0")
+	create_spec(SCPCore.sctransform_matrix, T, action(counts), action(params), action(var_ind); kwclip..., rtol, atol, __version=v"0.1.0")
 end
 create_sctransform_matrix_spec(T, matrix, params; kwargs...) =
 	create_spec(Projectable(sctransform_matrix), T, matrix, params; kwargs...)

@@ -25,7 +25,7 @@ import StableHashTraits
 import LinearAlgebra
 
 using ReproducibleJobs
-using ReproducibleJobs: create_spec, ReadOnly, SpecArgs, ChecksummedFilePath, checksummedfilepath_job, ifelse_spec
+using ReproducibleJobs: create_spec, cached, ReadOnly, SpecArgs, ChecksummedFilePath, checksummedfilepath_job, ifelse_spec
 
 ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVector) = x
 ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVectorModel) = x

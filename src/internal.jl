@@ -7,7 +7,7 @@
 
 # 	issubset(a[!,1],b[!,1])
 # end
-# is_id_subset_spec(a, b) = create_spec(is_id_subset, a, b; __use_cache=false, __version=v"0.1.0")
+# is_id_subset_spec(a, b) = create_spec(is_id_subset, a, b; __version=v"0.1.0")
 
 # function check_missing_ids_spec(value, ids, ids2)
 # 	cond_spec = is_id_subset_spec(ids2, ids)
@@ -19,7 +19,7 @@
 
 annotation_nrow_impl(df) = size(df,1)
 annotation_nrow(action::Action, df) =
-	create_spec(annotation_nrow_impl, action(df); __use_cache=false, __version=v"0.1.0")
+	create_spec(annotation_nrow_impl, action(df); __version=v"0.1.0")
 annotation_nrow_spec(df) =
 	create_spec(Projectable(annotation_nrow), df)
 
@@ -33,7 +33,7 @@ datamatrix_nobs_spec(data) = annotation_nrow_spec(get_obs_spec(data))
 
 # TESTING
 index_isnoop_spec(ind, n) =
-	create_spec(SCPCore.index_isnoop, ind, n; __use_cache=false, __version=v"0.0.1")
+	create_spec(SCPCore.index_isnoop, ind, n; __version=v"0.0.1")
 # simplify_ind_spec(ind, n) =
 # 	ReproducibleJobs.ifelse_spec(index_isnoop_spec(ind, n), Colon(), ind)
 simplify_ind_spec(ind, n) =
@@ -55,7 +55,7 @@ function intersect_ids(action::Action, ids, ids2; fix_first=true, fix_second=fal
 	ids = fix_first ? ids : action(ids)
 	ids2 = fix_second ? ids2 : action(ids2)
 	ids === ids2 && return ids
-	create_spec(intersect_ids_impl, ids, ids2; __use_cache=false, __version=v"0.1.0")
+	create_spec(intersect_ids_impl, ids, ids2; __version=v"0.1.0")
 end
 create_intersect_ids_spec(ids, ids2; kwargs...) =
 	create_spec(Projectable(intersect_ids), ids, ids2; kwargs...)
@@ -64,7 +64,7 @@ create_intersect_ids_spec(ids, ids2; kwargs...) =
 
 
 get_ids_impl(df) = select(df, 1; copycols=false)
-get_ids(action::Action, df) = create_spec(get_ids_impl, action(df); __use_cache=false, __version=v"0.1.0")
+get_ids(action::Action, df) = create_spec(get_ids_impl, action(df); __version=v"0.1.0")
 create_get_ids_spec(df) = create_spec(Projectable(get_ids), df)
 
 
@@ -83,16 +83,16 @@ function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 		f = action(f)
 		df = action(df)
 	end
-	spec = create_spec(SCPCore.find_matching_ids, f, df; __use_cache=true, __version=v"0.1.0")
+	spec = cached(create_spec(SCPCore.find_matching_ids, f, df; __version=v"0.1.0"))
 
 	if project_ids == :intersect && action isa Projection
 		# df = action(df)
 		# TODO: simplify ids2 spec by using a function for extracting IDs directly
-		# ids2 = create_spec(SCPCore.find_matching_ids, Returns(true), df; __use_cache=false, __version=v"0.1.0")
-		# spec = create_spec(intersect_ids_impl, spec, ids2; __use_cache=true, __version=v"0.1.0")
+		# ids2 = create_spec(SCPCore.find_matching_ids, Returns(true), df; __version=v"0.1.0")
+		# spec = cached(create_spec(intersect_ids_impl, spec, ids2; __version=v"0.1.0"))
 
 		ids2 = create_get_ids_spec(df)
-		spec = create_spec(intersect_ids_impl, spec, action(ids2); __use_cache=true, __version=v"0.1.0")
+		spec = cached(create_spec(intersect_ids_impl, spec, action(ids2); __version=v"0.1.0"))
 	end
 	spec
 end
@@ -107,18 +107,18 @@ Jobs.find_matching_ids(args...; kwargs...) =
 
 
 ids_to_indices(action::Action, df, ids) =
-	create_spec(SCPCore.ids_to_indices, action(df), action(ids); __use_cache=true, __version=v"0.1.1")
+	cached(create_spec(SCPCore.ids_to_indices, action(df), action(ids); __version=v"0.1.1"))
 create_ids_to_indices_spec(df, ids) =
 	create_spec(Projectable(ids_to_indices), df, ids)
 
 # # TODO: Use `:` instead of `nothing` and get rid of it at a preprocessing step after projecting
 # annotation_getindex(action::Action, df, ind) =
-# 	create_spec(SCPCore.annotation_getindex, action(df), action(ind); __use_cache=false, __version=v"0.1.0")
+# 	create_spec(SCPCore.annotation_getindex, action(df), action(ind); __version=v"0.1.0")
 # create_annotation_getindex_spec(df, ind) =
 # 	create_spec(Projectable(annotation_getindex), df, ind)
 
 annotation_getindex_impl(df, ind) =
-	create_spec(SCPCore.annotation_getindex, df, ind; __use_cache=false, __version=v"0.1.0")
+	create_spec(SCPCore.annotation_getindex, df, ind; __version=v"0.1.0")
 annotation_getindex_pre(df, ind) =
 	ind === Colon() ? df : annotation_getindex_impl(df, ind)
 function annotation_getindex_pr(action::Action, df, ind)
@@ -133,7 +133,7 @@ create_annotation_getindex_spec(df, ind) =
 
 
 # matrix_getindex(action::Action, args...; kwargs...) =
-# 	create_spec(SCPCore.matrix_getindex, action(args)...; action(kwargs)..., __use_cache=false, __version=v"0.1.0")
+# 	create_spec(SCPCore.matrix_getindex, action(args)...; action(kwargs)..., __version=v"0.1.0")
 # function create_matrix_getindex_spec(data; kwargs...)
 # 	isempty(setdiff(keys(kwargs), (:var_ind,:obs_ind))) || throw(ArgumentError("Only allowed kwargs are `var_ind` and `obs_ind`, got: $(keys(kwargs))."))
 # 	create_spec(Projectable(matrix_getindex), data; kwargs...)
@@ -141,7 +141,7 @@ create_annotation_getindex_spec(df, ind) =
 
 
 matrix_getindex_impl(matrix; kwargs...) =
-	create_spec(SCPCore.matrix_getindex, matrix; kwargs..., __use_cache=false, __version=v"0.1.0")
+	create_spec(SCPCore.matrix_getindex, matrix; kwargs..., __version=v"0.1.0")
 
 function matrix_getindex_pre(matrix; var_ind, obs_ind)
 	if var_ind == Colon() && obs_ind == Colon()
@@ -192,7 +192,7 @@ create_datamatrix_getindex_spec(data; kwargs...) =
 
 
 extract_annotation(action::Action, args...) =
-	create_spec(SCPCore.extract_annotation, action(args)...; __use_cache=false, __version=v"0.1.0")
+	create_spec(SCPCore.extract_annotation, action(args)...; __version=v"0.1.0")
 create_extract_annotation_spec(df, name) =
 	create_spec(Projectable(extract_annotation), df, name)
 
@@ -202,14 +202,14 @@ function annotation_name_impl(df)
 	@assert ncol(df)==2
 	only(names(df, 2))
 end
-annotation_name(action::Action, df) = create_spec(annotation_name_impl, action(df); __use_cache=false, __version=v"0.1.0")
+annotation_name(action::Action, df) = create_spec(annotation_name_impl, action(df); __version=v"0.1.0")
 annotation_name_spec(df) = create_spec(Projectable(annotation_name), df)
 
 
 
 # TODO: Rename?
 hcat_impl(action::Action, args...; kwargs...) =
-	create_spec(hcat, action(args)...; kwargs..., __use_cache=false, __version=v"0.1.0")
+	create_spec(hcat, action(args)...; kwargs..., __version=v"0.1.0")
 create_hcat_spec(args...; kwargs...) = create_spec(Projectable(hcat_impl), args...)
 
 
@@ -218,13 +218,13 @@ create_hcat_spec(args...; kwargs...) = create_spec(Projectable(hcat_impl), args.
 add_column_impl(df::DataFrame, name, vals) = insertcols(df, name=>vals; copycols=false)
 
 add_column(action::Action, df, name, vals) =
-	create_spec(add_column_impl, action(df), name, action(vals); __use_cache=false, __version=v"0.1.0")
+	create_spec(add_column_impl, action(df), name, action(vals); __version=v"0.1.0")
 create_add_column_spec(df, name, vals) = create_spec(Projectable(add_column), df, name, vals)
 
 
 
 prefixed_ids_impl(col::String, prefix::String, n::Int) = DataFrame(col=>string.(prefix, 1:n))
 prefixed_ids(action::Action, col, prefix, n) =
-	create_spec(prefixed_ids_impl, col, action(prefix), action(n); __use_cache=false, __version=v"0.1.0")
+	create_spec(prefixed_ids_impl, col, action(prefix), action(n); __version=v"0.1.0")
 create_prefixed_ids_spec(col, prefix, n) =
 	create_spec(Projectable(prefixed_ids), col, prefix, n)

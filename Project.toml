@@ -64,7 +64,7 @@ Statistics = "1"
 TSne = "1"
 ThreadedSparseArrays = "0.2.0"
 UMAP = "0.1"
-julia = "1.8"
+julia = "1.10"
 
 [extras]
 CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"

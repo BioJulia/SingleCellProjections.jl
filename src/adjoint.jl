@@ -1,7 +1,7 @@
 
 function adjoint_matrix(action::Action, X)
 	# TODO: Should we do unwrapping of adjoint(adjoint(X)) here as well?
-	create_spec(LinearAlgebra.adjoint, action(X); __use_cache=false, __version=v"0.1.0")
+	create_spec(LinearAlgebra.adjoint, action(X); __version=v"0.1.0")
 end
 
 create_adjoint_matrix_spec(X) =

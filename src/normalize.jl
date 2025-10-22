@@ -2,7 +2,7 @@
 # But we'll get rid of it so that doesn't matter!
 function center_matrix(action::Action, matrix)
 	# model is created from original data
-	model = create_spec(SCPCore.CenteringModel2, matrix; __use_cache=true, __version=v"0.1.0")
+	model = cached(create_spec(SCPCore.CenteringModel2, matrix; __version=v"0.1.0"))
 	create_spec(SCPCore.center_project, model, action(matrix); __version=v"0.1.0")
 end
 
@@ -25,7 +25,7 @@ end
 
 
 negative_regression_matrix_impl(::Action, data, dm; kwargs...) =
-	create_spec(SCPCore.negative_regression_matrix, data, dm; __use_cache=true, kwargs..., __version=v"0.1.0") # NB: No action, always use original
+	cached(create_spec(SCPCore.negative_regression_matrix, data, dm; kwargs..., __version=v"0.1.0")) # NB: No action, always use original
 negative_regression_matrix_impl_spec(data, dm; kwargs...) =
 	create_spec(Projectable(negative_regression_matrix_impl), data, dm; kwargs...)
 

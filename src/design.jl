@@ -1,10 +1,10 @@
 value_vector_model_spec(annot; kwargs...) =
-	create_spec(SCPCore.value_vector_model, annot; __use_cache=true, kwargs..., __version=v"0.1.0")
+	cached(create_spec(SCPCore.value_vector_model, annot; kwargs..., __version=v"0.1.0"))
 
 
 function value_vector(action::Action, annot; kwargs...)
 	model = value_vector_model_spec(annot; kwargs...)
-	create_spec(SCPCore.value_vector, model, action(annot); __use_cache=true, __version=v"0.1.0")
+	cached(create_spec(SCPCore.value_vector, model, action(annot); __version=v"0.1.0"))
 end
 value_vector_spec(annot; kwargs...) =
 	create_spec(Projectable(value_vector), annot; kwargs...)
@@ -12,19 +12,19 @@ value_vector_spec(annot; kwargs...) =
 
 
 covariate_model(action::Action, value_vector; kwargs...) =
-	create_spec(SCPCore.covariate_model, value_vector; __use_cache=true, kwargs..., __version=v"0.1.0")
+	cached(create_spec(SCPCore.covariate_model, value_vector; kwargs..., __version=v"0.1.0"))
 covariate_model_spec(value_vector; kwargs...) =
 	create_spec(Projectable(covariate_model), value_vector; kwargs...)
 
 covariate(action::Action, model, value_vector) =
-	create_spec(SCPCore.covariate_matrix, prefetched(model), action(value_vector); __use_cache=false, __version=v"0.1.0") # What should __use_cache be?
+	create_spec(SCPCore.covariate_matrix, prefetched(model), action(value_vector); __version=v"0.1.0") # Should we use cached()?
 covariate_spec(model, value_vector) =
 	create_spec(Projectable(covariate), model, value_vector)
 
 
 
 
-covariate_scale(action::Action, model) = create_spec(SCPCore.covariate_scale, action(model); __use_cache=false, __version=v"0.1.0")
+covariate_scale(action::Action, model) = create_spec(SCPCore.covariate_scale, action(model); __version=v"0.1.0")
 covariate_scale_spec(model) = create_spec(Projectable(covariate_scale), model)
 
 
@@ -52,7 +52,7 @@ end
 
 
 covariate_names2(action::Action, names, models) =
-	create_spec(covariate_names_impl2, names, models; __use_cache=false, __version=v"0.1.0")
+	create_spec(covariate_names_impl2, names, models; __version=v"0.1.0")
 covariate_names_spec2(names, models) =
 	create_spec(Projectable(covariate_names2), names, models)
 
@@ -77,10 +77,10 @@ end
 value_vector_model_spec2(data, desc::SCPCore.InterceptCovariateDesc; kwargs...) =
 	SCPCore.InterceptValueVectorModel(; kwargs...)
 value_vector_model_spec2(data, desc; kwargs...) =
-	create_spec(SCPCore.value_vector_model, data, desc; __use_cache=true, kwargs..., __version=v"0.1.2")
+	cached(create_spec(SCPCore.value_vector_model, data, desc; kwargs..., __version=v"0.1.2"))
 
 value_vector2(action::Action, model, data) =
-	create_spec(SCPCore.value_vector, model, action(data); __use_cache=true, __version=v"0.1.2")
+	cached(create_spec(SCPCore.value_vector, model, action(data); __version=v"0.1.2"))
 value_vector_spec2(model, data) =
 	create_spec(Projectable(value_vector2), model, data)
 

@@ -27,15 +27,15 @@ function non_missing_ind_impl(column_data...)
 	findall(mask)
 end
 non_missing_ind(action::Action, column_data...) =
-	create_spec(non_missing_ind_impl, action(column_data)...; __use_cache=false, __version=v"0.0.1")
+	create_spec(non_missing_ind_impl, action(column_data)...; __version=v"0.0.1")
 non_missing_ind_spec(column_data...) =
 	create_spec(Projectable(non_missing_ind), column_data...)
 
 
 function ftest_table_pr(action::Action, matrix, var_ids, h1_design, h0_design)
-	create_spec(SCPCore.ftest_table2,
-	            action(matrix), action(var_ids), action(h1_design), action(h0_design);
-	            __use_cache=true, __version=v"0.0.1")
+	cached(create_spec(SCPCore.ftest_table2,
+	                   action(matrix), action(var_ids), action(h1_design), action(h0_design);
+	                   __version=v"0.0.1"))
 end
 
 ftest_table_spec(matrix, var_ids, h1_design, h0_design) =
@@ -73,9 +73,11 @@ end
 
 
 function ttest_table_pr(action::Action, matrix, var_ids, h1_design, h1_scale, h0_design)
-	create_spec(SCPCore.ttest_table2,
-	            action(matrix), action(var_ids), action(h1_design), prefetched(action(h1_scale)), action(h0_design);
-	            __use_cache=true, __version=v"0.0.1")
+	cached(create_spec(SCPCore.ttest_table2,
+	                   action(matrix), action(var_ids),
+	                   action(h1_design), prefetched(action(h1_scale)),
+	                   action(h0_design);
+	                   __version=v"0.0.1"))
 end
 
 ttest_table_spec(matrix, var_ids, h1_design, h1_scale, h0_design) =

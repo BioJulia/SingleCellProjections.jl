@@ -7,7 +7,7 @@ function annot_leftjoin_impl(annot::DataFrame, df)
 	leftjoin!(annot, df; on=id_col)
 end
 annot_leftjoin(action::Action, args...) =
-	create_spec(annot_leftjoin_impl, action(args)...; __use_cache=false, __version=v"0.1.0")
+	create_spec(annot_leftjoin_impl, action(args)...; __version=v"0.1.0")
 
 create_annot_leftjoin_spec(annot, df) = create_spec(Projectable(annot_leftjoin), annot, df)
 
@@ -35,7 +35,7 @@ Jobs.annotate(data, var_df, obs_df; kwargs...) =
 
 
 var_counts_fraction_impl(action::Action, counts, sub_ind, tot_ind) =
-	create_spec(SCPCore.counts_fraction, action(counts), action(sub_ind), action(tot_ind); dims=1, __use_cache=true, __version=v"0.1.0")
+	cached(create_spec(SCPCore.counts_fraction, action(counts), action(sub_ind), action(tot_ind); dims=1, __version=v"0.1.0"))
 create_var_counts_fraction_impl_spec(counts, sub_ind, tot_ind) = create_spec(Projectable(var_counts_fraction_impl), counts, sub_ind, tot_ind)
 
 var_counts_fraction(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
@@ -58,7 +58,7 @@ end
 
 
 var_counts_sum_impl(action::Action, f, counts, ind) =
-	create_spec(SCPCore.counts_sum, f, action(counts), action(ind); dims=1, __use_cache=true, __version=v"0.1.0")
+	cached(create_spec(SCPCore.counts_sum, f, action(counts), action(ind); dims=1, __version=v"0.1.0"))
 create_var_counts_sum_impl_spec(f, counts, ind) = create_spec(Projectable(var_counts_sum_impl), f, counts, ind)
 
 var_counts_sum(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
@@ -82,7 +82,7 @@ Jobs.var_counts_sum(counts, filter, col; kwargs...) = Jobs.var_counts_sum(identi
 
 # TODO: Can we get better code reuse with the `var` functions above
 obs_counts_fraction_impl(action::Action, counts, sub_ind, tot_ind) =
-	create_spec(SCPCore.counts_fraction, action(counts), action(sub_ind), action(tot_ind); dims=2, __use_cache=true, __version=v"0.1.0")
+	cached(create_spec(SCPCore.counts_fraction, action(counts), action(sub_ind), action(tot_ind); dims=2, __version=v"0.1.0"))
 create_obs_counts_fraction_impl_spec(counts, sub_ind, tot_ind) = create_spec(Projectable(obs_counts_fraction_impl), counts, sub_ind, tot_ind)
 
 obs_counts_fraction(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
@@ -103,7 +103,7 @@ end
 
 
 obs_counts_sum_impl(action::Action, f, counts, ind) =
-	create_spec(SCPCore.counts_sum, f, action(counts), action(ind); dims=2, __use_cache=true, __version=v"0.1.0")
+	cached(create_spec(SCPCore.counts_sum, f, action(counts), action(ind); dims=2, __version=v"0.1.0"))
 create_obs_counts_sum_impl_spec(f, counts, ind) = create_spec(Projectable(obs_counts_sum_impl), f, counts, ind)
 
 obs_counts_sum(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)

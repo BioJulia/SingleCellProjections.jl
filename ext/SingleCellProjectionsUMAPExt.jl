@@ -61,12 +61,12 @@ umap_project(model::UMAP_, matrix) = UMAP.transform(model, matrix)
 
 function umap_impl(action::Action, matrix; ndim, kwargs...)
 	# First create UMAP model
-	umap_model_spec = create_spec(umap_model, matrix; ndim, kwargs..., __use_cache=true, __version=v"0.1.1")
+	umap_model_spec = cached(create_spec(umap_model, matrix; ndim, kwargs..., __version=v"0.1.1"))
 
 	if action isa Eval
-		return create_spec(umap_embedding, umap_model_spec; __use_cache=false, __version=v"0.1.0")
+		return create_spec(umap_embedding, umap_model_spec; __version=v"0.1.0")
 	else# if action isa Projection
-		return create_spec(umap_project, umap_model_spec, action(matrix); __use_cache=true, __version=v"0.1.1")
+		return cached(create_spec(umap_project, umap_model_spec, action(matrix); __version=v"0.1.1"))
 	end
 end
 

@@ -23,7 +23,7 @@ is_datamatrix_spec(spec::Spec) = is_datamatrix_spec(spec.ro.value)
 
 
 
-create_datamatrix_spec(matrix, var, obs) = create_spec(SCPCore.DataMatrix, matrix, var, obs; __use_cache=false, __version=v"0.1.0")
+create_datamatrix_spec(matrix, var, obs) = create_spec(SCPCore.DataMatrix, matrix, var, obs; __version=v"0.1.0")
 
 
 
