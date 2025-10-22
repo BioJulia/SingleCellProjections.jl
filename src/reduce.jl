@@ -12,9 +12,9 @@ assemble_svd(U, S, Vt) = create_spec(LinearAlgebra.SVD, U, S, Vt; __version=v"0.
 
 
 # helpers
-_svd_U_spec(svd_spec) = cached(svd_spec; sub=["U"])
-_svd_S_spec(svd_spec) = cached(svd_spec; sub=["S"])
-_svd_Vt_spec(svd_spec) = cached(svd_spec; sub=["Vt"])
+_svd_U_spec(svd_spec) = cached(svd_spec, "U")
+_svd_S_spec(svd_spec) = cached(svd_spec, "S")
+_svd_Vt_spec(svd_spec) = cached(svd_spec, "Vt")
 
 function svd_pr(action::Action, matrix; kwargs...)
 	# First SVD of unprojected
