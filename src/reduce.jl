@@ -1,57 +1,12 @@
-# function svd_impl(matrix; kwargs...)
-# 	F = SCPCore.implicitsvd(matrix; kwargs...)
-# 	CompoundResult(; F.U, F.S, F.Vt)
-# end
-# # function svd_project_impl(U, S, matrix)
-# # 	SCPCore.svd_project(U, S, matrix)
-# # end
-
-# assemble_svd(U, S, Vt) = LinearAlgebra.SVD(U,S,Vt)
-
-
-# # SVD is an example where the model comes after the result. I.e. svd(data) => UΣVᵀ, but the model is just UΣ.
-# function svd_pr(action::Action, matrix; kwargs...)
-# 	# First SVD of unprojected
-# 	svd_spec = create_spec(svd_impl, matrix; __use_cache=true, kwargs..., __version=v"0.1.1-a2")
-# 	U = Spec(svd_spec.ro, svd_spec.op, ["U"])
-# 	S = Spec(svd_spec.ro, svd_spec.op, ["S"])
-
-# 	if action isa Eval
-# 		Vt = Spec(svd_spec.ro, svd_spec.op, ["Vt"])
-# 		return create_spec(assemble_svd, U, S, Vt; __version=v"0.1.0")
-# 	else# if action isa Projection
-# 		Vt_p = create_spec(svd_project, U, S, action(matrix); __use_cache=true, __version=v"0.1.1-a5")
-# 		return create_spec(assemble_svd, U, S, Vt_p; __version=v"0.1.0")
-# 	end
-# end
-
-
-# function svd(::Mat, data; kwargs...)
-# 	matrix_spec = get_matrix_spec(data)
-# 	create_spec(Projectable(svd_pr), matrix_spec; kwargs...)
-# end
-# svd(f::Union{Var,Obs}, data; kwargs...) = get_spec(f, data)
-
-# create_svd_spec(matrix; seed=1234, kwargs...) =
-# 	create_spec(DataMatrixFunction(svd), matrix; kwargs...)
-# function Jobs.svd(matrix; kwargs...)
-# 	Job(create_svd_spec(matrix; kwargs...))
-# end
-
-
-
-
-
 function implicitsvd_impl(matrix; kwargs...)
 	F = SCPCore.implicitsvd(matrix; kwargs...)
 	CompoundResult(; F.U, F.S, F.Vt)
 end
-implicitsvd_spec(matrix; kwargs...) = create_spec(implicitsvd_impl, matrix; kwargs..., __version=v"0.1.0") # must be used with cached() to handle the CompoundResult
+implicitsvd_spec(matrix; kwargs...) =
+	create_spec(implicitsvd_impl, matrix; kwargs..., __version=v"0.1.0") # must be used with cached() to handle the CompoundResult
 
-# function svd_project_impl(U, S, matrix)
-# 	SCPCore.svd_project(U, S, matrix)
-# end
-svd_projected_vt_spec(U, S, X) = cached(create_spec(SCPCore.svd_projected_vt, U, S, X; __version=v"0.1.0"))
+svd_projected_vt_spec(U, S, X) =
+	cached(create_spec(SCPCore.svd_projected_vt, U, S, X; __version=v"0.1.0"))
 
 assemble_svd(U, S, Vt) = create_spec(LinearAlgebra.SVD, U, S, Vt; __version=v"0.1.0")
 
@@ -84,42 +39,6 @@ svd(f::Union{Var,Obs}, data; kwargs...) = get_spec(f, data)
 function Jobs.svd(matrix; nsv, seed=1234, kwargs...)
 	Job(create_spec(DataMatrixFunction(svd), matrix; nsv, seed, kwargs...))
 end
-
-
-
-
-
-
-
-# get_components_impl(F::LinearAlgebra.SVD) = LinearAlgebra.Diagonal(F.S)*F.Vt
-# get_components(action::Action, matrix) =
-# 	create_spec(get_components_impl, action(matrix); __version=v"0.1.0")
-
-# get_loadings_impl(F::LinearAlgebra.SVD) = F.U
-# get_loadings(action::Action, matrix) =
-# 	create_spec(get_loadings_impl, action(matrix); __version=v"0.1.0")
-
-# TODO: Should we add DataMatrix Jobs for `get_components` and `get_loadings`?
-#       Would be nice. But we would need to figure out how to name components/loadings differently for e.g. PCA and PMA.
-
-
-# function pca(::Mat, data; kwargs...)
-# 	# TODO: If `pca` is called on `svd`, we should just extract.
-
-# 	# Setup as svd followed by extracting ΣVᵀ
-# 	svd_spec = svd(Mat(), data; kwargs...)
-# 	create_spec(Projectable(get_components), svd_spec)
-# end
-
-# function pca(::Var, data; nsv, kwargs...)
-# 	# TODO: If `pca` is called on `svd`, we don't need `nsv` but should just use length(Σ) taken from the SVD object
-# 	create_prefixed_ids_spec("PC_id", "PC", nsv)
-# end
-# pca(::Obs, data; kwargs...) = get_spec(Obs(), data)
-
-# function Jobs.pca(args...; nsv, seed=1234, kwargs...)
-# 	Job(create_spec(DataMatrixFunction(pca), args...; nsv, seed, kwargs...))
-# end
 
 
 
