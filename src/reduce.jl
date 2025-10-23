@@ -80,12 +80,6 @@ function pca(::Var, data; nsv, kwargs...)
 	nsv = prefetched(actual_nsv_spec(data, nsv))
 	create_prefixed_ids_spec("PC_id", "PC", nsv)
 end
-function pca(::Var, data; nsv, kwargs...)
-	nsv = prefetched(actual_nsv_spec(data, nsv))
-	create_prefixed_ids_spec("PC_id", "PC", nsv)
-end
-
-
 pca(::Obs, data; kwargs...) = get_spec(Obs(), data)
 
 function Jobs.pca(data; nsv, seed=1234, kwargs...)
