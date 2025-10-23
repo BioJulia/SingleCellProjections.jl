@@ -6,8 +6,7 @@ using SingleCellProjections
 using SingleCellProjections: Projectable, Action, dataframe_spec
 
 using DataFrames
-isdefined(Base, :get_extension) ? (using CSV) : (using ..CSV)
-
+using CSV
 
 
 # TODO: Move some things into SingleCellProjectionsCore?

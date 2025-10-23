@@ -8,13 +8,8 @@ using .SingleCellProjectionsCore.MatrixExpressions
 using LinearAlgebra
 using DataFrames
 
-if isdefined(Base, :get_extension)
-	using PrincipalMomentAnalysis
-	using PrincipalMomentAnalysis: PMA, SimplexGraph, simplices2kernelmatrixroot
-else
-	using ..PrincipalMomentAnalysis
-	using ..PrincipalMomentAnalysis: PMA, SimplexGraph, simplices2kernelmatrixroot
-end
+using PrincipalMomentAnalysis
+using PrincipalMomentAnalysis: PMA, SimplexGraph, simplices2kernelmatrixroot
 
 
 function _implicitpma(A, samplekernelroot::AbstractMatrix; kwargs...)

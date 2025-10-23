@@ -9,7 +9,7 @@ import .SingleCellProjectionsCore as SCPCore
 using DataFrames
 
 
-isdefined(Base, :get_extension) ? (using UMAP) : (using ..UMAP)
+using UMAP
 
 struct UMAPModel <: SCPCore.ProjectionModel
 	m::UMAP.UMAP_

@@ -4,11 +4,7 @@ using SingleCellProjections
 using .SingleCellProjections.SingleCellProjectionsCore
 using DataFrames
 
-if isdefined(Base, :get_extension)
-	using Muon: AnnData, AlignedMapping
-else
-	using ..Muon: AnnData, AlignedMapping
-end
+using Muon: AnnData, AlignedMapping
 
 
 function aligned_mapping_type(am::AlignedMapping)

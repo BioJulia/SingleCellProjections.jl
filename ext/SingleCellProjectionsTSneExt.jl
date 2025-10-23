@@ -2,7 +2,7 @@ module SingleCellProjectionsTSneExt
 
 using SingleCellProjections
 using .SingleCellProjections.SingleCellProjectionsCore
-isdefined(Base, :get_extension) ? (using TSne) : (using ..TSne)
+using TSne
 
 """
 	tsne(data::DataMatrix, args...; k=10, obs=:copy, kwargs...)
