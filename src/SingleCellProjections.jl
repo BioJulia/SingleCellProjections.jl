@@ -35,6 +35,7 @@ ReproducibleJobs.unmanage_rec(x::SCPCore.ProjectionModel) = x
 # TODO: This is a temporary solution when refactoring, remove
 module Jobs
 	function load_counts end
+	function load_csv end
 	function get_matrix end
 	function get_var end
 	function get_obs end
@@ -81,6 +82,7 @@ include("datamatrixfunctions.jl")
 include("internal.jl")
 include("matrix_arithmetic.jl")
 include("load.jl")
+include("dataframes.jl")
 include("annotate.jl")
 include("filter.jl")
 include("transform.jl")
@@ -97,6 +99,7 @@ include("statistical_tests.jl")
 
 @static if !isdefined(Base, :get_extension)
 	function __init__()
+		@require CSV="336ed68f-0bac-5ca0-87d4-7b16caf5d00b" include("../ext/SingleCellProjectionsCSVExt.jl")
 		@require UMAP="c4f8c510-2410-5be4-91d7-4fbaeb39457e" include("../ext/SingleCellProjectionsUMAPExt.jl")
 		@require TSne="24678dba-d5e9-5843-a4c6-250288b04835" include("../ext/SingleCellProjectionsTSneExt.jl")
 		@require PrincipalMomentAnalysis="6a3ba550-3b7f-11e9-2734-d9178ad1e8db" include("../ext/SingleCellProjectionsPrincipalMomentAnalysisExt.jl")

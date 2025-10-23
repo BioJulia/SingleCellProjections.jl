@@ -26,6 +26,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 ThreadedSparseArrays = "59d54670-b8ac-4d81-ab7a-bb56233e17ab"
 
 [weakdeps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Muon = "446846d7-b4ce-489d-bf74-72da18fe3629"
 PrincipalMomentAnalysis = "6a3ba550-3b7f-11e9-2734-d9178ad1e8db"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
@@ -33,6 +34,7 @@ TSne = "24678dba-d5e9-5843-a4c6-250288b04835"
 UMAP = "c4f8c510-2410-5be4-91d7-4fbaeb39457e"
 
 [extensions]
+SingleCellProjectionsCSVExt = "CSV"
 SingleCellProjectionsMuonExt = "Muon"
 SingleCellProjectionsPrincipalMomentAnalysisExt = "PrincipalMomentAnalysis"
 SingleCellProjectionsTSneExt = "TSne"
@@ -41,6 +43,7 @@ SingleCellProjectionsUMAPExt = "UMAP"
 [compat]
 AbstractTrees = "0.3, 0.4"
 CodecZlib = "0.7"
+CSV = "0.10"
 DataFrames = "0.21, 0.22, 1.0"
 Distributions = "0.22, 0.23, 0.24, 0.25"
 H5Zblosc = "0.1"
@@ -68,6 +71,7 @@ julia = "1.10"
 
 [extras]
 CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 GLM = "38e38edf-8417-5370-95a0-9cbb8c7f171a"
 HypothesisTests = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
