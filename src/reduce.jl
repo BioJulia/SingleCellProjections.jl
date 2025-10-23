@@ -1,5 +1,14 @@
-function implicitsvd_impl(matrix; kwargs...)
-	F = SCPCore.implicitsvd(matrix; kwargs...)
+function actual_nsv_pr(::Action, data, nsv)
+	# NB: nsv is determined completely by the base case, so we do not project
+	nvar = datamatrix_nvar_spec(data)
+	nobs = datamatrix_nobs_spec(data)
+	create_spec(min, nsv, nvar, nobs; __version=v"0.1.0")
+end
+actual_nsv_spec(data, nsv) = create_spec(Projectable(actual_nsv_pr), data, nsv)
+
+
+function implicitsvd_impl(matrix; nsv, kwargs...) # nsv is a required kwarg
+	F = SCPCore.implicitsvd(matrix; nsv, kwargs...)
 	CompoundResult(; F.U, F.S, F.Vt)
 end
 implicitsvd_spec(matrix; kwargs...) =
@@ -29,9 +38,9 @@ function svd_pr(action::Action, matrix; kwargs...)
 	assemble_svd(U, S, Vt)
 end
 
-function svd(::Mat, data; kwargs...)
-	matrix_spec = get_matrix_spec(data)
-	create_spec(Projectable(svd_pr), matrix_spec; kwargs...)
+function svd(::Mat, data; nsv, kwargs...)
+	nsv = prefetched(actual_nsv_spec(data, nsv))
+	create_spec(Projectable(svd_pr), get_matrix_spec(data); nsv, kwargs...)
 end
 svd(f::Union{Var,Obs}, data; kwargs...) = get_spec(f, data)
 
@@ -42,9 +51,6 @@ end
 
 
 
-# Consider using something like this
-# NB: This should never use the projected `data`
-# get_nsv_spec(data, nsv) = create_spec(min, nsv, datamatrix_nvar_spec(data), datamatrix_nobs_spec(data); __version=v"0.1.0")
 
 
 
@@ -66,8 +72,20 @@ function pca_pr(action::Action, matrix; kwargs...)
 end
 
 
-pca(::Mat, data; kwargs...) = create_spec(Projectable(pca_pr), get_matrix_spec(data); kwargs...)
-pca(::Var, data; nsv, kwargs...) = create_prefixed_ids_spec("PC_id", "PC", nsv) # consider using min(nsv, nvar, nobs) to handle small matrix edge cases
+function pca(::Mat, data; nsv, kwargs...)
+	nsv = prefetched(actual_nsv_spec(data, nsv))
+	create_spec(Projectable(pca_pr), get_matrix_spec(data); nsv, kwargs...)
+end
+function pca(::Var, data; nsv, kwargs...)
+	nsv = prefetched(actual_nsv_spec(data, nsv))
+	create_prefixed_ids_spec("PC_id", "PC", nsv)
+end
+function pca(::Var, data; nsv, kwargs...)
+	nsv = prefetched(actual_nsv_spec(data, nsv))
+	create_prefixed_ids_spec("PC_id", "PC", nsv)
+end
+
+
 pca(::Obs, data; kwargs...) = get_spec(Obs(), data)
 
 function Jobs.pca(data; nsv, seed=1234, kwargs...)
@@ -83,9 +101,15 @@ function loadings_pr(::Action, matrix; kwargs...)
 	_svd_U_spec(svd_spec)
 end
 
-loadings(::Mat, data; kwargs...) = create_spec(Projectable(loadings_pr), get_matrix_spec(data); kwargs...)
-loadings(::Obs, data; nsv, kwargs...) = create_prefixed_ids_spec("loadings_id", "loadings", nsv) # consider using min(nsv, nvar, nobs) to handle small matrix edge cases
+function loadings(::Mat, data; nsv, kwargs...)
+	nsv = prefetched(actual_nsv_spec(data, nsv))
+	create_spec(Projectable(loadings_pr), get_matrix_spec(data); nsv, kwargs...)
+end
 loadings(::Var, data; kwargs...) = get_spec(Var(), data)
+function loadings(::Obs, data; nsv, kwargs...)
+	nsv = prefetched(actual_nsv_spec(data, nsv))
+	create_prefixed_ids_spec("loadings_id", "loadings", nsv)
+end
 
 function Jobs.loadings(args...; nsv, seed=1234, kwargs...)
 	Job(create_spec(DataMatrixFunction(loadings), args...; nsv, seed, kwargs...))
