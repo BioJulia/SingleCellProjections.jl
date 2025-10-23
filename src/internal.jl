@@ -107,7 +107,7 @@ Jobs.find_matching_ids(args...; kwargs...) =
 
 
 ids_to_indices(action::Action, df, ids) =
-	cached(create_spec(SCPCore.ids_to_indices, action(df), action(ids); __version=v"0.1.1"))
+	cached(create_spec(SCPCore.ids_to_indices, action(df), action(ids); __version=v"0.1.2"))
 create_ids_to_indices_spec(df, ids) =
 	create_spec(Projectable(ids_to_indices), df, ids)
 

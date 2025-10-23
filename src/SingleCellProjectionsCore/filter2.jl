@@ -23,8 +23,7 @@ function ids_to_indices(df::DataFrame, ids::DataFrame)
 
 	ind = something.(ind) # remove `Nothing` from eltype (and error if `nothing` is encountered)
 
-	if ind == 1:length(ind)
-		# return 1:length(ind) # Simplify common case.
+	if ind == 1:size(df,1)
 		return Colon() # Simplify common case
 	else
 		return ind
