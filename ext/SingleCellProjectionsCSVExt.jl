@@ -48,6 +48,8 @@ end
 # used by SingleCellProjections.get_columns
 SingleCellProjections.get_csv_columns_pr(::Action, filepath, columns...; kwargs...) =
 	get_csv_columns_spec(filepath, columns...; kwargs...)
+SingleCellProjections.get_csv_columns_pr_spec(filepath, columns...; kwargs...) =
+	create_spec(Projectable(SingleCellProjections.get_csv_columns_pr), filepath, columns...; kwargs...)
 
 
 SingleCellProjections.load_csv(::Action, filepath; kwargs...) =
