@@ -3,7 +3,7 @@ module SingleCellProjectionsCSVExt
 using ReproducibleJobs
 using ReproducibleJobs: create_spec, cached, CompoundResult
 using SingleCellProjections
-using SingleCellProjections: Projectable, Action, dataframe_spec
+using SingleCellProjections: Projectable, Action, dataframe_impl_spec
 
 using DataFrames
 using CSV
@@ -29,7 +29,7 @@ function get_csv_columns_pre(parse_job, columns)
 	end
 
 	col_jobs = (col=>cached(parse_job, col) for col in columns)
-	dataframe_spec(col_jobs...)
+	dataframe_impl_spec(col_jobs...)
 end
 
 
@@ -53,6 +53,8 @@ SingleCellProjections.get_csv_columns_pr(::Action, filepath, columns...; kwargs.
 SingleCellProjections.load_csv(::Action, filepath; kwargs...) =
 	get_csv_columns_spec(filepath; kwargs...)
 
+# TODO: kwarg for selecting id column somehow. Possibly even for creating one from multiple columns by concatenation?
+# Or do those things as a separate job?
 function Jobs.load_csv(path::String; kwargs...)
 	filepath_job = checksummedfilepath_job(path)
 	Job(create_spec(Projectable(SingleCellProjections.load_csv), filepath_job; kwargs...))

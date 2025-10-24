@@ -1,4 +1,6 @@
-dataframe_spec(args::Pair...) = create_spec(DataFrame, args...; __version=v"0.0.1")
+dataframe_impl_spec(args::Pair...) = create_spec(DataFrame, args...; __version=v"0.0.1")
+dataframe_pr(action, args...) = dataframe_impl_spec(action.(args)...)
+dataframe_pr_spec(args...) = create_spec(Projectable(dataframe_pr), args...)
 
 
 
@@ -20,13 +22,35 @@ function __init__()
 end
 
 
+get_columns_impl(df, columns...) = select(df, collect(columns); copycols=false)
+get_columns_impl_spec(df, columns) =
+	create_spec(get_columns_impl, df, columns...; __version=v"0.1.0")
+get_columns_pr(action, df, columns...) =
+	get_columns_impl_spec(action(df), action(columns)...)
+
+
+function _subset_column_pairs(column_names, column_pairs)
+	ind = indexin(column_names, first.(column_pairs))
+	any(isnothing, ind) && throw(KeyError(column_names[findfirst(isnothing,ind)]))
+	column_pairs[ind]
+end
+
 
 function get_columns(df, columns...)
 	if df isa Spec && df.f == Projectable(load_csv)
 		create_spec(Projectable(get_csv_columns_pr), df.args[1], columns...; df.kwargs...)
+	elseif df isa Spec && df.f == Projectable(dataframe_pr) # DataFrame (Projectable)
+		# Keep only chosen columns
+		columns = _subset_column_pairs(columns, df.args) # This currently assumes the names are given as Strings (in both columns and df.args). Should we allow Specs returning strings as well?
+		dataframe_pr_spec(columns...)
+	elseif df isa Spec && df.f == DataFrame # DataFrame (Not Projectable)
+		# Keep only chosen columns
+		columns = _subset_column_pairs(columns, df.args) # This currently assumes the names are given as Strings (in both columns and df.args). Should we allow Specs returning strings as well?
+		dataframe_impl_spec(columns...)
+	elseif df isa Spec && !(df.f isa Projectable) # General case (Not Projectable)
+		get_columns_impl_spec(df, columns...)
 	else
-		error("Not implemented")
-		# This should also return a Projectable
+		create_spec(Projectable(get_columns_pr), df, columns...) # General case
 	end
 end
 
