@@ -15,38 +15,48 @@ using CSV
 _auto_delim(fp) = lowercase(splitext(string(fp))[2]) in (".tsv",".txt") ? '\t' : ','
 
 function parse_csv_impl(filepath; delim)
-	@show typeof(filepath)
-	@show typeof(delim)
-
 	@assert filepath isa ReproducibleJobs.ChecksummedFilePath
 	filepath = string(filepath)
 	df = CSV.read(filepath, DataFrame; delim)
 	CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(df))])
 end
-function parse_csv_pr(::Action, filepath; delim=nothing)
-	delim = @something _auto_delim(filepath)
-	create_spec(parse_csv_impl, filepath; delim, __version=v"0.0.3")
-end
 
 
-function load_dataframe_columns(parse_job, keys)
-	col_jobs = (k=>cached(parse_job, k) for k in keys)
+function get_csv_columns_pre(parse_job, columns)
+	# TODO: Can we avoid this somehow? It is not supposed to be like this.
+	if columns isa ReproducibleJobs.ReadOnly
+		columns = columns.value
+	end
+
+	col_jobs = (col=>cached(parse_job, col) for col in columns)
 	dataframe_spec(col_jobs...)
 end
 
 
-function load_parsed_csv(fp; kwargs...)
-	parse_job = create_spec(Projectable(parse_csv_pr), fp; kwargs...)
-	keys_job = fetched(cached(parse_job; return_keys=true))
-	create_spec(Preprocess(load_dataframe_columns), parse_job, keys_job)
+function get_csv_columns_spec(filepath, columns...; delim=_auto_delim(filepath))
+	parse_job = create_spec(parse_csv_impl, filepath; delim, __version=v"0.0.3")
+	if isempty(columns)
+		columns = fetched(cached(parse_job; return_keys=true))
+	else
+		columns = collect(columns)
+	end
+	create_spec(Preprocess(get_csv_columns_pre), parse_job, columns)
 end
 
+
+
+# used by SingleCellProjections.get_columns
+SingleCellProjections.get_csv_columns_pr(::Action, filepath, columns...; kwargs...) =
+	get_csv_columns_spec(filepath, columns...; kwargs...)
+
+
+SingleCellProjections.load_csv(::Action, filepath; kwargs...) =
+	get_csv_columns_spec(filepath; kwargs...)
 
 function Jobs.load_csv(path::String; kwargs...)
 	filepath_job = checksummedfilepath_job(path)
-	Job(create_spec(Preprocess(load_parsed_csv), filepath_job; kwargs...))
+	Job(create_spec(Projectable(SingleCellProjections.load_csv), filepath_job; kwargs...))
 end
-
 
 
 

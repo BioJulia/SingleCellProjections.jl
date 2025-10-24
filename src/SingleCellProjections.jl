@@ -31,8 +31,8 @@ ReproducibleJobs.unmanage_rec(x::SCPCore.ProjectionModel) = x
 
 # TODO: This is a temporary solution when refactoring, remove
 module Jobs
+	function project end
 	function load_counts end
-	function load_csv end
 	function get_matrix end
 	function get_var end
 	function get_obs end
@@ -64,11 +64,15 @@ module Jobs
 	function loadings end
 	function force_layout end
 	function transpose end
-	function umap end
-	function tsne end
-	function project end
+
 	function ftest end
 	function ttest end
+
+	function load_csv end
+	function get_columns end
+
+	function umap end
+	function tsne end
 end
 
 
