@@ -74,6 +74,9 @@ function get_columns(df, columns...)
 	return get_columns_pr_spec(df, columns...) # General case
 end
 
+get_columns_spec(df, column1, columns...) =
+	create_spec(Preprocess(get_columns), df, column1, columns...)
+
 function Jobs.get_columns(df, column1, columns...)
-	Job(create_spec(Preprocess(get_columns), df, column1, columns...))
+	Job(get_columns_spec(df, column1, columns...))
 end
