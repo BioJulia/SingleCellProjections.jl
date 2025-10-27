@@ -115,25 +115,20 @@ is_table_spec(spec::Spec) = is_table_spec(spec.ro.value)
 
 
 
-function _table_from_colnames(f::F, colnames, args...; kwargs...) where F
-	colnames = unwrap_colnames(colnames)
-	cols = (name=>f(Col(name), args...; kwargs...) for name in colnames)
-	create_table_impl_spec(cols...)
-end
-
-
 
 # for dispatch
 setup_table(f::TableField, spec::Spec) = setup_table(f, spec.f, spec)
 
 # This evaluates the TableFunction - Step 1, figure out colnames
-function (d::TableFunction{F})(args...; kwargs...) where F
-	colnames = wrap_colnames_spec(d.f(ColNames(), args...; kwargs...))
-	create_spec(d, fetched(colnames), args...; kwargs...)
+function (t::TableFunction{F})(args...; kwargs...) where F
+	colnames = wrap_colnames_spec(t.f(ColNames(), args...; kwargs...))
+	create_spec(t, fetched(colnames), args...; kwargs...)
 end
 # This evaluates the TableFunction - Step 2, create the table
-function (d::TableFunction{F})(colnames::ColNameVector, args...; kwargs...) where F
-	_table_from_colnames(d.f, colnames, args...; kwargs...)
+function (t::TableFunction{F})(colnames::ColNameVector, args...; kwargs...) where F
+	colnames = unwrap_colnames(colnames)
+	cols = (name=>t.f(Col(name), args...; kwargs...) for name in colnames)
+	create_table_impl_spec(cols...)
 end
 
 
