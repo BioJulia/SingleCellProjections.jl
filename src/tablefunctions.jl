@@ -7,72 +7,163 @@ end
 
 
 create_table_impl(args::Pair...) = DataFrame(args...)
-create_table_pr(action::Action, args::Pair...) = create_spec(create_table_impl, action(args)...; __version=v"0.0.1")
-create_table_spec(args::Pair...) = create_spec(Projectable(create_table_pr), args...)
+create_table_impl_spec(args::Pair...) = create_spec(create_table_impl, args...; __version=v"0.0.1")
+
+create_table_pr(action::Action, args::Pair...) = create_table_impl_spec(action(args)...)
+create_table_pr_spec(args::Pair...) = create_spec(Projectable(create_table_pr), args...)
 
 
 
 
-
-
-# Do we need this?
-# is_table_spec(::Any) = false
-# function is_table_spec(sa::SpecArgs)
-# 	f = sa.f
-# 	f isa TableFunction && return true
-# 	f == create_table_impl && return true
-#   more?
-# 	if f == project
-# 		onto = sa.args[1]
-# 		return is_table_spec(onto)
-# 	end
-# 	# TODO: Are there more cases that should return true?
-# 	return false
-# end
-# is_table_spec(spec::Spec) = is_table_spec(spec.ro.value)
-
-
-
-function _setup_table(f::F, col_names, args...; kwargs...) where F
-	columns = (name=>f(Col(name), args...; kwargs...) for name in col_names)
-	create_table_spec(columns...)
+# These are needed by get_colnames/get_col
+setup_table(::ColNames, ::typeof(DataFrame), spec) =
+	String[k for (k,v) in spec.args]
+function setup_table(c::Col, ::typeof(DataFrame), spec)
+	for (k,v) in spec.args
+		k == c.name && return v
+	end
+	throw(KeyError(c.name))
 end
+
+
+# This changes get_field(project()) to project(get_field())
+function setup_table(f::TableField, ::typeof(project), spec)
+	onto = get_spec(f, spec.args[1])
+	create_project_spec(onto, spec.args[2:end]...)
+end
+
+
+
+# WIP - perhaps spec should be unwrapped at an earlier point - perhaps in ReproducibleJobs?
+setup_table(f::TableField, t::TableFunction{F}, spec) where F = t.f(f, spec.args...; spec.kwargs...) # Should this be ColNames only?
+setup_table(col::Col, t::ColNamesTableFunction{F}, spec) where F = t.f(col, spec.args...; spec.kwargs...)
+
+
+function get_colnames_pr(action::Action, table_spec)
+	@assert is_table_spec(table_spec) # TODO: We might want to relax this later
+	action(setup_table(ColNames(), table_spec))
+end
+function get_col_pr(action::Action, table_spec, name)
+	@assert is_table_spec(table_spec) # TODO: We might want to relax this later
+	action(setup_table(Col(name), table_spec))
+end
+
+
+get_colnames(table_spec) = create_spec(Projectable(get_colnames_pr), table_spec)
+get_col(table_spec, name) = create_spec(Projectable(get_col_pr), table_spec, name)
+
+get_colnames_spec(x) = create_spec(Preprocess(get_colnames), x)
+Jobs.get_colnames(x) = Job(get_colnames_spec(x))
+
+get_col_spec(x, name) = create_spec(Preprocess(get_col), x, name)
+Jobs.get_col(x, name) = Job(get_col_spec(x, name))
+
+get_spec(::ColNames, x) = get_colnames_spec(x)
+get_spec(c::Col, x) = get_col_spec(x, c.name)
+
+
+
+
+is_table_spec(::Any) = false
+function is_table_spec(sa::SpecArgs)
+	f = sa.f
+
+	# @assert !(f isa ColNamesTableFunction) # Testing
+
+
+	f isa TableFunction && return true
+	f isa ColNamesTableFunction && return true # Should this be here?
+	f == create_table_impl && return true
+	if f == project
+		onto = sa.args[1]
+		return is_table_spec(onto)
+	end
+	# TODO: Are there more cases that should return true?
+	return false
+end
+is_table_spec(spec::Spec) = is_table_spec(spec.ro.value)
+
+
+
+function _table_from_colnames(f::F, colnames, args...; kwargs...) where F
+	cols = (name=>f(Col(name), args...; kwargs...) for name in colnames)
+	# create_table_pr_spec(cols...) # TODO: This should need to be Projectable. Handled through project(::TableFunction) and project(::ColNamesTableFunction)
+	create_table_impl_spec(cols...)
+end
+
+
+
+# for dispatch
+setup_table(f::TableField, spec::Spec) = setup_table(f, spec.f, spec)
+
 
 
 # This evaluates the TableFunction
 function (d::TableFunction{F})(args...; kwargs...) where F
-	col_names = d.f(ColNames(), args...; kwargs...) # can be a spec or just a list of names
+	colnames = d.f(ColNames(), args...; kwargs...) # can be a spec or just a list of names
 
-	# We need to preprocess once to fetch the col_names.
-	# This also means that col_names can be Projected.
-	create_spec(SetupTable(d.f), fetched(col_names), args...; kwargs...)
+	# We need to preprocess once to fetch the colnames.
+	# This also means that colnames can be Projected.
+	create_spec(ColNamesTableFunction(d.f), fetched(colnames), args...; kwargs...)
 
-	# TODO: Should we do this? It's just a small shortcut for when col_names are not a Spec. But it should work fine with projections too.
-	# if col_names isa Union{Spec,Job}
-	# 	# We need to preprocess once to fetch the col_names
-	# 	create_spec(SetupTable(d.f), fetched(col_names), args...; kwargs...)
+	# TODO: Should we do this? It's just a small shortcut for when colnames are not a Spec. But it should work fine with projections too.
+	# if colnames isa Union{Spec,Job}
+	# 	# We need to preprocess once to fetch the colnames
+	# 	create_spec(ColNamesTableFunction(d.f), fetched(colnames), args...; kwargs...)
 	# else
-	# 	# col_names are not a spec, just setup directly
-	# 	_setup_table(d.f, col_names, args...; kwargs...)
+	# 	# colnames are not a spec, just setup directly
+	# 	_table_from_colnames(d.f, colnames, args...; kwargs...)
 	# end
 end
 
 
-function (d::SetupTable{F})(col_names, args...; kwargs...) where F
-	_setup_table(d.f, col_names, args...; kwargs...)
+function (d::ColNamesTableFunction{F})(colnames, args...; kwargs...) where F
+	_table_from_colnames(d.f, colnames, args...; kwargs...)
 end
 
 
 
 
-# function project(onto, t::TableFunction, args...)
-# 	create_table_spec(...)
-# end
 
-# function project(onto, s::SetupTable, args...)
-# 	# project names and columns...
-# 	create_table_spec(...)
-# end
+function try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_colnames)}, k::Spec, v)
+	if is_table_spec(k)
+		# Replace the inner spec
+		res = try_replace_spec_single(spec.args[1], nothing, k, v)
+		return res === nothing ? res : get_spec(ColNames(), res)
+	else
+		# Fallback to standard replace
+		return try_replace_spec_single(spec, nothing, k, v)
+	end
+end
+function try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_col)}, k::Spec, v)
+	if is_table_spec(k)
+		# Replace the inner spec
+
+		# Are these correct? I think so.
+		res = try_replace_spec_single(spec.args[1], nothing, k, v)
+		return res === nothing ? res : get_spec(Col(spec.args[2]), res)
+	else
+		# Fallback to standard replace
+		return try_replace_spec_single(spec, nothing, k, v)
+	end
+end
+
+
+
+
+
+function project(onto, t::TableFunction, args...)
+	# Project the column names
+	colnames = create_project_spec(get_colnames(onto), args...)
+	onto2 = create_spec(ColNamesTableFunction(t.f), onto.args...; onto.kwargs...)
+	create_project_spec(onto2, fetched(colnames), args...) # Consider moving colnames to a kwarg of project
+end
+
+function project(onto, s::ColNamesTableFunction, colnames, args...)
+	# Given the column names, project the columns
+	cols = (name=>create_project_spec(get_col(onto, name), args...) for name in colnames)
+	create_table_impl_spec(cols...)
+end
 
 
 

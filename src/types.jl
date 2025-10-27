@@ -10,7 +10,6 @@ struct TableFunction{F} <: AbstractPreprocess{F}
 	f::F
 end
 
-struct SetupTable{F} <: AbstractPreprocess{F}
+struct ColNamesTableFunction{F} <: AbstractPreprocess{F} # TODO: Find a better name
 	f::F
 end
-Base.show(io::IO, p::SetupTable{F}) where F = print(io, "SetupTable(", p.f, ')')

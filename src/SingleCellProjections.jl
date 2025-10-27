@@ -68,8 +68,10 @@ module Jobs
 	function ftest end
 	function ttest end
 
+	function get_colnames end
+	function get_col end
 	function load_csv end
-	function get_columns end
+	# function get_columns end
 
 	function umap end
 	function tsne end
