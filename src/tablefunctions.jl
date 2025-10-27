@@ -147,12 +147,12 @@ end
 
 function project(onto, t::TableFunction, args...)
 	# Project the column names
-	colnames = create_project_spec(get_colnames(onto), args...)
+	colnames = fetched(create_project_spec(get_colnames(onto), args...))
 	onto2 = create_spec(ColNamesTableFunction(t.f), onto.args...; onto.kwargs...)
-	create_project_spec(onto2, fetched(colnames), args...) # Consider moving colnames to a kwarg of project
+	create_project_spec(onto2, args...; colnames)
 end
 
-function project(onto, s::ColNamesTableFunction, colnames, args...)
+function project(onto, s::ColNamesTableFunction, args...; colnames)
 	# Given the column names, project the columns
 	cols = (name=>create_project_spec(get_col(onto, name), args...) for name in colnames)
 	create_table_impl_spec(cols...)

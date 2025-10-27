@@ -92,7 +92,7 @@ function project(onto, p::Projectable{F}, args...) where F
 end
 
 
-project(onto, args...) = project(onto, onto.f, args...)
+project(onto, args...; kwargs...) = project(onto, onto.f, args...; kwargs...)
 
 create_project_spec(onto, args...; kwargs...) =
 	create_spec(Preprocess(project), onto, args...; kwargs...)
