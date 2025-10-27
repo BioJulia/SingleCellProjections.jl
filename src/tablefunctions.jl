@@ -17,17 +17,11 @@ function wrap_colnames(colnames)
 end
 wrap_colnames_spec(colnames) = create_spec(wrap_colnames, colnames; __version=v"0.0.1")
 
-# _unwrap_colnames(c::ColNameVector{ReadOnly{T}}) where T = c.v.value
-# _unwrap_colnames(c::ColNameVector{T}) where T = c.v
-# ReproducibleJobs.unmanage_rec(c::ColNameVector{<:ReadOnly{<:Vector}}) = ReadOnlyVector(c.v.value)
-
 unwrap_colnames(c::ColNameVector{ReadOnly{T}}) where T<:Vector = ReadOnlyVector(c.v.value)
 ReproducibleJobs.unmanage_rec(c::ColNameVector) = unwrap_colnames(c)
 
-
 # Is something like this needed?
 # ReproducibleJobs.copy_arg(x::ColNameVector) = ColNameVector(copy_arg(x.v))
-
 
 ReproducibleJobs.copy_nested(f, c::ColNameVector) = f(ColNameVector(ReproducibleJobs.copy_nested(f, c.v)))
 function ReproducibleJobs.visit_nested(f, pred, c::ColNameVector)
@@ -41,8 +35,6 @@ create_table_impl_spec(args::Pair...) = create_spec(create_table_impl, args...; 
 
 create_table_pr(action::Action, args::Pair...) = create_table_impl_spec(action(args)...)
 create_table_pr_spec(args::Pair...) = create_spec(Projectable(create_table_pr), args...)
-
-
 
 
 # These are needed by get_colnames/get_col
@@ -61,68 +53,6 @@ function setup_table(f::TableField, ::typeof(project), spec)
 	onto = get_spec(f, spec.args[1])
 	create_project_spec(onto, spec.args[2:end]...)
 end
-
-
-
-# # WIP - perhaps spec should be unwrapped at an earlier point - perhaps in ReproducibleJobs?
-# setup_table(f::TableField, t::TableFunction{F}, spec) where F = t.f(f, spec.args...; spec.kwargs...) # Should this be ColNames only?
-# setup_table(col::Col, t::ColNamesTableFunction{F}, spec) where F = t.f(col, spec.args...; spec.kwargs...)
-
-
-
-
-
-
-# # WIP - perhaps spec should be unwrapped at an earlier point - perhaps in ReproducibleJobs?
-# function setup_table(::ColNames, t::TableFunction{F}, spec) where F
-# 	@info "setup_table(::ColNames)"
-# 	s = t.f(ColNames(), spec.args...; spec.kwargs...)
-# 	wrap_colnames_spec(s)
-# end
-# setup_table(col::Col, t::TableFunction{F}, spec) where F = t.f(col, spec.args...; spec.kwargs...) # Should this be removed?
-# setup_table(col::Col, t::ColNamesTableFunction{F}, spec) where F = t.f(col, spec.args...; spec.kwargs...)
-
-
-
-
-# # WIP - perhaps spec should be unwrapped at an earlier point - perhaps in ReproducibleJobs?
-# function setup_table(::ColNames, t::TableFunction{F}, spec) where F
-# 	@info "setup_table(::ColNames)"
-
-# 	# sanity checks - we do not expected to come here if we have already computed the ColNameVector
-# 	if length(spec.args)>1
-# 		a = first(spec.args)
-# 		@assert !(a isa ColNameVector)
-# 		@assert !(a isa Spec) || a.f != wrap_colnames
-# 	end
-
-
-# 	s = t.f(ColNames(), spec.args...; spec.kwargs...)
-# 	wrap_colnames_spec(s)
-# end
-# function setup_table(col::Col, t::TableFunction{F}, spec) where F
-# 	@info "hej"
-# 	@show spec.args
-
-# 	# # sanity checks - we only expect to come here after we have computed the ColNameVector
-# 	# @assert length(spec.args)>=1
-# 	# a = first(spec.args)
-# 	# @show typeof(a)
-# 	# @assert a isa ColNameVector || (a isa Spec && a.f == wrap_colnames)
-# 	# Should we @assert that col.name is in the ColNameVector?
-
-
-# 	# sanity checks - we do not expected to come here if we have already computed the ColNameVector
-# 	if length(spec.args)>1
-# 		a = first(spec.args)
-# 		@assert !(a isa ColNameVector)
-# 		@assert !(a isa Spec) || a.f != wrap_colnames
-# 	end
-
-
-# 	t.f(col, spec.args...; spec.kwargs...)
-# 	# t.f(col, spec.args[2:end]...; spec.kwargs...)
-# end
 
 
 
@@ -173,7 +103,6 @@ is_table_spec(::Any) = false
 function is_table_spec(sa::SpecArgs)
 	f = sa.f
 	f isa TableFunction && return true
-	# f isa ColNamesTableFunction && return true
 	f == create_table_impl && return true
 	if f == project
 		onto = sa.args[1]
@@ -187,15 +116,7 @@ is_table_spec(spec::Spec) = is_table_spec(spec.ro.value)
 
 
 function _table_from_colnames(f::F, colnames, args...; kwargs...) where F
-	# @show typeof(colnames)
-	# if colnames isa ReadOnly
-	# 	colnames = colnames.value
-	# end
-	# if colnames isa ColNameVector{<:ReadOnly} # make this nicer?
-	# 	colnames = colnames.v.value
-	# end
 	colnames = unwrap_colnames(colnames)
-
 	cols = (name=>f(Col(name), args...; kwargs...) for name in colnames)
 	create_table_impl_spec(cols...)
 end
@@ -205,39 +126,12 @@ end
 # for dispatch
 setup_table(f::TableField, spec::Spec) = setup_table(f, spec.f, spec)
 
-
-
-# # This evaluates the TableFunction
-# function (d::TableFunction{F})(args...; kwargs...) where F
-# 	# colnames = d.f(ColNames(), args...; kwargs...) # can be a spec or just a list of names
-# 	colnames = wrap_colnames_spec(d.f(ColNames(), args...; kwargs...))
-
-# 	# We need to preprocess once to fetch the colnames.
-# 	# This also means that colnames can be Projected.
-# 	create_spec(ColNamesTableFunction(d.f), fetched(colnames), args...; kwargs...)
-
-# 	# TODO: Should we do this? It's just a small shortcut for when colnames are not a Spec. But it should work fine with projections too.
-# 	# if colnames isa Union{Spec,Job}
-# 	# 	# We need to preprocess once to fetch the colnames
-# 	# 	create_spec(ColNamesTableFunction(d.f), fetched(colnames), args...; kwargs...)
-# 	# else
-# 	# 	# colnames are not a spec, just setup directly
-# 	# 	_table_from_colnames(d.f, colnames, args...; kwargs...)
-# 	# end
-# end
-
-# function (d::ColNamesTableFunction{F})(colnames, args...; kwargs...) where F
-# 	_table_from_colnames(d.f, colnames, args...; kwargs...)
-# end
-
-
-# This evaluates the TableFunction
+# This evaluates the TableFunction - Step 1, figure out colnames
 function (d::TableFunction{F})(args...; kwargs...) where F
 	colnames = wrap_colnames_spec(d.f(ColNames(), args...; kwargs...))
-	# We need to preprocess once to fetch the colnames.
-	# This also means that colnames can be Projected.
 	create_spec(d, fetched(colnames), args...; kwargs...)
 end
+# This evaluates the TableFunction - Step 2, create the table
 function (d::TableFunction{F})(colnames::ColNameVector, args...; kwargs...) where F
 	_table_from_colnames(d.f, colnames, args...; kwargs...)
 end
@@ -268,30 +162,6 @@ function try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_col_pr)}, 
 end
 
 
-
-
-# function project(onto, t::TableFunction, args...; colnames=nothing)
-# 	if colnames === nothing
-# 		# Project the column names
-# 		colnames = fetched(create_project_spec(get_colnames(onto), args...))
-# 		create_project_spec(onto, args...; colnames)
-# 	else
-# 		# if colnames isa ReadOnly
-# 		# 	colnames = colnames.value
-# 		# end
-# 		# if colnames isa ColNameVector{<:ReadOnly} # make this nicer?
-# 		# 	colnames = colnames.v.value
-# 		# end
-# 		colnames = unwrap_colnames(colnames)
-
-# 		# Given the column names, project the columns
-# 		cols = (name=>create_project_spec(get_col(onto, name), args...) for name in colnames)
-# 		create_table_impl_spec(cols...)
-# 	end
-# end
-
-
-
 function project(onto, t::TableFunction, args...)
 	# Project the column names
 	colnames = fetched(create_project_spec(get_colnames(onto), args...))
@@ -299,24 +169,7 @@ function project(onto, t::TableFunction, args...)
 end
 function project(onto, t::TableFunction, colnames::ColNameVector, args...)
 	colnames = unwrap_colnames(colnames)
-
 	# Given the column names, project the columns
 	cols = (name=>create_project_spec(get_col(onto, name), args...) for name in colnames)
 	create_table_impl_spec(cols...)
 end
-
-
-
-
-# function project(onto, t::TableFunction, args...)
-# 	# Project the column names
-# 	colnames = fetched(create_project_spec(get_colnames(onto), args...))
-# 	onto2 = create_spec(ColNamesTableFunction(t.f), onto.args...; onto.kwargs...)
-# 	create_project_spec(onto2, args...; colnames)
-# end
-
-# function project(onto, s::ColNamesTableFunction, args...; colnames)
-# 	# Given the column names, project the columns
-# 	cols = (name=>create_project_spec(get_col(onto, name), args...) for name in colnames)
-# 	create_table_impl_spec(cols...)
-# end
