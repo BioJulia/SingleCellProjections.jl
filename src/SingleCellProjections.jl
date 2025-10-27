@@ -24,6 +24,8 @@ import LinearAlgebra
 using ReproducibleJobs
 using ReproducibleJobs: create_spec, cached, ReadOnly, SpecArgs, ChecksummedFilePath, checksummedfilepath_job, ifelse_spec
 
+using ReadOnlyArrays: ReadOnlyVector
+
 ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVector) = x
 ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVectorModel) = x
 ReproducibleJobs.unmanage_rec(x::SCPCore.ProjectionModel) = x
