@@ -11,7 +11,7 @@ function is_datamatrix_spec(sa::SpecArgs)
 	f == SCPCore.DataMatrix && return true
 	if f == project
 		onto = sa.args[1]
-		return is_datamatrix_spec(onto) # This will only work in general if `onto` has been preprocessed. Otherwise it could be a `Preprocess`. Needs a fix.
+		return is_datamatrix_spec(onto)
 	end
 	# TODO: Are there more cases that should return true?
 	return false
