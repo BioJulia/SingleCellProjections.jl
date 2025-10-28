@@ -72,6 +72,7 @@ module Jobs
 
 	function get_colnames end
 	function get_id_colname end
+	function get_value_colname end
 	function load_csv end
 	function get_columns end
 	function annotation end

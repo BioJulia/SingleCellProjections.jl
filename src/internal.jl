@@ -16,13 +16,17 @@ args2vec_spec(::Type{T}, args...) where T =
 getindex_pr(action, v, ind) = create_spec(getindex, action(v), action(ind); __version=v"0.1.0")
 getindex_spec(v, ind) = create_spec(Projectable(getindex_pr), v, ind)
 
-
 issubset_pr(action, a, b) = create_spec(issubset, action(a), action(b); __version=v"0.1.0")
 issubset_spec(a, b) = create_spec(Projectable(issubset_pr), a, b)
 
 setdiff_pr(action, a, b) = create_spec(setdiff, action(a), action(b); __version=v"0.1.0")
 setdiff_spec(a, b) = create_spec(Projectable(setdiff_pr), a, b)
 
+length_pr(action, x) = create_spec(length, action(x); __version=v"0.1.0")
+length_spec(x) = create_spec(Projectable(length_pr), x)
+
+isequal_pr(action, x, y) = create_spec(isequal, action(x), action(y); __version=v"0.1.0")
+isequal_spec(x, y) = create_spec(Projectable(isequal_pr), x, y)
 
 
 
