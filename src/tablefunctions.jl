@@ -17,15 +17,16 @@ function wrap_colnames(colnames)
 end
 wrap_colnames_spec(colnames) = create_spec(wrap_colnames, colnames; __version=v"0.0.1")
 
+unwrap_colnames(c::ColNameVector{T}) where T<:Vector = c.v
 unwrap_colnames(c::ColNameVector{ReadOnly{T}}) where T<:Vector = ReadOnlyVector(c.v.value)
 ReproducibleJobs.unmanage_rec(c::ColNameVector) = unwrap_colnames(c)
 
 # Is something like this needed?
-# ReproducibleJobs.copy_arg(x::ColNameVector) = ColNameVector(copy_arg(x.v))
+ReproducibleJobs.copy_arg(x::ColNameVector) = ColNameVector(ReproducibleJobs.copy_arg(x.v))
 
 ReproducibleJobs.copy_nested(f, c::ColNameVector) = f(ColNameVector(ReproducibleJobs.copy_nested(f, c.v)))
 function ReproducibleJobs.visit_nested(f, pred, c::ColNameVector)
-	pred(c.v) && visit_nested(f, pred, c.v)
+	pred(c.v) && ReproducibleJobs.visit_nested(f, pred, c.v)
 end
 
 
@@ -65,11 +66,6 @@ function setup_table(f::TableField, t::TableFunction{F}, spec) where F
 		@assert !(a isa Spec) || a.f != wrap_colnames
 	end
 	s = t.f(f, spec.args...; spec.kwargs...)
-	if f isa ColNames
-		wrap_colnames_spec(s)
-	else
-		s
-	end
 end
 
 
@@ -90,8 +86,10 @@ get_col(table_spec, name) = create_spec(Projectable(get_col_pr), table_spec, nam
 get_colnames_spec(x) = create_spec(Preprocess(get_colnames), x)
 Jobs.get_colnames(x) = Job(get_colnames_spec(x))
 
+
+# This should only be used when we know that name is in the ColNames for the table
 get_col_spec(x, name) = create_spec(Preprocess(get_col), x, name)
-Jobs.get_col(x, name) = Job(get_col_spec(x, name))
+# Jobs.get_col(x, name) = Job(get_col_spec(x, name)) # I.e. do not make it publicly available.
 
 get_spec(::ColNames, x) = get_colnames_spec(x)
 get_spec(c::Col, x) = get_col_spec(x, c.name)
@@ -159,7 +157,7 @@ end
 
 function project(onto, t::TableFunction, args...)
 	# Project the column names
-	colnames = fetched(create_project_spec(get_colnames(onto), args...))
+	colnames = fetched(wrap_colnames(create_project_spec(get_colnames(onto), args...)))
 	create_project_spec(onto, colnames, args...)
 end
 function project(onto, t::TableFunction, colnames::ColNameVector, args...)
