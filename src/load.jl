@@ -6,15 +6,35 @@ function load_var_impl(filename)
 end
 load_var_spec(filename) = create_spec(load_var_impl, filename; __version=v"0.1.0")
 
-function load_obs_impl(filename)
+function load_barcodes_impl(filename)
 	@assert filename isa ChecksummedFilePath
 	filename = string(filename)
-	SingleCell10x.read10x_barcodes(filename, DataFrame)
+	SingleCell10x.read10x_barcodes(filename)
 end
-load_obs_spec(filename; kwargs...) = create_spec(load_obs_impl, filename; kwargs..., __version=v"0.1.0")
+load_barcodes_spec(filename; kwargs...) = create_spec(load_barcodes_impl, filename; kwargs..., __version=v"0.1.0")
 
-combine_obs_spec(obs, sample_names; id_col="cell_id", id_delim='_', sample_name_col="sample_name", kwargs...) =
-	cached(create_spec(SCPCore.combine_obs, obs, sample_names; id_col, id_delim, sample_name_col, kwargs..., __version=v"0.2.0")) # TODO: Do we want cache here? Probably.
+
+function combine_obs_impl(obs, sample_names; kwargs...)
+	df = SCPCore.combine_obs(obs, sample_names; kwargs...)
+	CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(df))])
+end
+combine_obs_impl_spec(obs, sample_names; id_col="cell_id", id_delim='_', sample_name_col="sample_name", kwargs...) =
+	create_spec(combine_obs_impl, obs, sample_names; id_col, id_delim, sample_name_col, kwargs..., __version=v"0.3.0")
+
+function combine_obs(::ColNames, obs, sample_names; kwargs...)
+	combine_job = combine_obs_impl_spec(obs, sample_names; kwargs...)
+	cached(combine_job; return_keys=true)
+end
+function combine_obs(c::Col, obs, sample_names; kwargs...)
+	combine_job = combine_obs_impl_spec(obs, sample_names; kwargs...)
+	cached(combine_job, c.name)
+end
+
+combine_obs_spec(obs, sample_names; kwargs...) =
+	create_spec(TableFunction(combine_obs), obs, sample_names; kwargs...)
+
+
+
 
 combine_var_spec(vars; kwargs...) = cached(create_spec(SCPCore.combine_var, vars; kwargs..., __version=v"0.1.0")) # TODO: Do we want cache here? Probably.
 
@@ -53,7 +73,8 @@ function load_counts(f::Union{Mat,Var}, filename_specs; sample_names, prefilter,
 	end
 end
 function load_counts(::Obs, filename_specs; sample_names, prefilter, extra_id_cols)
-	sample_obs_specs = load_obs_spec.(filename_specs)
+	sample_barcodes_specs = load_barcodes_spec.(filename_specs)
+	sample_obs_specs = create_table_impl_spec.("barcode" .=> sample_barcodes_specs)
 	combine_obs_spec(sample_obs_specs, sample_names)
 end
 
