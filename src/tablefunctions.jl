@@ -12,9 +12,7 @@ struct ColNameVector{T} # T should be an AbstractVector or a ReadOnly
 end
 
 
-function wrap_colnames(colnames)
-	ColNameVector(colnames)
-end
+wrap_colnames(colnames) = ColNameVector(colnames)
 wrap_colnames_spec(colnames) = create_spec(wrap_colnames, colnames; __version=v"0.0.1")
 
 unwrap_colnames(c::ColNameVector{T}) where T<:Vector = c.v
@@ -157,7 +155,7 @@ end
 
 function project(onto, t::TableFunction, args...)
 	# Project the column names
-	colnames = fetched(wrap_colnames(create_project_spec(get_colnames(onto), args...)))
+	colnames = fetched(wrap_colnames_spec(create_project_spec(get_colnames(onto), args...)))
 	create_project_spec(onto, colnames, args...)
 end
 function project(onto, t::TableFunction, colnames::ColNameVector, args...)

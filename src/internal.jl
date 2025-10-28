@@ -1,20 +1,35 @@
-# --- Internal checkpoints (asserts at the spec level) -------------------------
-# function is_id_subset(a,b)
-# 	id_col = only(names(a,1))
-# 	@assert only(names(b,1)) == id_col
-# 	@assert size(a,2) == 1
-# 	@assert size(b,2) == 1
+ifelse_pr(action::Action, cond, x, y) = ifelse_spec(action(cond), action(x), action(y))
+ifelse_pr_spec(cond, x, y) = create_spec(Projectable(ifelse_pr), cond, x, y)
 
-# 	issubset(a[!,1],b[!,1])
-# end
-# is_id_subset_spec(a, b) = create_spec(is_id_subset, a, b; __version=v"0.1.0")
 
-# function check_missing_ids_spec(value, ids, ids2)
-# 	cond_spec = is_id_subset_spec(ids2, ids)
-# 	error_spec = "Found missing IDs" # TODO: use spec so we can show names of missing IDs
-# 	ifelse_spec(cond_spec, value, error_spec)
-# 	# value
-# end
+
+args2vec_impl(::Type{T}, args...) where T = T[args...]
+args2vec_pr(action::Action, ::Type{T}, args...) where T =
+	create_spec(args2vec_impl, T, action(args)...; __version=v"0.1.0")
+args2vec_spec(::Type{T}, args...) where T =
+	create_spec(Projectable(args2vec_pr), T, args...)
+
+
+# first_pr(action, v) = create_spec(first, action(v); __version=v"0.1.0")
+# first_spec(v) = create_spec(Projectable(first_pr), v)
+
+getindex_pr(action, v, ind) = create_spec(getindex, action(v), action(ind); __version=v"0.1.0")
+getindex_spec(v, ind) = create_spec(Projectable(getindex_pr), v, ind)
+
+
+issubset_pr(action, a, b) = create_spec(issubset, action(a), action(b); __version=v"0.1.0")
+issubset_spec(a, b) = create_spec(Projectable(issubset_pr), a, b)
+
+setdiff_pr(action, a, b) = create_spec(setdiff, action(a), action(b); __version=v"0.1.0")
+setdiff_spec(a, b) = create_spec(Projectable(setdiff_pr), a, b)
+
+
+
+
+
+
+
+
 
 
 annotation_nrow_impl(df) = size(df,1)

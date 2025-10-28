@@ -1,27 +1,4 @@
-# TODO: Move some of these to a common utility specs
-# args2vec_impl(::Type{T}, args...) where T = T[args...]
-function args2vec_impl(::Type{T}, args...) where T
-	T[args...]
-end
-args2vec_pr(action::Action, ::Type{T}, args...) where T =
-	create_spec(args2vec_impl, T, action(args)...; __version=v"0.1.0")
-args2vec_spec(::Type{T}, args...) where T =
-	create_spec(Projectable(args2vec_pr), T, args...)
-
-
-first_pr(action, v) = create_spec(first, action(v); __version=v"0.1.0")
-first_spec(v) = create_spec(Projectable(first_pr), v)
-
-
-issubset_pr(action, a, b) = create_spec(issubset, action(a), action(b); __version=v"0.1.0")
-issubset_spec(a, b) = create_spec(Projectable(issubset_pr), a, b)
-
-setdiff_pr(action, a, b) = create_spec(setdiff, action(a), action(b); __version=v"0.1.0")
-setdiff_spec(a, b) = create_spec(Projectable(setdiff_pr), a, b)
-
-
-
-get_id_colname_spec(table) = first_spec(get_colnames(table))
+get_id_colname_spec(table) = getindex_spec(get_colnames(table), 1)
 function Jobs.get_id_colname(table)
 	Job(get_id_colname_spec(table))
 end
@@ -31,8 +8,9 @@ end
 
 _get_columns_error(colnames) =
 	throw(ArgumentError("The following column names where not found: $colnames"))
+_get_columns_error_pr(action, colnames) = create_spec(_get_columns_error, action(colnames); __version=v"0.1.0")
 _get_columns_error_spec(colnames) =
-	create_spec(_get_columns_error, colnames; __version=v"0.1.0")
+	create_spec(Projectable(_get_columns_error_pr), colnames)
 
 
 function get_columns(::ColNames, table, colnames...)
@@ -40,7 +18,7 @@ function get_columns(::ColNames, table, colnames...)
 	result = args2vec_spec(String, colnames...)
 	cond = issubset_spec(result, table_colnames)
 	err = _get_columns_error_spec(setdiff_spec(result, table_colnames))
-	ifelse_spec(cond, result, err)
+	ifelse_pr_spec(cond, result, err)
 end
 function get_columns(c::Col, table, colnames...)
 	# Shoule we assert here too? (At the moment, we consider it enough to do it when retrieving the colnames.)
