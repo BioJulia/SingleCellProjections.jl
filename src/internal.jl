@@ -1,17 +1,13 @@
+# WIP - some of these might not be needed.
+
 ifelse_pr(action::Action, cond, x, y) = ifelse_spec(action(cond), action(x), action(y))
 ifelse_pr_spec(cond, x, y) = create_spec(Projectable(ifelse_pr), cond, x, y)
-
-
 
 args2vec_impl(::Type{T}, args...) where T = T[args...]
 args2vec_pr(action::Action, ::Type{T}, args...) where T =
 	create_spec(args2vec_impl, T, action(args)...; __version=v"0.1.0")
 args2vec_spec(::Type{T}, args...) where T =
 	create_spec(Projectable(args2vec_pr), T, args...)
-
-
-# first_pr(action, v) = create_spec(first, action(v); __version=v"0.1.0")
-# first_spec(v) = create_spec(Projectable(first_pr), v)
 
 getindex_pr(action, v, ind) = create_spec(getindex, action(v), action(ind); __version=v"0.1.0")
 getindex_spec(v, ind) = create_spec(Projectable(getindex_pr), v, ind)
@@ -230,6 +226,10 @@ annotation_name_spec(df) = create_spec(Projectable(annotation_name), df)
 hcat_impl(action::Action, args...; kwargs...) =
 	create_spec(hcat, action(args)...; kwargs..., __version=v"0.1.0")
 create_hcat_spec(args...; kwargs...) = create_spec(Projectable(hcat_impl), args...)
+
+# vcat_impl(action::Action, args...; kwargs...) =
+# 	create_spec(vcat, action(args)...; kwargs..., __version=v"0.1.0")
+# create_vcat_spec(args...; kwargs...) = create_spec(Projectable(vcat_impl), args...)
 
 
 

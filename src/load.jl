@@ -14,25 +14,86 @@ end
 load_barcodes_spec(filename; kwargs...) = create_spec(load_barcodes_impl, filename; kwargs..., __version=v"0.1.0")
 
 
-function combine_obs_impl(obs, sample_names; kwargs...)
-	df = SCPCore.combine_obs(obs, sample_names; kwargs...)
+# function combine_obs_impl(obs, sample_names; kwargs...)
+# 	df = SCPCore.combine_obs(obs, sample_names; kwargs...)
+# 	CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(df))])
+# end
+# combine_obs_impl_spec(obs, sample_names; id_col="cell_id", id_delim='_', sample_name_col="sample_name", kwargs...) =
+# 	create_spec(combine_obs_impl, obs, sample_names; id_col, id_delim, sample_name_col, kwargs..., __version=v"0.3.0")
+
+# function combine_obs(::ColNames, obs, sample_names; kwargs...)
+# 	combine_job = combine_obs_impl_spec(obs, sample_names; kwargs...)
+# 	cached(combine_job; return_keys=true)
+# end
+# function combine_obs(c::Col, obs, sample_names; kwargs...)
+# 	combine_job = combine_obs_impl_spec(obs, sample_names; kwargs...)
+# 	cached(combine_job, c.name)
+# end
+
+# combine_obs_spec(obs, sample_names; kwargs...) =
+# 	create_spec(TableFunction(combine_obs), obs, sample_names; kwargs...)
+
+
+
+# # --- TESTING -------------------------------------------------------
+# # Find a better name? It just broadcasts string across the args.
+# combine_cols_impl(args...) = string.(args...)
+# combine_cols_spec(args...) = create_spec(combine_cols_impl, args...; __version=v"0.1.0")
+
+
+# function vcat_tables(tables...; kwargs...)
+# 	df = vcat(tables...; kwargs...)
+# 	CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(df))])
+# end
+# vcat_tables_spec(tables...; kwargs...) = create_spec(vcat_tables, tables...; kwargs..., __version=v"0.1.0")
+
+
+# combine_obs_table(::ColNames, combined) = cached(combined; return_keys=true)
+# combine_obs_table(c::Col, combined) = cached(combined, c.name)
+
+# function combine_obs(filenames, sample_names)
+# 	if sample_names isa ReadOnly # Can we avoid this?
+# 		sample_names = sample_names.value
+# 	end
+
+# 	sample_barcodes_specs = load_barcodes_spec.(filenames)
+# 	sample_id_specs = combine_cols_spec.(sample_names, '_', sample_barcodes_specs)
+# 	# sample_obs_specs = create_table_impl_spec.("cell_id".=>sample_id_specs, "barcode" .=> sample_barcodes_specs)
+# 	sample_obs_specs = create_table_impl_spec.("cell_id".=>sample_id_specs, "sample_name".=>sample_names, "barcode" .=> sample_barcodes_specs)
+# 	combined = vcat_tables_spec(sample_obs_specs...)
+# 	create_spec(TableFunction(combine_obs_table), combined)
+# end
+
+# combine_obs_spec(filenames, sample_names) =
+# 	create_spec(Preprocess(combine_obs), filenames, sample_names)
+# # --- TESTING -------------------------------------------------------
+
+
+# Find a better name? It just broadcasts string across the args.
+combine_cols_impl(args...) = string.(args...)
+combine_cols_spec(args...) = create_spec(combine_cols_impl, args...; __version=v"0.1.0")
+
+
+function vcat_tables(tables...; kwargs...)
+	df = vcat(tables...; kwargs...)
 	CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(df))])
 end
-combine_obs_impl_spec(obs, sample_names; id_col="cell_id", id_delim='_', sample_name_col="sample_name", kwargs...) =
-	create_spec(combine_obs_impl, obs, sample_names; id_col, id_delim, sample_name_col, kwargs..., __version=v"0.3.0")
+vcat_tables_spec(tables...; kwargs...) = create_spec(vcat_tables, tables...; kwargs..., __version=v"0.1.0")
 
-function combine_obs(::ColNames, obs, sample_names; kwargs...)
-	combine_job = combine_obs_impl_spec(obs, sample_names; kwargs...)
-	cached(combine_job; return_keys=true)
+
+function combine_obs(filenames, sample_names)
+	if sample_names isa ReadOnly # Can we avoid this?
+		sample_names = sample_names.value
+	end
+	sample_barcodes_specs = load_barcodes_spec.(filenames)
+	sample_id_specs = combine_cols_spec.(sample_names, '_', sample_barcodes_specs)
+	sample_obs_specs = create_table_impl_spec.("cell_id".=>sample_id_specs, "sample_name".=>sample_names, "barcode" .=> sample_barcodes_specs)
+	combined = vcat_tables_spec(sample_obs_specs...)
+	create_table_impl_spec("cell_id"=>cached(combined,"cell_id"), "sample_name"=>cached(combined,"sample_name"), "barcode"=>cached(combined,"barcode"))
 end
-function combine_obs(c::Col, obs, sample_names; kwargs...)
-	combine_job = combine_obs_impl_spec(obs, sample_names; kwargs...)
-	cached(combine_job, c.name)
-end
 
-combine_obs_spec(obs, sample_names; kwargs...) =
-	create_spec(TableFunction(combine_obs), obs, sample_names; kwargs...)
-
+combine_obs_spec(filenames, sample_names) =
+	create_spec(Preprocess(combine_obs), filenames, sample_names)
 
 
 
@@ -73,9 +134,15 @@ function load_counts(f::Union{Mat,Var}, filename_specs; sample_names, prefilter,
 	end
 end
 function load_counts(::Obs, filename_specs; sample_names, prefilter, extra_id_cols)
-	sample_barcodes_specs = load_barcodes_spec.(filename_specs)
-	sample_obs_specs = create_table_impl_spec.("barcode" .=> sample_barcodes_specs)
-	combine_obs_spec(sample_obs_specs, sample_names)
+	# sample_barcodes_specs = load_barcodes_spec.(filename_specs)
+	# # sample_obs_specs = create_table_impl_spec.("barcode" .=> sample_barcodes_specs)
+	# sample_id_specs = combine_cols_spec.(sample_names, '_' sample_barcodes_specs)
+	# sample_obs_specs = create_table_impl_spec.("barcode" .=> sample_barcodes_specs, "cell_id".=>sample_id_specs)
+	# combined = vcat_tables(sample_obs_specs...)
+
+	# combine_obs_spec(sample_obs_specs, sample_names)
+
+	combine_obs_spec(filename_specs, sample_names)
 end
 
 

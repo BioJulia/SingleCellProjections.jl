@@ -24,7 +24,7 @@ function combine_obs(obs::Vector{DataFrame}, sample_names::Vector{String};
 			insertcols!(o, 2, sample_name_col=>sn)
 		end
 	end
-	vcat(obs..., cols=:union)
+	vcat(obs...; cols=:union)
 end
 
 # WIP.
