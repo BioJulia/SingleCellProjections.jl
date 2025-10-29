@@ -127,12 +127,6 @@ ids_to_indices(action::Action, df, ids) =
 create_ids_to_indices_spec(df, ids) =
 	create_spec(Projectable(ids_to_indices), df, ids)
 
-# # TODO: Use `:` instead of `nothing` and get rid of it at a preprocessing step after projecting
-# annotation_getindex(action::Action, df, ind) =
-# 	create_spec(SCPCore.annotation_getindex, action(df), action(ind); __version=v"0.1.0")
-# create_annotation_getindex_spec(df, ind) =
-# 	create_spec(Projectable(annotation_getindex), df, ind)
-
 annotation_getindex_impl(df, ind) =
 	create_spec(SCPCore.annotation_getindex, df, ind; __version=v"0.1.0")
 annotation_getindex_pre(df, ind) =
@@ -147,13 +141,6 @@ create_annotation_getindex_spec(df, ind) =
 	create_spec(Projectable(annotation_getindex_pr), df, ind)
 
 
-
-# matrix_getindex(action::Action, args...; kwargs...) =
-# 	create_spec(SCPCore.matrix_getindex, action(args)...; action(kwargs)..., __version=v"0.1.0")
-# function create_matrix_getindex_spec(data; kwargs...)
-# 	isempty(setdiff(keys(kwargs), (:var_ind,:obs_ind))) || throw(ArgumentError("Only allowed kwargs are `var_ind` and `obs_ind`, got: $(keys(kwargs))."))
-# 	create_spec(Projectable(matrix_getindex), data; kwargs...)
-# end
 
 
 matrix_getindex_impl(matrix; kwargs...) =
@@ -184,18 +171,8 @@ end
 
 
 
-# TODO: Use `:` instead of `nothing` and get rid of it at a preprocessing step after projecting
-# datamatrix_getindex(::Mat, data; kwargs...) = create_matrix_getindex_spec(get_matrix_spec(data); kwargs...)
 datamatrix_getindex(::Mat, data; kwargs...) =
 	create_matrix_getindex_spec(get_matrix_spec(data); nvar=datamatrix_nvar_spec(data), nobs=datamatrix_nobs_spec(data), kwargs...)
-# function datamatrix_getindex(::Var, data; var_ind=nothing, kwargs...)
-# 	var_spec = get_var_spec(data)
-# 	var_ind === nothing ? var_spec : create_annotation_getindex_spec(var_spec, var_ind)
-# end
-# function datamatrix_getindex(::Obs, data; obs_ind=nothing, kwargs...)
-# 	obs_spec = get_obs_spec(data)
-# 	obs_ind === nothing ? obs_spec : create_annotation_getindex_spec(obs_spec, obs_ind)
-# end
 datamatrix_getindex(::Var, data; var_ind=:, kwargs...) =
 	create_annotation_getindex_spec(get_var_spec(data), var_ind)
 datamatrix_getindex(::Obs, data; obs_ind=:, kwargs...) =
