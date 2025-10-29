@@ -1,10 +1,17 @@
 # TODO: Replace filter.jl with this file.
 
+# find_matching_ids(f, df::DataFrame) =
+# 	select(filter(f, df; view=true), 1)
+
+# find_matching_ids(::Colon, df::DataFrame) =
+# 	select(df, 1; copycols=false) # input is considered read-only, so we don't need to copy
+
+
 find_matching_ids(f, df::DataFrame) =
-	select(filter(f, df; view=true), 1)
+	filter(f, df; view=true)[:,1]
 
 find_matching_ids(::Colon, df::DataFrame) =
-	select(df, 1; copycols=false) # input is considered read-only, so we don't need to copy
+	df[!,1] # input is considered read-only, so we don't need to copy
 
 
 function ids_to_indices(df::DataFrame, ids::DataFrame)

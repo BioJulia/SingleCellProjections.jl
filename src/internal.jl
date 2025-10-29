@@ -19,6 +19,10 @@ issubset_spec(a, b) = create_spec(Projectable(issubset_pr), a, b)
 setdiff_pr(action, a, b) = create_spec(setdiff, action(a), action(b); __version=v"0.1.0")
 setdiff_spec(a, b) = create_spec(Projectable(setdiff_pr), a, b)
 
+intersect_impl_spec(a, b, args...) = create_spec(intersect, a, b, args...; __version=v"0.1.0")
+intersect_pr(action::Action, a, b, args...) = intersect_impl_spec(action(a), action(b), action(args)...)
+intersect_spec(a, b, args...) = create_spec(Projectable(intersect_pr), a, b, args...)
+
 length_pr(action, x) = create_spec(length, action(x); __version=v"0.1.0")
 length_spec(x) = create_spec(Projectable(length_pr), x)
 
@@ -61,6 +65,8 @@ simplify_ind_spec(ind, n) =
 
 
 
+
+
 function intersect_ids_impl(ids::DataFrame, ids2::DataFrame)
 	id_col = only(names(ids,1))
 	@assert only(names(ids2,1)) == id_col
@@ -86,7 +92,7 @@ create_intersect_ids_spec(ids, ids2; kwargs...) =
 # create_get_ids_spec(df) = create_spec(Projectable(get_ids), df)
 
 
-
+# TODO: This should return a create_table_impl with id=>column
 function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 	# TODO: Consider having a simplified path when indexing with :
 	# We just need to handle different project_ids cases properly
@@ -103,7 +109,7 @@ function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 	end
 
 	# TODO: If `f` is a pair, we can subset the columns of df to avoid involving them in the call
-	spec = cached(create_spec(SCPCore.find_matching_ids, f, df; __version=v"0.1.0"))
+	matching_ids = cached(create_spec(SCPCore.find_matching_ids, f, df; __version=v"0.1.1"))
 
 	if project_ids == :intersect && action isa Projection
 		# df = action(df)
@@ -111,10 +117,13 @@ function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 		# ids2 = create_spec(SCPCore.find_matching_ids, Returns(true), df; __version=v"0.1.0")
 		# spec = cached(create_spec(intersect_ids_impl, spec, ids2; __version=v"0.1.0"))
 
-		ids2 = id_column_spec(df)
-		spec = cached(create_spec(intersect_ids_impl, spec, action(ids2); __version=v"0.1.0"))
+		# ids2 = id_column_spec(df)
+		# spec = cached(create_spec(intersect_ids_impl, spec, action(ids2); __version=v"0.1.0"))
+
+		ids2 = action(column_data_spec(df,1))
+		matching_ids = cached(intersect_impl_spec(matching_ids, ids2))
 	end
-	spec
+	create_table_impl_spec(fetched(get_id_colname(df))=>matching_ids)
 end
 
 
