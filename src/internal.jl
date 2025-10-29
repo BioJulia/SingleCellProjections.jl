@@ -32,7 +32,7 @@ isequal_spec(x, y) = create_spec(Projectable(isequal_pr), x, y)
 
 
 
-
+# DEPRECATED use `table_nrow_spec` instead
 annotation_nrow_impl(df) = size(df,1)
 annotation_nrow(action::Action, df) =
 	create_spec(annotation_nrow_impl, action(df); __version=v"0.1.0")
@@ -40,22 +40,22 @@ annotation_nrow_spec(df) =
 	create_spec(Projectable(annotation_nrow), df)
 
 
-# datamatrix_nvar_spec(data) = annotation_nrow_spec(get_var_spec(data))
-# datamatrix_nobs_spec(data) = annotation_nrow_spec(get_obs_spec(data))
-datamatrix_nvar_spec(data) = table_nrow_spec(get_var_spec(data))
-datamatrix_nobs_spec(data) = table_nrow_spec(get_obs_spec(data))
+# nvar_spec(data) = annotation_nrow_spec(get_var_spec(data))
+# nobs_spec(data) = annotation_nrow_spec(get_obs_spec(data))
+
+nvar_spec(data) = table_nrow_spec(get_var_spec(data))
+Jobs.nvar(data) = Job(nvar_spec(data))
+
+nobs_spec(data) = table_nrow_spec(get_obs_spec(data))
+Jobs.nobs(data) = Job(nobs_spec(data))
 
 
 
 
-
-# TESTING
 index_isnoop_spec(ind, n) =
 	create_spec(SCPCore.index_isnoop, ind, n; __version=v"0.0.1")
-# simplify_ind_spec(ind, n) =
-# 	ReproducibleJobs.ifelse_spec(index_isnoop_spec(ind, n), Colon(), ind)
 simplify_ind_spec(ind, n) =
-	ind === Colon() ? Colon() : ReproducibleJobs.ifelse_spec(index_isnoop_spec(ind, n), Colon(), ind) # early out if is already known to be Colon
+	ind === Colon() ? Colon() : ifelse_spec(index_isnoop_spec(ind, n), Colon(), ind) # early out if is already known to be Colon
 
 
 
@@ -80,10 +80,10 @@ create_intersect_ids_spec(ids, ids2; kwargs...) =
 
 
 
-
-get_ids_impl(df) = select(df, 1; copycols=false)
-get_ids(action::Action, df) = create_spec(get_ids_impl, action(df); __version=v"0.1.0")
-create_get_ids_spec(df) = create_spec(Projectable(get_ids), df)
+# # DEPRECATED - Use `id_column_spec(df)` instead
+# get_ids_impl(df) = select(df, 1; copycols=false)
+# get_ids(action::Action, df) = create_spec(get_ids_impl, action(df); __version=v"0.1.0")
+# create_get_ids_spec(df) = create_spec(Projectable(get_ids), df)
 
 
 
@@ -111,8 +111,7 @@ function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 		# ids2 = create_spec(SCPCore.find_matching_ids, Returns(true), df; __version=v"0.1.0")
 		# spec = cached(create_spec(intersect_ids_impl, spec, ids2; __version=v"0.1.0"))
 
-		# ids2 = create_get_ids_spec(df)
-		ids2 = id_column(df)
+		ids2 = id_column_spec(df)
 		spec = cached(create_spec(intersect_ids_impl, spec, action(ids2); __version=v"0.1.0"))
 	end
 	spec
@@ -142,6 +141,8 @@ function annotation_getindex_pr(action::Action, df, ind)
 	ind = simplify_ind_spec(ind, annotation_nrow_spec(df))
 	create_spec(Preprocess(annotation_getindex_pre), df, fetched(ind))
 end
+
+# Deprecated - replace with `table_getindex`
 create_annotation_getindex_spec(df, ind) =
 	create_spec(Projectable(annotation_getindex_pr), df, ind)
 
@@ -177,7 +178,7 @@ end
 
 
 datamatrix_getindex(::Mat, data; kwargs...) =
-	create_matrix_getindex_spec(get_matrix_spec(data); nvar=datamatrix_nvar_spec(data), nobs=datamatrix_nobs_spec(data), kwargs...)
+	create_matrix_getindex_spec(get_matrix_spec(data); nvar=nvar_spec(data), nobs=nobs_spec(data), kwargs...)
 # datamatrix_getindex(::Var, data; var_ind=:, kwargs...) =
 # 	create_annotation_getindex_spec(get_var_spec(data), var_ind)
 # datamatrix_getindex(::Obs, data; obs_ind=:, kwargs...) =
@@ -220,12 +221,12 @@ create_hcat_spec(args...; kwargs...) = create_spec(Projectable(hcat_impl), args.
 
 
 
-# NB: This assumes that the caller knows that `vals` exactly matches the ID column in `df`.
-add_column_impl(df::DataFrame, name, vals) = insertcols(df, name=>vals; copycols=false)
-
-add_column(action::Action, df, name, vals) =
-	create_spec(add_column_impl, action(df), name, action(vals); __version=v"0.1.0")
-create_add_column_spec(df, name, vals) = create_spec(Projectable(add_column), df, name, vals)
+# # DEPRECATED: Use `Jobs.add_column` or `add_column_spec`
+# # NB: This assumes that the caller knows that `vals` exactly matches the ID column in `df`.
+# add_column_impl(df::DataFrame, name, vals) = insertcols(df, name=>vals; copycols=false)
+# add_column(action::Action, df, name, vals) =
+# 	create_spec(add_column_impl, action(df), name, action(vals); __version=v"0.1.0")
+# create_add_column_spec(df, name, vals) = create_spec(Projectable(add_column), df, name, vals)
 
 
 

@@ -11,7 +11,7 @@ function logtransform(f::Union{Mat,Var}, T::DataType, data; var_filter=Returns(t
 	var_ind = prefetched(create_ids_to_indices_spec(var_spec, var_ids))
 
 	if f isa Var
-		create_annotation_getindex_spec(var_spec, var_ind)
+		table_getindex_spec(var_spec, var_ind)
 	else # if f isa Mat
 		matrix_spec = get_matrix_spec(data)
 		create_spec(Projectable(logtransform_matrix), T, matrix_spec; var_ind, kwargs...)
@@ -77,7 +77,7 @@ function scparams(action::Action, matrix, var, var_ids; log_cell_counts)
 		# subset IDs
 		var_ids_proj = cached(create_spec(intersect_ids_impl, var_ids, action(var_ids); __version=v"0.1.0"))
 		var_ind_proj = create_ids_to_indices_spec(var_ids, var_ids_proj) # TODO: Avoid using Projectable here
-		return create_annotation_getindex_spec(params, prefetched(var_ind_proj)) # TODO: Avoid using Projectable here
+		return table_getindex_spec(params, prefetched(var_ind_proj)) # TODO: Avoid using Projectable here
 	end
 end
 create_scparams_spec(matrix, var, var_ids; log_cell_counts) =
@@ -108,7 +108,7 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=Returns(tr
 
 	# min_cells
 	nnz_cells = create_obs_counts_sum_impl_spec(!iszero, matrix_spec, :) # returns vector
-	var_nnz_cells = create_add_column_spec(create_get_ids_spec(var_spec), "nnzCells", nnz_cells)
+	var_nnz_cells = add_column_spec(id_column_spec(var_spec), "nnzCells", nnz_cells)
 	var_ids_min_cells = create_find_matching_ids_spec("nnzCells"=>>=(min_cells), var_nnz_cells; project_ids=:yes)
 	var_ids = create_intersect_ids_spec(var_ids_logcellcounts, var_ids_min_cells)
 
@@ -116,7 +116,7 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=Returns(tr
 
 	var_ind = prefetched(create_ids_to_indices_spec(var_spec, var_ids))
 	if f isa Var
-		var_out = create_annotation_getindex_spec(var_spec, var_ind)
+		var_out = table_getindex_spec(var_spec, var_ind)
 		if annotate
 			var_out = create_hcat_spec(var_out, params_spec; copycols=false)
 		end

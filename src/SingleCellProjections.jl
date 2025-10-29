@@ -38,6 +38,8 @@ module Jobs
 	function get_matrix end
 	function get_var end
 	function get_obs end
+	function nvar end
+	function nobs end
 	function annotate end
 	function annotate_var end
 	function annotate_obs end

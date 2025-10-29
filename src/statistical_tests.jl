@@ -56,7 +56,7 @@ function ftest(data, h1; h0=(), center=true, max_categories=nothing)
 	h0_design = designmatrix_spec(data, h0...; center, extra_args...)
 
 	matrix = get_matrix_spec(data)
-	var_ids = create_get_ids_spec(get_var_spec(data))
+	var_ids = id_column_spec(get_var_spec(data))
 
 	ftest_table_spec(matrix, var_ids, get_matrix_spec(h1_design), get_matrix_spec(h0_design))
 end
@@ -152,7 +152,7 @@ function ttest(data, h1; h0=(), center=true, max_categories=nothing, h1_missing=
 	h0_design = designmatrix_spec(data, h0...; center, extra_args...) # TODO: Use h0_covariate_descriptions and build_design_matrix?
 
 	matrix = get_matrix(data)
-	var_ids = create_get_ids_spec(get_var_spec(data))
+	var_ids = id_column_spec(get_var_spec(data))
 
 	ttest_table_spec(matrix, var_ids, get_matrix_spec(h1_design), h1_scale, get_matrix_spec(h0_design))
 end
