@@ -24,13 +24,12 @@ end
 
 
 
-
-
+get_colnames_impl(table) = names(table)
 function get_colnames_pre(table)
 	if is_create_table_spec(table)
 		return first.(table.args)
 	else
-		error("Not implemented")
+		return create_spec(get_colnames_impl, table; __version=v"0.1.0")
 	end
 end
 get_colnames_pr(action, table) =
@@ -41,11 +40,12 @@ Jobs.get_colnames(table) = Job(get_colnames_spec(table))
 
 
 
+get_id_colname_impl(table) = only(names(table,1))
 function get_id_colname_pre(table)
 	if is_create_table_spec(table)
 		return first(first(table.args)) # key of first column
 	else
-		error("Not implemented")
+		return create_spec(get_id_colname_impl, table; __version=v"0.1.0")
 	end
 end
 get_id_colname_pr(action, table) =
@@ -55,14 +55,18 @@ get_id_colname_spec(table) = create_spec(Preprocess(get_id_colname), table)
 Jobs.get_id_colname(table) = Job(get_id_colname_spec(table))
 
 
-
+function get_value_colname_impl(table)
+	len = ncol(table)
+	len == 2 || throw(ArgumentError("Expected annotation to have exactly two columns, but found $len columns."))
+	only(names(table,2))
+end
 function get_value_colname_pre(table)
 	if is_create_table_spec(table)
 		len = length(table.args)
 		len == 2 || throw(ArgumentError("Expected annotation to have exactly two columns, but found $len columns."))
 		return first(table.args[2]) # key of second column
 	else
-		error("Not implemented")
+		return create_spec(get_value_colname_impl, table; __version=v"0.1.0")
 	end
 end
 get_value_colname_pr(action, table) =
@@ -73,6 +77,7 @@ Jobs.get_value_colname(table) = Job(get_value_colname_spec(table))
 
 
 
+get_columns_impl(table, colnames::String...) = select(table, [colnames...])
 function get_columns_pre(table, colnames::String...)
 	if is_create_table_spec(table)
 		table_colnames = first.(table.args)
@@ -80,7 +85,7 @@ function get_columns_pre(table, colnames::String...)
 		any(isnothing, ind) && throw(ArgumentError("The following column names where not found: $(setdiff(colnames, table_colnames))"))
 		create_table_impl_spec(table.args[ind]...)
 	else
-		error("Not implemented")
+		return create_spec(get_columns_impl, table, colnames...; __version=v"0.1.0")
 	end
 end
 get_columns_pr(action, table, colnames::String...) =
