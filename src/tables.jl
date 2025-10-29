@@ -131,9 +131,42 @@ Jobs.column_data(table, col) = Job(column_data_spec(table, col))
 
 
 
+
 table_nrow(table) = length_spec(column_data_spec(table,1))
 table_nrow_spec(table) = create_spec(Preprocess(table_nrow), table)
 Jobs.table_nrow(table) = Job(table_nrow_spec(table))
+
+
+
+function intersect_ids_impl(a, b)
+	ncol(a) != 1 && throw(ArgumentError("Expected `a` to have exactly one column."))
+	ncol(b) != 1 && throw(ArgumentError("Expected `b` to have exactly one column."))
+	a_name = only(names(a,1))
+	b_name = only(names(b,1))
+	a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
+	DataFrame(a_name => intersect(a[!,1], b[!,1]))
+end
+function intersect_ids_pre(a, b)
+	if is_create_table_spec(a) && is_create_table_spec(b)
+		length(a.args) != 1 && throw(ArgumentError("Expected `a` to have exactly one column."))
+		length(b.args) != 1 && throw(ArgumentError("Expected `b` to have exactly one column."))
+
+		a_name,a_values = a.args[1]
+		b_name,b_values = b.args[1]
+		a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
+
+		values = intersect_impl_spec(a_values, b_values)
+		create_table_impl_spec(a_name=>values)
+	else
+		return create_spec(intersect_ids_impl, a, b; __version=v"0.1.0")
+	end
+end
+intersect_ids_pr(action, a, b) =
+	create_spec(Preprocess(intersect_ids_pre), forwarded_to_table(action(a)), forwarded_to_table(action(b)))
+intersect_ids(a, b) = create_spec(Projectable(intersect_ids_pr), a, b)
+intersect_ids_spec(a, b) = create_spec(Preprocess(intersect_ids), a, b)
+# Jobs.intersect_ids(a, b) = Job(intersect_ids_spec(a, b)) # Nah, probably shouldn't be public
+
 
 
 

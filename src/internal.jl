@@ -67,32 +67,7 @@ simplify_ind_spec(ind, n) =
 
 
 
-function intersect_ids_impl(ids::DataFrame, ids2::DataFrame)
-	id_col = only(names(ids,1))
-	@assert only(names(ids2,1)) == id_col
-	@assert size(ids,2) == 1
-	@assert size(ids2,2) == 1
-	DataFrame(id_col => intersect(ids[!,1],ids2[!,1]))
-end
 
-function intersect_ids(action::Action, ids, ids2; fix_first=true, fix_second=false)
-	ids = fix_first ? ids : action(ids)
-	ids2 = fix_second ? ids2 : action(ids2)
-	ids === ids2 && return ids
-	create_spec(intersect_ids_impl, ids, ids2; __version=v"0.1.0")
-end
-create_intersect_ids_spec(ids, ids2; kwargs...) =
-	create_spec(Projectable(intersect_ids), ids, ids2; kwargs...)
-
-
-
-# # DEPRECATED - Use `id_column_spec(df)` instead
-# get_ids_impl(df) = select(df, 1; copycols=false)
-# get_ids(action::Action, df) = create_spec(get_ids_impl, action(df); __version=v"0.1.0")
-# create_get_ids_spec(df) = create_spec(Projectable(get_ids), df)
-
-
-# TODO: This should return a create_table_impl with id=>column
 function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 	# TODO: Consider having a simplified path when indexing with :
 	# We just need to handle different project_ids cases properly
@@ -101,7 +76,6 @@ function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 	#	- or return the get_id_spec? feels wasteful to call find_matching_ids
 	# otherwise do what we do now
 
-
 	@assert project_ids in (:no, :yes, :intersect)
 	if project_ids == :no
 		f = action(f)
@@ -109,7 +83,8 @@ function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 	end
 
 	# TODO: If `f` is a pair, we can subset the columns of df to avoid involving them in the call
-	matching_ids = cached(create_spec(SCPCore.find_matching_ids, f, df; __version=v"0.1.1"))
+	ind = cached(create_spec(SCPCore.find_matching_ind, f, df; __version=v"0.1.2"))
+	matching_ids = table_getindex_spec(id_column_spec(df), ind)
 
 	if project_ids == :intersect && action isa Projection
 		# df = action(df)
@@ -120,10 +95,13 @@ function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 		# ids2 = id_column_spec(df)
 		# spec = cached(create_spec(intersect_ids_impl, spec, action(ids2); __version=v"0.1.0"))
 
-		ids2 = action(column_data_spec(df,1))
-		matching_ids = cached(intersect_impl_spec(matching_ids, ids2))
+		# ids2 = action(column_data_spec(df,1))
+		# matching_ids = cached(intersect_impl_spec(matching_ids, ids2))
+
+		ids2 = action(id_column_spec(df))
+		matching_ids = cached(intersect_ids_spec(matching_ids, ids2)) # Use order from unprojected
 	end
-	create_table_impl_spec(fetched(get_id_colname(df))=>matching_ids)
+	matching_ids
 end
 
 

@@ -45,7 +45,7 @@ function logcellcounts(action::Action, X, var, var_ids; project_ids=:intersect)
 	if project_ids == :no
 		var_ids2 = action(var_ids)
 	elseif project_ids == :intersect
-		var_ids2 = action(create_intersect_ids_spec(var_ids, var_ids))
+		var_ids2 = intersect_ids_spec(var_ids, action(var_ids)) # Use order from unprojected
 	else#if project_ids == :yes
 		vard_ids2 = var_ids
 	end
@@ -57,6 +57,7 @@ create_logcellcounts_spec(X, var, var_ids; kwargs...) =
 	create_spec(Projectable(logcellcounts), X, var, var_ids; kwargs...)
 
 
+# TODO: return CompoundResult
 function scparams_impl(matrix; var_ind, log_cell_counts)
 	feature_mask = falses(size(matrix,1))
 	feature_mask[var_ind] .= true
@@ -75,7 +76,7 @@ function scparams(action::Action, matrix, var, var_ids; log_cell_counts)
 		return params
 	else#if actions is Projection
 		# subset IDs
-		var_ids_proj = cached(create_spec(intersect_ids_impl, var_ids, action(var_ids); __version=v"0.1.0"))
+		var_ids_proj = cached(intersect_ids_spec(var_ids, action(var_ids))) # Use order from unprojected
 		var_ind_proj = create_ids_to_indices_spec(var_ids, var_ids_proj) # TODO: Avoid using Projectable here
 		return table_getindex_spec(params, prefetched(var_ind_proj)) # TODO: Avoid using Projectable here
 	end
@@ -110,7 +111,7 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=Returns(tr
 	nnz_cells = create_obs_counts_sum_impl_spec(!iszero, matrix_spec, :) # returns vector
 	var_nnz_cells = add_column_spec(id_column_spec(var_spec), "nnzCells", nnz_cells)
 	var_ids_min_cells = create_find_matching_ids_spec("nnzCells"=>>=(min_cells), var_nnz_cells; project_ids=:yes)
-	var_ids = create_intersect_ids_spec(var_ids_logcellcounts, var_ids_min_cells)
+	var_ids = intersect_ids_spec(var_ids_logcellcounts, var_ids_min_cells)
 
 	params_spec = create_scparams_spec(matrix_spec, var_spec, var_ids; log_cell_counts)
 
