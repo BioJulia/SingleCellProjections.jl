@@ -1,23 +1,19 @@
-# _to_string_pair((k,v)::Pair{K,V}) where {K,V} = convert(String,k)=>v
-
 # NB: Column names here are fixed and expected to be strings.
 create_table_impl(args::Pair{String,<:Any}...) = DataFrame(args...)
-# create_table_impl_spec(args::Pair...) = create_spec(create_table_impl, _to_string_pair.(args)...; __version=v"0.0.1")
 create_table_impl_spec(args...) = create_spec(create_table_impl, args...; __version=v"0.0.1")
 
 create_table_pr(action::Action, args::Pair{String,<:Any}...) = create_table_impl_spec(action(args)...)
-# create_table_spec(args::Pair...) = create_spec(Projectable(create_table_pr), _to_string_pair.(args)...)
 create_table_spec(args...) = create_spec(Projectable(create_table_pr), args...)
 
 
 
-function table_from_compound_result(colnames, compound_result)
+function table_from_compound_result(compound_result, colnames)
 	cols = (name=>cached(compound_result, name) for name in colnames)
 	create_table_impl_spec(cols...)
 end
 function table_from_compound_result(compound_result)
 	colnames = fetched(cached(compound_result; return_keys=true))
-	create_spec(Preprocess(table_from_compound_result), colnames, compound_result)
+	create_spec(Preprocess(table_from_compound_result), compound_result, colnames)
 end
 
 

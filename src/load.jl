@@ -37,7 +37,7 @@ function combine_obs(filenames, sample_names)
 	                                           "barcode" .=> sample_barcodes_specs)
 	combined = vcat_tables_spec(sample_obs_specs...)
 
-	table_from_compound_result(["cell_id", "sample_name", "barcode"], combined)
+	table_from_compound_result(combined, ["cell_id", "sample_name", "barcode"])
 end
 
 combine_obs_spec(filenames, sample_names) =
