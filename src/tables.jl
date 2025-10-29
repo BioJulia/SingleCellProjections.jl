@@ -11,6 +11,18 @@ create_table_spec(args...) = create_spec(Projectable(create_table_pr), args...)
 
 
 
+function table_from_compound_result(colnames, compound_result)
+	cols = (name=>cached(compound_result, name) for name in colnames)
+	create_table_impl_spec(cols...)
+end
+function table_from_compound_result_spec(compound_result)
+	colnames = fetched(cached(compound_result; return_keys=true))
+	create_spec(Preprocess(table_from_compound_result), colnames, compound_result)
+end
+
+
+
+
 # TODO: We see a common pattern in all these functions
 #       And there will be other functions than create_table_* to handle.
 #       So design some helper functions for e.g. extracting colnames from a "Table" spec.

@@ -87,17 +87,33 @@ function combine_obs(filenames, sample_names)
 	end
 	sample_barcodes_specs = load_barcodes_spec.(filenames)
 	sample_id_specs = combine_cols_spec.(sample_names, '_', sample_barcodes_specs)
-	sample_obs_specs = create_table_impl_spec.("cell_id".=>sample_id_specs, "sample_name".=>sample_names, "barcode" .=> sample_barcodes_specs)
+	sample_obs_specs = create_table_impl_spec.("cell_id" .=> sample_id_specs,
+	                                           "sample_name" .=> sample_names,
+	                                           "barcode" .=> sample_barcodes_specs)
 	combined = vcat_tables_spec(sample_obs_specs...)
-	create_table_impl_spec("cell_id"=>cached(combined,"cell_id"), "sample_name"=>cached(combined,"sample_name"), "barcode"=>cached(combined,"barcode"))
+
+	table_from_compound_result(["cell_id", "sample_name", "barcode"], combined)
 end
 
 combine_obs_spec(filenames, sample_names) =
 	create_spec(Preprocess(combine_obs), filenames, sample_names)
 
 
+function combine_var_impl(vars; kwargs...)
+	df = SCPCore.combine_var(vars; kwargs...)
+	CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(df))])
+end
 
-combine_var_spec(vars; kwargs...) = cached(create_spec(SCPCore.combine_var, vars; kwargs..., __version=v"0.1.0")) # TODO: Do we want cache here? Probably.
+
+function combine_var(vars; kwargs...)
+	combined = create_spec(combine_var_impl, vars; kwargs..., __version=v"0.1.0")
+	table_from_compound_result(combined)
+end
+
+
+combine_var_spec(vars; kwargs...) =
+	create_spec(Preprocess(combine_var), vars; kwargs...)
+
 
 sample_var_indices_spec(sample_var, var; kwargs...) =
 	cached(create_spec(SCPCore.sample_var_indices, sample_var, var; kwargs..., __version=v"0.1.0"))

@@ -3,7 +3,7 @@ module SingleCellProjectionsCSVExt
 using ReproducibleJobs
 using ReproducibleJobs: create_spec, cached, CompoundResult
 using SingleCellProjections
-using SingleCellProjections: Projectable, Action, create_table_impl_spec
+using SingleCellProjections: Projectable, Action, table_from_compound_result
 # using SingleCellProjections: Projectable, Action, TableFunction, TableField, ColNames, Col, create_table_impl # old
 
 using DataFrames
@@ -25,15 +25,19 @@ parse_csv_spec(filepath; delim) =
 	create_spec(parse_csv_impl, filepath; delim, __version=v"0.0.3")
 
 
-function load_csv_from_colnames(colnames, parsed)
-	cols = (name=>cached(parsed, name) for name in colnames)
-	create_table_impl_spec(cols...)
-end
+# function load_csv_from_colnames(colnames, parsed)
+# 	cols = (name=>cached(parsed, name) for name in colnames)
+# 	create_table_impl_spec(cols...)
+# end
 
+# function load_csv(filepath; delim=_auto_delim(filepath), kwargs...)
+# 	parsed = parse_csv_spec(filepath; delim)
+# 	colnames = fetched(cached(parsed; return_keys=true))
+# 	create_spec(Preprocess(load_csv_from_colnames), colnames, parsed)
+# end
 function load_csv(filepath; delim=_auto_delim(filepath), kwargs...)
 	parsed = parse_csv_spec(filepath; delim)
-	colnames = fetched(cached(parsed; return_keys=true))
-	create_spec(Preprocess(load_csv_from_colnames), colnames, parsed)
+	table_from_compound_result(parsed)
 end
 
 
