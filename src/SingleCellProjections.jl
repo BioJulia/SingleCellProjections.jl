@@ -41,6 +41,8 @@ module Jobs
 	function annotate end
 	function annotate_var end
 	function annotate_obs end
+	function add_var_column end
+	function add_obs_column end
 	function var_counts_fraction end
 	function var_counts_sum end
 	function obs_counts_fraction end
@@ -74,6 +76,7 @@ module Jobs
 	function get_id_colname end
 	function get_value_colname end
 	function get_columns end
+	function id_column end
 	function annotation end
 	function column_data end
 	function table_nrow end

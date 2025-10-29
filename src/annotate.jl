@@ -34,6 +34,21 @@ Jobs.annotate(data, var_df, obs_df; kwargs...) =
 
 
 
+add_var_column(f::Union{Mat,Obs}, data, name, column) = get_spec(f, data)
+add_var_column(::Var, data, name, column) = add_column_spec(get_var_spec(data), name, column)
+Jobs.add_var_column(data, name, column) =
+	Job(create_spec(DataMatrixFunction(add_var_column), data, name, column))
+
+add_obs_column(f::Union{Mat,Var}, data, name, column) = get_spec(f, data)
+add_obs_column(::Obs, data, name, column) = add_column_spec(get_obs_spec(data), name, column)
+Jobs.add_obs_column(data, name, column) =
+	Job(create_spec(DataMatrixFunction(add_obs_column), data, name, column))
+
+
+
+
+
+
 var_counts_fraction_impl(action::Action, counts, sub_ind, tot_ind) =
 	cached(create_spec(SCPCore.counts_fraction, action(counts), action(sub_ind), action(tot_ind); dims=1, __version=v"0.1.0"))
 create_var_counts_fraction_impl_spec(counts, sub_ind, tot_ind) = create_spec(Projectable(var_counts_fraction_impl), counts, sub_ind, tot_ind)

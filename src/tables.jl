@@ -96,6 +96,10 @@ Jobs.get_columns(table, colname1, colnames...) = Job(get_columns_spec(table, col
 
 
 
+id_column(table) = get_columns_spec(table, fetched(get_id_colname_spec(table))) # TODO: Use 1 as index instead?
+id_column_spec(table) = create_spec(Preprocess(id_column), table)
+Jobs.id_column(table) = Job(id_column_spec(table))
+
 annotation(table, colname) = get_columns_spec(table, fetched(get_id_colname_spec(table)), colname)
 annotation_spec(table, colname) = create_spec(Preprocess(annotation), table, colname)
 Jobs.annotation(table, colname) = Job(annotation_spec(table, colname))
@@ -133,10 +137,24 @@ Jobs.table_nrow(table) = Job(table_nrow_spec(table))
 
 
 
+_add_column_length_error(n1, n2, name) = throw(ArgumentError("Expected column \"$name\" to have length $n1, but got $n2."))
+_add_column_length_error_spec(n1, n2, name) = create_spec(_add_column_length_error, n1, n2, name)
+
 add_column_impl(table, name, column) = hcat(table, DataFrame(name=>column; copycols=false); copycols=false)
 function add_column_pre(table, name, column)
 	if is_create_table_spec(table)
-		return create_table_impl_spec(table.args..., name=>column)
+		# Check that there is no column with that name
+		if name in (k for (k,_) in table.args)
+			throw(ArgumentError("A column with the name \"$name\" already exists."))
+		end
+
+		result = create_table_impl_spec(table.args..., name=>column)
+
+		# Check that the length of the new column matches the old
+		n1 = table_nrow_spec(table)
+		n2 = length_spec(column)
+		cond = isequal_spec(n1, n2)
+		return ifelse_spec(cond, result, _add_column_length_error_spec(n1,n2,name))
 	else
 		return create_spec(add_column_impl, table, col; __version=v"0.1.0")
 	end

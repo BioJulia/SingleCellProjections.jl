@@ -40,8 +40,10 @@ annotation_nrow_spec(df) =
 	create_spec(Projectable(annotation_nrow), df)
 
 
-datamatrix_nvar_spec(data) = annotation_nrow_spec(get_var_spec(data))
-datamatrix_nobs_spec(data) = annotation_nrow_spec(get_obs_spec(data))
+# datamatrix_nvar_spec(data) = annotation_nrow_spec(get_var_spec(data))
+# datamatrix_nobs_spec(data) = annotation_nrow_spec(get_obs_spec(data))
+datamatrix_nvar_spec(data) = table_nrow_spec(get_var_spec(data))
+datamatrix_nobs_spec(data) = table_nrow_spec(get_obs_spec(data))
 
 
 
@@ -99,6 +101,8 @@ function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 		f = action(f)
 		df = action(df)
 	end
+
+	# TODO: If `f` is a pair, we can subset the columns of df to avoid involving them in the call
 	spec = cached(create_spec(SCPCore.find_matching_ids, f, df; __version=v"0.1.0"))
 
 	if project_ids == :intersect && action isa Projection
@@ -107,7 +111,8 @@ function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 		# ids2 = create_spec(SCPCore.find_matching_ids, Returns(true), df; __version=v"0.1.0")
 		# spec = cached(create_spec(intersect_ids_impl, spec, ids2; __version=v"0.1.0"))
 
-		ids2 = create_get_ids_spec(df)
+		# ids2 = create_get_ids_spec(df)
+		ids2 = id_column(df)
 		spec = cached(create_spec(intersect_ids_impl, spec, action(ids2); __version=v"0.1.0"))
 	end
 	spec
@@ -173,10 +178,14 @@ end
 
 datamatrix_getindex(::Mat, data; kwargs...) =
 	create_matrix_getindex_spec(get_matrix_spec(data); nvar=datamatrix_nvar_spec(data), nobs=datamatrix_nobs_spec(data), kwargs...)
+# datamatrix_getindex(::Var, data; var_ind=:, kwargs...) =
+# 	create_annotation_getindex_spec(get_var_spec(data), var_ind)
+# datamatrix_getindex(::Obs, data; obs_ind=:, kwargs...) =
+# 	create_annotation_getindex_spec(get_obs_spec(data), obs_ind)
 datamatrix_getindex(::Var, data; var_ind=:, kwargs...) =
-	create_annotation_getindex_spec(get_var_spec(data), var_ind)
+	table_getindex_spec(get_var_spec(data), var_ind)
 datamatrix_getindex(::Obs, data; obs_ind=:, kwargs...) =
-	create_annotation_getindex_spec(get_obs_spec(data), obs_ind)
+	table_getindex_spec(get_obs_spec(data), obs_ind)
 
 
 create_datamatrix_getindex_spec(data; kwargs...) =
