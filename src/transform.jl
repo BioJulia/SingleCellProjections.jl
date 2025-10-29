@@ -57,20 +57,21 @@ create_logcellcounts_spec(X, var, var_ids; kwargs...) =
 	create_spec(Projectable(logcellcounts), X, var, var_ids; kwargs...)
 
 
-# TODO: return CompoundResult
 function scparams_impl(matrix; var_ind, log_cell_counts)
 	feature_mask = falses(size(matrix,1))
 	feature_mask[var_ind] .= true
-	DataFrame(SCTransform.compute_scparams(matrix; log_cell_counts, feature_mask))
+	df = DataFrame(SCTransform.compute_scparams(matrix; log_cell_counts, feature_mask))
+	CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(df))])
 end
 create_scparams_impl_spec(matrix; var_ind, log_cell_counts) =
-	cached(create_spec(scparams_impl, matrix; var_ind=prefetched(var_ind), log_cell_counts, __version=v"0.1.0"))
+	create_spec(scparams_impl, matrix; var_ind=prefetched(var_ind), log_cell_counts, __version=v"0.1.1")
 
 
 function scparams(action::Action, matrix, var, var_ids; log_cell_counts)
 	# The inference is always done for the "eval" case
 	var_ind = create_ids_to_indices_spec(var, var_ids) # TODO: Avoid using Projectable here
 	params = create_scparams_impl_spec(matrix; var_ind, log_cell_counts) # DataFrame, but without IDs
+	params = table_from_compound_result(params)
 
 	if action isa Eval
 		return params
