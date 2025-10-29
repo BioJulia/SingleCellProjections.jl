@@ -1,6 +1,6 @@
 # NB: Column names here are fixed and expected to be strings.
-create_table_impl(args::Pair{String,<:Any}...) = DataFrame(args...)
-create_table_impl_spec(args...) = create_spec(create_table_impl, args...; __version=v"0.0.1")
+create_table_impl(args::Pair{String,<:Any}...) = DataFrame(args...; copycols=false)
+create_table_impl_spec(args...) = create_spec(create_table_impl, args...; __version=v"0.1.0")
 
 create_table_pr(action::Action, args::Pair{String,<:Any}...) = create_table_impl_spec(action(args)...)
 create_table_spec(args...) = create_spec(Projectable(create_table_pr), args...)
@@ -99,3 +99,50 @@ Jobs.get_columns(table, colname1, colnames...) = Job(get_columns_spec(table, col
 annotation(table, colname) = get_columns_spec(table, fetched(get_id_colname_spec(table)), colname)
 annotation_spec(table, colname) = create_spec(Preprocess(annotation), table, colname)
 Jobs.annotation(table, colname) = Job(annotation_spec(table, colname))
+
+
+
+_col_ind(::Any, col::Integer) = col
+function _col_ind(table, col::String)
+	i = findfirst(p->isequal(p[1], col), table.args)
+	i === nothing && throw(KeyError(col))
+	i
+end
+
+column_data_impl(table, col) = table[!,col]
+function column_data_pre(table, col)
+	if is_create_table_spec(table)
+		i = _col_ind(table, col)
+		return table.args[i][2]
+	else
+		return create_spec(column_data_impl, table, col; __version=v"0.1.0")
+	end
+end
+column_data_pr(action, table, col) =
+	create_spec(Preprocess(column_data_pre), forwarded_to_table(action(table)), col)
+column_data(table, col) = create_spec(Projectable(column_data_pr), table, col)
+column_data_spec(table, col) = create_spec(Preprocess(column_data), table, col)
+Jobs.column_data(table, col) = Job(column_data_spec(table, col))
+
+
+
+
+table_nrow(table) = length_spec(column_data_spec(table,1))
+table_nrow_spec(table) = create_spec(Preprocess(table_nrow), table)
+Jobs.table_nrow(table) = Job(table_nrow_spec(table))
+
+
+
+add_column_impl(table, name, column) = hcat(table, DataFrame(name=>column; copycols=false); copycols=false)
+function add_column_pre(table, name, column)
+	if is_create_table_spec(table)
+		return create_table_impl_spec(table.args..., name=>column)
+	else
+		return create_spec(add_column_impl, table, col; __version=v"0.1.0")
+	end
+end
+add_column_pr(action, table, name, column) =
+	create_spec(Preprocess(add_column_pre), forwarded_to_table(action(table)), name, action(column))
+add_column(table, name, column) = create_spec(Projectable(add_column_pr), table, name, column)
+add_column_spec(table, name, column) = create_spec(Preprocess(add_column), table, name, column)
+Jobs.add_column(table, name, column) = Job(add_column_spec(table, name, column))
