@@ -32,12 +32,12 @@ isequal_spec(x, y) = create_spec(Projectable(isequal_pr), x, y)
 
 
 
-# DEPRECATED use `table_nrow_spec` instead
-annotation_nrow_impl(df) = size(df,1)
-annotation_nrow(action::Action, df) =
-	create_spec(annotation_nrow_impl, action(df); __version=v"0.1.0")
-annotation_nrow_spec(df) =
-	create_spec(Projectable(annotation_nrow), df)
+# # DEPRECATED use `table_nrow_spec` instead
+# annotation_nrow_impl(df) = size(df,1)
+# annotation_nrow(action::Action, df) =
+# 	create_spec(annotation_nrow_impl, action(df); __version=v"0.1.0")
+# annotation_nrow_spec(df) =
+# 	create_spec(Projectable(annotation_nrow), df)
 
 
 # nvar_spec(data) = annotation_nrow_spec(get_var_spec(data))
@@ -131,20 +131,20 @@ ids_to_indices(action::Action, df, ids) =
 create_ids_to_indices_spec(df, ids) =
 	create_spec(Projectable(ids_to_indices), df, ids)
 
-annotation_getindex_impl(df, ind) =
-	create_spec(SCPCore.annotation_getindex, df, ind; __version=v"0.1.0")
-annotation_getindex_pre(df, ind) =
-	ind === Colon() ? df : annotation_getindex_impl(df, ind)
-function annotation_getindex_pr(action::Action, df, ind)
-	df = action(df)
-	ind = action(ind)
-	ind = simplify_ind_spec(ind, annotation_nrow_spec(df))
-	create_spec(Preprocess(annotation_getindex_pre), df, fetched(ind))
-end
+# annotation_getindex_impl(df, ind) =
+# 	create_spec(SCPCore.annotation_getindex, df, ind; __version=v"0.1.0")
+# annotation_getindex_pre(df, ind) =
+# 	ind === Colon() ? df : annotation_getindex_impl(df, ind)
+# function annotation_getindex_pr(action::Action, df, ind)
+# 	df = action(df)
+# 	ind = action(ind)
+# 	ind = simplify_ind_spec(ind, annotation_nrow_spec(df))
+# 	create_spec(Preprocess(annotation_getindex_pre), df, fetched(ind))
+# end
 
-# Deprecated - replace with `table_getindex`
-create_annotation_getindex_spec(df, ind) =
-	create_spec(Projectable(annotation_getindex_pr), df, ind)
+# # Deprecated - replace with `table_getindex`
+# create_annotation_getindex_spec(df, ind) =
+# 	create_spec(Projectable(annotation_getindex_pr), df, ind)
 
 
 
@@ -200,7 +200,7 @@ create_extract_annotation_spec(df, name) =
 	create_spec(Projectable(extract_annotation), df, name)
 
 
-
+# DEPRECATED: Use `get_value_colname_spec` instead
 function annotation_name_impl(df)
 	@assert ncol(df)==2
 	only(names(df, 2))

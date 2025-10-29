@@ -84,8 +84,10 @@ value_vector2(action::Action, model, data) =
 value_vector_spec2(model, data) =
 	create_spec(Projectable(value_vector2), model, data)
 
+# _value_vector_data_spec(obs, ::Any, ::SCPCore.InterceptCovariateDesc) =
+# 	annotation_nrow_spec(obs) # Special case for intercept, just the number of rows
 _value_vector_data_spec(obs, ::Any, ::SCPCore.InterceptCovariateDesc) =
-	annotation_nrow_spec(obs) # Special case for intercept, just the number of rows
+	table_nrow_spec(obs) # Special case for intercept, just the number of rows
 _value_vector_data_spec(obs, column, ::Any) =
 	create_extract_annotation_spec(obs, column) # the column values
 

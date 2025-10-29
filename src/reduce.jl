@@ -1,8 +1,8 @@
 function actual_nsv_pr(::Action, data, nsv)
 	# NB: nsv is determined completely by the base case, so we do not project
-	nvar = datamatrix_nvar_spec(data)
-	nobs = datamatrix_nobs_spec(data)
-	create_spec(min, nsv, nvar, nobs; __version=v"0.1.0")
+	P = nvar_spec(data)
+	N = nobs_spec(data)
+	create_spec(min, nsv, P, N; __version=v"0.1.0")
 end
 actual_nsv_spec(data, nsv) = create_spec(Projectable(actual_nsv_pr), data, nsv)
 

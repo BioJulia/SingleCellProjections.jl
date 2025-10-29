@@ -33,14 +33,14 @@ end
 ids_to_indices(df::DataFrame, ::Colon) = Colon()
 
 
-# The name is chosen since it is akin to getindex.
-function annotation_getindex(df::DataFrame, ind::Union{<:AbstractVector{Int},Colon})
-	if index_isnoop(ind,size(df,1))
-		df # input is considered read-only, so we don't need to copy
-	else
-		df[ind, :]
-	end
-end
+# # The name is chosen since it is akin to getindex.
+# function annotation_getindex(df::DataFrame, ind::Union{<:AbstractVector{Int},Colon})
+# 	if index_isnoop(ind,size(df,1))
+# 		df # input is considered read-only, so we don't need to copy
+# 	else
+# 		df[ind, :]
+# 	end
+# end
 
 # The name is chosen since it is akin to getindex
 function matrix_getindex(matrix; var_ind::Union{<:AbstractVector{Int},Colon}=:, obs_ind::Union{<:AbstractVector{Int},Colon}=:)

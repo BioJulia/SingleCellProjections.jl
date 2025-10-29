@@ -156,7 +156,7 @@ function add_column_pre(table, name, column)
 		cond = isequal_spec(n1, n2)
 		return ifelse_spec(cond, result, _add_column_length_error_spec(n1,n2,name))
 	else
-		return create_spec(add_column_impl, table, col; __version=v"0.1.0")
+		return create_spec(add_column_impl, table, name, column; __version=v"0.1.0")
 	end
 end
 add_column_pr(action, table, name, column) =
