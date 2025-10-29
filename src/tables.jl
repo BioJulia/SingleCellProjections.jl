@@ -6,6 +6,12 @@ create_table_pr(action::Action, args::Pair{String,<:Any}...) = create_table_impl
 create_table_spec(args...) = create_spec(Projectable(create_table_pr), args...)
 
 
+is_create_table_spec(x::Spec) = x.f in (create_table_pr, create_table_impl)
+is_create_table_spec(::Any) = false
+
+forwarded_to_table(spec) = forwarded(is_create_table_spec, spec)
+
+
 
 function table_from_compound_result(compound_result, colnames)
 	cols = (name=>cached(compound_result, name) for name in colnames)
@@ -19,47 +25,39 @@ end
 
 
 
-# TODO: We see a common pattern in all these functions
-#       And there will be other functions than create_table_* to handle.
-#       So design some helper functions for e.g. extracting colnames from a "Table" spec.
-#       And use those instead.
-#       Handling both the case when the extracted is a Spec and when it is a value.
 
-
-
-function get_colnames_pr(action, table)
-	table = action(table)
-	if table isa Spec && table.f in (create_table_pr, create_table_impl)
+function get_colnames_pre(table)
+	if is_create_table_spec(table)
 		return first.(table.args)
 	else
 		error("Not implemented")
 	end
 end
-
+get_colnames_pr(action, table) =
+	create_spec(Preprocess(get_colnames_pre), forwarded_to_table(action(table)))
 get_colnames(table_spec) = create_spec(Projectable(get_colnames_pr), table_spec)
 get_colnames_spec(table) = create_spec(Preprocess(get_colnames), table)
 Jobs.get_colnames(table) = Job(get_colnames_spec(table))
 
 
 
-function get_id_colname_pr(action, table)
-	table = action(table)
-	if table isa Spec && table.f in (create_table_pr, create_table_impl)
+function get_id_colname_pre(table)
+	if is_create_table_spec(table)
 		return first(first(table.args)) # key of first column
 	else
 		error("Not implemented")
 	end
 end
-
+get_id_colname_pr(action, table) =
+	create_spec(Preprocess(get_id_colname_pre), forwarded_to_table(action(table)))
 get_id_colname(table_spec) = create_spec(Projectable(get_id_colname_pr), table_spec)
 get_id_colname_spec(table) = create_spec(Preprocess(get_id_colname), table)
 Jobs.get_id_colname(table) = Job(get_id_colname_spec(table))
 
 
 
-function get_value_colname_pr(action, table)
-	table = action(table)
-	if table isa Spec && table.f in (create_table_pr, create_table_impl)
+function get_value_colname_pre(table)
+	if is_create_table_spec(table)
 		len = length(table.args)
 		len == 2 || throw(ArgumentError("Expected annotation to have exactly two columns, but found $len columns."))
 		return first(table.args[2]) # key of second column
@@ -67,28 +65,26 @@ function get_value_colname_pr(action, table)
 		error("Not implemented")
 	end
 end
-
+get_value_colname_pr(action, table) =
+	create_spec(Preprocess(get_value_colname_pre), forwarded_to_table(action(table)))
 get_value_colname(table_spec) = create_spec(Projectable(get_value_colname_pr), table_spec)
 get_value_colname_spec(table) = create_spec(Preprocess(get_value_colname), table)
 Jobs.get_value_colname(table) = Job(get_value_colname_spec(table))
 
 
 
-function get_columns_pr(action, table, colnames::String...)
-	table = action(table)
-	if table isa Spec && table.f in (create_table_pr, create_table_impl)
+function get_columns_pre(table, colnames::String...)
+	if is_create_table_spec(table)
 		table_colnames = first.(table.args)
 		ind = indexin(colnames, table_colnames)
-		if any(isnothing, ind)
-			throw(ArgumentError("The following column names where not found: $(setdiff(colnames, table_colnames))"))
-		end
-
+		any(isnothing, ind) && throw(ArgumentError("The following column names where not found: $(setdiff(colnames, table_colnames))"))
 		create_table_impl_spec(table.args[ind]...)
 	else
 		error("Not implemented")
 	end
 end
-
+get_columns_pr(action, table, colnames::String...) =
+	create_spec(Preprocess(get_columns_pre), forwarded_to_table(action(table)), colnames...)
 get_columns(table_spec, colnames...) = create_spec(Projectable(get_columns_pr), table_spec, colnames...)
 get_columns_spec(table, colname1, colnames...) = create_spec(Preprocess(get_columns), table, colname1, colnames...)
 Jobs.get_columns(table, colname1, colnames...) = Job(get_columns_spec(table, colname1, colnames...))
