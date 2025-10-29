@@ -146,3 +146,19 @@ add_column_pr(action, table, name, column) =
 add_column(table, name, column) = create_spec(Projectable(add_column_pr), table, name, column)
 add_column_spec(table, name, column) = create_spec(Preprocess(add_column), table, name, column)
 Jobs.add_column(table, name, column) = Job(add_column_spec(table, name, column))
+
+
+
+table_getindex_impl(table, ind) = table[ind,:]
+function table_getindex_pre(table, ind)
+	if is_create_table_spec(table)
+		cols = (k=>getindex_impl_spec(v, ind) for (k,v) in table.args)
+		return create_table_impl_spec(cols...)
+	else
+		return create_spec(table_getindex_impl, table, ind; __version=v"0.1.0")
+	end
+end
+table_getindex_pr(action, table, ind) =
+	create_spec(Preprocess(table_getindex_pre), forwarded_to_table(action(table)), action(ind))
+table_getindex(table, ind) = create_spec(Projectable(table_getindex_pr), table, ind)
+table_getindex_spec(table, ind) = create_spec(Preprocess(table_getindex), table, ind)

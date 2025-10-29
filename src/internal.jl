@@ -9,7 +9,8 @@ args2vec_pr(action::Action, ::Type{T}, args...) where T =
 args2vec_spec(::Type{T}, args...) where T =
 	create_spec(Projectable(args2vec_pr), T, args...)
 
-getindex_pr(action, v, ind) = create_spec(getindex, action(v), action(ind); __version=v"0.1.0")
+getindex_impl_spec(v, ind) = create_spec(getindex, v, ind; __version=v"0.1.0")
+getindex_pr(action, v, ind) = getindex_impl_spec(action(v), action(ind))
 getindex_spec(v, ind) = create_spec(Projectable(getindex_pr), v, ind)
 
 issubset_pr(action, a, b) = create_spec(issubset, action(a), action(b); __version=v"0.1.0")
