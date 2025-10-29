@@ -36,17 +36,6 @@ isequal_spec(x, y) = create_spec(Projectable(isequal_pr), x, y)
 
 
 
-# # DEPRECATED use `table_nrow_spec` instead
-# annotation_nrow_impl(df) = size(df,1)
-# annotation_nrow(action::Action, df) =
-# 	create_spec(annotation_nrow_impl, action(df); __version=v"0.1.0")
-# annotation_nrow_spec(df) =
-# 	create_spec(Projectable(annotation_nrow), df)
-
-
-# nvar_spec(data) = annotation_nrow_spec(get_var_spec(data))
-# nobs_spec(data) = annotation_nrow_spec(get_obs_spec(data))
-
 nvar_spec(data) = table_nrow_spec(get_var_spec(data))
 Jobs.nvar(data) = Job(nvar_spec(data))
 
@@ -183,18 +172,7 @@ hcat_impl(action::Action, args...; kwargs...) =
 	create_spec(hcat, action(args)...; kwargs..., __version=v"0.1.0")
 create_hcat_spec(args...; kwargs...) = create_spec(Projectable(hcat_impl), args...)
 
-# vcat_impl(action::Action, args...; kwargs...) =
-# 	create_spec(vcat, action(args)...; kwargs..., __version=v"0.1.0")
-# create_vcat_spec(args...; kwargs...) = create_spec(Projectable(vcat_impl), args...)
 
-
-
-# # DEPRECATED: Use `Jobs.add_column` or `add_column_spec`
-# # NB: This assumes that the caller knows that `vals` exactly matches the ID column in `df`.
-# add_column_impl(df::DataFrame, name, vals) = insertcols(df, name=>vals; copycols=false)
-# add_column(action::Action, df, name, vals) =
-# 	create_spec(add_column_impl, action(df), name, action(vals); __version=v"0.1.0")
-# create_add_column_spec(df, name, vals) = create_spec(Projectable(add_column), df, name, vals)
 
 
 
