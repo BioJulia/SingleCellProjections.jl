@@ -118,21 +118,6 @@ ids_to_indices(action::Action, df, ids) =
 create_ids_to_indices_spec(df, ids) =
 	create_spec(Projectable(ids_to_indices), df, ids)
 
-# annotation_getindex_impl(df, ind) =
-# 	create_spec(SCPCore.annotation_getindex, df, ind; __version=v"0.1.0")
-# annotation_getindex_pre(df, ind) =
-# 	ind === Colon() ? df : annotation_getindex_impl(df, ind)
-# function annotation_getindex_pr(action::Action, df, ind)
-# 	df = action(df)
-# 	ind = action(ind)
-# 	ind = simplify_ind_spec(ind, annotation_nrow_spec(df))
-# 	create_spec(Preprocess(annotation_getindex_pre), df, fetched(ind))
-# end
-
-# # Deprecated - replace with `table_getindex`
-# create_annotation_getindex_spec(df, ind) =
-# 	create_spec(Projectable(annotation_getindex_pr), df, ind)
-
 
 
 
@@ -166,10 +151,6 @@ end
 
 datamatrix_getindex(::Mat, data; kwargs...) =
 	create_matrix_getindex_spec(get_matrix_spec(data); nvar=nvar_spec(data), nobs=nobs_spec(data), kwargs...)
-# datamatrix_getindex(::Var, data; var_ind=:, kwargs...) =
-# 	create_annotation_getindex_spec(get_var_spec(data), var_ind)
-# datamatrix_getindex(::Obs, data; obs_ind=:, kwargs...) =
-# 	create_annotation_getindex_spec(get_obs_spec(data), obs_ind)
 datamatrix_getindex(::Var, data; var_ind=:, kwargs...) =
 	table_getindex_spec(get_var_spec(data), var_ind)
 datamatrix_getindex(::Obs, data; obs_ind=:, kwargs...) =
