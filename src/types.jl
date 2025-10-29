@@ -5,7 +5,3 @@ end
 struct DataMatrixFunction{F} <: AbstractPreprocess{F}
 	f::F
 end
-
-struct TableFunction{F} <: AbstractPreprocess{F}
-	f::F
-end
