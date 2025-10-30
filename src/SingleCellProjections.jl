@@ -74,6 +74,7 @@ module Jobs
 	function ftest end
 	function ttest end
 
+	function create_table end
 	function get_colnames end
 	function get_id_colname end
 	function get_value_colname end
