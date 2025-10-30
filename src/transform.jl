@@ -50,7 +50,7 @@ function logcellcounts(action::Action, X, var, var_ids; project_ids=:intersect)
 		vard_ids2 = var_ids
 	end
 
-	var_ind = create_ids_to_indices_spec(action(var), var_ids2) # TODO: Avoid using Projectable here
+	var_ind = create_ids_to_indices_spec(action(id_column_spec(var)), var_ids2) # TODO: Avoid using Projectable here
 	cached(create_spec(logcellcounts_impl, X, prefetched(var_ind); __version=v"0.1.0"))
 end
 create_logcellcounts_spec(X, var, var_ids; kwargs...) =
@@ -69,7 +69,7 @@ create_scparams_impl_spec(matrix; var_ind, log_cell_counts) =
 
 function scparams(action::Action, matrix, var, var_ids; log_cell_counts)
 	# The inference is always done for the "eval" case
-	var_ind = create_ids_to_indices_spec(var, var_ids) # TODO: Avoid using Projectable here
+	var_ind = create_ids_to_indices_spec(id_column_spec(var), var_ids) # TODO: Avoid using Projectable here
 	params = create_scparams_impl_spec(matrix; var_ind, log_cell_counts) # DataFrame, but without IDs
 	params = table_from_compound_result(params)
 
@@ -116,7 +116,7 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=Returns(tr
 
 	params_spec = create_scparams_spec(matrix_spec, var_spec, var_ids; log_cell_counts)
 
-	var_ind = prefetched(create_ids_to_indices_spec(var_spec, var_ids))
+	var_ind = prefetched(create_ids_to_indices_spec(id_column_spec(var_spec), var_ids))
 	if f isa Var
 		var_out = table_getindex_spec(var_spec, var_ind)
 		if annotate

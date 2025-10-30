@@ -305,7 +305,7 @@ function intersect_ids_fallback(a, b)
 	DataFrame(a_name => intersect(a[!,1], b[!,1]))
 end
 function intersect_ids_impl(a, b)
-	if table isa Spec && table.f == create_table_impl
+	if a isa Spec && a.f == create_table_impl && b isa Spec && b.f == create_table_impl
 		length(a.args) != 1 && throw(ArgumentError("Expected `a` to have exactly one column."))
 		length(b.args) != 1 && throw(ArgumentError("Expected `b` to have exactly one column."))
 
@@ -314,7 +314,7 @@ function intersect_ids_impl(a, b)
 		a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
 
 		values = intersect_impl_spec(a_values, b_values)
-		create_table_impl_spec(a_name=>values)
+		return create_table_impl_spec(a_name=>values)
 	else
 		return create_spec(intersect_ids_fallback, a, b; __version=v"0.1.0")
 	end
@@ -323,23 +323,28 @@ intersect_ids_impl_spec(a, b) =
 	create_spec(Preprocess(intersect_ids_impl), forwarded_to_impl(a), forwarded_to_impl(b))
 intersect_ids_pr(action, a, b) = intersect_ids_impl_spec(action(a), action(b))
 function intersect_ids(a, b)
-	if table isa Spec && table.f isa Projectable
-		if table.f.f == create_table_pr
-			length(a.args) != 1 && throw(ArgumentError("Expected `a` to have exactly one column."))
-			length(b.args) != 1 && throw(ArgumentError("Expected `b` to have exactly one column."))
+	# Both Projectable(create_table_pr)
+	# -> create_table_spec
+	# At least one projectable
+	# -> project
+	# otherwise
+	# -> impl
 
-			a_name,a_values = a.args[1]
-			b_name,b_values = b.args[1]
-			a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
+	if a isa Spec && a.f === Projectable(create_table_pr) && b isa Spec && b.f === Projectable(create_table_pr)
+		length(a.args) != 1 && throw(ArgumentError("Expected `a` to have exactly one column."))
+		length(b.args) != 1 && throw(ArgumentError("Expected `b` to have exactly one column."))
 
-			values = intersect_spec(a_values, b_values)
-			create_table_spec(a_name=>values)
-		else
-			return create_spec(Projectable(intersect_ids_pr), a, b)
-		end
+		a_name,a_values = a.args[1]
+		b_name,b_values = b.args[1]
+		a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
+
+		values = intersect_spec(a_values, b_values)
+		return create_table_spec(a_name=>values)
+	elseif (a isa Spec && a.f isa Projectable) || (b isa Spec && b.f isa Projectable)
+		return create_spec(Projectable(intersect_ids_pr), a, b)
+	else
+		return intersect_ids_impl(a, b)
 	end
-	# Not a Projectable
-	intersect_ids_impl(a, b)
 end
 intersect_ids_spec(a, b) = create_spec(Preprocess(intersect_ids), a, b)
 

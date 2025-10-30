@@ -17,7 +17,7 @@ Jobs.subset_obs(data, obs_ids; kwargs...) =
 
 function _filter_ind(f, s; project_ids)
 	id_spec = create_find_matching_ids_spec(f, s; project_ids)
-	create_ids_to_indices_spec(s, id_spec)
+	create_ids_to_indices_spec(id_column_spec(s), id_spec)
 end
 function filter_matrix(data; fvar=nothing, fobs=nothing, project_var_ids=nothing, project_obs_ids=nothing)
 	if fvar === nothing
