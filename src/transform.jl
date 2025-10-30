@@ -61,7 +61,7 @@ function scparams_impl(matrix; var_ind, log_cell_counts)
 	feature_mask = falses(size(matrix,1))
 	feature_mask[var_ind] .= true
 	df = DataFrame(SCTransform.compute_scparams(matrix; log_cell_counts, feature_mask))
-	CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(df))])
+	table_to_compound_result(df)
 end
 create_scparams_impl_spec(matrix; var_ind, log_cell_counts) =
 	create_spec(scparams_impl, matrix; var_ind=prefetched(var_ind), log_cell_counts, __version=v"0.1.1")

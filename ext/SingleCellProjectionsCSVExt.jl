@@ -1,9 +1,9 @@
 module SingleCellProjectionsCSVExt
 
 using ReproducibleJobs
-using ReproducibleJobs: create_spec, cached, CompoundResult
+using ReproducibleJobs: create_spec, cached
 using SingleCellProjections
-using SingleCellProjections: Projectable, Action, table_from_compound_result
+using SingleCellProjections: Projectable, Action, table_to_compound_result, table_from_compound_result
 
 using DataFrames
 using CSV
@@ -18,7 +18,7 @@ function parse_csv_impl(filepath; delim)
 	@assert filepath isa ReproducibleJobs.ChecksummedFilePath
 	filepath = string(filepath)
 	df = CSV.read(filepath, DataFrame; delim)
-	CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(df))])
+	table_to_compound_result(df)
 end
 parse_csv_spec(filepath; delim) =
 	create_spec(parse_csv_impl, filepath; delim, __version=v"0.0.3")

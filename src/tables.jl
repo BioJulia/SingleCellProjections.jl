@@ -13,6 +13,11 @@ forwarded_to_table(spec) = forwarded(is_create_table_spec, spec)
 
 
 
+function table_to_compound_result(table)
+	CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(table))])
+end
+
+
 function table_from_compound_result(compound_result, colnames)
 	cols = (name=>cached(compound_result, name) for name in colnames)
 	create_table_impl_spec(cols...)

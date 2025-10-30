@@ -21,7 +21,7 @@ combine_cols_spec(args...) = create_spec(combine_cols_impl, args...; __version=v
 
 function vcat_tables(tables...; kwargs...)
 	df = vcat(tables...; kwargs...)
-	CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(df))])
+	table_to_compound_result(df)
 end
 vcat_tables_spec(tables...; kwargs...) = create_spec(vcat_tables, tables...; kwargs..., __version=v"0.1.0")
 
@@ -46,7 +46,7 @@ combine_obs_spec(filenames, sample_names) =
 
 function combine_var_impl(vars; kwargs...)
 	df = SCPCore.combine_var(vars; kwargs...)
-	CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(df))])
+	table_to_compound_result(df)
 end
 
 
