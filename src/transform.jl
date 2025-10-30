@@ -8,7 +8,7 @@ function logtransform(f::Union{Mat,Var}, T::DataType, data; var_filter=Returns(t
 	var_spec = get_var_spec(data)
 
 	var_ids = create_find_matching_ids_spec(var_filter, var_spec; project_ids=project_var_ids)
-	var_ind = prefetched(create_ids_to_indices_spec(var_spec, var_ids))
+	var_ind = prefetched(create_ids_to_indices_spec(id_column_spec(var_spec), var_ids))
 
 	if f isa Var
 		table_getindex_spec(var_spec, var_ind)
