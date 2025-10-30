@@ -88,7 +88,8 @@ function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 		# matching_ids = cached(intersect_impl_spec(matching_ids, ids2))
 
 		ids2 = action(id_column_spec(df))
-		matching_ids = cached(intersect_ids_spec(matching_ids, ids2)) # Use order from unprojected
+		# matching_ids = cached(intersect_ids_spec(matching_ids, ids2)) # Use order from unprojected
+		matching_ids = cached(intersect_ids_impl_spec(matching_ids, ids2)) # Use order from unprojected
 	end
 	matching_ids
 end

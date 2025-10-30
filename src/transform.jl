@@ -45,7 +45,7 @@ function logcellcounts(action::Action, X, var, var_ids; project_ids=:intersect)
 	if project_ids == :no
 		var_ids2 = action(var_ids)
 	elseif project_ids == :intersect
-		var_ids2 = intersect_ids_spec(var_ids, action(var_ids)) # Use order from unprojected
+		var_ids2 = intersect_ids_impl_spec(var_ids, action(var_ids)) # Use order from unprojected
 	else#if project_ids == :yes
 		vard_ids2 = var_ids
 	end
@@ -77,7 +77,7 @@ function scparams(action::Action, matrix, var, var_ids; log_cell_counts)
 		return params
 	else#if actions is Projection
 		# subset IDs
-		var_ids_proj = cached(intersect_ids_spec(var_ids, action(var_ids))) # Use order from unprojected
+		var_ids_proj = cached(intersect_ids_impl_spec(var_ids, action(var_ids))) # Use order from unprojected
 		var_ind_proj = create_ids_to_indices_spec(var_ids, var_ids_proj) # TODO: Avoid using Projectable here
 		return table_getindex_spec(params, prefetched(var_ind_proj)) # TODO: Avoid using Projectable here
 	end
