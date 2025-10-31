@@ -37,20 +37,4 @@ function Jobs.load_csv(filepath::String; kwargs...)
 	Job(create_spec(Projectable(load_csv), filepath_job; kwargs...))
 end
 
-
-
-# --- Old ----
-
-
-# function load_csv(filepath; delim=_auto_delim(filepath), kwargs...)
-# 	parsed = parse_csv_spec(filepath; delim)
-# 	table_from_compound_result(parsed)
-# end
-
-
-# function Jobs.load_csv(filepath::String; kwargs...)
-# 	filepath_job = checksummedfilepath_job(filepath)
-# 	Job(create_spec(Preprocess(load_csv), filepath_job; kwargs...))
-# end
-
 end
