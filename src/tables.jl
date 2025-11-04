@@ -23,6 +23,7 @@ end
 
 
 
+# TODO: Can we get rid of these? By good separation of Projectables vs "impl" Specs, these shouldn't be needed.
 # TODO: Find better names for these?
 is_impl(x) = !(x.f isa AbstractPreprocess)
 forwarded_to_impl(spec) = forwarded(is_impl, spec)
@@ -265,8 +266,11 @@ Jobs.add_column(table, name, column) = Job(add_column_spec(table, name, column))
 
 
 
+
 table_getindex_fallback(table, ind) = table[ind,:]
 function table_getindex_impl(table, ind)
+	ind === Colon() && return table # Indexing is a no-op, just return the table
+
 	if table isa Spec && table.f == create_table_impl
 		cols = (k=>getindex_impl_spec(v, ind) for (k,v) in table.args)
 		return create_table_impl_spec(cols...)
@@ -275,8 +279,19 @@ function table_getindex_impl(table, ind)
 	end
 end
 table_getindex_impl_spec(table, ind) =
-	create_spec(Preprocess(table_getindex_impl), forwarded_to_impl(table), ind)
-table_getindex_pr(action, table, ind) = table_getindex_impl_spec(action(table), action(ind))
+	create_spec(Preprocess(table_getindex_impl), forwarded_to_impl(table), forwarded_to_impl(ind))
+# table_getindex_pr(action, table, ind) = table_getindex_impl_spec(action(table), action(ind))
+function table_getindex_pr(action, table, ind)
+	table_p = action(table)
+	result = table_getindex_impl_spec(table_p, action(ind))
+
+	if action isa Projection && !(ind isa Spec)
+		cond = isequal_spec(table, table_p)
+		result = ifelse_spec(cond, result, _getindex_error_spec(ind))
+	end
+
+	result
+end
 function table_getindex(table, ind)
 	if table isa Spec && table.f isa Projectable
 		if table.f.f == create_table_pr

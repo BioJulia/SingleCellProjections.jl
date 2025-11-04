@@ -9,8 +9,23 @@ args2vec_pr(action::Action, ::Type{T}, args...) where T =
 args2vec_spec(::Type{T}, args...) where T =
 	create_spec(Projectable(args2vec_pr), T, args...)
 
-getindex_impl_spec(v, ind) = create_spec(getindex, v, ind; __version=v"0.1.0")
-getindex_pr(action, v, ind) = getindex_impl_spec(action(v), action(ind))
+
+_getindex_error(ind) = throw(ArgumentError("Raw indices not allowed when projecting (unless containers are identical). Got indices: $ind."))
+_getindex_error_spec(ind) = create_spec(_getindex_error, ind; __version=v"0.1.0")
+
+getindex_impl_spec(v, ind) = ind===Colon() ? v : create_spec(getindex, v, ind; __version=v"0.1.0")
+# function getindex_pr(action, v, ind) = getindex_impl_spec(action(v), action(ind))
+function getindex_pr(action, v, ind)
+	v_p = action(v)
+	result = getindex_impl_spec(v_p, action(ind))
+
+	if action isa Projection && !(ind isa Spec)
+		cond = isequal_impl_spec(v, v_p)
+		result = ifelse_spec(cond, result, _getindex_error_spec(ind))
+	end
+
+	result
+end
 getindex_spec(v, ind) = create_spec(Projectable(getindex_pr), v, ind)
 
 issubset_pr(action, a, b) = create_spec(issubset, action(a), action(b); __version=v"0.1.0")
@@ -26,10 +41,27 @@ intersect_spec(a, b, args...) = create_spec(Projectable(intersect_pr), a, b, arg
 length_pr(action, x) = create_spec(length, action(x); __version=v"0.1.0")
 length_spec(x) = create_spec(Projectable(length_pr), x)
 
-isequal_pr(action, x, y) = create_spec(isequal, action(x), action(y); __version=v"0.1.0")
+
+isequal_impl_spec(x, y) = create_spec(isequal, x, y; __version=v"0.1.0")
+isequal_pr(action, x, y) = isequal_impl_spec(action(x), action(y))
 isequal_spec(x, y) = create_spec(Projectable(isequal_pr), x, y)
 
 
+function indexin_impl(a, b; not_found)
+	# TODO: Find better names `not_found`, `:error` and `:skip`
+	@assert not_found in (:error, :skip) # Add an option to accept nothing in the result and return it?
+	ind = indexin(a, b)
+
+	if not_found == :error
+		any(isnothing, ind) && error("Found values in `a` that are not present in `b`.")
+	elseif not_found == :skip
+		filter!(!isnothing, ind)
+	end
+	return convert(Vector{Int}, ind)
+end
+indexin_impl_spec(a, b; not_found=:error) = create_spec(indexin_impl, a, b; not_found, __version=v"0.1.0")
+indexin_pr(action, a, b; kwargs...) = indexin_impl_spec(action(a), action(b); kwargs...)
+indexin_spec(a, b; kwargs...) = create_spec(Projectable(indexin_pr), a, b; kwargs...)
 
 
 
@@ -45,6 +77,51 @@ Jobs.nobs(data) = Job(nobs_spec(data))
 
 
 
+function find_matching_ind(action::Action, f, df; project_ids::Symbol)
+	@assert project_ids in (:no, :yes, :intersect)
+	if project_ids == :no
+		f = action(f)
+		df = action(df)
+	end
+
+	# TODO: If `f` is a pair, we can subset the columns of df to avoid involving them in the call
+	if f === Colon()
+		matching_ind = Colon()
+	else
+		matching_ind = cached(create_spec(SCPCore.find_matching_ind, f, df; __version=v"0.1.2"))
+	end
+
+	if action isa Eval || project_ids == :no
+		return matching_ind
+	else
+		# We need to remap the indices, going through IDs
+		ids = id_column_spec(df)
+		ids2 = action(ids) # IDs from projected dataset
+
+		if isequal(ids, ids2)
+			return matching_ind # Early out, the IDs are identical in the base and projected data sets, so we can use the same indices
+		end
+
+		matching_ids = table_getindex_impl_spec(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())
+
+		if project_ids == :yes
+			return indexin_impl_spec(ids2, matching_ids; value_not_found=:error) # Use order from unprojected
+		else#if project_ids == :intersect
+			return indexin_impl_spec(ids2, matching_ids; value_not_found=:skip) # Use order from unprojected
+		end
+	end
+end
+create_find_matching_ind_spec(f, df; project_ids) =
+	create_spec(Projectable(find_matching_ind), f, df; project_ids)
+# Jobs.find_matching_ind(args...; kwargs...) =
+# 	Job(create_find_matching_ind_spec(args...; kwargs...))
+
+
+
+
+
+
+
 index_isnoop_spec(ind, n) =
 	create_spec(SCPCore.index_isnoop, ind, n; __version=v"0.0.1")
 simplify_ind_spec(ind, n) =
@@ -53,10 +130,7 @@ simplify_ind_spec(ind, n) =
 
 
 
-
-
-
-
+# DEPRECATED - TODO: REMOVE
 function find_matching_ids(action::Action, f, df; project_ids::Symbol)
 	# TODO: Consider having a simplified path when indexing with :
 	# We just need to handle different project_ids cases properly
@@ -122,14 +196,35 @@ function matrix_getindex_pre(matrix; var_ind, obs_ind)
 	end
 end
 
+
+# function _matrix_ind_spec(action::Action, ind, n=nothing)
+# 	ind = action(ind)
+# 	n !== nothing && (ind = simplify_ind_spec(ind, n))
+# 	ind = fetched(ind)
+# end
+
+function _matrix_ind_spec(action::Action, ind, n=nothing)
+	ind_p = action(ind)
+	if action isa Projection && !(ind isa Spec)
+		cond = isequal_impl_spec(ind, ind_p)
+		ind_p = ifelse_spec(cond, ind_p, _getindex_error_spec(ind))
+	end
+	n !== nothing && (ind_p = simplify_ind_spec(ind_p, n))
+	ind_p = fetched(ind_p)
+end
+
 function matrix_getindex_pr(action::Action, matrix; var_ind, obs_ind, nvar=nothing, nobs=nothing)
 	matrix = action(matrix)
-	var_ind = action(var_ind)
-	obs_ind = action(obs_ind)
-	nvar !== nothing && (var_ind = simplify_ind_spec(var_ind, nvar))
-	nobs !== nothing && (obs_ind = simplify_ind_spec(obs_ind, nobs))
-	var_ind = fetched(var_ind)
-	obs_ind = fetched(obs_ind)
+	# var_ind = action(var_ind)
+	# obs_ind = action(obs_ind)
+	# nvar !== nothing && (var_ind = simplify_ind_spec(var_ind, nvar))
+	# nobs !== nothing && (obs_ind = simplify_ind_spec(obs_ind, nobs))
+	# var_ind = fetched(var_ind)
+	# obs_ind = fetched(obs_ind)
+
+	var_ind = _matrix_ind_spec(action, var_ind, nvar)
+	obs_ind = _matrix_ind_spec(action, obs_ind, nobs)
+
 	create_spec(Preprocess(matrix_getindex_pre), matrix; var_ind, obs_ind)
 end
 
