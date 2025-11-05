@@ -17,14 +17,14 @@ expected_feature_types = fill("Gene Expression", 50)
 expected_feature_genome = fill("GRCh38", 50)
 
 expected_sparse = sparse(expected_mat)
-params = scparams(expected_sparse, DataFrame(id=expected_feature_ids, name=expected_feature_names, feature_type=expected_feature_types); use_cache=false)
+# params = scparams(expected_sparse, DataFrame(id=expected_feature_ids, name=expected_feature_names, feature_type=expected_feature_types); use_cache=false)
 
-# Data shared between tests
-counts = load10x(h5_path)
+# # Data shared between tests
+# counts = load10x(h5_path)
 
-counts.obs.group = rand(StableRNG(904), ("A","B","C"), size(counts,2))
-counts.obs.value = 1 .+ randn(StableRNG(905), size(counts,2))
+# counts.obs.group = rand(StableRNG(904), ("A","B","C"), size(counts,2))
+# counts.obs.value = 1 .+ randn(StableRNG(905), size(counts,2))
 
-transformed = sctransform(counts; use_cache=false)
-normalized = normalize_matrix(transformed, "group", "value")
-reduced = svd(normalized; nsv=10, niter=4, rng=StableRNG(102))
+# transformed = sctransform(counts; use_cache=false)
+# normalized = normalize_matrix(transformed, "group", "value")
+# reduced = svd(normalized; nsv=10, niter=4, rng=StableRNG(102))

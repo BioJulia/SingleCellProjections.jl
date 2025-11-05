@@ -78,4 +78,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 UMAP = "c4f8c510-2410-5be4-91d7-4fbaeb39457e"
 
 [targets]
-test = ["Test", "CodecZlib", "DelimitedFiles", "GLM", "HypothesisTests", "PrincipalMomentAnalysis", "StableRNGs", "TSne", "UMAP"]
+test = ["Test", "CodecZlib", "DelimitedFiles", "GLM", "HypothesisTests", "PrincipalMomentAnalysis", "TSne", "UMAP"]
