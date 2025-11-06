@@ -4,6 +4,9 @@
 	# TODO: Test .mtx file (implement with specs first!)
 	counts_job = Jobs.load_counts(h5_path; sample_names="a")
 
+	# TODO: projections
+	# TODO: test forwarding
+	# TODO: test hash stability
 
 	@testset "logtransform scale_factor=$scale_factor T=$T" for scale_factor in (10_000, 1_000), T in (Float64,Float32)
 		X = simple_logtransform(expected_mat, scale_factor)
@@ -21,25 +24,20 @@
 			@test eltype(l.matrix.matrix) == T
 
 			@test isequal(l.var, counts.var)
-
-			# lproj = project(counts_proj, l)
-			# @test lproj.matrix.matrix ≈ X[:,proj_obs_indices]
-			# @test eltype(lproj.matrix.matrix) == T
-
-			# test_show(l; matrix="SparseMatrixCSC", var=names(counts.var), obs=names(counts.obs), models="LogTransformModel")
-			# test_show(lproj; matrix="SparseMatrixCSC", var=names(counts_proj.var), obs=names(counts_proj.obs), models="LogTransformModel")
+			@test isequal(l.obs, counts.obs)
 
 			# Variable subsetting
 			@testset "var_filter" begin
 				var_mask = counts.var.name .> "L"
-				X_f = T.(simple_logtransform(expected_mat[var_mask,:], scale_factor))
+				X_filtered = T.(simple_logtransform(expected_mat[var_mask,:], scale_factor))
 
-				l_job_f = Jobs.logtransform(T, counts_job; var_filter="name"=>>("L"), kwargs...)
-				let l_f = fetch!(l_job_f)
-					@test l_f.matrix.matrix ≈ X_f
-					@test eltype(l_f.matrix.matrix) == T
+				l_filtered_job = Jobs.logtransform(T, counts_job; var_filter="name"=>>("L"), kwargs...)
+				let l_filtered = fetch!(l_filtered_job)
+					@test l_filtered.matrix.matrix ≈ X_filtered
+					@test eltype(l_filtered.matrix.matrix) == T
 
-					@test isequal(l_f.var, counts.var[var_mask,:])
+					@test isequal(l_filtered.var, counts.var[var_mask,:])
+					@test isequal(l_filtered.obs, counts.obs)
 				end
 			end
 		end
