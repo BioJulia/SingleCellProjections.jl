@@ -3,10 +3,10 @@
 
 	# TODO: Test .mtx file (implement with specs first!)
 
-	counts_spec = Jobs.load_counts(h5_path; sample_names="a")
+	counts_job = Jobs.load_counts(h5_path; sample_names="a")
 	
 	# Test result
-	let counts = fetch!(counts_spec)
+	let counts = fetch!(counts_job)
 		@test size(counts)==(P,N)
 		@test nnz(counts.matrix) == expected_nnz
 

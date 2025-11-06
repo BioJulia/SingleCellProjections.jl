@@ -31,6 +31,7 @@ let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 	with_cache(Cache(tmp)) do
 		@testset "SingleCellProjections.jl" begin
 			include("load.jl")
+			include("transform.jl")
 		end
 	end
 end
