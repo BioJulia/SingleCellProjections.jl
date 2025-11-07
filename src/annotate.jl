@@ -57,8 +57,8 @@ var_counts_fraction(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
 var_counts_fraction(::Var, counts, args...; kwargs...) = get_var_spec(counts)
 function var_counts_fraction(::Obs, counts, sub_filter, tot_filter, col; project_ids)
 	var_spec = get_var_spec(counts)
-	sub_ind = prefetched(_filter_ind(sub_filter, var_spec; project_ids))
-	tot_ind = prefetched(_filter_ind(tot_filter, var_spec; project_ids))
+	sub_ind = prefetched(create_find_matching_ind_spec(sub_filter, var_spec; project_ids))
+	tot_ind = prefetched(create_find_matching_ind_spec(tot_filter, var_spec; project_ids))
 
 	values_spec = create_var_counts_fraction_impl_spec(get_matrix_spec(counts), sub_ind, tot_ind)
 	add_column_spec(get_obs_spec(counts), col, values_spec)
@@ -77,7 +77,7 @@ create_var_counts_sum_impl_spec(f, counts, ind) = create_spec(Projectable(var_co
 var_counts_sum(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
 var_counts_sum(::Var, counts, args...; kwargs...) = get_var_spec(counts)
 function var_counts_sum(::Obs, counts, filter, col; project_ids, f=identity)
-	ind = prefetched(_filter_ind(filter, get_var_spec(counts); project_ids))
+	ind = prefetched(create_find_matching_ind_spec(filter, get_var_spec(counts); project_ids))
 	values_spec = create_var_counts_sum_impl_spec(f, get_matrix_spec(counts), ind)
 	add_column_spec(get_obs_spec(counts), col, values_spec)
 end
@@ -100,8 +100,9 @@ create_obs_counts_fraction_impl_spec(counts, sub_ind, tot_ind) = create_spec(Pro
 obs_counts_fraction(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
 function obs_counts_fraction(::Var, counts, sub_filter, tot_filter, col; project_ids)
 	obs_spec = get_obs_spec(counts)
-	sub_ind = prefetched(_filter_ind(sub_filter, obs_spec; project_ids))
-	tot_ind = prefetched(_filter_ind(tot_filter, obs_spec; project_ids))
+	sub_ind = prefetched(create_find_matching_ind_spec(sub_filter, obs_spec; project_ids))
+	tot_ind = prefetched(create_find_matching_ind_spec(tot_filter, obs_spec; project_ids))
+
 	values_spec = create_obs_counts_fraction_impl_spec(get_matrix_spec(counts), sub_ind, tot_ind)
 	add_column_spec(get_var_spec(counts), col, values_spec)
 end
@@ -118,7 +119,7 @@ create_obs_counts_sum_impl_spec(f, counts, ind) = create_spec(Projectable(obs_co
 
 obs_counts_sum(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
 function obs_counts_sum(::Var, counts, filter, col; project_ids, f=identity)
-	ind = prefetched(_filter_ind(filter, get_obs_spec(counts); project_ids))
+	ind = prefetched(create_find_matching_ind_spec(filter, get_obs_spec(counts); project_ids))
 	values_spec = create_obs_counts_sum_impl_spec(f, get_matrix_spec(counts), ind)
 	add_column_spec(get_var_spec(counts), col, values_spec)
 end
