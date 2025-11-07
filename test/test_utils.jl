@@ -7,9 +7,10 @@ read_matrix(fn,delim=',') = _open(io->readdlm(io,delim,Int), fn)
 read_strings(fn,delim=',') = _open(io->readdlm(io,delim,String), fn)
 
 
+# NB: DataFrame columns are compared with ===
 function test_dataframe_columns_identical(context, a, b)
-	isequal(a, b) || @warn "DataFrame comparison $context failed."
-	@test isequal(a, b)
+	isequal(names(a), names(b)) || @warn "DataFrame comparison $context failed."
+	@test isequal(names(a), names(b))
 
 	for n in names(a)
 		a[!,n] === b[!,n] || @warn "DataFrame comparison $context failed for column \"$n\":"
