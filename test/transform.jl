@@ -18,6 +18,9 @@
 			X = T.(X)
 		end
 
+		@test forward(Jobs.get_obs(l_job)).spec == forward(Jobs.get_obs(counts_job)).spec
+		@test forward(Jobs.get_var(l_job)).spec == forward(Jobs.get_var(counts_job)).spec
+
 		let l = fetch!(l_job), counts = fetch!(counts_job)
 			@test l.matrix.matrix ≈ X
 			@test nnz(l.matrix.matrix) == expected_nnz
@@ -26,12 +29,18 @@
 			@test isequal(l.var, counts.var)
 			@test isequal(l.obs, counts.obs)
 
+			@test l.obs.cell_id === counts.obs.cell_id
+			@test l.var.id === counts.var.id
+
 			# Variable subsetting
 			@testset "var_filter" begin
 				var_mask = counts.var.name .> "L"
 				X_filtered = T.(simple_logtransform(expected_mat[var_mask,:], scale_factor))
 
 				l_filtered_job = Jobs.logtransform(T, counts_job; var_filter="name"=>>("L"), kwargs...)
+
+				@test forward(Jobs.get_obs(l_filtered_job)).spec == forward(Jobs.get_obs(counts_job)).spec
+
 				let l_filtered = fetch!(l_filtered_job)
 					@test l_filtered.matrix.matrix ≈ X_filtered
 					@test eltype(l_filtered.matrix.matrix) == T
