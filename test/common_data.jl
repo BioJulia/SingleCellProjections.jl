@@ -26,6 +26,8 @@ expected_sparse = sparse(expected_mat)
 
 # counts.obs.group = rand(StableRNG(904), ("A","B","C"), size(counts,2))
 # counts.obs.value = 1 .+ randn(StableRNG(905), size(counts,2))
+counts_obs_group = rand(StableRNG(904), ("A","B","C"), length(expected_barcodes))
+counts_obs_value = 1 .+ randn(StableRNG(905), length(expected_barcodes))
 
 # transformed = sctransform(counts; use_cache=false)
 # normalized = normalize_matrix(transformed, "group", "value")

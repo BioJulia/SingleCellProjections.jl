@@ -1,7 +1,4 @@
 @testset "Transforms" begin
-	P,N = (50,587)
-
-	# TODO: Test .mtx file (implement with specs first!)
 	counts_job = Jobs.load_counts(h5_path; sample_names="a")
 	counts = fetch!(counts_job)
 

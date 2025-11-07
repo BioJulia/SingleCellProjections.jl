@@ -32,6 +32,7 @@ let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 		@testset "SingleCellProjections.jl" begin
 			include("load.jl")
 			include("transform.jl")
+			include("filter.jl")
 		end
 	end
 end
