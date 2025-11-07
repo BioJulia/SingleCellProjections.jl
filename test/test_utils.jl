@@ -6,6 +6,18 @@ end
 read_matrix(fn,delim=',') = _open(io->readdlm(io,delim,Int), fn)
 read_strings(fn,delim=',') = _open(io->readdlm(io,delim,String), fn)
 
+
+function test_dataframe_columns_identical(context, a, b)
+	isequal(a, b) || @warn "DataFrame comparison $context failed."
+	@test isequal(a, b)
+
+	for n in names(a)
+		a[!,n] === b[!,n] || @warn "DataFrame comparison $context failed for column \"$n\":"
+		@test a[!,n] === b[!,n]
+	end
+end
+
+
 function simple_logtransform(X, scale_factor)
 	s = sum(X; dims=1)
 	log2.( 1 .+ X.*scale_factor./max.(1,s) )
@@ -53,25 +65,25 @@ function ncommon_neighbors(A,B; k=20)
 	ncommon
 end
 
-function test_show(data::DataMatrix; matrix=nothing, var=nothing, obs=nothing, models=nothing)
-    io = IOBuffer()
-    show(io, MIME("text/plain"), data)
-    str = String(take!(io))
-    s = split(str, '\n')
-    @test 4<=length(s)<=5
-    @test s[1] == "DataMatrix ($(size(data,1)) variables and $(size(data,2)) observations)"
-    matrix!==nothing && @test contains(s[2][3:end], matrix)
-    @test startswith(s[3],"  Variables: ")
-    var!==nothing && @test sort(split(s[3][14:end], ", "))==sort(var)
-    @test startswith(s[4],"  Observations: ")
-    obs!==nothing && @test sort(split(s[4][17:end], ", "))==sort(obs)
+# function test_show(data::DataMatrix; matrix=nothing, var=nothing, obs=nothing, models=nothing)
+#     io = IOBuffer()
+#     show(io, MIME("text/plain"), data)
+#     str = String(take!(io))
+#     s = split(str, '\n')
+#     @test 4<=length(s)<=5
+#     @test s[1] == "DataMatrix ($(size(data,1)) variables and $(size(data,2)) observations)"
+#     matrix!==nothing && @test contains(s[2][3:end], matrix)
+#     @test startswith(s[3],"  Variables: ")
+#     var!==nothing && @test sort(split(s[3][14:end], ", "))==sort(var)
+#     @test startswith(s[4],"  Observations: ")
+#     obs!==nothing && @test sort(split(s[4][17:end], ", "))==sort(obs)
 
-    length(s)>4 && @test startswith(s[5],"  Models: ")
-    if models !== nothing
-        m = replace(get(s,5,""),"  Models: "=>"")
-        @test contains(m, models)
-    end
-end
+#     length(s)>4 && @test startswith(s[5],"  Models: ")
+#     if models !== nothing
+#         m = replace(get(s,5,""),"  Models: "=>"")
+#         @test contains(m, models)
+#     end
+# end
 
 function _formula(args...; center=true)
 	if center

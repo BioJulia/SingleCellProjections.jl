@@ -53,8 +53,9 @@ function combine_var(var::Vector{DataFrame};
 	# combine(g, valuecols(g) .=> _value_or_ambiguous; renamecols=false)
 
 	# Workaround.
-	all_cols = vcat(Symbol.(id_cols), valuecols(g))
-	combine(g, all_cols .=> _value_or_ambiguous; renamecols=false)
+	all_cols = names(c)
+	result = combine(g, all_cols .=> _value_or_ambiguous; renamecols=false)
+	select!(result, all_cols) # keep original order which combine changes because it puts the ID columns first...
 end
 
 # WIP.

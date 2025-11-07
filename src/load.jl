@@ -51,7 +51,7 @@ end
 
 
 function combine_var(vars; kwargs...)
-	combined = create_spec(combine_var_impl, vars; kwargs..., __version=v"0.1.0")
+	combined = create_spec(combine_var_impl, vars; kwargs..., __version=v"0.1.1")
 	table_from_compound_result(combined)
 end
 

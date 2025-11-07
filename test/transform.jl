@@ -26,11 +26,8 @@
 			@test nnz(l.matrix.matrix) == expected_nnz
 			@test eltype(l.matrix.matrix) == T
 
-			@test isequal(l.var, counts.var)
-			@test isequal(l.obs, counts.obs)
-
-			@test l.obs.cell_id === counts.obs.cell_id
-			@test l.var.id === counts.var.id
+			test_dataframe_columns_identical("l.var vs counts.var", l.var, counts.var)
+			test_dataframe_columns_identical("l.obs vs counts.obs", l.obs, counts.obs)
 
 			# Variable subsetting
 			@testset "var_filter" begin
@@ -39,6 +36,8 @@
 
 				l_filtered_job = Jobs.logtransform(T, counts_job; var_filter="name"=>>("L"), kwargs...)
 
+
+
 				@test forward(Jobs.get_obs(l_filtered_job)).spec == forward(Jobs.get_obs(counts_job)).spec
 
 				let l_filtered = fetch!(l_filtered_job)
@@ -46,7 +45,7 @@
 					@test eltype(l_filtered.matrix.matrix) == T
 
 					@test isequal(l_filtered.var, counts.var[var_mask,:])
-					@test isequal(l_filtered.obs, counts.obs)
+					test_dataframe_columns_identical("l_filtered.obs vs counts.obs", l_filtered.obs, counts.obs)
 				end
 			end
 		end
