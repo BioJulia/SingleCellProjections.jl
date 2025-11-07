@@ -1,7 +1,7 @@
 # TODO: Replace filter.jl with this file.
 
 find_matching_ind(f, df::DataFrame) = first(parentindices(filter(f, df; view=true)))
-find_matching_ind(::Colon, df::DataFrame) = 1:nrow(df)
+find_matching_ind(::Colon, df::DataFrame) = Colon()
 
 
 function ids_to_indices(df::DataFrame, ids::DataFrame)

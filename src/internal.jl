@@ -90,7 +90,7 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 	elseif f isa AbstractRange
 		matching_ind = f
 	else
-		matching_ind = cached(create_spec(SCPCore.find_matching_ind, f, df; __version=v"0.1.2"))
+		matching_ind = cached(create_spec(SCPCore.find_matching_ind, f, df; __version=v"0.1.3"))
 	end
 
 	if action isa Eval || project_ids == :no
