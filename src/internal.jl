@@ -272,7 +272,7 @@ create_hcat_spec(args...; kwargs...) = create_spec(Projectable(hcat_impl), args.
 
 
 
-prefixed_ids_impl(col::String, prefix::String, n::Int) = DataFrame(col=>string.(prefix, 1:n))
+prefixed_ids_impl(col::String, prefix::String, n::Int) = DataFrame(col=>string.(prefix, 1:n); copycols=false)
 prefixed_ids(action::Action, col, prefix, n) =
 	create_spec(prefixed_ids_impl, col, action(prefix), action(n); __version=v"0.1.0")
 create_prefixed_ids_spec(col, prefix, n) =

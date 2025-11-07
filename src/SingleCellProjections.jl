@@ -26,6 +26,8 @@ using ReproducibleJobs: create_spec, cached, ReadOnly, SpecArgs, ChecksummedFile
 
 using ReadOnlyArrays: ReadOnlyVector
 
+ReproducibleJobs.unmanage_rec(x::DataMatrix) =
+	DataMatrix(ReproducibleJobs.unmanage_rec.((x.matrix, x.var, x.obs))...)
 ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVector) = x
 ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVectorModel) = x
 ReproducibleJobs.unmanage_rec(x::SCPCore.ProjectionModel) = x

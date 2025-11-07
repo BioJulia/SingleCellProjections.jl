@@ -317,7 +317,7 @@ function intersect_ids_fallback(a, b)
 	a_name = only(names(a,1))
 	b_name = only(names(b,1))
 	a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
-	DataFrame(a_name => intersect(a[!,1], b[!,1]))
+	DataFrame(a_name => intersect(a[!,1], b[!,1]); copycols=false)
 end
 function intersect_ids_impl(a, b)
 	if a isa Spec && a.f == create_table_impl && b isa Spec && b.f == create_table_impl

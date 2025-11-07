@@ -97,7 +97,7 @@ function _adjacency_distances(adj, X::DataMatrix, Y::DataMatrix=X)
 
 		# Xs = X[:,Is] # Doesn't work since DataMatrix doesn't allow duplicate IDs
 		# Temporary workaround - TODO: fix proper interface?
-		Xs = DataMatrix(_subsetmatrix(X.matrix,:,Is), X.var, DataFrame(id=1:length(Is)))
+		Xs = DataMatrix(_subsetmatrix(X.matrix,:,Is), X.var, DataFrame(id=1:length(Is); copycols=false))
 
 
 		# Ys = Y[:,Js] # guaranteed to be equal to Y

@@ -47,7 +47,7 @@ function covariate_names_impl2(names::Vector, models::Vector)
 		_add_covariate_names2!(cov_names, name, model)
 	end
 	@assert allunique(cov_names)
-	DataFrame(covariate=cov_names)
+	DataFrame(covariate=cov_names; copycols=false)
 end
 
 
