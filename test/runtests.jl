@@ -2,8 +2,9 @@ using Test
 using SingleCellProjections
 using .SingleCellProjections.SingleCellProjectionsCore
 using .SingleCellProjectionsCore.MatrixExpressions
-using ReproducibleJobs: ReproducibleJobs, Cache, get_cache, with_cache, fetch!
+using ReproducibleJobs: ReproducibleJobs, Cache, get_cache, with_cache, fetch!, forward
 
+using StableRNGs
 
 using LinearAlgebra
 using SparseArrays
