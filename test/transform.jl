@@ -39,11 +39,11 @@
 		@test_broken forward(p_matrix_job).spec == forward(p_matrix_job2).spec
 
 
-		@test forward(Jobs.get_obs(p_job)).spec == forward(Jobs.get_obs(counts_job_p)).spec
-
-		# TODO: Fix this
+		# TODO: Fix this?
 		@test_broken forward(Jobs.get_var(p_job)).spec == forward(Jobs.get_var(counts_job_p)).spec
-		@test fetch!(Jobs.get_var(p_job)) == fetch!(Jobs.get_var(counts_job_p))
+		@test isequal(fetch!(Jobs.get_var(p_job)), fetch!(Jobs.get_var(counts_job_p))) # Remove once the above has been fixed
+
+		@test forward(Jobs.get_obs(p_job)).spec == forward(Jobs.get_obs(counts_job_p)).spec
 
 
 		let p = fetch!(p_job), Xs = sparse(X[:,pbmc_subset_ind]), counts_p = fetch!(counts_job_p)
@@ -80,6 +80,14 @@
 
 			# Test that it is identical to logtransforming without projection
 			@test forward(p_filtered_matrix_job).spec == forward(p_filtered_matrix_job2).spec
+
+
+			# TODO: Forwarding of var/obs
+			# TODO: Fix this?
+			@test isequal(fetch!(Jobs.get_var(p_filtered_job)), fetch!(Jobs.get_var(counts_job_p))[var_mask,:])
+
+			@test forward(Jobs.get_obs(p_filtered_job)).spec == forward(Jobs.get_obs(counts_job_p)).spec
+
 
 			let p_filtered = fetch!(p_filtered_job), Xs = sparse(X_filtered[:, pbmc_subset_ind]), counts_p = fetch!(counts_job_p)
 				@test p_filtered.matrix.matrix ≈ Xs

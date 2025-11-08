@@ -275,7 +275,7 @@ function table_getindex_impl(table, ind)
 		cols = (k=>getindex_impl_spec(v, ind) for (k,v) in table.args)
 		return create_table_impl_spec(cols...)
 	else
-		return create_spec(table_getindex_fallback, table, ind; __version=v"0.1.0")
+		return create_spec(table_getindex_fallback, table, prefetch(ind); __version=v"0.1.0")
 	end
 end
 table_getindex_impl_spec(table, ind) =

@@ -13,7 +13,8 @@ args2vec_spec(::Type{T}, args...) where T =
 _getindex_error(ind) = throw(ArgumentError("Raw indices not allowed when projecting (unless containers are identical). Got indices: $ind."))
 _getindex_error_spec(ind) = create_spec(_getindex_error, ind; __version=v"0.1.0")
 
-getindex_impl_spec(v, ind) = ind===Colon() ? v : create_spec(getindex, v, ind; __version=v"0.1.0")
+# getindex_impl_spec(v, ind) = ind===Colon() ? v : create_spec(getindex, v, ind; __version=v"0.1.0")
+getindex_impl_spec(v, ind) = ind===Colon() ? v : create_spec(getindex, v, prefetched(ind); __version=v"0.1.0")
 # function getindex_pr(action, v, ind) = getindex_impl_spec(action(v), action(ind))
 function getindex_pr(action, v, ind)
 	v_p = action(v)
