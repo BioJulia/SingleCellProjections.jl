@@ -47,7 +47,7 @@ isequal_pr(action, x, y) = isequal_impl_spec(action(x), action(y))
 isequal_spec(x, y) = create_spec(Projectable(isequal_pr), x, y)
 
 
-function indexin_impl(a, b; not_found)
+function indexin_impl(a::AbstractVector, b::AbstractVector; not_found)
 	# TODO: Find better names `not_found`, `:error` and `:skip`
 	@assert not_found in (:error, :skip) # Add an option to accept nothing in the result and return it?
 	ind = indexin(a, b)
@@ -59,7 +59,15 @@ function indexin_impl(a, b; not_found)
 	end
 	return convert(Vector{Int}, ind)
 end
-indexin_impl_spec(a, b; not_found=:error) = create_spec(indexin_impl, a, b; not_found, __version=v"0.1.0")
+
+function indexin_impl(a::DataFrame, b::DataFrame; not_found)
+	@assert ncol(a)==1
+	@assert ncol(b)==1
+	@assert only(names(a,1)) == only(names(b,1))
+	indexin_impl(a[!,1], b[!,1]; not_found)
+end
+
+indexin_impl_spec(a, b; not_found=:error) = create_spec(indexin_impl, a, b; not_found, __version=v"0.1.1")
 indexin_pr(action, a, b; kwargs...) = indexin_impl_spec(action(a), action(b); kwargs...)
 indexin_spec(a, b; kwargs...) = create_spec(Projectable(indexin_pr), a, b; kwargs...)
 
@@ -107,9 +115,9 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 		matching_ids = table_getindex_impl_spec(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())
 
 		if project_ids == :yes
-			return indexin_impl_spec(ids2, matching_ids; value_not_found=:error) # Use order from unprojected
+			return indexin_impl_spec(matching_ids, ids2; not_found=:error) # Use order from unprojected
 		else#if project_ids == :intersect
-			return indexin_impl_spec(ids2, matching_ids; value_not_found=:skip) # Use order from unprojected
+			return indexin_impl_spec(matching_ids, ids2; not_found=:skip) # Use order from unprojected
 		end
 	end
 end

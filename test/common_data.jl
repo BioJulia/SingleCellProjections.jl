@@ -3,6 +3,10 @@ pbmc_path = joinpath(pkgdir(SingleCellProjections), "test/data/500_PBMC_3p_LT_Ch
 h5_path = joinpath(pbmc_path, "filtered_feature_bc_matrix.h5")
 mtx_path = joinpath(pbmc_path, "filtered_feature_bc_matrix/matrix.mtx.gz")
 
+h5_subset_path = joinpath(pbmc_path, "filtered_feature_bc_matrix_272barcodes.h5")
+pbmc_subset_barcodes = read_strings(joinpath(pbmc_path,"barcodes_272.csv"))[2:end]
+
+
 rna_adt_h5_path = joinpath(pkgdir(SingleCellProjections), "test/data/GSE164378_RNA_ADT_3P_P1_subsetted.h5")
 rna_h5_path = joinpath(pkgdir(SingleCellProjections), "test/data/GSE164378_RNA_3P_P1_subsetted.h5")
 
@@ -19,6 +23,12 @@ expected_feature_genome = fill("GRCh38", 50)
 expected_var = DataFrame("id"=>expected_feature_ids, "name"=>expected_feature_names, "feature_type"=>expected_feature_types, "genome"=>expected_feature_genome)
 
 expected_sparse = sparse(expected_mat)
+
+
+pbmc_subset_ind = indexin(pbmc_subset_barcodes, expected_barcodes)
+
+
+
 # params = scparams(expected_sparse, DataFrame(id=expected_feature_ids, name=expected_feature_names, feature_type=expected_feature_types); use_cache=false)
 
 # # Data shared between tests
