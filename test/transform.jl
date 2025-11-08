@@ -2,10 +2,7 @@
 	counts_job = Jobs.load_counts(h5_path; sample_names="a")
 	counts = fetch!(counts_job)
 
-
-
-	# TODO: projections
-	counts_job_p = Jobs.load_counts(h5_subset_path; sample_names="p")
+	counts_sub_job = Jobs.load_counts(h5_subset_path; sample_names="p")
 
 	# TODO: test forwarding
 	# TODO: test hash stability
@@ -29,28 +26,27 @@
 			test_dataframe_columns_identical("l.obs vs counts.obs", l.obs, counts.obs)
 		end
 
-		p_job = Jobs.project(l_job, counts_job=>counts_job_p)
+		p_job = Jobs.project(l_job, counts_job=>counts_sub_job)
 
+		# Test that it is identical to logtransforming the matrix without projection
 		p_matrix_job = Jobs.get_matrix(p_job)
-		p_matrix_job2 = Jobs.get_matrix(Jobs.logtransform(T_args..., counts_job_p; kwargs...))
-
-		# Test that it is identical to logtransforming without projection
+		p_matrix_job2 = Jobs.get_matrix(Jobs.logtransform(T_args..., counts_sub_job; kwargs...))
 		@test forward(p_matrix_job).spec == forward(p_matrix_job2).spec
 
+		# Vars shouldn't be changed by the projection
+		@test forward(Jobs.get_var(p_job)).spec == forward(Jobs.get_var(counts_sub_job)).spec
 
-		@test forward(Jobs.get_var(p_job)).spec == forward(Jobs.get_var(counts_job_p)).spec
-		# @test isequal(fetch!(Jobs.get_var(p_job)), fetch!(Jobs.get_var(counts_job_p))) # Remove once the above has been fixed
-
-		@test forward(Jobs.get_obs(p_job)).spec == forward(Jobs.get_obs(counts_job_p)).spec
+		# Obs shouldn't be changed by the projection
+		@test forward(Jobs.get_obs(p_job)).spec == forward(Jobs.get_obs(counts_sub_job)).spec
 
 
-		let p = fetch!(p_job), Xs = sparse(X[:,pbmc_subset_ind]), counts_p = fetch!(counts_job_p)
+		let p = fetch!(p_job), Xs = sparse(X[:,pbmc_subset_ind]), counts_sub = fetch!(counts_sub_job)
 			@test p.matrix.matrix ≈ Xs
 			@test nnz(p.matrix.matrix) == nnz(Xs)
 			@test eltype(p.matrix.matrix) == T
 
-			test_dataframe_columns_identical("p.var vs counts_p.var", p.var, counts_p.var)
-			test_dataframe_columns_identical("p.obs vs counts_p.obs", p.obs, counts_p.obs)
+			test_dataframe_columns_identical("p.var vs counts_sub.var", p.var, counts_sub.var)
+			test_dataframe_columns_identical("p.obs vs counts_sub.obs", p.obs, counts_sub.obs)
 		end
 
 
@@ -71,29 +67,28 @@
 				test_dataframe_columns_identical("l_filtered.obs vs counts.obs", l_filtered.obs, counts.obs)
 			end
 
-			p_filtered_job = Jobs.project(l_filtered_job, counts_job=>counts_job_p)
+			p_filtered_job = Jobs.project(l_filtered_job, counts_job=>counts_sub_job)
 
+
+			# Test that it is identical to logtransforming the matrix without projection
 			p_filtered_matrix_job = Jobs.get_matrix(p_filtered_job)
-			p_filtered_matrix_job2 = Jobs.get_matrix(Jobs.logtransform(T_args..., counts_job_p; var_filter="name"=>>("L"), kwargs...))
-
-			# Test that it is identical to logtransforming without projection
+			p_filtered_matrix_job2 = Jobs.get_matrix(Jobs.logtransform(T_args..., counts_sub_job; var_filter="name"=>>("L"), kwargs...))
 			@test forward(p_filtered_matrix_job).spec == forward(p_filtered_matrix_job2).spec
 
+			# Vars where subsetted. Alternatively to testing the result, we could've tested the spec.
+			@test isequal(fetch!(Jobs.get_var(p_filtered_job)), fetch!(Jobs.get_var(counts_sub_job))[var_mask,:])
 
-			# TODO: Forwarding of var/obs
-			# TODO: Fix this?
-			@test isequal(fetch!(Jobs.get_var(p_filtered_job)), fetch!(Jobs.get_var(counts_job_p))[var_mask,:])
-
-			@test forward(Jobs.get_obs(p_filtered_job)).spec == forward(Jobs.get_obs(counts_job_p)).spec
+			# Obs shouldn't be changed by the projection
+			@test forward(Jobs.get_obs(p_filtered_job)).spec == forward(Jobs.get_obs(counts_sub_job)).spec
 
 
-			let p_filtered = fetch!(p_filtered_job), Xs = sparse(X_filtered[:, pbmc_subset_ind]), counts_p = fetch!(counts_job_p)
+			let p_filtered = fetch!(p_filtered_job), Xs = sparse(X_filtered[:, pbmc_subset_ind]), counts_sub = fetch!(counts_sub_job)
 				@test p_filtered.matrix.matrix ≈ Xs
 				@test nnz(p_filtered.matrix.matrix) == nnz(Xs)
 				@test eltype(p_filtered.matrix.matrix) == T
 
-				@test isequal(p_filtered.var, counts_p.var[var_mask,:])
-				test_dataframe_columns_identical("p_filtered.obs vs counts_p.obs", p_filtered.obs, counts_p.obs)
+				@test isequal(p_filtered.var, counts_sub.var[var_mask,:])
+				test_dataframe_columns_identical("p_filtered.obs vs counts_sub.obs", p_filtered.obs, counts_sub.obs)
 			end
 
 
