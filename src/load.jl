@@ -71,10 +71,10 @@ end
 load_sample_matrix_metadata_spec(filename, var_ind; kwargs...) =
 	cached(create_spec(load_sample_matrix_metadata_impl, filename, var_ind; kwargs..., __version=v"0.1.0"))
 
-function load_hcat_sample_matrices_impl(filenames, args...; kwargs...)
+function load_hcat_sample_matrices_impl(filenames, matrix_metadatas, var_inds; kwargs...)
 	@assert all(x->x isa ChecksummedFilePath, filenames)
 	filenames = string.(filenames)
-	SCPCore.load_hcat_sample_matrices(filenames, args...; kwargs...)
+	SCPCore.load_hcat_sample_matrices(filenames, matrix_metadatas, var_inds; kwargs...)
 end
 load_hcat_sample_matrices_spec(filenames, matrix_metadatas, var_inds; kwargs...) =
 	create_spec(load_hcat_sample_matrices_impl, filenames, matrix_metadatas, var_inds; kwargs..., __version=v"0.1.0")

@@ -279,8 +279,7 @@ function table_getindex_impl(table, ind)
 	end
 end
 table_getindex_impl_spec(table, ind) =
-	create_spec(Preprocess(table_getindex_impl), forwarded_to_impl(table), forwarded_to_impl(ind))
-# table_getindex_pr(action, table, ind) = table_getindex_impl_spec(action(table), action(ind))
+	create_spec(Preprocess(table_getindex_impl), forwarded_to_impl(table), fetched(ind))
 function table_getindex_pr(action, table, ind)
 	table_p = action(table)
 	result = table_getindex_impl_spec(table_p, action(ind))

@@ -13,8 +13,9 @@ args2vec_spec(::Type{T}, args...) where T =
 _getindex_error(ind) = throw(ArgumentError("Raw indices not allowed when projecting (unless containers are identical). Got indices: $ind."))
 _getindex_error_spec(ind) = create_spec(_getindex_error, ind; __version=v"0.1.0")
 
-# getindex_impl_spec(v, ind) = ind===Colon() ? v : create_spec(getindex, v, ind; __version=v"0.1.0")
-getindex_impl_spec(v, ind) = ind===Colon() ? v : create_spec(getindex, v, prefetched(ind); __version=v"0.1.0")
+getindex_impl(v, ind) = ind===Colon() ? v : create_spec(getindex, v, ind; __version=v"0.1.0")
+getindex_impl_spec(v, ind) = create_spec(Preprocess(getindex_impl), v, fetched(ind))
+
 # function getindex_pr(action, v, ind) = getindex_impl_spec(action(v), action(ind))
 function getindex_pr(action, v, ind)
 	v_p = action(v)
@@ -43,7 +44,16 @@ length_pr(action, x) = create_spec(length, action(x); __version=v"0.1.0")
 length_spec(x) = create_spec(Projectable(length_pr), x)
 
 
-isequal_impl_spec(x, y) = create_spec(isequal, x, y; __version=v"0.1.0")
+function isequal_impl_spec(x, y)
+	if isequal(x,y)
+		true # early out
+	elseif !(x isa Spec) && !(y isa Spec)
+		false # early out
+	else
+		create_spec(isequal, x, y; __version=v"0.1.0")
+	end
+end
+
 isequal_pr(action, x, y) = isequal_impl_spec(action(x), action(y))
 isequal_spec(x, y) = create_spec(Projectable(isequal_pr), x, y)
 
@@ -109,17 +119,18 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 		ids = id_column_spec(df)
 		ids2 = action(ids) # IDs from projected dataset
 
-		if isequal(ids, ids2)
-			return matching_ind # Early out, the IDs are identical in the base and projected data sets, so we can use the same indices
-		end
+
+		cond = isequal_impl_spec(ids, ids2)
 
 		matching_ids = table_getindex_impl_spec(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())
-
 		if project_ids == :yes
-			return indexin_impl_spec(matching_ids, ids2; not_found=:error) # Use order from unprojected
+			proj_ind = indexin_impl_spec(matching_ids, ids2; not_found=:error) # Use order from unprojected
 		else#if project_ids == :intersect
-			return indexin_impl_spec(matching_ids, ids2; not_found=:skip) # Use order from unprojected
+			proj_ind = indexin_impl_spec(matching_ids, ids2; not_found=:skip) # Use order from unprojected
 		end
+
+		# This gives us an early out when ids==ids2, since we can just return matching_ind in that case (no need to bother with getting matching ids and doing indexin)
+		ifelse_spec(cond, matching_ind, proj_ind)
 	end
 end
 create_find_matching_ind_spec(f, df; project_ids) =

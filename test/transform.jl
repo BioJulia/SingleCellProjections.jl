@@ -35,13 +35,11 @@
 		p_matrix_job2 = Jobs.get_matrix(Jobs.logtransform(T_args..., counts_job_p; kwargs...))
 
 		# Test that it is identical to logtransforming without projection
-		# TODO: Fix this, it's just indexing by a vector 1:N vs :
-		@test_broken forward(p_matrix_job).spec == forward(p_matrix_job2).spec
+		@test forward(p_matrix_job).spec == forward(p_matrix_job2).spec
 
 
-		# TODO: Fix this?
-		@test_broken forward(Jobs.get_var(p_job)).spec == forward(Jobs.get_var(counts_job_p)).spec
-		@test isequal(fetch!(Jobs.get_var(p_job)), fetch!(Jobs.get_var(counts_job_p))) # Remove once the above has been fixed
+		@test forward(Jobs.get_var(p_job)).spec == forward(Jobs.get_var(counts_job_p)).spec
+		# @test isequal(fetch!(Jobs.get_var(p_job)), fetch!(Jobs.get_var(counts_job_p))) # Remove once the above has been fixed
 
 		@test forward(Jobs.get_obs(p_job)).spec == forward(Jobs.get_obs(counts_job_p)).spec
 
