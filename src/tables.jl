@@ -307,6 +307,69 @@ table_getindex_spec(table, ind) = create_spec(Preprocess(table_getindex), table,
 
 
 
+# TODO: Try to implementl table_leftjoin in terms of other, more basic functions that we just preprocess to
+function table_leftjoin_fallback(a::DataFrame, b::DataFrame)
+	ind = indexin_impl(a[!,1], b[!,1]; not_found=:nothing)
+	b = select(b, Not(1); copycols=false) # get rid of ID column
+	b_reordered = mapcols(b) do col
+		getindex_or_missing(col, ind)
+	end
+	hcat(a, b_reordered; copycols=false)
+end
+function table_leftjoin_impl(a, b)
+	if a isa Spec && a.f == create_table_impl && b isa Spec && b.f == create_table_impl
+		idcol_a, ids_a = a.args[1]
+		idcol_b, ids_b = b.args[1]
+		idcol_a != idcol_b && throw(ArgumentError("ID column names \"$idcol_a\" and \"$idcol_b\" do not match."))
+
+		names_a = first.(a.args)
+		names_b = first.(b.args)
+		common_names = intersect(@view(names_a[2:end]), @view(names_b[2:end]))
+		isempty(common_names) || throw(ArgumentError("Table columns must be different (except ID column), found these common columns: $common_names"))
+
+		ind_spec = indexin_impl_spec(ids_a, ids_b; not_found=:nothing)
+		b_cols = ReproducibleJobs.unsafe_unmanage(b.args)
+		joined_cols = [k=>getindex_or_missing_impl_spec(v,ind_spec) for (k,v) in @view(b_cols[2:end])]
+		create_table_impl_spec(a.args..., joined_cols...)
+	else
+		return create_spec(table_leftjoin_fallback, a, b; __version=v"0.1.0")
+	end
+end
+table_leftjoin_impl_spec(a, b) =
+	create_spec(Preprocess(table_leftjoin_impl), forwarded_to_impl(a), forwarded_to_impl(b))
+table_leftjoin_pr(action, a, b) = table_leftjoin_impl_spec(action(a), action(b))
+function table_leftjoin(a, b)
+	# Both Projectable(create_table_pr)
+	# -> create_table_spec
+	# At least one Projectable
+	# -> Projectable
+	# otherwise
+	# -> impl
+
+	if a isa Spec && a.f === Projectable(create_table_pr) && b isa Spec && b.f === Projectable(create_table_pr)
+		idcol_a, ids_a = a.args[1]
+		idcol_b, ids_b = b.args[1]
+		idcol_a != idcol_b && throw(ArgumentError("ID column names \"$idcol_a\" and \"$idcol_b\" do not match."))
+
+		names_a = first.(a.args)
+		names_b = first.(b.args)
+		common_names = intersect(@view(names_a[2:end]), @view(names_b[2:end]))
+		isempty(common_names) || throw(ArgumentError("Table columns must be different (except ID column), found these common columns: $common_names"))
+
+		ind_spec = indexin_spec(ids_a, ids_b; not_found=:nothing)
+		b_cols = ReproducibleJobs.unsafe_unmanage(b.args)
+		joined_cols = [k=>getindex_or_missing_spec(v,ind_spec) for (k,v) in @view(b_cols[2:end])]
+		create_table_spec(a.args..., joined_cols...)
+	elseif (a isa Spec && a.f isa Projectable) || (b isa Spec && b.f isa Projectable)
+		return create_spec(Projectable(table_leftjoin_pr), a, b)
+	else
+		return table_leftjoin_impl(a, b)
+	end
+end
+table_leftjoin_spec(a, b) = create_spec(Preprocess(table_leftjoin), a, b)
+
+
+
 
 
 
@@ -339,8 +402,8 @@ intersect_ids_pr(action, a, b) = intersect_ids_impl_spec(action(a), action(b))
 function intersect_ids(a, b)
 	# Both Projectable(create_table_pr)
 	# -> create_table_spec
-	# At least one projectable
-	# -> project
+	# At least one Projectable
+	# -> Projectable
 	# otherwise
 	# -> impl
 

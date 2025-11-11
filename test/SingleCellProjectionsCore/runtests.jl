@@ -3,7 +3,6 @@ using .SingleCellProjections.SingleCellProjectionsCore
 # using .SingleCellProjectionsCore.MatrixExpressions
 using Test
 # using Random
-using StableRNGs
 using StaticArrays
 using Statistics
 # using SCTransform

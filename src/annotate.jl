@@ -1,15 +1,15 @@
-# TODO: Find a better name?
-function annot_leftjoin_impl(annot::DataFrame, df)
-	id_col = only(names(annot,1))
-	df_id_col = only(names(df,1))
-	@assert id_col == df_id_col "Annotation IDs didn't match, got \"$df_id_col\", but expected \"$id_col\"."
-	annot = copy(annot; copycols=false)
-	leftjoin!(annot, df; on=id_col)
-end
-annot_leftjoin(action::Action, args...) =
-	create_spec(annot_leftjoin_impl, action(args)...; __version=v"0.1.0")
+# # TODO: Find a better name?
+# function annot_leftjoin_impl(annot::DataFrame, df)
+# 	id_col = only(names(annot,1))
+# 	df_id_col = only(names(df,1))
+# 	@assert id_col == df_id_col "Annotation IDs didn't match, got \"$df_id_col\", but expected \"$id_col\"."
+# 	annot = copy(annot; copycols=false)
+# 	leftjoin!(annot, df; on=id_col)
+# end
+# annot_leftjoin(action::Action, args...) =
+# 	create_spec(annot_leftjoin_impl, action(args)...; __version=v"0.1.0")
 
-create_annot_leftjoin_spec(annot, df) = create_spec(Projectable(annot_leftjoin), annot, df)
+# create_annot_leftjoin_spec(annot, df) = create_spec(Projectable(annot_leftjoin), annot, df)
 
 
 
@@ -18,12 +18,10 @@ function annotate(f::Union{Var,Obs}, data; kwargs...)
 	s = get_spec(f, data)
 	df = get(kwargs, f isa Var ? :var : :obs, nothing)
 	df === nothing && return s
-	return create_annot_leftjoin_spec(s, df)
+	# return create_annot_leftjoin_spec(s, df)
+	table_leftjoin_spec(s, df)
 end
 
-# These should perhaps have a parameter saying how projections should be handled.
-# Because modifications to base var we probably also want in proj var.
-# Or maybe this will be solved differently, some projection step might choose to replace proj var with base var, and then it's not a problem.
 Jobs.annotate_obs(data, df; kwargs...) =
 	Job(create_spec(DataMatrixFunction(annotate), data; kwargs..., obs=df))
 Jobs.annotate_var(data, df; kwargs...) =

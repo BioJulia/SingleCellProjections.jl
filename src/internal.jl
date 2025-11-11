@@ -30,6 +30,41 @@ function getindex_pr(action, v, ind)
 end
 getindex_spec(v, ind) = create_spec(Projectable(getindex_pr), v, ind)
 
+
+
+# TODO: Find a better name? These are essentially getindex, but we map `nothing` to `missing`. It is useful for leftjoins on IDs.
+function getindex_or_missing(v::AbstractVector{Tv}, ind::AbstractVector{Ti}) where {Tv,Ti}
+	if Nothing<:Ti
+		# If we want, we could narrow the type to T if there are no Nothing in the vector
+		# But we do that work in indexin (narrow the index type), so skip it here, at least for now.
+		Union{Missing,Tv}[i===nothing ? missing : v[i] for i in ind]
+	else
+		v[ind]
+	end
+end
+
+getindex_or_missing_impl(v, ind) = ind===Colon() ? v : create_spec(getindex_or_missing, v, ind; __version=v"0.1.1")
+getindex_or_missing_impl_spec(v, ind) = create_spec(Preprocess(getindex_or_missing_impl), v, fetched(ind))
+
+function getindex_or_missing_pr(action, v, ind)
+	v_p = action(v)
+	result = getindex_or_missing_impl_spec(v_p, action(ind))
+
+	if action isa Projection && !(ind isa Spec)
+		cond = isequal_impl_spec(v, v_p)
+		result = ifelse_spec(cond, result, _getindex_or_missing_error_spec(ind))
+	end
+
+	result
+end
+getindex_or_missing_spec(v, ind) = create_spec(Projectable(getindex_or_missing_pr), v, ind)
+
+
+
+
+
+
+
 issubset_pr(action, a, b) = create_spec(issubset, action(a), action(b); __version=v"0.1.0")
 issubset_spec(a, b) = create_spec(Projectable(issubset_pr), a, b)
 
@@ -59,14 +94,16 @@ isequal_spec(x, y) = create_spec(Projectable(isequal_pr), x, y)
 
 
 function indexin_impl(a::AbstractVector, b::AbstractVector; not_found)
-	# TODO: Find better names `not_found`, `:error` and `:skip`
-	@assert not_found in (:error, :skip) # Add an option to accept nothing in the result and return it?
+	# TODO: Find better names `not_found`, `:error`, `:skip` and `:nothing`
+	@assert not_found in (:error, :skip, :nothing)
 	ind = indexin(a, b)
 
 	if not_found == :error
 		any(isnothing, ind) && error("Found values in `a` that are not present in `b`.")
 	elseif not_found == :skip
 		filter!(!isnothing, ind)
+	elseif not_found == :nothing && any(isnothing, ind)
+		return ind
 	end
 	return convert(Vector{Int}, ind)
 end
