@@ -1,7 +1,7 @@
 # WIP - some of these might not be needed.
 
-ifelse_pr(action::Action, cond, x, y) = ifelse_spec(action(cond), action(x), action(y))
-ifelse_pr_spec(cond, x, y) = create_spec(Projectable(ifelse_pr), cond, x, y)
+# ifelse_pr(action::Action, cond, x, y) = ifelse_spec(action(cond), action(x), action(y))
+# ifelse_pr_spec(cond, x, y) = create_spec(Projectable(ifelse_pr), cond, x, y)
 
 args2vec_impl(::Type{T}, args...) where T = T[args...]
 args2vec_pr(action::Action, ::Type{T}, args...) where T =

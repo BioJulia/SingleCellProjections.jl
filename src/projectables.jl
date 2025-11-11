@@ -8,6 +8,8 @@ end
 
 
 
+is_projectable_spec(x) = x isa Spec && x.f isa Projectable
+
 # is_projectable_spec(::Any) = false
 # function is_projectable_spec(sa::SpecArgs)
 # 	f = sa.f
