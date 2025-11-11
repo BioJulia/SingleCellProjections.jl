@@ -6,7 +6,7 @@
 
 	counts_sub_job = Jobs.load_counts(h5_subset_path; sample_names="p")
 
-	
+
 	# Test result
 	let counts = fetch!(counts_job)
 		@test size(counts)==(P,N)

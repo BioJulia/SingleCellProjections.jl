@@ -126,7 +126,7 @@ Jobs.get_value_colname(table) = Job(get_value_colname_spec(table))
 
 
 
-get_columns_fallback(table, colnames::String...) = select(table, [colnames...])
+get_columns_fallback(table, colnames::String...) = select(table, [colnames...]; copycols=false)
 function get_columns_impl(table, colnames::String...)
 	if table isa Spec && table.f == create_table_impl
 		table_colnames = first.(table.args)
@@ -134,7 +134,7 @@ function get_columns_impl(table, colnames::String...)
 		any(isnothing, ind) && throw(ArgumentError("The following column names where not found: $(setdiff(colnames, table_colnames))"))
 		return create_table_impl_spec(table.args[ind]...)
 	else
-		return create_spec(get_columns_fallback, table; __version=v"0.1.0")
+		return create_spec(get_columns_fallback, table, colnames...; __version=v"0.1.0")
 	end
 end
 get_columns_impl_spec(table, colnames::String...) =
@@ -183,7 +183,7 @@ function column_data_impl(table, col)
 		i = _col_ind(table, col)
 		return table.args[i][2]
 	else
-		return create_spec(column_data_fallback, table; __version=v"0.1.0")
+		return create_spec(column_data_fallback, table, col; __version=v"0.1.0")
 	end
 end
 column_data_impl_spec(table, col) =
@@ -275,7 +275,7 @@ function table_getindex_impl(table, ind)
 		cols = (k=>getindex_impl_spec(v, ind) for (k,v) in table.args)
 		return create_table_impl_spec(cols...)
 	else
-		return create_spec(table_getindex_fallback, table, prefetch(ind); __version=v"0.1.0")
+		return create_spec(table_getindex_fallback, table, prefetched(ind); __version=v"0.1.0")
 	end
 end
 table_getindex_impl_spec(table, ind) =
@@ -367,6 +367,7 @@ function table_leftjoin(a, b)
 	end
 end
 table_leftjoin_spec(a, b) = create_spec(Preprocess(table_leftjoin), a, b)
+Jobs.table_leftjoin(a, b) = Job(table_leftjoin_spec(a, b))
 
 
 

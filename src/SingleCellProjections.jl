@@ -86,6 +86,7 @@ module Jobs
 	function column_data end
 	function table_nrow end
 	function add_column end
+	function table_leftjoin end
 
 	function load_csv end
 	function umap end

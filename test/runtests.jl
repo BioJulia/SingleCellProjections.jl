@@ -18,24 +18,31 @@ using UMAP
 using TSne
 using PrincipalMomentAnalysis
 
+using CSV
+
 include("test_utils.jl")
 include("common_data.jl")
 
 
 # mktempdir() do tmp # Cleanup directly
 let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
+	@testset "SingleCellProjections.jl" begin
+		with_cache(Cache(tmp)) do
 
-	# TODO: Find a better way to do this (probably similar to how we replace and reset the Cache below)
-	empty!(ReproducibleJobs.default_scheduler())
-	empty!(ReproducibleJobs.default_deduplicator().d)
+			# Consider doing this kind of cache testing in ReproducibleJobs.jl only.
+			@testset "$cache_status" for cache_status in ("New Disk Cache", "Reused Disk Cache")
+				# TODO: Find a better way to do this (probably similar to how we replace and reset the Cache above)
+				empty!(ReproducibleJobs.default_scheduler())
+				empty!(ReproducibleJobs.default_deduplicator().d)
 
-	with_cache(Cache(tmp)) do
-		@testset "SingleCellProjections.jl" begin
-			include("load.jl")
-			include("transform.jl")
-			include("filter.jl")
+				include("tables.jl")
+				include("load.jl")
+				include("transform.jl")
+				include("filter.jl")
+			end
 		end
 	end
+
 end
 
 include("SingleCellProjectionsCore/runtests.jl")
