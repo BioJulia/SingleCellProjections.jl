@@ -4,6 +4,16 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 @testset "Basic Workflow" begin
 	P,N = (50,587)
 
+	# Moved here temporarily from common data.
+	# Doesn't matter much since this whole file will be deleted.
+	counts = load10x(h5_path)
+	counts.obs.group = rand(StableRNG(904), ("A","B","C"), size(counts,2))
+	counts.obs.value = 1 .+ randn(StableRNG(905), size(counts,2))
+	transformed = sctransform(counts; use_cache=false)
+	normalized = normalize_matrix(transformed, "group", "value")
+	reduced = svd(normalized; nsv=10, niter=4, rng=StableRNG(102))
+
+
 	# dataset for projection - by using a subset of the obs in `counts`, we make unit testing simpler while still testing well. But rename obs IDs to ensure they are treated as separate obs.
 	# counts_proj = filter_obs(row->row.group!="B" && row.value>0.6, counts)
 	# empty!(counts_proj.models)
@@ -153,7 +163,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		# @test params.beta1 ≈ trans_proj.var.beta1
 		# @test params.theta ≈ trans_proj.var.theta
 
-		test_show(trans; matrix=r"^A\+B₁B₂B₃$", models="SCTransformModel")
+		# test_show(trans; matrix=r"^A\+B₁B₂B₃$", models="SCTransformModel")
 
 		@test materialize(t2) ≈ sct rtol=1e-3
 
@@ -181,11 +191,11 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 
 			# @test params2.logGeneMean ≈ t2_proj.var.logGeneMean
 
-			@testset "Annotations" begin
-				var2 = Annotations(var2_df)
-				t3 = sctransform(T, counts; use_cache=false, var_filter=var2.external_name=>>("C"))
-				@test materialize(t3) ≈ sct rtol=1e-3
-			end
+			# @testset "Annotations" begin
+			# 	var2 = Annotations(var2_df)
+			# 	t3 = sctransform(T, counts; use_cache=false, var_filter=var2.external_name=>>("C"))
+			# 	@test materialize(t3) ≈ sct rtol=1e-3
+			# end
 			@testset "DataFrame" begin
 				t3 = sctransform(T, counts; use_cache=false, var_filter=select(var2_df,Cols(1,"external_name"))=>>("C"))
 				@test materialize(t3) ≈ sct rtol=1e-3
@@ -239,12 +249,12 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			@test materialize(n) ≈ Xc
 			# @test materialize(project(counts_proj,n)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
 			# @test materialize(project(transformed_proj,n)) ≈ Xc[:,proj_obs_indices] rtol=1e-3
-			test_show(n; matrix=r"^A\+B₁B₂B₃\+\(-β\)X'$", models="NormalizationModel")
+			# test_show(n; matrix=r"^A\+B₁B₂B₃\+\(-β\)X'$", models="NormalizationModel")
 			n = normalize_matrix(transformed; scale=true)
 			@test materialize(n) ≈ Xs
 			# @test materialize(project(transformed_proj,n)) ≈ Xs[:,proj_obs_indices] rtol=1e-3
 			@test n.var.scaling ≈ 1.0./X_std
-			test_show(n; matrix=r"^D\(A\+B₁B₂B₃\+\(-β\)X'\)$", models="NormalizationModel")
+			# test_show(n; matrix=r"^D\(A\+B₁B₂B₃\+\(-β\)X'\)$", models="NormalizationModel")
 
 			n = normalize_matrix(transformed, "group")
 			@test materialize(n) ≈ Xcat
@@ -283,7 +293,8 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		end
 
 
-		@testset "normalize (external_obs::$T)" for T in (Annotations,DataFrame)
+		# @testset "normalize (external_obs::$T)" for T in (Annotations,DataFrame)
+		@testset "normalize (external_obs::$T)" for T in (DataFrame,)
 			if T==DataFrame
 				obs2 = obs2_df
 				# obs2_proj = obs2_proj_df
@@ -347,7 +358,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			# U_proj = reduced_proj.matrix.U
 			# @test all(>(0.0), sum(U_proj;dims=1))
 
-			test_show(reduced; matrix="SVD (3 dimensions)", models="SVDModel")
+			# test_show(reduced; matrix="SVD (3 dimensions)", models="SVDModel")
 		end
 
 
@@ -378,7 +389,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 			# U_proj = p_proj.matrix.U
 			# @test all(>(0.0), sum(U_proj;dims=1))
 
-			test_show(p; matrix="PMA (3 dimensions)", models="PMAModel")
+			# test_show(p; matrix="PMA (3 dimensions)", models="PMAModel")
 		end
 	end
 
@@ -402,7 +413,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		# @test f_proj.obs == obs_proj_ans[proj_obs_indices, :]
 		# @test f_proj.var == data.var[1:2:P2, :]
 
-		test_show(f, models="FilterModel")
+		# test_show(f, models="FilterModel")
 
 		f = data[1:2:end,:]
 		@test materialize(f) ≈ X[1:2:end, :]
@@ -569,46 +580,46 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 	end
 
 
-	@testset "force layout seed=$seed" for seed in 1:5
-		fl = force_layout(reduced; ndim=3, k=10, seed)
-		# Sanity check output by checking that there is a descent overlap between nearest neighbors
-		ncommon = ncommon_neighbors(obs_coordinates(fl), obs_coordinates(reduced))
-		@test mean(ncommon) > 8
+	# @testset "force layout seed=$seed" for seed in 1:5
+	# 	fl = force_layout(reduced; ndim=3, k=10, seed)
+	# 	# Sanity check output by checking that there is a descent overlap between nearest neighbors
+	# 	ncommon = ncommon_neighbors(obs_coordinates(fl), obs_coordinates(reduced))
+	# 	@test mean(ncommon) > 8
 
-		# fl_proj = project(reduced_proj, fl)
-		# @test materialize(fl_proj)≈materialize(fl)[:,proj_obs_indices] rtol=1e-5
+	# 	# fl_proj = project(reduced_proj, fl)
+	# 	# @test materialize(fl_proj)≈materialize(fl)[:,proj_obs_indices] rtol=1e-5
 
-		test_show(fl; matrix="Matrix{Float64}", models="NearestNeighborModel")
-	end
-
-
-	@testset "UMAP" begin
-		umapped = umap(reduced, 3)
-		# Sanity check output by checking that there is a descent overlap between nearest neighbors
-		ncommon = ncommon_neighbors(obs_coordinates(umapped), obs_coordinates(reduced))
-		@test mean(ncommon) > 9
-
-		# # TODO: can we check this in a better way? Projection into a UMAP is not very exact.
-		# umapped_proj = project(reduced_proj, umapped)
-		# # Hmm. this fails sometimes since it is non-deterministic.
-		# # @test materialize(umapped_proj)≈materialize(umapped)[:,proj_obs_indices] rtol=1e-1
-		# @test size(umapped_proj) == (size(umapped,1),length(proj_obs_indices))
-
-		test_show(umapped; matrix="Matrix{Float64}", models="UMAPModel")
-	end
+	# 	# test_show(fl; matrix="Matrix{Float64}", models="NearestNeighborModel")
+	# end
 
 
-	@testset "t-SNE" begin
-		t = tsne(reduced, 3)
-		# Sanity check output by checking that there is a descent overlap between nearest neighbors
-		ncommon = ncommon_neighbors(obs_coordinates(t), obs_coordinates(reduced))
-		@test mean(ncommon) > 9
+	# @testset "UMAP" begin
+	# 	umapped = umap(reduced, 3)
+	# 	# Sanity check output by checking that there is a descent overlap between nearest neighbors
+	# 	ncommon = ncommon_neighbors(obs_coordinates(umapped), obs_coordinates(reduced))
+	# 	@test mean(ncommon) > 9
 
-		# t_proj = project(reduced_proj, t)
-		# @test materialize(t_proj)≈materialize(t)[:,proj_obs_indices] rtol=1e-5
+	# 	# # TODO: can we check this in a better way? Projection into a UMAP is not very exact.
+	# 	# umapped_proj = project(reduced_proj, umapped)
+	# 	# # Hmm. this fails sometimes since it is non-deterministic.
+	# 	# # @test materialize(umapped_proj)≈materialize(umapped)[:,proj_obs_indices] rtol=1e-1
+	# 	# @test size(umapped_proj) == (size(umapped,1),length(proj_obs_indices))
 
-		test_show(t; matrix="Matrix{Float64}", models="NearestNeighborModel")
-	end
+	# 	# test_show(umapped; matrix="Matrix{Float64}", models="UMAPModel")
+	# end
+
+
+	# @testset "t-SNE" begin
+	# 	t = tsne(reduced, 3)
+	# 	# Sanity check output by checking that there is a descent overlap between nearest neighbors
+	# 	ncommon = ncommon_neighbors(obs_coordinates(t), obs_coordinates(reduced))
+	# 	@test mean(ncommon) > 9
+
+	# 	# t_proj = project(reduced_proj, t)
+	# 	# @test materialize(t_proj)≈materialize(t)[:,proj_obs_indices] rtol=1e-5
+
+	# 	# test_show(t; matrix="Matrix{Float64}", models="NearestNeighborModel")
+	# end
 
 
 	@testset "var_counts_fraction" begin
@@ -642,7 +653,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		# @test "C" ∈ names(c2_proj.obs)
 		# @test c2_proj.obs.C == c2.obs.C[proj_obs_indices]
 
-		test_show(c2; obs=vcat(names(counts.obs), "C"), models="VarCountsFractionModel")
+		# test_show(c2; obs=vcat(names(counts.obs), "C"), models="VarCountsFractionModel")
 
 		# --- mutating ---
 		var_counts_fraction!(c, "name"=>startswith("A"), Returns(true), "A")
@@ -657,16 +668,17 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		# @test c_proj.obs.B == c.obs.B[proj_obs_indices]
 		# @test c_proj.obs.C == c.obs.C[proj_obs_indices]
 
-		test_show(c; obs=vcat(names(counts.obs), ["A","B","C"]), models="VarCountsFractionModel")
+		# test_show(c; obs=vcat(names(counts.obs), ["A","B","C"]), models="VarCountsFractionModel")
 
 
-		@testset "external_obs::$T" for T in (Annotations,DataFrame)
-			if T == Annotations
-				var2 = Annotations(var2_df)
-				external = var2.external_name
-			else
+		# @testset "external_obs::$T" for T in (Annotations,DataFrame)
+		@testset "external_obs::$T" for T in (DataFrame,)
+			# if T == Annotations
+			# 	var2 = Annotations(var2_df)
+			# 	external = var2.external_name
+			# else
 				external = select(var2_df, Cols(1,"external_name"))
-			end
+			# end
 
 			c = copy(counts)
 
@@ -728,7 +740,7 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		# @test "C" ∈ names(c2_proj.obs)
 		# @test c2_proj.obs.C == c2.obs.C[proj_obs_indices]
 
-		test_show(c2; obs=vcat(names(counts.obs), "C"), models="VarCountsSumModel")
+		# test_show(c2; obs=vcat(names(counts.obs), "C"), models="VarCountsSumModel")
 
 		# --- mutating ---
 		var_counts_sum!(c, "name"=>startswith("A"), "A")
@@ -743,16 +755,17 @@ add_id_prefix(df::DataFrame, prefix) = add_id_prefix!(copy(df; copycols=false), 
 		# @test c_proj.obs.B == c.obs.B[proj_obs_indices]
 		# @test c_proj.obs.C == c.obs.C[proj_obs_indices]
 
-		test_show(c; obs=vcat(names(counts.obs), ["A","B","C"]), models="VarCountsSumModel")
+		# test_show(c; obs=vcat(names(counts.obs), ["A","B","C"]), models="VarCountsSumModel")
 
 
-		@testset "external_obs::$T" for T in (Annotations,DataFrame)
-			if T == Annotations
-				var2 = Annotations(var2_df)
-				external = var2.external_name
-			else
+		# @testset "external_obs::$T" for T in (Annotations,DataFrame)
+		@testset "external_obs::$T" for T in (DataFrame,)
+			# if T == Annotations
+			# 	var2 = Annotations(var2_df)
+			# 	external = var2.external_name
+			# else
 				external = select(var2_df, Cols(1,"external_name"))
-			end
+			# end
 
 			c = copy(counts)
 

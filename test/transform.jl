@@ -113,16 +113,20 @@
 
 			let sct = fetch!(sct_job)
 				# var
-				@test params.id == sct.var.id
-				@test params.name == sct.var.name
-				@test params.feature_type == sct.var.feature_type
+				cols = ["id", "name", "feature_type", "genome"]
+				@test sct.var.id == params.id
+				@test sct.var.name == params.name
+				@test sct.var.feature_type == params.feature_type
+				@test all(==("GRCh38"), sct.var.genome)
 				if annotate
-					@test params.logGeneMean ≈ sct.var.logGeneMean
-					@test params.outlier == sct.var.outlier
-					@test params.beta0 ≈ sct.var.beta0
-					@test params.beta1 ≈ sct.var.beta1
-					@test params.theta ≈ sct.var.theta
+					push!(cols, "logGeneMean", "outlier", "beta0", "beta1", "theta")
+					@test sct.var.logGeneMean ≈ params.logGeneMean
+					@test sct.var.outlier == params.outlier
+					@test sct.var.beta0 ≈ params.beta0
+					@test sct.var.beta1 ≈ params.beta1
+					@test sct.var.theta ≈ params.theta
 				end
+				@test names(sct.var) == cols
 
 				# obs
 				test_dataframe_columns_identical("sct.obs vs counts.obs", sct.obs, counts.obs)
@@ -132,6 +136,40 @@
 				@test eltype(sct.matrix.terms[1].matrix) == T
 				@test materialize(sct.matrix) ≈ X rtol=1e-3
 			end
+
+			p_job = Jobs.project(sct_job, counts_job=>counts_sub_job)
+
+			@test forward(Jobs.get_obs(p_job)).spec == forward(Jobs.get_obs(counts_sub_job)).spec
+			# TODO: test var forwarding?
+			# @show forward(Jobs.get_var(p_job))
+
+			let p = fetch!(p_job), counts_sub = fetch!(counts_sub_job)
+				Xs = sctransform(expected_sparse[:, pbmc_subset_ind], counts.var, params)
+
+				# var
+				cols = ["id", "name", "feature_type", "genome"]
+				@test p.var.id == params.id
+				@test p.var.name == params.name
+				@test p.var.feature_type == params.feature_type
+				@test all(==("GRCh38"), p.var.genome)
+				if annotate
+					push!(cols, "logGeneMean", "outlier", "beta0", "beta1", "theta")
+					@test p.var.logGeneMean ≈ params.logGeneMean
+					@test p.var.outlier == params.outlier
+					@test p.var.beta0 ≈ params.beta0
+					@test p.var.beta1 ≈ params.beta1
+					@test p.var.theta ≈ params.theta
+				end
+				@test names(p.var) == cols
+
+				test_dataframe_columns_identical("p.obs vs counts_sub.obs", p.obs, counts_sub.obs)
+
+				# matrix
+				@test size(p.matrix) == size(Xs)
+				@test eltype(p.matrix.terms[1].matrix) == T
+				@test materialize(p.matrix) ≈ Xs rtol=1e-3
+			end
+
 		end
 
 		@testset "var_filter" begin
@@ -149,16 +187,20 @@
 
 			let sct = fetch!(sct_job)
 				# var
-				@test params_filtered.id == sct.var.id
-				@test params_filtered.name == sct.var.name
-				@test params_filtered.feature_type == sct.var.feature_type
+				cols = ["id", "name", "feature_type", "genome"]
+				@test sct.var.id == params_filtered.id
+				@test sct.var.name == params_filtered.name
+				@test sct.var.feature_type == params_filtered.feature_type
+				@test all(==("GRCh38"), sct.var.genome)
 				if annotate
-					@test params_filtered.logGeneMean ≈ sct.var.logGeneMean
-					@test params_filtered.outlier == sct.var.outlier
-					@test params_filtered.beta0 ≈ sct.var.beta0
-					@test params_filtered.beta1 ≈ sct.var.beta1
-					@test params_filtered.theta ≈ sct.var.theta
+					push!(cols, "logGeneMean", "outlier", "beta0", "beta1", "theta")
+					@test sct.var.logGeneMean ≈ params_filtered.logGeneMean
+					@test sct.var.outlier == params_filtered.outlier
+					@test sct.var.beta0 ≈ params_filtered.beta0
+					@test sct.var.beta1 ≈ params_filtered.beta1
+					@test sct.var.theta ≈ params_filtered.theta
 				end
+				@test names(sct.var) == cols
 
 				# obs
 				test_dataframe_columns_identical("sct.obs vs counts.obs", sct.obs, counts.obs)
