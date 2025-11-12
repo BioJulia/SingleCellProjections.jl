@@ -2,6 +2,7 @@ using Test
 using SingleCellProjections
 using .SingleCellProjections.SingleCellProjectionsCore
 using .SingleCellProjectionsCore.MatrixExpressions
+using SCTransform
 using ReproducibleJobs: ReproducibleJobs, Cache, get_cache, with_cache, fetch!, forward
 
 using StableRNGs
@@ -31,6 +32,7 @@ let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 
 			# Consider doing this kind of cache testing in ReproducibleJobs.jl only.
 			@testset "$cache_status" for cache_status in ("New Disk Cache", "Reused Disk Cache")
+			# @testset "$cache_status" for cache_status in ("New Disk Cache",)
 				# TODO: Find a better way to do this (probably similar to how we replace and reset the Cache above)
 				empty!(ReproducibleJobs.default_scheduler())
 				empty!(ReproducibleJobs.default_deduplicator().d)

@@ -1,6 +1,6 @@
 # For each interval in x, find the point in xValuesSorted closest to the midpoint.
 # Ignores points already present in x.
-function midpoints(xInd::Vector{Int}, xValuesSorted::Vector{Float64})
+function midpoints(xInd::AbstractVector{Int}, xValuesSorted::AbstractVector{Float64})
 	N = length(xInd)
 	# midPoints = Float64[]
 	midPointInd = Int[] # index in vector of sorted values
@@ -36,7 +36,9 @@ function midpoints(xInd::Vector{Int}, xValuesSorted::Vector{Float64})
 end
 
 
-function bilinearapproximation(xInd0::Vector{Int},yInd0::Vector{Int},xValuesSorted::Vector{Float64},yValuesSorted::Vector{Float64},f::Function;
+function bilinearapproximation(xInd0::AbstractVector{Int}, yInd0::AbstractVector{Int},
+                               xValuesSorted::AbstractVector{Float64}, yValuesSorted::AbstractVector{Float64},
+                               f::Function;
                                rtol=1e-3,atol=0)
 	@assert all(1 .<= xInd0 .<= length(xValuesSorted))
 	@assert all(1 .<= yInd0 .<= length(yValuesSorted))
@@ -99,7 +101,7 @@ function bilinearapproximation(xInd0::Vector{Int},yInd0::Vector{Int},xValuesSort
 end
 
 
-function linearinterpolationmatrix(xValues::Vector{Float64},xNodes::Vector{Float64},transpose=false)
+function linearinterpolationmatrix(xValues::AbstractVector{Float64}, xNodes::AbstractVector{Float64}, transpose=false)
 	# construct sparse matrices for each side
 	AI = Int[]
 	AJ = Int[]

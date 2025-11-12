@@ -5,7 +5,7 @@ function muoversigma(b0::Float64,b1::Float64,theta::Float64,logM::Float64)
 end
 
 function muoversigmafactorization(logCellCounts::AbstractVector, logGeneMean::AbstractVector,
-                                  b0::Vector{Float64},b1::Vector{Float64},theta::Vector{Float64};
+                                  b0::AbstractVector{Float64},b1::AbstractVector{Float64},theta::AbstractVector{Float64};
                                   rtol=1e-3,atol=0.0)
 	xValues = logCellCounts
 	yValues = logGeneMean
@@ -31,8 +31,8 @@ end
 
 
 # assumes each column is a cell
-function dividebysigma!(X::SparseMatrixCSC{T}, logCellCounts::Vector{Float64},
-                        β0::Vector{Float64}, β1::Vector{Float64}, θ::Vector{Float64};
+function dividebysigma!(X::SparseMatrixCSC{T}, logCellCounts::AbstractVector{Float64},
+                        β0::AbstractVector{Float64}, β1::AbstractVector{Float64}, θ::AbstractVector{Float64};
                         clip) where T
 	P,N = size(X)
 	@assert clip>0

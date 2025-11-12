@@ -96,4 +96,20 @@
 		end
 	end
 
+
+	@testset "sctransform T=$T" for  T in (Float64,Float32)
+		X = sctransform(expected_sparse, counts.var, params)
+
+		T_args = T==Float64 ? () : (T,)
+		sct_job = Jobs.sctransform(T_args..., counts_job)
+
+		@test forward(Jobs.get_obs(sct_job)).spec == forward(Jobs.get_obs(counts_job)).spec
+		# TODO: test var
+
+		# TODO: test results
+		let sct = fetch!(sct_job)
+		end
+	end
+
+
 end

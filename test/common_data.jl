@@ -29,7 +29,7 @@ pbmc_subset_ind = indexin(pbmc_subset_barcodes, expected_barcodes)
 
 
 
-# params = scparams(expected_sparse, DataFrame(id=expected_feature_ids, name=expected_feature_names, feature_type=expected_feature_types); use_cache=false)
+params = SCTransform.scparams(expected_sparse, DataFrame(id=expected_feature_ids, name=expected_feature_names, feature_type=expected_feature_types); use_cache=false)
 
 # # Data shared between tests
 # counts = load10x(h5_path)
