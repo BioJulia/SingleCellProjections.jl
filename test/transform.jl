@@ -162,6 +162,7 @@
 				end
 				@test names(p.var) == cols
 
+				# obs
 				test_dataframe_columns_identical("p.obs vs counts_sub.obs", p.obs, counts_sub.obs)
 
 				# matrix
@@ -169,7 +170,6 @@
 				@test eltype(p.matrix.terms[1].matrix) == T
 				@test materialize(p.matrix) ≈ Xs rtol=1e-3
 			end
-
 		end
 
 		@testset "var_filter" begin
@@ -209,6 +209,41 @@
 				@test size(sct.matrix) == size(X)
 				@test eltype(sct.matrix.terms[1].matrix) == T
 				@test materialize(sct.matrix) ≈ X rtol=1e-3
+			end
+
+
+			p_job = Jobs.project(sct_job, counts_job=>counts_sub_job)
+
+			@test forward(Jobs.get_obs(p_job)).spec == forward(Jobs.get_obs(counts_sub_job)).spec
+			# TODO: test var forwarding?
+			# @show forward(Jobs.get_var(p_job))
+
+			let p = fetch!(p_job), counts_sub = fetch!(counts_sub_job)
+				Xs = sctransform(es[:, pbmc_subset_ind], counts.var[var_mask,:], params_filtered)
+
+				# var
+				cols = ["id", "name", "feature_type", "genome"]
+				@test p.var.id == params_filtered.id
+				@test p.var.name == params_filtered.name
+				@test p.var.feature_type == params_filtered.feature_type
+				@test all(==("GRCh38"), p.var.genome)
+				if annotate
+					push!(cols, "logGeneMean", "outlier", "beta0", "beta1", "theta")
+					@test p.var.logGeneMean ≈ params_filtered.logGeneMean
+					@test p.var.outlier == params_filtered.outlier
+					@test p.var.beta0 ≈ params_filtered.beta0
+					@test p.var.beta1 ≈ params_filtered.beta1
+					@test p.var.theta ≈ params_filtered.theta
+				end
+				@test names(p.var) == cols
+
+				# obs
+				test_dataframe_columns_identical("p.obs vs counts_sub.obs", p.obs, counts_sub.obs)
+
+				# matrix
+				@test size(p.matrix) == size(Xs)
+				@test eltype(p.matrix.terms[1].matrix) == T
+				@test materialize(p.matrix) ≈ Xs rtol=1e-3
 			end
 		end
 	end
