@@ -5,8 +5,8 @@ find_matching_ind(::Colon, df::DataFrame) = Colon()
 
 
 function ids_to_indices(df::DataFrame, ids::DataFrame)
-	@assert size(df, 2)==1
-	@assert size(ids, 2)==1
+	@assert size(df, 2) == 1
+	@assert size(ids, 2) == 1
 	@assert names(df, 1) == names(ids, 1)
 
 	ind = indexin(ids[!,1], df[!,1])

@@ -1,6 +1,6 @@
 function subset_matrix(data; var_ids=:, obs_ids=:)
-	var_ind = create_ids_to_indices_spec(get_var_spec(data), var_ids)
-	obs_ind = create_ids_to_indices_spec(get_obs_spec(data), obs_ids)
+	var_ind = create_ids_to_indices_spec(id_column_spec(get_var_spec(data)), var_ids)
+	obs_ind = create_ids_to_indices_spec(id_column_spec(get_obs_spec(data)), obs_ids)
 	create_datamatrix_getindex_spec(data; var_ind, obs_ind)
 end
 
