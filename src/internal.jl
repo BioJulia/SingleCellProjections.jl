@@ -147,20 +147,28 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 	elseif f isa AbstractRange
 		matching_ind = f
 	elseif f isa Pair
-		(k,v) = f
+		k = first(f)
 
 		# subset the columns to only depend on those that are used
 		if k isa AbstractString
-			df2 = get_columns_impl_spec(df, k)
+			x = get_columns_impl_spec(df, k)
+			matching_ind = cached(find_matching_ind_impl_spec(f, x))
 		elseif k isa AbstractVector
-			df2 = get_columns_impl_spec(df, k...)
+			x = get_columns_impl_spec(df, k...)
+			matching_ind = cached(find_matching_ind_impl_spec(f, x))
 		elseif k isa Union{Spec, DataFrame}
 			# k is an "Annotation" - a DataFrame with an ID and a value column. Will be leftjoined and the function will be applied to the leftjoined vector with values.
-			error("Not implemented.")
+
+			ids_a = id_column_spec(df)
+			ids_b = id_column_spec(k)
+			ind_spec = indexin_impl_spec(ids_a, ids_b; not_found=:nothing)
+			v = value_column_data_spec(k)
+			x = getindex_or_missing_impl_spec(v, ind_spec) # The values of the annotation `k`, reorderd to match the order in df.
+
+			matching_ind = cached(find_matching_ind_impl_spec(last(f), x))
 		else
 			throw(ArgumentError("Unknown column selector $k of type $(typeof(k))."))
 		end
-		matching_ind = cached(find_matching_ind_impl_spec(f, df2))
 	else
 		# This is used when `f` is a function taking a DataFrameRow
 		matching_ind = cached(find_matching_ind_impl_spec(f, df))

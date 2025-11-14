@@ -1,7 +1,17 @@
 @testset "Filtering" begin
+	P,N = (50,587)
+
 	counts_job = Jobs.load_counts(h5_path; sample_names="a")
 	counts_job = Jobs.add_obs_column(counts_job, "group", counts_obs_group)
 	counts_job = Jobs.add_obs_column(counts_job, "value", counts_obs_value)
+
+
+	var_annot_df = select(fetch!(Jobs.get_var(counts_job)), ["id", "name"])[end:-4:1, :]
+	var_annot_spec = ReproducibleJobs.Job(SingleCellProjections.table_getindex_spec(Jobs.annotation(Jobs.get_var(counts_job), "name"), P:-4:1))
+
+	obs_annot_df = select(fetch!(Jobs.get_obs(counts_job)), ["cell_id", "barcode"])[end:-5:1, :]
+	obs_annot_spec = ReproducibleJobs.Job(SingleCellProjections.table_getindex_spec(Jobs.annotation(Jobs.get_obs(counts_job), "barcode"), N:-5:1))
+
 
 	# TODO: projections
 	# TODO: test forwarding
@@ -99,6 +109,27 @@
 			@test materialize(f) ≈ X[data.var.name.>"D", data.obs.group.=="A"]
 			@test isequal(f.var, filter("name"=>>("D"), data.var))
 			@test isequal(f.obs, filter("group"=>==("A"), data.obs))
+		end
+
+
+		# annotations
+		@testset "Var annot: $desc" for (desc, va) in (("DataFrame",var_annot_df),("Spec",var_annot_spec))
+			f_job = Jobs.filter_var(va=>!ismissing, data_job)
+			let f = fetch!(f_job)
+				var_mask = in(var_annot_df.name).(data.var.name)
+				@test materialize(f) ≈ X[var_mask, :]
+				@test isequal(f.var, data.var[var_mask, :])
+				test_dataframe_columns_identical("f.obs vs data.obs", f.obs, data.obs)
+			end
+		end
+		@testset "Obs annot: $desc" for (desc, oa) in (("DataFrame",obs_annot_df),("Spec",obs_annot_spec))
+			f_job = Jobs.filter_obs(oa=>!ismissing, data_job)
+			let f = fetch!(f_job)
+				obs_mask = in(obs_annot_df.barcode).(data.obs.barcode)
+				@test materialize(f) ≈ X[:, obs_mask]
+				@test isequal(f.obs, data.obs[obs_mask, :])
+				test_dataframe_columns_identical("f.var vs data.var", f.var, data.var)
+			end
 		end
 
 
