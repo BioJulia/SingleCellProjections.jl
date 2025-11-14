@@ -113,22 +113,32 @@
 
 
 		# annotations
-		@testset "Var annot: $desc" for (desc, va) in (("DataFrame",var_annot_df),("Spec",var_annot_spec))
-			f_job = Jobs.filter_var(va=>!ismissing, data_job)
-			let f = fetch!(f_job)
-				var_mask = in(var_annot_df.name).(data.var.name)
+		let var_mask = var_mask = in(var_annot_df.name).(data.var.name)
+			f1_job = ReproducibleJobs.Job(SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=findall(var_mask)))
+			f2_job = Jobs.filter_var(var_annot_df=>!ismissing, data_job)
+			f3_job = Jobs.filter_var(var_annot_spec=>!ismissing, data_job)
+
+			@test isequal(forward(f1_job).spec, forward(f2_job).spec)
+			@test isequal(forward(f1_job).spec, forward(f3_job).spec)
+
+			let f = fetch!(f3_job)
 				@test materialize(f) ≈ X[var_mask, :]
 				@test isequal(f.var, data.var[var_mask, :])
 				test_dataframe_columns_identical("f.obs vs data.obs", f.obs, data.obs)
 			end
 		end
-		@testset "Obs annot: $desc" for (desc, oa) in (("DataFrame",obs_annot_df),("Spec",obs_annot_spec))
-			f_job = Jobs.filter_obs(oa=>!ismissing, data_job)
-			let f = fetch!(f_job)
-				obs_mask = in(obs_annot_df.barcode).(data.obs.barcode)
+		let obs_mask = obs_mask = in(obs_annot_df.barcode).(data.obs.barcode)
+			f1_job = ReproducibleJobs.Job(SingleCellProjections.create_datamatrix_getindex_spec(data_job; obs_ind=findall(obs_mask)))
+			f2_job = Jobs.filter_obs(obs_annot_df=>!ismissing, data_job)
+			f3_job = Jobs.filter_obs(obs_annot_spec=>!ismissing, data_job)
+
+			@test isequal(forward(f1_job).spec, forward(f2_job).spec)
+			@test isequal(forward(f1_job).spec, forward(f3_job).spec)
+
+			let f = fetch!(f3_job)
 				@test materialize(f) ≈ X[:, obs_mask]
-				@test isequal(f.obs, data.obs[obs_mask, :])
 				test_dataframe_columns_identical("f.var vs data.var", f.var, data.var)
+				@test isequal(f.obs, data.obs[obs_mask, :])
 			end
 		end
 
