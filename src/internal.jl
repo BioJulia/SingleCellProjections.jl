@@ -131,6 +131,7 @@ nobs_spec(data) = table_nrow_spec(get_obs_spec(data))
 Jobs.nobs(data) = Job(nobs_spec(data))
 
 
+find_matching_ind_impl_spec(f, df) = create_spec(SCPCore.find_matching_ind, f, df; __version=v"0.1.3")
 
 
 function find_matching_ind(action::Action, f, df; project_ids::Symbol)
@@ -145,8 +146,24 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 		matching_ind = Colon()
 	elseif f isa AbstractRange
 		matching_ind = f
+	elseif f isa Pair
+		(k,v) = f
+
+		# subset the columns to only depend on those that are used
+		if k isa AbstractString
+			df2 = get_columns_impl_spec(df, k)
+		elseif k isa AbstractVector
+			df2 = get_columns_impl_spec(df, k...)
+		elseif k isa Union{Spec, DataFrame}
+			# k is an "Annotation" - a DataFrame with an ID and a value column. Will be leftjoined and the function will be applied to the leftjoined vector with values.
+			error("Not implemented.")
+		else
+			throw(ArgumentError("Unknown column selector $k of type $(typeof(k))."))
+		end
+		matching_ind = cached(find_matching_ind_impl_spec(f, df2))
 	else
-		matching_ind = cached(create_spec(SCPCore.find_matching_ind, f, df; __version=v"0.1.3"))
+		# This is used when `f` is a function taking a DataFrameRow
+		matching_ind = cached(find_matching_ind_impl_spec(f, df))
 	end
 
 	if action isa Eval || project_ids == :no

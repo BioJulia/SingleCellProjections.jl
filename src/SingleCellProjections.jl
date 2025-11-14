@@ -82,8 +82,11 @@ module Jobs
 	function get_value_colname end
 	function get_columns end
 	function id_column end
+	function value_column end
 	function annotation end
 	function column_data end
+	function id_column_data end
+	function value_column_data end
 	function table_nrow end
 	function add_column end
 	function table_leftjoin end

@@ -1,6 +1,7 @@
 # TODO: Replace filter.jl with this file.
 
 find_matching_ind(f, df::DataFrame) = first(parentindices(filter(f, df; view=true)))
+find_matching_ind(f, v::AbstractVector) = findall(f, v)
 find_matching_ind(::Colon, df::DataFrame) = Colon()
 
 

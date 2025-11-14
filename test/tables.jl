@@ -55,6 +55,14 @@
 		@test fetch!(Jobs.get_value_colname(annot)) == "y"
 		@test_throws ReproducibleJobs.ProcessingException fetch!(Jobs.get_value_colname(table))
 
+		@test fetch!(Jobs.id_column(annot)) == select(df, "id")
+		@test fetch!(Jobs.value_column(annot)) == select(df, "y")
+		@test_throws ReproducibleJobs.ProcessingException fetch!(Jobs.value_column(table))
+
+		@test fetch!(Jobs.id_column_data(annot)) == df[!,"id"]
+		@test fetch!(Jobs.value_column_data(annot)) == df[!,"y"]
+		@test_throws ReproducibleJobs.ProcessingException fetch!(Jobs.value_column_data(table))
+
 
 		let u_data = sqrt.(1:n)
 			df2 = insertcols(df, "u"=>u_data)

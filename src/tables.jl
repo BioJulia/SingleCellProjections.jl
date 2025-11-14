@@ -38,95 +38,100 @@ forwarded_to_impl(spec) = forwarded(is_impl, spec)
 
 
 
+_get_ncol(table::DataFrame) = ncol(table)
+_get_ncol(table::Spec) = length(table.args) # NB: only valid for create_table_pr/create_table_impl
 
-get_colnames_fallback(table) = names(table)
-function get_colnames(table)
+function _check_ncol(table; require_n_cols=nothing)
+	if require_n_cols !== nothing
+		len = _get_ncol(table)
+		len != require_n_cols && throw(ArgumentError("Expected table to have exactly $require_n_cols columns, but found $len columns."))
+	end
+	nothing
+end
+
+_get_colnames_fallback(table) = names(table)
+_get_colnames_fallback(table, ind::Int) = only(names(table,ind))
+
+function get_colnames_fallback(table, args...; kwargs...)
+	_check_ncol(table; kwargs...)
+	_get_colnames_fallback(table, args...)
+end
+
+_get_colnames(table) = first.(table.args)
+_get_colnames(table, ind) = first(table.args[ind])
+
+function get_colnames(table, args...; kwargs...)
 	if is_create_table_pr(table) || is_create_table_impl(table)
-		first.(table.args)
+		_check_ncol(table; kwargs...)
+		_get_colnames(table, args...)
 	elseif is_projectable_spec(table)
-		create_spec(Projectable(get_colnames_pr), table)
+		create_spec(Projectable(get_colnames_pr), table, args...; kwargs...)
 	else
-		create_spec(get_colnames_fallback, table; __version=v"0.1.0")
+		create_spec(get_colnames_fallback, table, args...; kwargs..., __version=v"0.1.0")
 	end
 end
-get_colnames_impl_spec(table) = create_spec(Preprocess(get_colnames), forwarded_to_impl(table))
-get_colnames_pr(action, table) = get_colnames_impl_spec(action(table))
-get_colnames_spec(table) = create_spec(Preprocess(get_colnames), table)
-Jobs.get_colnames(table) = Job(get_colnames_spec(table))
+get_colnames_impl_spec(table; kwargs...) = create_spec(Preprocess(get_colnames), forwarded_to_impl(table); kwargs...)
+get_colnames_impl_spec(table, ind::Int; kwargs...) = create_spec(Preprocess(get_colnames), forwarded_to_impl(table), ind; kwargs...)
+get_colnames_pr(action, table, args...; kwargs...) = get_colnames_impl_spec(action(table), args...; kwargs...)
+get_colnames_spec(table; kwargs...) = create_spec(Preprocess(get_colnames), table; kwargs...)
+get_colnames_spec(table, ind::Int) = create_spec(Preprocess(get_colnames), table, ind; kwargs...)
+Jobs.get_colnames(table, args...; kwargs...) = Job(get_colnames_spec(table, args...; kwargs...))
 
 
-
-get_id_colname_fallback(table) = only(names(table,1))
-function get_id_colname(table)
-	if is_create_table_pr(table) || is_create_table_impl(table)
-		first(first(table.args)) # key of first column
-	elseif is_projectable_spec(table)
-		create_spec(Projectable(get_id_colname_pr), table)
-	else
-		create_spec(get_id_colname_fallback, table; __version=v"0.1.0")
-	end
-end
-get_id_colname_impl_spec(table) = create_spec(Preprocess(get_id_colname), forwarded_to_impl(table))
-get_id_colname_pr(action, table) = get_id_colname_impl_spec(action(table))
-get_id_colname_spec(table) = create_spec(Preprocess(get_id_colname), table)
+get_id_colname_impl_spec(table) = create_spec(Preprocess(get_colnames), forwarded_to_impl(table), 1)
+get_id_colname_spec(table) = create_spec(Preprocess(get_colnames), table, 1)
 Jobs.get_id_colname(table) = Job(get_id_colname_spec(table))
 
-
-
-function get_value_colname_fallback(table)
-	len = ncol(table)
-	len == 2 || throw(ArgumentError("Expected annotation to have exactly two columns, but found $len columns."))
-	only(names(table,2))
-end
-function get_value_colname(table)
-	if is_create_table_pr(table) || is_create_table_impl(table)
-		len = length(table.args)
-		len == 2 || throw(ArgumentError("Expected annotation to have exactly two columns, but found $len columns."))
-		first(table.args[2]) # key of second column
-	elseif is_projectable_spec(table)
-		create_spec(Projectable(get_value_colname_pr), table)
-	else
-		create_spec(get_value_colname_fallback, table; __version=v"0.1.0")
-	end
-end
-get_value_colname_impl_spec(table) = create_spec(Preprocess(get_value_colname), forwarded_to_impl(table))
-get_value_colname_pr(action, table) = get_value_colname_impl_spec(action(table))
-get_value_colname_spec(table) = create_spec(Preprocess(get_value_colname), table)
+get_value_colname_impl_spec(table) = create_spec(Preprocess(get_colnames), forwarded_to_impl(table), 2; require_n_cols=2)
+get_value_colname_spec(table) = create_spec(Preprocess(get_colnames), table, 2; require_n_cols=2)
 Jobs.get_value_colname(table) = Job(get_value_colname_spec(table))
 
 
 
 
-get_columns_fallback(table, colnames::String...) = select(table, [colnames...]; copycols=false)
-function get_columns(table, colnames::String...)
+function _colnames_to_colind(table, colnames::String...)
+	table_colnames = first.(table.args)
+	ind = indexin(colnames, table_colnames)
+	any(isnothing, ind) && throw(ArgumentError("The following column names where not found: $(setdiff(colnames, table_colnames))"))
+	convert(Vector{Int}, ind)
+end
+_colnames_to_colind(table, colind::Int...) = collect(colind)
+
+function get_columns_fallback(table, colnames...; kwargs...)
+	_check_ncol(table; kwargs...)
+	select(table, [colnames...]; copycols=false)
+end
+function get_columns(table, colnames...; kwargs...)
 	if is_create_table_pr(table)
-		table_colnames = first.(table.args)
-		ind = indexin(colnames, table_colnames)
-		any(isnothing, ind) && throw(ArgumentError("The following column names where not found: $(setdiff(colnames, table_colnames))"))
+		_check_ncol(table; kwargs...)
+		ind = _colnames_to_colind(table, colnames...)
 		create_table_spec(table.args[ind]...)
 	elseif is_create_table_impl(table)
-		table_colnames = first.(table.args)
-		ind = indexin(colnames, table_colnames)
-		any(isnothing, ind) && throw(ArgumentError("The following column names where not found: $(setdiff(colnames, table_colnames))"))
+		_check_ncol(table; kwargs...)
+		ind = _colnames_to_colind(table, colnames...)
 		create_table_impl_spec(table.args[ind]...)
 	elseif is_projectable_spec(table)
-		create_spec(Projectable(get_columns_pr), table, colnames...)
+		create_spec(Projectable(get_columns_pr), table, colnames...; kwargs...)
 	else
-		create_spec(get_columns_fallback, table, colnames...; __version=v"0.1.0")
+		create_spec(get_columns_fallback, table, colnames...; kwargs..., __version=v"0.1.0")
 	end
 end
-get_columns_impl_spec(table, colnames::String...) = create_spec(Preprocess(get_columns), forwarded_to_impl(table), colnames...)
-get_columns_pr(action, table, colnames::String...) = get_columns_impl_spec(action(table), action(colnames)...)
-get_columns_spec(table, colname1, colnames...) = create_spec(Preprocess(get_columns), table, colname1, colnames...)
-Jobs.get_columns(table, colname1, colnames...) = Job(get_columns_spec(table, colname1, colnames...))
+get_columns_impl_spec(table, colnames...; kwargs...) = create_spec(Preprocess(get_columns), forwarded_to_impl(table), colnames...; kwargs...)
+get_columns_pr(action, table, colnames...; kwargs...) = get_columns_impl_spec(action(table), action(colnames)...; kwargs...)
+get_columns_spec(table, colname1, colnames...; kwargs...) = create_spec(Preprocess(get_columns), table, colname1, colnames...; kwargs...)
+Jobs.get_columns(table, colname1, colnames...; kwargs...) = Job(get_columns_spec(table, colname1, colnames...; kwargs...))
 
 
 
-id_column(table) = get_columns_spec(table, fetched(get_id_colname_spec(table))) # TODO: Use 1 as index instead?
+id_column(table) = get_columns_spec(table, 1)
 id_column_spec(table) = create_spec(Preprocess(id_column), table)
 Jobs.id_column(table) = Job(id_column_spec(table))
 
-annotation(table, colname) = get_columns_spec(table, fetched(get_id_colname_spec(table)), colname)
+value_column(table) = get_columns_spec(table, 2; require_n_cols=2)
+value_column_spec(table) = create_spec(Preprocess(value_column), table)
+Jobs.value_column(table) = Job(value_column_spec(table))
+
+annotation(table, colname) = get_columns_spec(table, fetched(get_id_colname_spec(table)), colname) # If we add support for mixed column indexing, this could be (1, colname)
 annotation_spec(table, colname) = create_spec(Preprocess(annotation), table, colname)
 Jobs.annotation(table, colname) = Job(annotation_spec(table, colname))
 
@@ -141,21 +146,36 @@ function _col_ind(table, col::String)
 end
 
 
-column_data_fallback(table, col::Union{String,Int}) = table[!,col]
-function column_data(table, col)
+function column_data_fallback(table, col::Union{String,Int}; kwargs...)
+	_check_ncol(table; kwargs...)
+	table[!,col]
+end
+function column_data(table, col; kwargs...)
 	if is_create_table_pr(table) || is_create_table_impl(table)
+		_check_ncol(table; kwargs...)
 		i = _col_ind(table, col)
 		table.args[i][2]
 	elseif is_projectable_spec(table)
-		create_spec(Projectable(column_data_pr), table, col)
+		create_spec(Projectable(column_data_pr), table, col; kwargs...)
 	else
-		create_spec(column_data_fallback, table, col; __version=v"0.1.0")
+		create_spec(column_data_fallback, table, col; kwargs..., __version=v"0.1.0")
 	end
 end
-column_data_impl_spec(table, col) = create_spec(Preprocess(column_data), forwarded_to_impl(table), col)
-column_data_pr(action, table, col) = column_data_impl_spec(action(table), action(col))
-column_data_spec(table, col) = create_spec(Preprocess(column_data), table, col)
-Jobs.column_data(table, col) = Job(column_data_spec(table, col))
+column_data_impl_spec(table, col; kwargs...) = create_spec(Preprocess(column_data), forwarded_to_impl(table), col; kwargs...)
+column_data_pr(action, table, col; kwargs...) = column_data_impl_spec(action(table), action(col); kwargs...)
+column_data_spec(table, col; kwargs...) = create_spec(Preprocess(column_data), table, col; kwargs...)
+Jobs.column_data(table, col; kwargs...) = Job(column_data_spec(table, col; kwargs...))
+
+
+id_column_data(table) = column_data_spec(table, 1)
+id_column_data_spec(table) = create_spec(Preprocess(id_column_data), table)
+Jobs.id_column_data(table) = Job(id_column_data_spec(table))
+
+value_column_data(table) = column_data_spec(table, 2; require_n_cols=2)
+value_column_data_spec(table) = create_spec(Preprocess(value_column_data), table)
+Jobs.value_column_data(table) = Job(value_column_data_spec(table))
+
+
 
 
 
