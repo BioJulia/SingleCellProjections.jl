@@ -84,10 +84,21 @@ value_vector2(action::Action, model, data) =
 value_vector_spec2(model, data) =
 	create_spec(Projectable(value_vector2), model, data)
 
-_value_vector_data_spec(obs, ::Any, ::SCPCore.InterceptCovariateDesc) =
-	table_nrow_spec(obs) # Special case for intercept, just the number of rows
-_value_vector_data_spec(obs, column, ::Any) =
-	create_extract_annotation_spec(obs, column) # the column values
+# Special case for intercept, just the number of rows
+_value_vector_data_spec(obs, ::String, ::SCPCore.InterceptCovariateDesc) =
+	table_nrow_spec(obs)
+
+# Column in obs
+_value_vector_data_spec(obs, column::String, ::Any) = column_data_spec(obs, column)
+
+# External annotation (DataFrame or spec)
+function _value_vector_data_spec(obs, annot, ::Any)
+	ids_a = id_column_spec(obs)
+	ids_b = id_column_spec(annot)
+	ind_spec = indexin_spec(ids_a, ids_b; not_found=:nothing)
+	v = value_column_data_spec(annot)
+	getindex_or_missing_spec(v, ind_spec) # The values of the annotation `k`, reordered to match the order in df.
+end
 
 
 

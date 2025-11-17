@@ -163,7 +163,7 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 			ids_b = id_column_spec(k)
 			ind_spec = indexin_impl_spec(ids_a, ids_b; not_found=:nothing)
 			v = value_column_data_spec(k)
-			x = getindex_or_missing_impl_spec(v, ind_spec) # The values of the annotation `k`, reorderd to match the order in df.
+			x = getindex_or_missing_impl_spec(v, ind_spec) # The values of the annotation `k`, reordered to match the order in df.
 
 			matching_ind = cached(find_matching_ind_impl_spec(last(f), x))
 		else
@@ -330,11 +330,6 @@ create_datamatrix_getindex_spec(data; kwargs...) =
 	create_spec(DataMatrixFunction(datamatrix_getindex), data; kwargs...)
 
 
-
-extract_annotation(action::Action, args...) =
-	create_spec(SCPCore.extract_annotation, action(args)...; __version=v"0.1.0")
-create_extract_annotation_spec(df, name) =
-	create_spec(Projectable(extract_annotation), df, name)
 
 
 # DEPRECATED: Use `get_value_colname_spec` instead
