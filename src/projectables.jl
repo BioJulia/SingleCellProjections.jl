@@ -84,16 +84,20 @@ function project_impl(f::F, onto, args...) where F
 	replaced = try_replace_spec(onto, f, args...)
 	replaced !== nothing && return replaced
 
-	# Another option would be to error here. But let's allow projecting onto non-projectables and just keep them as is.
-	# That can be useful sometimes, e.g. when providing a DataFrame with annotations for both the base and projected samples.
+	# # Another option would be to error here. But let's allow projecting onto non-projectables and just keep them as is.
+	# # That can be useful sometimes, e.g. when providing a DataFrame with annotations for both the base and projected samples.
+
+	# # But we might need to replace specs within `onto` - e.g. we might have id_column(x) and a replacement x=>y.
+	# # But that would be missed here.
+	# error("continue here")
+	# onto
 
 
-	# But we might need to replace specs within `onto` - e.g. we might have id_column(x) and a replacement x=>y.
-	# But that would be missed here.
-	error("continue here")
-
-
-	onto
+	# recursively apply Projection
+	p = Projection(collect(args))
+	args = ReproducibleJobs.copy_nested(p, ReproducibleJobs.unsafe_unmanage(onto.args))
+	kwargs = ReproducibleJobs.copy_nested(p, ReproducibleJobs.unsafe_unmanage(onto.kwargs))
+	create_spec(f, args...; kwargs...)
 end
 
 

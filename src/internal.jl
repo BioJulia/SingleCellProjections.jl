@@ -115,9 +115,14 @@ function indexin_impl(a::DataFrame, b::DataFrame; not_found)
 	indexin_impl(a[!,1], b[!,1]; not_found)
 end
 
+# DEPRECATED
 indexin_impl_spec(a, b; not_found=:error) = create_spec(indexin_impl, a, b; not_found, __version=v"0.1.1")
 indexin_pr(action, a, b; kwargs...) = indexin_impl_spec(action(a), action(b); kwargs...)
 indexin_spec(a, b; kwargs...) = create_spec(Projectable(indexin_pr), a, b; kwargs...)
+
+
+
+indexin_spec2(a, b; not_found=:error) = create_spec(indexin_impl, a, b; not_found, __version=v"0.1.1")
 
 
 
