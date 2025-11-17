@@ -13,7 +13,7 @@ args2vec_spec(::Type{T}, args...) where T =
 _getindex_error(ind) = throw(ArgumentError("Raw indices not allowed when projecting (unless containers are identical). Got indices: $ind."))
 _getindex_error_spec(ind) = create_spec(_getindex_error, ind; __version=v"0.1.0")
 
-getindex_impl(v, ind) = ind===Colon() ? v : create_spec(getindex, v, ind; __version=v"0.1.0")
+getindex_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_spec(getindex, v, ind; __version=v"0.1.0")
 getindex_impl_spec(v, ind) = create_spec(Preprocess(getindex_impl), v, fetched(ind))
 
 # function getindex_pr(action, v, ind) = getindex_impl_spec(action(v), action(ind))
@@ -43,7 +43,7 @@ function getindex_or_missing(v::AbstractVector{Tv}, ind::AbstractVector{Ti}) whe
 	end
 end
 
-getindex_or_missing_impl(v, ind) = ind===Colon() ? v : create_spec(getindex_or_missing, v, ind; __version=v"0.1.1")
+getindex_or_missing_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_spec(getindex_or_missing, v, ind; __version=v"0.1.1")
 getindex_or_missing_impl_spec(v, ind) = create_spec(Preprocess(getindex_or_missing_impl), v, fetched(ind))
 
 function getindex_or_missing_pr(action, v, ind)
@@ -272,7 +272,7 @@ create_ids_to_indices_spec(df, ids) =
 matrix_getindex_impl(matrix; kwargs...) =
 	create_spec(SCPCore.matrix_getindex, matrix; kwargs..., __version=v"0.1.0")
 
-function matrix_getindex_pre(matrix; var_ind, obs_ind)
+function matrix_getindex_pre(::Preprocessing, matrix; var_ind, obs_ind)
 	if var_ind == Colon() && obs_ind == Colon()
 		matrix
 	else

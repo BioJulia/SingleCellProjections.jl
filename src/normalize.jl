@@ -52,7 +52,7 @@ end
 
 
 
-function normalize_matrix(data, args...; center=true, kwargs...)
+function normalize_matrix(::Preprocessing, data, args...; center=true, kwargs...)
 	dm = designmatrix_spec(data, args...; center)
 	negβT = negative_regression_matrix_spec(data, dm; kwargs...)
 	dmT = adjoint_spec(dm)

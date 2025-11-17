@@ -1,7 +1,7 @@
 abstract type Action end
 struct Eval <: Action end
 struct Projection <: Action
-	replacements::Vector{Pair} # Make concrete somehow? Or just use Vector{Any} to avoid copying the vector at construction?
+	replacements::Vector{Pair} # Make concrete somehow? Or just use Vector{Any} to avoid copying the vector at construction? Or make it as a view into the `project` node args to avoid copying altogether?
 end
 
 
@@ -80,8 +80,25 @@ end
 
 
 
-function project(onto, p::Projectable{F}, args...) where F
-	replaced = try_replace_spec(onto, onto.f, args...)
+function project_impl(f::F, onto, args...) where F
+	replaced = try_replace_spec(onto, f, args...)
+	replaced !== nothing && return replaced
+
+	# Another option would be to error here. But let's allow projecting onto non-projectables and just keep them as is.
+	# That can be useful sometimes, e.g. when providing a DataFrame with annotations for both the base and projected samples.
+
+
+	# But we might need to replace specs within `onto` - e.g. we might have id_column(x) and a replacement x=>y.
+	# But that would be missed here.
+	error("continue here")
+
+
+	onto
+end
+
+
+function project_impl(p::Projectable{F}, onto, args...) where F
+	replaced = try_replace_spec(onto, p, args...)
 	replaced !== nothing && return replaced
 
 	# Not found in replacements, perform projection
@@ -94,7 +111,8 @@ function project(onto, p::Projectable{F}, args...) where F
 end
 
 
-project(onto, args...; kwargs...) = project(onto, onto.f, args...; kwargs...)
+# Wrapper that dispatches based on the type of `onto.f`
+project(::Preprocessing, onto, args...; kwargs...) = project_impl(onto.f, onto, args...; kwargs...)
 
 create_project_spec(onto, args...; kwargs...) =
 	create_spec(Preprocess(project), onto, args...; kwargs...)

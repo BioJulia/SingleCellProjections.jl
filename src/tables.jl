@@ -22,6 +22,7 @@ function table_from_compound_result(compound_result, colnames)
 	cols = (name=>cached(compound_result, name) for name in colnames)
 	create_table_impl_spec(cols...)
 end
+table_from_compound_result(::Preprocessing, compound_result, colnames) = table_from_compound_result(compound_result, colnames)
 function table_from_compound_result(compound_result)
 	colnames = fetched(cached(compound_result; return_keys=true))
 	create_spec(Preprocess(table_from_compound_result), compound_result, colnames)
@@ -60,7 +61,7 @@ end
 _get_colnames(table) = first.(table.args)
 _get_colnames(table, ind) = first(table.args[ind])
 
-function get_colnames(table, args...; kwargs...)
+function get_colnames(::Preprocessing, table, args...; kwargs...)
 	if is_create_table_pr(table) || is_create_table_impl(table)
 		_check_ncol(table; kwargs...)
 		_get_colnames(table, args...)
@@ -78,10 +79,12 @@ get_colnames_spec(table, ind::Int) = create_spec(Preprocess(get_colnames), table
 Jobs.get_colnames(table, args...; kwargs...) = Job(get_colnames_spec(table, args...; kwargs...))
 
 
+# Should add another layer of Preprocessing so that we see `get_id_colname` when forwarding Specs one step at a time?
 get_id_colname_impl_spec(table) = create_spec(Preprocess(get_colnames), forwarded_to_impl(table), 1)
 get_id_colname_spec(table) = create_spec(Preprocess(get_colnames), table, 1)
 Jobs.get_id_colname(table) = Job(get_id_colname_spec(table))
 
+# Should add another layer of Preprocessing so that we see `get_value_colname` when forwarding Specs one step at a time?
 get_value_colname_impl_spec(table) = create_spec(Preprocess(get_colnames), forwarded_to_impl(table), 2; require_n_cols=2)
 get_value_colname_spec(table) = create_spec(Preprocess(get_colnames), table, 2; require_n_cols=2)
 Jobs.get_value_colname(table) = Job(get_value_colname_spec(table))
@@ -101,7 +104,7 @@ function get_columns_fallback(table, colnames...; kwargs...)
 	_check_ncol(table; kwargs...)
 	select(table, [colnames...]; copycols=false)
 end
-function get_columns(table, colnames...; kwargs...)
+function get_columns(::Preprocessing, table, colnames...; kwargs...)
 	if is_create_table_pr(table)
 		_check_ncol(table; kwargs...)
 		ind = _colnames_to_colind(table, colnames...)
@@ -123,15 +126,15 @@ Jobs.get_columns(table, colname1, colnames...; kwargs...) = Job(get_columns_spec
 
 
 
-id_column(table) = get_columns_spec(table, 1)
+id_column(::Preprocessing, table) = get_columns_spec(table, 1)
 id_column_spec(table) = create_spec(Preprocess(id_column), table)
 Jobs.id_column(table) = Job(id_column_spec(table))
 
-value_column(table) = get_columns_spec(table, 2; require_n_cols=2)
+value_column(::Preprocessing, table) = get_columns_spec(table, 2; require_n_cols=2)
 value_column_spec(table) = create_spec(Preprocess(value_column), table)
 Jobs.value_column(table) = Job(value_column_spec(table))
 
-annotation(table, colname) = get_columns_spec(table, fetched(get_id_colname_spec(table)), colname) # If we add support for mixed column indexing, this could be (1, colname)
+annotation(::Preprocessing, table, colname) = get_columns_spec(table, fetched(get_id_colname_spec(table)), colname) # If we add support for mixed column indexing, this could be (1, colname)
 annotation_spec(table, colname) = create_spec(Preprocess(annotation), table, colname)
 Jobs.annotation(table, colname) = Job(annotation_spec(table, colname))
 
@@ -150,7 +153,7 @@ function column_data_fallback(table, col::Union{String,Int}; kwargs...)
 	_check_ncol(table; kwargs...)
 	table[!,col]
 end
-function column_data(table, col; kwargs...)
+function column_data(::Preprocessing, table, col; kwargs...)
 	if is_create_table_pr(table) || is_create_table_impl(table)
 		_check_ncol(table; kwargs...)
 		i = _col_ind(table, col)
@@ -167,11 +170,11 @@ column_data_spec(table, col; kwargs...) = create_spec(Preprocess(column_data), t
 Jobs.column_data(table, col; kwargs...) = Job(column_data_spec(table, col; kwargs...))
 
 
-id_column_data(table) = column_data_spec(table, 1)
+id_column_data(::Preprocessing, table) = column_data_spec(table, 1)
 id_column_data_spec(table) = create_spec(Preprocess(id_column_data), table)
 Jobs.id_column_data(table) = Job(id_column_data_spec(table))
 
-value_column_data(table) = column_data_spec(table, 2; require_n_cols=2)
+value_column_data(::Preprocessing, table) = column_data_spec(table, 2; require_n_cols=2)
 value_column_data_spec(table) = create_spec(Preprocess(value_column_data), table)
 Jobs.value_column_data(table) = Job(value_column_data_spec(table))
 
@@ -179,7 +182,7 @@ Jobs.value_column_data(table) = Job(value_column_data_spec(table))
 
 
 
-table_nrow(table) = length_spec(column_data_spec(table,1))
+table_nrow(::Preprocessing, table) = length_spec(column_data_spec(table,1))
 table_nrow_spec(table) = create_spec(Preprocess(table_nrow), table)
 Jobs.table_nrow(table) = Job(table_nrow_spec(table))
 
@@ -206,7 +209,7 @@ end
 
 
 add_column_fallback(table, name, column) = insertcols(table, name=>column; copycols=false)
-function add_column(table, name, column)
+function add_column(::Preprocessing, table, name, column)
 	if is_create_table_pr(table)
 		_add_column_validated(create_table_spec, table, name, column)
 	elseif is_projectable_spec(table) || is_projectable_spec(column)
@@ -225,7 +228,7 @@ Jobs.add_column(table, name, column) = Job(add_column_spec(table, name, column))
 
 
 table_getindex_fallback(table, ind) = table[ind,:]
-function table_getindex(table, ind)
+function table_getindex(::Preprocessing, table, ind)
 	if is_create_table_pr(table)
 		cols = (k=>getindex_spec(v, ind) for (k,v) in table.args)
 		return create_table_spec(cols...)
@@ -292,7 +295,7 @@ function table_leftjoin_fallback(a::DataFrame, b::DataFrame)
 	end
 	hcat(a, b_reordered; copycols=false)
 end
-function table_leftjoin(a, b)
+function table_leftjoin(::Preprocessing, a, b)
 	if is_create_table_pr(a) && is_create_table_pr(b)
 		_table_leftjoin(a, b; use_projectables=true)
 	elseif is_create_table_impl(a) && is_create_table_impl(b)
@@ -339,7 +342,7 @@ function intersect_ids_fallback(a, b)
 	a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
 	DataFrame(a_name => intersect(a[!,1], b[!,1]); copycols=false)
 end
-function intersect_ids(a, b)
+function intersect_ids(::Preprocessing, a, b)
 	if is_create_table_pr(a) && is_create_table_pr(b)
 		_intersect_ids(a, b; use_projectables=true)
 	elseif is_create_table_impl(a) && is_create_table_impl(b)

@@ -1,4 +1,4 @@
-function subset_matrix(data; var_ids=:, obs_ids=:)
+function subset_matrix(::Preprocessing, data; var_ids=:, obs_ids=:)
 	var_ind = create_ids_to_indices_spec(id_column_spec(get_var_spec(data)), var_ids)
 	obs_ind = create_ids_to_indices_spec(id_column_spec(get_obs_spec(data)), obs_ids)
 	create_datamatrix_getindex_spec(data; var_ind, obs_ind)
@@ -14,7 +14,7 @@ Jobs.subset_obs(data, obs_ids; kwargs...) =
 
 
 
-function filter_matrix(data; fvar=nothing, fobs=nothing, project_var_ids=nothing, project_obs_ids=nothing)
+function filter_matrix(::Preprocessing, data; fvar=nothing, fobs=nothing, project_var_ids=nothing, project_obs_ids=nothing)
 	if fvar === nothing
 		@assert project_var_ids === nothing
 		fvar = Colon()

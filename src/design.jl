@@ -151,7 +151,7 @@ end
 
 
 
-function designmatrix(data, args...; center, kwargs...)
+function designmatrix(::Preprocessing, data, args...; center, kwargs...)
 	obs = get_obs_spec(data)
 	covariate_descriptions, center = setup_covariate_descriptions(args...; center)
 	(; covariate_specs, covariate_names) = covariate_stages(obs, covariate_descriptions; center, kwargs...)

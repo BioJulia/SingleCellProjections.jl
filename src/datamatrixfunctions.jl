@@ -59,9 +59,9 @@ function get_obs_pr(action::Action, dm_spec)
 end
 
 
-get_matrix(dm_spec) = create_spec(Projectable(get_matrix_pr), dm_spec)
-get_var(dm_spec) = create_spec(Projectable(get_var_pr), dm_spec)
-get_obs(dm_spec) = create_spec(Projectable(get_obs_pr), dm_spec)
+get_matrix(::Preprocessing, dm_spec) = create_spec(Projectable(get_matrix_pr), dm_spec)
+get_var(::Preprocessing, dm_spec) = create_spec(Projectable(get_var_pr), dm_spec)
+get_obs(::Preprocessing, dm_spec) = create_spec(Projectable(get_obs_pr), dm_spec)
 
 
 
@@ -117,7 +117,7 @@ try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_obs_pr)}, k::Spec, 
 	_try_replace_get_spec_single(Obs(), spec, k, v)
 
 
-function project(onto, d::DataMatrixFunction, args...)
+function project_impl(::DataMatrixFunction, onto, args...)
 	matrix = create_project_spec(get_matrix_spec(onto), args...)
 	var = create_project_spec(get_var_spec(onto), args...)
 	obs = create_project_spec(get_obs_spec(onto), args...)

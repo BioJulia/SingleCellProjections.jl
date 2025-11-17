@@ -42,7 +42,7 @@ ftest_table_spec(matrix, var_ids, h1_design, h0_design) =
 	create_spec(Projectable(ftest_table_pr), matrix, var_ids, h1_design, h0_design)
 
 
-function ftest(data, h1; h0=(), center=true, max_categories=nothing)
+function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=nothing)
 	# TODO: Filter observables with missing values (according to policy set in kwargs)
 
 	extra_args = max_categories === nothing ? (;) : (; max_categories)
@@ -85,7 +85,7 @@ ttest_table_spec(matrix, var_ids, h1_design, h1_scale, h0_design) =
 
 
 # function ttest(data, h1; h0=(), center=true, max_categories=nothing)
-function ttest(data, h1; h0=(), center=true, max_categories=nothing, h1_missing=:skip, h0_missing=:error)
+function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=nothing, h1_missing=:skip, h0_missing=:error)
 	# TODO: Filter observables with missing values (according to policy set in kwargs)
 
 	# Something like this
