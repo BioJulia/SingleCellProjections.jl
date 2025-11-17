@@ -65,7 +65,7 @@ function do_replacement(replacements, spec::Spec)
 end
 function do_replacement(replacements, x)
 	for (k,v) in replacements
-		k == x && return v # replaced
+		isequal(k, x) && return v # replaced
 	end
 	return x # not replaced
 end
