@@ -106,7 +106,7 @@ end
 
 
 
-build_designmatrix(::Mat, ::Any, covariates, ::Any) = create_hcat_spec(covariates...)
+build_designmatrix(::Mat, ::Any, covariates, ::Any) = hcat_spec(covariates...)
 build_designmatrix(::Obs, ::Any, ::Any, covariate_names) = covariate_names
 build_designmatrix(::Var, data, ::Any, ::Any) = get_obs_spec(data) # Yes this is correct. (See note below regarding transposing)
 

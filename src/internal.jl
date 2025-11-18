@@ -56,6 +56,8 @@ getindex_or_missing_spec(v, ind) = create_spec(Projectable(getindex_or_missing_p
 
 
 intersect_spec(a, b, args...) = create_spec(intersect, a, b, args...; __version=v"0.1.0")
+hcat_spec(args...; kwargs...) = create_spec(hcat, args...; kwargs..., __version=v"0.1.0")
+length_spec(x) = create_spec(length, x; __version=v"0.1.0")
 
 
 
@@ -83,7 +85,6 @@ intersect_ind_spec(a, b) = create_spec(Preprocess(intersect_ind), a, b)
 
 
 
-length_spec(x) = create_spec(length, x; __version=v"0.1.0")
 
 
 function isequal_pre(::Preprocessing{E}, x, y) where E
@@ -351,15 +352,6 @@ function annotation_name_impl(df)
 end
 annotation_name(action::Action, df) = create_spec(annotation_name_impl, action(df); __version=v"0.1.0")
 annotation_name_spec(df) = create_spec(Projectable(annotation_name), df)
-
-
-
-# TODO: Make simplified version
-hcat_impl(action::Action, args...; kwargs...) =
-	create_spec(hcat, action(args)...; kwargs..., __version=v"0.1.0")
-create_hcat_spec(args...; kwargs...) = create_spec(Projectable(hcat_impl), args...)
-
-
 
 
 
