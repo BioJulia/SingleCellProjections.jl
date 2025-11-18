@@ -207,6 +207,41 @@ Jobs.add_column(table, name, column) = Job(add_column_spec(table, name, column))
 
 
 
+_table_hcat_nrow_error(n1, n2) = throw(ArgumentError("Expected number of tables rows to match, but got $n1 and $n2."))
+_table_hcat_nrow_error_spec(n1, n2) = create_spec(_table_hcat_nrow_error, n1, n2)
+
+function _table_hcat_validated(a, b)
+	names_a = first.(a.args)
+	names_b = first.(b.args)
+	common_names = intersect(names_a, names_b)
+	isempty(common_names) || throw(ArgumentError("Table columns must be different, found these common columns: $common_names"))
+
+	result = create_table_spec(a.args..., b.args...)
+
+	# Check that the length of the tables match
+	n_a = table_nrow_spec(a)
+	n_b = table_nrow_spec(b)
+	cond = isequal_spec(n_a, n_b)
+	ifelse_pr_spec(cond, result, _table_hcat_nrow_error_spec(n_a,n_b))
+end
+
+table_hcat_fallback(a::DataFrame, b::DataFrame) = hcat(a,b; copycols=false)
+function table_hcat(::Preprocessing{E}, a, b) where E
+	if is_create_table(a) && is_create_table(b)
+		_table_hcat_validated(a, b)
+	elseif E
+		create_spec(Preprocess{false}(table_hcat), a, b) # try again with late preprocessing (i.e. after projectables has been hanlded)
+	else
+		create_spec(table_hcat_fallback, a, b; __version=v"0.1.0")
+	end
+end
+
+table_hcat_spec(a, b) = create_spec(Preprocess(table_hcat), a, b)
+Jobs.table_hcat(a, b) = Job(table_hcat_spec(a, b))
+
+
+
+
 table_getindex_fallback(table, ind) = table[ind,:]
 function table_getindex(::Preprocessing{E}, table, ind) where E
 	if is_create_table(table)

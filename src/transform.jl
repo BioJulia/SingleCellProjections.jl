@@ -94,7 +94,7 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=:, min_cel
 	if f isa Var
 		var_out = table_getindex_spec(var_spec, var_ind)
 		if annotate
-			var_out = create_hcat_spec(var_out, params_spec; copycols=false) # TODO: Use table_hcat version instead
+			var_out = table_hcat_spec(var_out, params_spec)
 		end
 		return var_out
 	else # if f isa Mat

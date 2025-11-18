@@ -99,7 +99,7 @@
 	end
 
 
-	@testset "sctransform T=$T" for  T in (Float64,Float32), annotate in (false,true)
+	@testset "sctransform T=$T annotate=$annotate" for T in (Float64,Float32), annotate in (false,true)
 		T_args = T==Float64 ? () : (T,)
 		kwargs = annotate ? (; annotate) : (;)
 

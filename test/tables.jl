@@ -13,7 +13,20 @@
 	csv_table = Jobs.load_csv(csv_filename)
 
 
+	# For hcat
+	col_args_hc = ("x2"=>(1:n).^2,
+	               "y2"=>string.('A':'A'+n-1))
 
+	basic_table_hc = Jobs.create_table(col_args_hc...)
+	df_hc = DataFrame(col_args_hc...)
+
+	csv_filename_hc = tempname(; suffix=".csv")
+	CSV.write(csv_filename_hc, df_hc)
+	csv_table_hc = Jobs.load_csv(csv_filename_hc)
+
+
+
+	# For leftjoin
 	col_args_right = ("id"=>string.("id_",n:-3:1),
 	                  "z"=>n .- (n:-3:1),
 	                  "z2"=> (n:-3:1) .+ 0.5)
@@ -73,6 +86,11 @@
 		let ind = collect(n:-2:1)
 			table2 = ReproducibleJobs.Job(SingleCellProjections.table_getindex_spec(table, ind))
 			@test isequal(fetch!(table2), df[ind,:])
+		end
+
+		@testset "table_hcat with $name_hc" for (name_hc,table_hc) in (("DataFrame",df_hc), ("create_table",basic_table_hc), ("CSV",csv_table_hc))
+			table2 = Jobs.table_hcat(table, table_hc)
+			@test isequal(fetch!(table2), hcat(df, df_hc))
 		end
 
 		@testset "Leftjoin with $name" for (name,table_right) in (("DataFrame",df_right), ("create_table",basic_table_right), ("CSV",csv_table_right))
