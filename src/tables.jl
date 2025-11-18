@@ -13,15 +13,23 @@ function table_to_compound_result(table)
 end
 
 
+# With known colnames
 function table_from_compound_result(compound_result, colnames)
 	cols = (name=>cached(compound_result, name) for name in colnames)
 	create_table_spec(cols...)
 end
-table_from_compound_result(::Preprocessing, compound_result, colnames) = table_from_compound_result(compound_result, colnames)
-function table_from_compound_result(compound_result)
+
+table_from_compound_result(::Preprocessing, compound_result, colnames) =
+	table_from_compound_result(compound_result, colnames)
+function table_from_compound_result_pr(action::Action, compound_result)
+	compound_result = action(compound_result)
 	colnames = fetched(cached(compound_result; return_keys=true))
-	create_spec(Preprocess(table_from_compound_result), compound_result, colnames)
+	create_spec(Preprocess(table_from_compound_result), compound_result, colnames) # we must preprocess so that colnames are fetched
 end
+
+# To handle when colnames differ due to projection
+table_from_compound_result(compound_result) =
+	create_spec(Projectable(table_from_compound_result_pr), compound_result)
 
 
 

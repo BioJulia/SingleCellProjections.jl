@@ -82,6 +82,11 @@
 	end
 
 
+	# TODO: This is slightly inconvenient, since we need to replace filenames at the TimestampedFilePath level. Can we get around that somehow?
+	@testset "ReplaceFilename" begin
+		csv_table_p = Jobs.project(csv_table, TimestampedFilePath(csv_filename)=>TimestampedFilePath(csv_filename_right))
+		@test isequal(forward(csv_table_p).spec, forward(csv_table_right).spec)
+	end
 
 	# TODO: Projections
 	# Important! Use specs that resolve at different levels

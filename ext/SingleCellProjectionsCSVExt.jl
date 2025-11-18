@@ -3,7 +3,7 @@ module SingleCellProjectionsCSVExt
 using ReproducibleJobs
 using ReproducibleJobs: create_spec, cached, Preprocessing
 using SingleCellProjections
-using SingleCellProjections: Projectable, Action, table_to_compound_result, table_from_compound_result
+using SingleCellProjections: table_to_compound_result, table_from_compound_result
 
 using DataFrames
 using CSV

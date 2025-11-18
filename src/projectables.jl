@@ -85,9 +85,9 @@ function project_impl(f::F, onto, args...) where F
 
 	# Not found in replacements, apply the `Projection` action recursively
 	p = Projection(collect(args))
-	args = p(onto.ro.value.args)
-	kwargs = p(onto.ro.value.kwargs)
-	create_spec(f, args...; kwargs...)
+	proj_args = p(onto.ro.value.args)
+	proj_kwargs = p(onto.ro.value.kwargs)
+	create_spec(f, proj_args...; proj_kwargs...)
 end
 
 
