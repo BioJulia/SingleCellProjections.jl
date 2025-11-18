@@ -114,10 +114,8 @@ end
 
 
 
-knn_adjacency_matrix(action::Action, matrix; kwargs...) =
-	cached(create_spec(SCPCore.knn_adjacency_matrix, action(matrix); kwargs..., __version=v"0.1.0"))
-create_knn_adjacency_matrix_spec(matrix; kwargs...) =
-	create_spec(Projectable(knn_adjacency_matrix), matrix; kwargs...)
+knn_adjacency_matrix_spec(matrix; kwargs...) =
+	cached(create_spec(SCPCore.knn_adjacency_matrix, matrix; kwargs..., __version=v"0.1.0"))
 
 
 
@@ -154,7 +152,7 @@ function force_layout(action::Action, matrix;
                       min_dist_projection = 1e-6,
                      )
 	# First force layout of unprojected
-	adj_spec = create_knn_adjacency_matrix_spec(matrix; k, make_symmetric)
+	adj_spec = knn_adjacency_matrix_spec(matrix; k, make_symmetric)
 	fl_spec = cached(create_spec(SCPCore.force_layout, adj_spec;
 	                             ndim,
 	                             niter,
