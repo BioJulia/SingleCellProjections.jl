@@ -32,9 +32,9 @@ function combine_obs(::Preprocessing, filenames, sample_names)
 	end
 	sample_barcodes_specs = load_barcodes_spec.(filenames)
 	sample_id_specs = combine_cols_spec.(sample_names, '_', sample_barcodes_specs)
-	sample_obs_specs = create_table_impl_spec.("cell_id" .=> sample_id_specs,
-	                                           "sample_name" .=> sample_names,
-	                                           "barcode" .=> sample_barcodes_specs)
+	sample_obs_specs = create_table_spec.("cell_id" .=> sample_id_specs,
+	                                      "sample_name" .=> sample_names,
+	                                      "barcode" .=> sample_barcodes_specs)
 	combined = vcat_tables_spec(sample_obs_specs...)
 
 	table_from_compound_result(combined, ["cell_id", "sample_name", "barcode"])

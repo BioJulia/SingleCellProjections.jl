@@ -1,26 +1,9 @@
-# DEPRECATED - TODO: REMOVE
 # NB: Column names here are fixed and expected to be strings.
-create_table_impl(args::Pair{String,<:Any}...) = DataFrame(args...; copycols=false)
-create_table_impl_spec(args...) = create_spec(create_table_impl, args...; __version=v"0.1.0")
-
-create_table_pr(action::Action, args::Pair{String,<:Any}...) = create_table_impl_spec(action(args)...)
-create_table_spec(args...) = create_spec(Projectable(create_table_pr), args...)
+create_table(args::Pair{String,<:Any}...) = DataFrame(args...; copycols=false)
+create_table_spec(args...) = create_spec(create_table, args...; __version=v"0.1.0")
 Jobs.create_table(args...) = Job(create_table_spec(args...))
 
-# DEPRECATED
-is_create_table_impl(x) = x isa Spec && x.f == create_table_impl
-is_create_table_pr(x) = x isa Spec && x.f == Projectable(create_table_pr)
-
-
-
-
-
-# NB: Column names here are fixed and expected to be strings.
-create_table2(args::Pair{String,<:Any}...) = DataFrame(args...; copycols=false)
-create_table_spec2(args...) = create_spec(create_table2, args...; __version=v"0.1.0")
-Jobs.create_table2(args...) = Job(create_table_spec2(args...))
-
-is_create_table(x) = x isa Spec && x.f == create_table2
+is_create_table(x) = x isa Spec && x.f == create_table
 
 
 
@@ -32,7 +15,7 @@ end
 
 function table_from_compound_result(compound_result, colnames)
 	cols = (name=>cached(compound_result, name) for name in colnames)
-	create_table_spec2(cols...)
+	create_table_spec(cols...)
 end
 table_from_compound_result(::Preprocessing, compound_result, colnames) = table_from_compound_result(compound_result, colnames)
 function table_from_compound_result(compound_result)
@@ -44,7 +27,7 @@ end
 
 
 _get_ncol(table::DataFrame) = ncol(table)
-_get_ncol(table::Spec) = length(table.args) # NB: only valid for create_table_pr/create_table_impl
+_get_ncol(table::Spec) = length(table.args) # NB: only valid for create_table spec
 
 function _check_ncol(table; require_n_cols=nothing)
 	if require_n_cols !== nothing
@@ -111,7 +94,7 @@ function get_columns(::Preprocessing{E}, table, colnames...; kwargs...) where E
 	if is_create_table(table)
 		_check_ncol(table; kwargs...)
 		ind = _colnames_to_colind(table, colnames...)
-		create_table_spec2(table.args[ind]...)
+		create_table_spec(table.args[ind]...)
 	elseif E
 		create_spec(Preprocess{false}(get_columns), table, colnames...; kwargs...)
 	else
@@ -220,7 +203,7 @@ table_getindex_fallback(table, ind) = table[ind,:]
 function table_getindex(::Preprocessing{E}, table, ind) where E
 	if is_create_table(table)
 		cols = (k=>getindex_spec(v, ind) for (k,v) in table.args)
-		create_table_spec2(cols...)
+		create_table_spec(cols...)
 	elseif E
 		# create_spec(Preprocess{false}(table_getindex), table, ind)
 		create_spec(Preprocess{false}(table_getindex), table, fetched(ind))
@@ -248,7 +231,7 @@ function _table_leftjoin(a, b)
 	ind_spec = indexin_spec2(ids_a, ids_b; not_found=:nothing)
 	b_cols = ReproducibleJobs.unsafe_unmanage(b.args)
 	joined_cols = [k=>getindex_or_missing_spec(v,ind_spec) for (k,v) in @view(b_cols[2:end])]
-	create_table_spec2(a.args..., joined_cols...)
+	create_table_spec(a.args..., joined_cols...)
 end
 
 function table_leftjoin_fallback(a::DataFrame, b::DataFrame)
@@ -285,7 +268,7 @@ function _intersect_ids(a, b)
 	a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
 
 	values = intersect_spec2(a_values, b_values)
-	create_table_spec2(a_name=>values)
+	create_table_spec(a_name=>values)
 end
 
 function intersect_ids_fallback(a, b)

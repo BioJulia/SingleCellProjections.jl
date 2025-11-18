@@ -85,8 +85,8 @@
 
 	# TODO: Projections
 	# Important! Use specs that resolve at different levels
-	# * Projectable{create_table_pr} - i.e. projection is done at the column level
-	# * create_table_impl            - i.e. projection is done before the column level
-	# * DataFrame                    - i.e. we hit the fallback
+	# * create_table spec with Projectables as column data - i.e. projection is done at the column level
+	# * create_table spec after projcetion                 - i.e. projection is done before the column level
+	# * DataFrame                                          - i.e. we hit the fallback
 
 end
