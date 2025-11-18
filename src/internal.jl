@@ -1,14 +1,8 @@
 # WIP - some of these might not be needed.
 
-# ifelse_pr(action::Action, cond, x, y) = ifelse_spec(action(cond), action(x), action(y))
-# ifelse_pr_spec(cond, x, y) = create_spec(Projectable(ifelse_pr), cond, x, y)
-
-args2vec_impl(::Type{T}, args...) where T = T[args...]
-args2vec_pr(action::Action, ::Type{T}, args...) where T =
-	create_spec(args2vec_impl, T, action(args)...; __version=v"0.1.0")
-args2vec_spec(::Type{T}, args...) where T =
-	create_spec(Projectable(args2vec_pr), T, args...)
-
+# This must be used instead of ifelse_spec when `cond` should be projected. Otherwise it will be fetched **before** projections take place.
+ifelse_pr(action::Action, cond, x, y) = ifelse_spec(action(cond), action(x), action(y))
+ifelse_pr_spec(cond, x, y) = create_spec(Projectable(ifelse_pr), cond, x, y)
 
 _getindex_error(ind) = throw(ArgumentError("Raw indices not allowed when projecting (unless containers are identical). Got indices: $ind."))
 _getindex_error_spec(ind) = create_spec(_getindex_error, ind; __version=v"0.1.0")
@@ -61,23 +55,8 @@ getindex_or_missing_spec(v, ind) = create_spec(Projectable(getindex_or_missing_p
 
 
 
+intersect_spec(a, b, args...) = create_spec(intersect, a, b, args...; __version=v"0.1.0")
 
-
-
-
-issubset_pr(action, a, b) = create_spec(issubset, action(a), action(b); __version=v"0.1.0")
-issubset_spec(a, b) = create_spec(Projectable(issubset_pr), a, b)
-
-setdiff_pr(action, a, b) = create_spec(setdiff, action(a), action(b); __version=v"0.1.0")
-setdiff_spec(a, b) = create_spec(Projectable(setdiff_pr), a, b)
-
-# # DEPRECATED
-# intersect_impl_spec(a, b, args...) = create_spec(intersect, a, b, args...; __version=v"0.1.0")
-# intersect_pr(action::Action, a, b, args...) = intersect_impl_spec(action(a), action(b), action(args)...)
-# intersect_spec(a, b, args...) = create_spec(Projectable(intersect_pr), a, b, args...)
-
-
-intersect_spec2(a, b, args...) = create_spec(intersect, a, b, args...; __version=v"0.1.0")
 
 
 function intersect_ind_impl(a, b)
@@ -104,38 +83,21 @@ intersect_ind_spec(a, b) = create_spec(Preprocess(intersect_ind), a, b)
 
 
 
-length_pr(action, x) = create_spec(length, action(x); __version=v"0.1.0")
-length_spec(x) = create_spec(Projectable(length_pr), x)
+length_spec(x) = create_spec(length, x; __version=v"0.1.0")
 
 
-# DEPRECATED
-function isequal_impl_spec(x, y)
-	if isequal(x,y)
-		true # early out
-	elseif !(x isa Spec) && !(y isa Spec)
-		false # early out
-	else
-		create_spec(isequal, x, y; __version=v"0.1.0")
-	end
-end
-
-isequal_pr(action, x, y) = isequal_impl_spec(action(x), action(y))
-isequal_spec(x, y) = create_spec(Projectable(isequal_pr), x, y)
-
-
-
-function isequal2(::Preprocessing{E}, x, y) where E
+function isequal_pre(::Preprocessing{E}, x, y) where E
 	if isequal(x, y)
 		true # early out
 	elseif !(x isa Spec) && !(y isa Spec)
 		false # early out
 	elseif E
-		create_spec(Preprocess{false}(isequal2), x, y)
+		create_spec(Preprocess{false}(isequal_pre), x, y)
 	else
 		create_spec(isequal, x, y; __version=v"0.1.0")
 	end
 end
-isequal_spec2(x, y) = create_spec(Preprocess(isequal2), x, y)
+isequal_spec(x, y) = create_spec(Preprocess(isequal_pre), x, y)
 
 
 function indexin_impl(a::AbstractVector, b::AbstractVector; not_found)
@@ -231,7 +193,7 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 		ids = id_column_spec(df)
 		ids2 = action(ids) # IDs from projected dataset
 
-		cond = isequal_spec2(ids, ids2)
+		cond = isequal_spec(ids, ids2)
 
 		# matching_ids = table_getindex_impl_spec(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())
 		matching_ids = table_getindex_spec(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())

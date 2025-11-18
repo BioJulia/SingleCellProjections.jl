@@ -181,7 +181,7 @@ function _add_column_validated(table, name, column)
 	n1 = table_nrow_spec(table)
 	n2 = length_spec(column)
 	cond = isequal_spec(n1, n2)
-	ifelse_spec(cond, result, _add_column_length_error_spec(n1,n2,name))
+	ifelse_pr_spec(cond, result, _add_column_length_error_spec(n1,n2,name))
 end
 
 add_column_fallback(table, name, column) = insertcols(table, name=>column; copycols=false)
@@ -267,7 +267,7 @@ function _intersect_ids(a, b)
 	b_name,b_values = b.args[1]
 	a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
 
-	values = intersect_spec2(a_values, b_values)
+	values = intersect_spec(a_values, b_values)
 	create_table_spec(a_name=>values)
 end
 
