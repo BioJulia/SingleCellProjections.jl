@@ -84,7 +84,7 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=:, min_cel
 	log_cell_counts = logcellcounts_spec(matrix_spec, var_ind_logcellcounts)
 
 	# min_cells
-	nnz_cells = create_obs_counts_sum_impl_spec(!iszero, matrix_spec, :) # returns vector
+	nnz_cells = cached(counts_sum_impl_spec(!iszero, matrix_spec, :; dims=2)) # returns vector
 	var_nnz_cells = add_column_spec(id_column_spec(var_spec), "nnzCells", nnz_cells)
 	var_ind_min_cells = create_find_matching_ind_spec("nnzCells"=>>=(min_cells), var_nnz_cells; project_ids=:yes)
 
