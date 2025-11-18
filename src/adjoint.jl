@@ -1,17 +1,11 @@
-
-function adjoint_matrix(action::Action, X)
-	# TODO: Should we do unwrapping of adjoint(adjoint(X)) here as well?
-	create_spec(LinearAlgebra.adjoint, action(X); __version=v"0.1.0")
-end
-
-create_adjoint_matrix_spec(X) =
-	create_spec(Projectable(adjoint_matrix), X)
+# TODO: Should we do unwrapping of adjoint(adjoint(X)) here as well? It's probably a better place.
+adjoint_matrix_spec(X) = create_spec(LinearAlgebra.adjoint, X; __version=v"0.1.0")
 
 function adjoint_impl(::Mat, data)
 	if data.f == DataMatrixFunction(adjoint_impl)
 		get_matrix_spec(data.args[1]) # adjoint(adjoint(X)) == X
 	else
-		create_adjoint_matrix_spec(get_matrix_spec(data))
+		adjoint_matrix_spec(get_matrix_spec(data))
 	end
 end
 adjoint_impl(::Var, data) = get_obs_spec(data)
