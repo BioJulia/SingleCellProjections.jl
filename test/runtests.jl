@@ -31,8 +31,8 @@ let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 		with_cache(Cache(tmp)) do
 
 			# Consider doing this kind of cache testing in ReproducibleJobs.jl only.
-			# @testset "$cache_status" for cache_status in ("New Disk Cache", "Reused Disk Cache")
-			@testset "$cache_status" for cache_status in ("New Disk Cache",)
+			@testset "$cache_status" for cache_status in ("New Disk Cache", "Reused Disk Cache")
+			# @testset "$cache_status" for cache_status in ("New Disk Cache",)
 				# TODO: Find a better way to do this (probably similar to how we replace and reset the Cache above)
 				empty!(ReproducibleJobs.default_scheduler())
 				empty!(ReproducibleJobs.default_deduplicator().d)
@@ -47,5 +47,5 @@ let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 
 end
 
-# include("SingleCellProjectionsCore/runtests.jl")
-# include("MatrixExpressions/runtests.jl")
+include("SingleCellProjectionsCore/runtests.jl")
+include("MatrixExpressions/runtests.jl")
