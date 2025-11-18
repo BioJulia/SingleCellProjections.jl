@@ -51,7 +51,7 @@ module Jobs
 	function var_counts_sum end
 	function obs_counts_fraction end
 	function obs_counts_sum end
-	function find_matching_ids end
+	# function find_matching_ids end
 	function subset_annotation end
 	function subset_var end
 	function subset_obs end
@@ -77,6 +77,7 @@ module Jobs
 	function ttest end
 
 	function create_table end
+	function create_table2 end # TEMP
 	function get_colnames end
 	function get_id_colname end
 	function get_value_colname end

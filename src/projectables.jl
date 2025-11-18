@@ -79,24 +79,14 @@ end
 
 
 
-
 function project_impl(f::F, onto, args...) where F
 	replaced = try_replace_spec(onto, f, args...)
 	replaced !== nothing && return replaced
 
-	# # Another option would be to error here. But let's allow projecting onto non-projectables and just keep them as is.
-	# # That can be useful sometimes, e.g. when providing a DataFrame with annotations for both the base and projected samples.
-
-	# # But we might need to replace specs within `onto` - e.g. we might have id_column(x) and a replacement x=>y.
-	# # But that would be missed here.
-	# error("continue here")
-	# onto
-
-
-	# recursively apply Projection
+	# Not found in replacements, apply the `Projection` action recursively
 	p = Projection(collect(args))
-	args = ReproducibleJobs.copy_nested(p, ReproducibleJobs.unsafe_unmanage(onto.args))
-	kwargs = ReproducibleJobs.copy_nested(p, ReproducibleJobs.unsafe_unmanage(onto.kwargs))
+	args = p(onto.ro.value.args)
+	kwargs = p(onto.ro.value.kwargs)
 	create_spec(f, args...; kwargs...)
 end
 
@@ -116,7 +106,13 @@ end
 
 
 # Wrapper that dispatches based on the type of `onto.f`
-project(::Preprocessing, onto, args...; kwargs...) = project_impl(onto.f, onto, args...; kwargs...)
+project(::Preprocessing, onto::Spec, args...; kwargs...) = project_impl(onto.f, onto, args...; kwargs...)
+
+function project(::Preprocessing, onto, args...; kwargs...)
+	# Due to forwarding, `onto` might be a value.
+	# TODO: Is there any reasonable use case where we would want to replace the value? I don't think so, it would have been replaced earlier.
+	onto # Keep the value as is
+end
 
 create_project_spec(onto, args...; kwargs...) =
 	create_spec(Preprocess(project), onto, args...; kwargs...)

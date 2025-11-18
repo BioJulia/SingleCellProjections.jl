@@ -372,7 +372,10 @@ function table_getindex(::Preprocessing{E}, table, ind) where E
 		cols = (k=>getindex_spec(v, ind) for (k,v) in table.args)
 		create_table_spec2(cols...)
 	elseif E
-		create_spec(Preprocess{false}(table_getindex), table, ind)
+		# create_spec(Preprocess{false}(table_getindex), table, ind)
+		create_spec(Preprocess{false}(table_getindex), table, fetched(ind))
+	elseif ind == Colon() # Projections have been handled, so indexing by `:` will not be transformed to something else
+		table
 	else
 		create_spec(table_getindex_fallback, table, ind; __version=v"0.1.0")
 	end
@@ -477,14 +480,59 @@ Jobs.table_leftjoin(a, b) = Job(table_leftjoin_spec(a, b))
 
 
 
-function _intersect_ids(a, b; use_projectables)
-	if use_projectables
-		f_intersect = intersect_spec
-		f_create_table = create_table_spec
-	else
-		f_intersect = intersect_impl_spec
-		f_create_table = create_table_impl_spec
-	end
+# function _intersect_ids(a, b; use_projectables)
+# 	if use_projectables
+# 		f_intersect = intersect_spec
+# 		f_create_table = create_table_spec
+# 	else
+# 		f_intersect = intersect_impl_spec
+# 		f_create_table = create_table_impl_spec
+# 	end
+
+# 	length(a.args) != 1 && throw(ArgumentError("Expected `a` to have exactly one column."))
+# 	length(b.args) != 1 && throw(ArgumentError("Expected `b` to have exactly one column."))
+
+# 	a_name,a_values = a.args[1]
+# 	b_name,b_values = b.args[1]
+# 	a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
+
+# 	values = intersect_impl_spec(a_values, b_values)
+# 	create_table_impl_spec(a_name=>values)
+# end
+
+# function intersect_ids_fallback(a, b)
+# 	ncol(a) != 1 && throw(ArgumentError("Expected `a` to have exactly one column."))
+# 	ncol(b) != 1 && throw(ArgumentError("Expected `b` to have exactly one column."))
+# 	a_name = only(names(a,1))
+# 	b_name = only(names(b,1))
+# 	a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
+# 	DataFrame(a_name => intersect(a[!,1], b[!,1]); copycols=false)
+# end
+# function intersect_ids(::Preprocessing, a, b)
+# 	if is_create_table_pr(a) && is_create_table_pr(b)
+# 		_intersect_ids(a, b; use_projectables=true)
+# 	elseif is_create_table_impl(a) && is_create_table_impl(b)
+# 		_intersect_ids(a, b; use_projectables=false)
+# 	elseif is_projectable_spec(a) || is_projectable_spec(b)
+# 		create_spec(Projectable(intersect_ids_pr), a, b)
+# 	else
+# 		create_spec(intersect_ids_fallback, a, b; __version=v"0.1.0")
+# 	end
+# end
+# intersect_ids_impl_spec(a, b) = create_spec(Preprocess(intersect_ids), forwarded_to_impl(a), forwarded_to_impl(b))
+# intersect_ids_pr(action, a, b) = intersect_ids_impl_spec(action(a), action(b))
+# intersect_ids_spec(a, b) = create_spec(Preprocess(intersect_ids), a, b)
+
+
+
+function _intersect_ids(a, b)
+	# if use_projectables
+	# 	f_intersect = intersect_spec
+	# 	f_create_table = create_table_spec
+	# else
+	# 	f_intersect = intersect_impl_spec
+	# 	f_create_table = create_table_impl_spec
+	# end
 
 	length(a.args) != 1 && throw(ArgumentError("Expected `a` to have exactly one column."))
 	length(b.args) != 1 && throw(ArgumentError("Expected `b` to have exactly one column."))
@@ -493,8 +541,8 @@ function _intersect_ids(a, b; use_projectables)
 	b_name,b_values = b.args[1]
 	a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
 
-	values = intersect_impl_spec(a_values, b_values)
-	create_table_impl_spec(a_name=>values)
+	values = intersect_spec2(a_values, b_values)
+	create_table_spec2(a_name=>values)
 end
 
 function intersect_ids_fallback(a, b)
@@ -505,17 +553,13 @@ function intersect_ids_fallback(a, b)
 	a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
 	DataFrame(a_name => intersect(a[!,1], b[!,1]); copycols=false)
 end
-function intersect_ids(::Preprocessing, a, b)
-	if is_create_table_pr(a) && is_create_table_pr(b)
-		_intersect_ids(a, b; use_projectables=true)
-	elseif is_create_table_impl(a) && is_create_table_impl(b)
-		_intersect_ids(a, b; use_projectables=false)
-	elseif is_projectable_spec(a) || is_projectable_spec(b)
-		create_spec(Projectable(intersect_ids_pr), a, b)
+function intersect_ids(::Preprocessing{E}, a, b) where E
+	if is_create_table(a) && is_create_table(b)
+		_intersect_ids(a, b)
+	elseif E
+		create_spec(Preprocess{false}(intersect_ids), a, b)
 	else
 		create_spec(intersect_ids_fallback, a, b; __version=v"0.1.0")
 	end
 end
-intersect_ids_impl_spec(a, b) = create_spec(Preprocess(intersect_ids), forwarded_to_impl(a), forwarded_to_impl(b))
-intersect_ids_pr(action, a, b) = intersect_ids_impl_spec(action(a), action(b))
 intersect_ids_spec(a, b) = create_spec(Preprocess(intersect_ids), a, b)

@@ -71,14 +71,44 @@ issubset_spec(a, b) = create_spec(Projectable(issubset_pr), a, b)
 setdiff_pr(action, a, b) = create_spec(setdiff, action(a), action(b); __version=v"0.1.0")
 setdiff_spec(a, b) = create_spec(Projectable(setdiff_pr), a, b)
 
-intersect_impl_spec(a, b, args...) = create_spec(intersect, a, b, args...; __version=v"0.1.0")
-intersect_pr(action::Action, a, b, args...) = intersect_impl_spec(action(a), action(b), action(args)...)
-intersect_spec(a, b, args...) = create_spec(Projectable(intersect_pr), a, b, args...)
+# # DEPRECATED
+# intersect_impl_spec(a, b, args...) = create_spec(intersect, a, b, args...; __version=v"0.1.0")
+# intersect_pr(action::Action, a, b, args...) = intersect_impl_spec(action(a), action(b), action(args)...)
+# intersect_spec(a, b, args...) = create_spec(Projectable(intersect_pr), a, b, args...)
+
+
+intersect_spec2(a, b, args...) = create_spec(intersect, a, b, args...; __version=v"0.1.0")
+
+
+function intersect_ind_impl(a, b)
+	a == Colon() && return b
+	b == Colon() && return a
+	intersect(a,b)
+end
+function intersect_ind(::Preprocessing{E}, a, b) where E
+	a == Colon() && return b
+	b == Colon() && return a
+	E && return create_spec(Preprocess{false}(intersect_ind), a, b)
+	return create_spec(intersect_ind_impl, a, b; __version=v"0.1.0")
+end
+
+"""
+	intersect_ind_spec(a, b)
+
+Create a spec to compute the intersection of `Vector`s `a` and `b` with indexes.
+Just like `intersect`, but allows `a` and/or `b` to be `:`.
+"""
+intersect_ind_spec(a, b) = create_spec(Preprocess(intersect_ind), a, b)
+
+
+
+
 
 length_pr(action, x) = create_spec(length, action(x); __version=v"0.1.0")
 length_spec(x) = create_spec(Projectable(length_pr), x)
 
 
+# DEPRECATED
 function isequal_impl_spec(x, y)
 	if isequal(x,y)
 		true # early out
@@ -91,6 +121,21 @@ end
 
 isequal_pr(action, x, y) = isequal_impl_spec(action(x), action(y))
 isequal_spec(x, y) = create_spec(Projectable(isequal_pr), x, y)
+
+
+
+function isequal2(::Preprocessing{E}, x, y) where E
+	if isequal(x, y)
+		true # early out
+	elseif !(x isa Spec) && !(y isa Spec)
+		false # early out
+	elseif E
+		create_spec(Preprocess{false}(isequal2), x, y)
+	else
+		create_spec(isequal, x, y; __version=v"0.1.0")
+	end
+end
+isequal_spec2(x, y) = create_spec(Preprocess(isequal2), x, y)
 
 
 function indexin_impl(a::AbstractVector, b::AbstractVector; not_found)
@@ -156,19 +201,19 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 
 		# subset the columns to only depend on those that are used
 		if k isa AbstractString
-			x = get_columns_impl_spec(df, k)
+			x = get_columns_spec(df, k)
 			matching_ind = cached(find_matching_ind_impl_spec(f, x))
 		elseif k isa AbstractVector
-			x = get_columns_impl_spec(df, k...)
+			x = get_columns_spec(df, k...)
 			matching_ind = cached(find_matching_ind_impl_spec(f, x))
 		elseif k isa Union{Spec, DataFrame}
 			# k is an "Annotation" - a DataFrame with an ID and a value column. Will be leftjoined and the function will be applied to the leftjoined vector with values.
 
 			ids_a = id_column_spec(df)
 			ids_b = id_column_spec(k)
-			ind_spec = indexin_impl_spec(ids_a, ids_b; not_found=:nothing)
+			ind_spec = indexin_spec2(ids_a, ids_b; not_found=:nothing)
 			v = value_column_data_spec(k)
-			x = getindex_or_missing_impl_spec(v, ind_spec) # The values of the annotation `k`, reordered to match the order in df.
+			x = getindex_or_missing_spec(v, ind_spec) # The values of the annotation `k`, reordered to match the order in df.
 
 			matching_ind = cached(find_matching_ind_impl_spec(last(f), x))
 		else
@@ -186,14 +231,14 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 		ids = id_column_spec(df)
 		ids2 = action(ids) # IDs from projected dataset
 
+		cond = isequal_spec2(ids, ids2)
 
-		cond = isequal_impl_spec(ids, ids2)
-
-		matching_ids = table_getindex_impl_spec(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())
+		# matching_ids = table_getindex_impl_spec(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())
+		matching_ids = table_getindex_spec(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())
 		if project_ids == :yes
-			proj_ind = indexin_impl_spec(matching_ids, ids2; not_found=:error) # Use order from unprojected
+			proj_ind = indexin_spec2(matching_ids, ids2; not_found=:error) # Use order from unprojected
 		else#if project_ids == :intersect
-			proj_ind = indexin_impl_spec(matching_ids, ids2; not_found=:skip) # Use order from unprojected
+			proj_ind = indexin_spec2(matching_ids, ids2; not_found=:skip) # Use order from unprojected
 		end
 
 		# This gives us an early out when ids==ids2, since we can just return matching_ind in that case (no need to bother with getting matching ids and doing indexin)
@@ -219,49 +264,49 @@ simplify_ind_spec(ind, n) =
 
 
 
-# DEPRECATED - TODO: REMOVE
-function find_matching_ids(action::Action, f, df; project_ids::Symbol)
-	# TODO: Consider having a simplified path when indexing with :
-	# We just need to handle different project_ids cases properly
-	# if f === : and project_ids != intersect
-	# 	- just return :
-	#	- or return the get_id_spec? feels wasteful to call find_matching_ids
-	# otherwise do what we do now
+# # DEPRECATED - TODO: REMOVE
+# function find_matching_ids(action::Action, f, df; project_ids::Symbol)
+# 	# TODO: Consider having a simplified path when indexing with :
+# 	# We just need to handle different project_ids cases properly
+# 	# if f === : and project_ids != intersect
+# 	# 	- just return :
+# 	#	- or return the get_id_spec? feels wasteful to call find_matching_ids
+# 	# otherwise do what we do now
 
-	@assert project_ids in (:no, :yes, :intersect)
-	if project_ids == :no
-		f = action(f)
-		df = action(df)
-	end
+# 	@assert project_ids in (:no, :yes, :intersect)
+# 	if project_ids == :no
+# 		f = action(f)
+# 		df = action(df)
+# 	end
 
-	# TODO: If `f` is a pair, we can subset the columns of df to avoid involving them in the call
-	ind = cached(create_spec(SCPCore.find_matching_ind, f, df; __version=v"0.1.2"))
-	matching_ids = table_getindex_spec(id_column_spec(df), ind)
+# 	# TODO: If `f` is a pair, we can subset the columns of df to avoid involving them in the call
+# 	ind = cached(create_spec(SCPCore.find_matching_ind, f, df; __version=v"0.1.2"))
+# 	matching_ids = table_getindex_spec(id_column_spec(df), ind)
 
-	if project_ids == :intersect && action isa Projection
-		# df = action(df)
-		# TODO: simplify ids2 spec by using a function for extracting IDs directly
-		# ids2 = create_spec(SCPCore.find_matching_ids, Returns(true), df; __version=v"0.1.0")
-		# spec = cached(create_spec(intersect_ids_impl, spec, ids2; __version=v"0.1.0"))
+# 	if project_ids == :intersect && action isa Projection
+# 		# df = action(df)
+# 		# TODO: simplify ids2 spec by using a function for extracting IDs directly
+# 		# ids2 = create_spec(SCPCore.find_matching_ids, Returns(true), df; __version=v"0.1.0")
+# 		# spec = cached(create_spec(intersect_ids_impl, spec, ids2; __version=v"0.1.0"))
 
-		# ids2 = id_column_spec(df)
-		# spec = cached(create_spec(intersect_ids_impl, spec, action(ids2); __version=v"0.1.0"))
+# 		# ids2 = id_column_spec(df)
+# 		# spec = cached(create_spec(intersect_ids_impl, spec, action(ids2); __version=v"0.1.0"))
 
-		# ids2 = action(column_data_spec(df,1))
-		# matching_ids = cached(intersect_impl_spec(matching_ids, ids2))
+# 		# ids2 = action(column_data_spec(df,1))
+# 		# matching_ids = cached(intersect_impl_spec(matching_ids, ids2))
 
-		ids2 = action(id_column_spec(df))
-		# matching_ids = cached(intersect_ids_spec(matching_ids, ids2)) # Use order from unprojected
-		matching_ids = cached(intersect_ids_impl_spec(matching_ids, ids2)) # Use order from unprojected
-	end
-	matching_ids
-end
+# 		ids2 = action(id_column_spec(df))
+# 		# matching_ids = cached(intersect_ids_spec(matching_ids, ids2)) # Use order from unprojected
+# 		matching_ids = cached(intersect_ids_impl_spec(matching_ids, ids2)) # Use order from unprojected
+# 	end
+# 	matching_ids
+# end
 
 
-create_find_matching_ids_spec(f, df; project_ids) =
-	create_spec(Projectable(find_matching_ids), f, df; project_ids)
-Jobs.find_matching_ids(args...; kwargs...) =
-	Job(create_find_matching_ids_spec(args...; kwargs...))
+# create_find_matching_ids_spec(f, df; project_ids) =
+# 	create_spec(Projectable(find_matching_ids), f, df; project_ids)
+# Jobs.find_matching_ids(args...; kwargs...) =
+# 	Job(create_find_matching_ids_spec(args...; kwargs...))
 
 
 
@@ -347,7 +392,7 @@ annotation_name_spec(df) = create_spec(Projectable(annotation_name), df)
 
 
 
-# TODO: Rename?
+# TODO: Make simplified version
 hcat_impl(action::Action, args...; kwargs...) =
 	create_spec(hcat, action(args)...; kwargs..., __version=v"0.1.0")
 create_hcat_spec(args...; kwargs...) = create_spec(Projectable(hcat_impl), args...)
