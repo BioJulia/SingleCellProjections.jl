@@ -67,7 +67,7 @@ function _covariate_basename((column, desc)::Pair)
 	elseif column isa Union{String,Symbol}
 		column
 	else
-		annotation_name_spec(column)
+		get_value_colname_spec(column)
 	end
 end
 

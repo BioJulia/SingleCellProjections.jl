@@ -10,7 +10,6 @@ _getindex_error_spec(ind) = create_spec(_getindex_error, ind; __version=v"0.1.0"
 getindex_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_spec(getindex, v, ind; __version=v"0.1.0")
 getindex_impl_spec(v, ind) = create_spec(Preprocess(getindex_impl), v, fetched(ind))
 
-# function getindex_pr(action, v, ind) = getindex_impl_spec(action(v), action(ind))
 function getindex_pr(action, v, ind)
 	v_p = action(v)
 	result = getindex_impl_spec(v_p, action(ind))
@@ -227,51 +226,6 @@ simplify_ind_spec(ind, n) =
 
 
 
-# # DEPRECATED - TODO: REMOVE
-# function find_matching_ids(action::Action, f, df; project_ids::Symbol)
-# 	# TODO: Consider having a simplified path when indexing with :
-# 	# We just need to handle different project_ids cases properly
-# 	# if f === : and project_ids != intersect
-# 	# 	- just return :
-# 	#	- or return the get_id_spec? feels wasteful to call find_matching_ids
-# 	# otherwise do what we do now
-
-# 	@assert project_ids in (:no, :yes, :intersect)
-# 	if project_ids == :no
-# 		f = action(f)
-# 		df = action(df)
-# 	end
-
-# 	# TODO: If `f` is a pair, we can subset the columns of df to avoid involving them in the call
-# 	ind = cached(create_spec(SCPCore.find_matching_ind, f, df; __version=v"0.1.2"))
-# 	matching_ids = table_getindex_spec(id_column_spec(df), ind)
-
-# 	if project_ids == :intersect && action isa Projection
-# 		# df = action(df)
-# 		# TODO: simplify ids2 spec by using a function for extracting IDs directly
-# 		# ids2 = create_spec(SCPCore.find_matching_ids, Returns(true), df; __version=v"0.1.0")
-# 		# spec = cached(create_spec(intersect_ids_impl, spec, ids2; __version=v"0.1.0"))
-
-# 		# ids2 = id_column_spec(df)
-# 		# spec = cached(create_spec(intersect_ids_impl, spec, action(ids2); __version=v"0.1.0"))
-
-# 		# ids2 = action(column_data_spec(df,1))
-# 		# matching_ids = cached(intersect_impl_spec(matching_ids, ids2))
-
-# 		ids2 = action(id_column_spec(df))
-# 		# matching_ids = cached(intersect_ids_spec(matching_ids, ids2)) # Use order from unprojected
-# 		matching_ids = cached(intersect_ids_impl_spec(matching_ids, ids2)) # Use order from unprojected
-# 	end
-# 	matching_ids
-# end
-
-
-# create_find_matching_ids_spec(f, df; project_ids) =
-# 	create_spec(Projectable(find_matching_ids), f, df; project_ids)
-# Jobs.find_matching_ids(args...; kwargs...) =
-# 	Job(create_find_matching_ids_spec(args...; kwargs...))
-
-
 
 
 ids_to_indices(action::Action, df, ids) =
@@ -294,11 +248,6 @@ function matrix_getindex_pre(::Preprocessing, matrix; var_ind, obs_ind)
 end
 
 
-# function _matrix_ind_spec(action::Action, ind, n=nothing)
-# 	ind = action(ind)
-# 	n !== nothing && (ind = simplify_ind_spec(ind, n))
-# 	ind = fetched(ind)
-# end
 
 function _matrix_ind_spec(action::Action, ind, n=nothing)
 	ind_p = action(ind)
@@ -343,15 +292,6 @@ create_datamatrix_getindex_spec(data; kwargs...) =
 	create_spec(DataMatrixFunction(datamatrix_getindex), data; kwargs...)
 
 
-
-
-# DEPRECATED: Use `get_value_colname_spec` instead
-function annotation_name_impl(df)
-	@assert ncol(df)==2
-	only(names(df, 2))
-end
-annotation_name(action::Action, df) = create_spec(annotation_name_impl, action(df); __version=v"0.1.0")
-annotation_name_spec(df) = create_spec(Projectable(annotation_name), df)
 
 
 
