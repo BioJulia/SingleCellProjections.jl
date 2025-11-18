@@ -122,14 +122,7 @@ function indexin_impl(a::DataFrame, b::DataFrame; not_found)
 	indexin_impl(a[!,1], b[!,1]; not_found)
 end
 
-# DEPRECATED
-indexin_impl_spec(a, b; not_found=:error) = create_spec(indexin_impl, a, b; not_found, __version=v"0.1.1")
-indexin_pr(action, a, b; kwargs...) = indexin_impl_spec(action(a), action(b); kwargs...)
-indexin_spec(a, b; kwargs...) = create_spec(Projectable(indexin_pr), a, b; kwargs...)
-
-
-
-indexin_spec2(a, b; not_found=:error) = create_spec(indexin_impl, a, b; not_found, __version=v"0.1.1")
+indexin_spec(a, b; not_found=:error) = create_spec(indexin_impl, a, b; not_found, __version=v"0.1.1")
 
 
 
@@ -173,7 +166,7 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 
 			ids_a = id_column_spec(df)
 			ids_b = id_column_spec(k)
-			ind_spec = indexin_spec2(ids_a, ids_b; not_found=:nothing)
+			ind_spec = indexin_spec(ids_a, ids_b; not_found=:nothing)
 			v = value_column_data_spec(k)
 			x = getindex_or_missing_spec(v, ind_spec) # The values of the annotation `k`, reordered to match the order in df.
 
@@ -198,9 +191,9 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 		# matching_ids = table_getindex_impl_spec(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())
 		matching_ids = table_getindex_spec(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())
 		if project_ids == :yes
-			proj_ind = indexin_spec2(matching_ids, ids2; not_found=:error) # Use order from unprojected
+			proj_ind = indexin_spec(matching_ids, ids2; not_found=:error) # Use order from unprojected
 		else#if project_ids == :intersect
-			proj_ind = indexin_spec2(matching_ids, ids2; not_found=:skip) # Use order from unprojected
+			proj_ind = indexin_spec(matching_ids, ids2; not_found=:skip) # Use order from unprojected
 		end
 
 		# This gives us an early out when ids==ids2, since we can just return matching_ind in that case (no need to bother with getting matching ids and doing indexin)
@@ -261,16 +254,8 @@ end
 
 function matrix_getindex_pr(action::Action, matrix; var_ind, obs_ind, nvar=nothing, nobs=nothing)
 	matrix = action(matrix)
-	# var_ind = action(var_ind)
-	# obs_ind = action(obs_ind)
-	# nvar !== nothing && (var_ind = simplify_ind_spec(var_ind, nvar))
-	# nobs !== nothing && (obs_ind = simplify_ind_spec(obs_ind, nobs))
-	# var_ind = fetched(var_ind)
-	# obs_ind = fetched(obs_ind)
-
 	var_ind = _matrix_ind_spec(action, var_ind, nvar)
 	obs_ind = _matrix_ind_spec(action, obs_ind, nobs)
-
 	create_spec(Preprocess(matrix_getindex_pre), matrix; var_ind, obs_ind)
 end
 

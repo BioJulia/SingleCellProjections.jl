@@ -271,7 +271,7 @@ function _table_leftjoin(a, b)
 	common_names = intersect(@view(names_a[2:end]), @view(names_b[2:end]))
 	isempty(common_names) || throw(ArgumentError("Table columns must be different (except ID column), found these common columns: $common_names"))
 
-	ind_spec = indexin_spec2(ids_a, ids_b; not_found=:nothing)
+	ind_spec = indexin_spec(ids_a, ids_b; not_found=:nothing)
 	b_cols = ReproducibleJobs.unsafe_unmanage(b.args)
 	joined_cols = [k=>getindex_or_missing_spec(v,ind_spec) for (k,v) in @view(b_cols[2:end])]
 	create_table_spec(a.args..., joined_cols...)
