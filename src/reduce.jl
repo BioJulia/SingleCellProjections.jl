@@ -78,7 +78,7 @@ function pca(::Mat, data; nsv, kwargs...)
 end
 function pca(::Var, data; nsv, kwargs...)
 	nsv = prefetched(actual_nsv_spec(data, nsv))
-	create_prefixed_ids_spec("PC_id", "PC", nsv)
+	prefixed_ids_spec("PC_id", "PC", nsv)
 end
 pca(::Obs, data; kwargs...) = get_spec(Obs(), data)
 
@@ -102,7 +102,7 @@ end
 loadings(::Var, data; kwargs...) = get_spec(Var(), data)
 function loadings(::Obs, data; nsv, kwargs...)
 	nsv = prefetched(actual_nsv_spec(data, nsv))
-	create_prefixed_ids_spec("loadings_id", "loadings", nsv)
+	prefixed_ids_spec("loadings_id", "loadings", nsv)
 end
 
 function Jobs.loadings(args...; nsv, seed=1234, kwargs...)
@@ -186,7 +186,7 @@ function force_layout(::Mat, data; kwargs...)
 	create_spec(Projectable(force_layout), matrix_spec; kwargs...)
 end
 force_layout(::Obs, data; kwargs...) = get_spec(Obs(), data)
-force_layout(::Var, data; ndim, kwargs...) = create_prefixed_ids_spec("id", "Force Layout Dim ", ndim)
+force_layout(::Var, data; ndim, kwargs...) = prefixed_ids_spec("id", "Force Layout Dim ", ndim)
 
 function Jobs.force_layout(args...; ndim=3, kwargs...)
 	Job(create_spec(DataMatrixFunction(force_layout), args...; ndim, kwargs...))

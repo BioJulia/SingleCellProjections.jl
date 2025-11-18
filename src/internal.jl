@@ -355,8 +355,10 @@ annotation_name_spec(df) = create_spec(Projectable(annotation_name), df)
 
 
 
-prefixed_ids_impl(col::String, prefix::String, n::Int) = DataFrame(col=>string.(prefix, 1:n); copycols=false)
-prefixed_ids(action::Action, col, prefix, n) =
-	create_spec(prefixed_ids_impl, col, action(prefix), action(n); __version=v"0.1.0")
-create_prefixed_ids_spec(col, prefix, n) =
-	create_spec(Projectable(prefixed_ids), col, prefix, n)
+prefixed_id_values(prefix::String, n) = string.(prefix, 1:n)
+function prefixed_ids(::Preprocessing, col::String, prefix, n)
+	col_data = create_spec(prefixed_id_values, prefix, n; __version=v"0.1.0")
+	create_table_spec(col=>col_data)
+end
+prefixed_ids_spec(col, prefix, n) =
+	create_spec(Preprocess(prefixed_ids), col, prefix, n)
