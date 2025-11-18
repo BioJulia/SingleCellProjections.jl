@@ -1,31 +1,15 @@
-value_vector_model_spec(annot; kwargs...) =
-	cached(create_spec(SCPCore.value_vector_model, annot; kwargs..., __version=v"0.1.0"))
-
-
-function value_vector(action::Action, annot; kwargs...)
-	model = value_vector_model_spec(annot; kwargs...)
-	cached(create_spec(SCPCore.value_vector, model, action(annot); __version=v"0.1.0"))
-end
-value_vector_spec(annot; kwargs...) =
-	create_spec(Projectable(value_vector), annot; kwargs...)
-
-
-
 covariate_model(action::Action, value_vector; kwargs...) =
 	cached(create_spec(SCPCore.covariate_model, value_vector; kwargs..., __version=v"0.1.0"))
 covariate_model_spec(value_vector; kwargs...) =
 	create_spec(Projectable(covariate_model), value_vector; kwargs...)
 
-covariate(action::Action, model, value_vector) =
-	create_spec(SCPCore.covariate_matrix, prefetched(model), action(value_vector); __version=v"0.1.0") # Should we use cached()?
 covariate_spec(model, value_vector) =
-	create_spec(Projectable(covariate), model, value_vector)
+	create_spec(SCPCore.covariate_matrix, prefetched(model), value_vector; __version=v"0.1.0") # Should we use cached()?
 
 
 
-
-covariate_scale(action::Action, model) = create_spec(SCPCore.covariate_scale, action(model); __version=v"0.1.0")
-covariate_scale_spec(model) = create_spec(Projectable(covariate_scale), model)
+covariate_scale_spec(model) =
+	create_spec(SCPCore.covariate_scale, model; __version=v"0.1.0")
 
 
 
@@ -33,28 +17,28 @@ covariate_scale_spec(model) = create_spec(Projectable(covariate_scale), model)
 
 
 # TODO: Move these into SingleCellProjections.jl?
-function _add_covariate_names2!(out, name, model::SCPCore.CategoricalValueVectorModel)
+function _add_covariate_names!(out, name, model::SCPCore.CategoricalValueVectorModel)
 	for c in model.categories
 		push!(out, string(name, '_', c))
 	end
 end
-_add_covariate_names2!(out, name, ::Any) = push!(out, name)
+_add_covariate_names!(out, name, ::Any) = push!(out, name)
 
-function covariate_names_impl2(names::Vector, models::Vector)
+function covariate_names_impl(names::Vector, models::Vector)
 	@assert length(names)==length(models)
 	cov_names = String[]
 	for (name,model) in zip(names, models)
-		_add_covariate_names2!(cov_names, name, model)
+		_add_covariate_names!(cov_names, name, model)
 	end
 	@assert allunique(cov_names)
 	DataFrame(covariate=cov_names; copycols=false)
 end
 
 
-covariate_names2(action::Action, names, models) =
-	create_spec(covariate_names_impl2, names, models; __version=v"0.1.0")
-covariate_names_spec2(names, models) =
-	create_spec(Projectable(covariate_names2), names, models)
+covariate_names(action::Action, names, models) =
+	create_spec(covariate_names_impl, names, models; __version=v"0.1.0")
+covariate_names_spec(names, models) =
+	create_spec(Projectable(covariate_names), names, models)
 
 
 
@@ -74,15 +58,15 @@ end
 
 
 
-value_vector_model_spec2(data, desc::SCPCore.InterceptCovariateDesc; kwargs...) =
+value_vector_model_spec(data, desc::SCPCore.InterceptCovariateDesc; kwargs...) =
 	SCPCore.InterceptValueVectorModel(; kwargs...)
-value_vector_model_spec2(data, desc; kwargs...) =
+value_vector_model_spec(data, desc; kwargs...) =
 	cached(create_spec(SCPCore.value_vector_model, data, desc; kwargs..., __version=v"0.1.2"))
 
-value_vector2(action::Action, model, data) =
+value_vector(action::Action, model, data) =
 	cached(create_spec(SCPCore.value_vector, model, action(data); __version=v"0.1.2"))
-value_vector_spec2(model, data) =
-	create_spec(Projectable(value_vector2), model, data)
+value_vector_spec(model, data) =
+	create_spec(Projectable(value_vector), model, data)
 
 # Special case for intercept, just the number of rows
 _value_vector_data_spec(obs, ::String, ::SCPCore.InterceptCovariateDesc) =
@@ -137,14 +121,14 @@ end
 
 function covariate_stages(obs, covariate_descriptions; center, kwargs...)
 	vv_data_specs = _value_vector_data_spec.(Ref(obs), first.(covariate_descriptions), last.(covariate_descriptions))
-	vv_model_specs = prefetched.(value_vector_model_spec2.(vv_data_specs, last.(covariate_descriptions)))
-	vv_specs = prefetched.(value_vector_spec2.(vv_model_specs, vv_data_specs))
+	vv_model_specs = prefetched.(value_vector_model_spec.(vv_data_specs, last.(covariate_descriptions)))
+	vv_specs = prefetched.(value_vector_spec.(vv_model_specs, vv_data_specs))
 
 	covariate_model_specs = covariate_model_spec.(vv_specs; center, kwargs...)
 	covariate_specs = covariate_spec.(covariate_model_specs, vv_specs)
 
 	base_name_specs = _covariate_basename.(covariate_descriptions)
-	covariate_names = covariate_names_spec2(base_name_specs, vv_model_specs)
+	covariate_names = covariate_names_spec(base_name_specs, vv_model_specs)
 
 	(; covariate_descriptions, vv_data_specs, vv_model_specs, vv_specs, covariate_model_specs, covariate_specs, covariate_names)
 end

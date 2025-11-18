@@ -19,8 +19,6 @@ end
 is_datamatrix_spec(spec::Spec) = is_datamatrix_spec(spec.ro.value)
 
 
-# is_projectable_or_datamatrix_spec(x) = is_projectable_spec(x) || is_datamatrix_spec(x)
-
 
 
 create_datamatrix_spec(matrix, var, obs) = create_spec(SCPCore.DataMatrix, matrix, var, obs; __version=v"0.1.0")
