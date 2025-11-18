@@ -63,7 +63,7 @@ module Jobs
 	function sctransform end
 	function logtransform end
 	function tf_idf_transform end
-	function center_matrix end # TEMP
+	# function center_matrix end # TEMP
 	function designmatrix end
 	function negative_regression_matrix end
 	function normalize_matrix end

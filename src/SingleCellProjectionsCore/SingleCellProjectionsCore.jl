@@ -8,8 +8,8 @@ export
 	LogTransformModel2, # TEMP
 	TFIDFTransformModel,
 	SCTransformModel,
-	CenteringModel, # TEMP
-	CenteringModel2, # TEMP
+	# CenteringModel, # TEMP
+	# CenteringModel2, # TEMP
 	DesignMatrixModel,
 	NormalizationModel,
 	SVDModel,
