@@ -20,14 +20,14 @@ function non_missing_ind_impl(column_data...)
 
 	mask = trues(n)
 	for c in column_data
-		mask .|= .!ismissing.(c)
+		mask .&= .!ismissing.(c)
 	end
 
 	all(mask) && return Colon()
 	findall(mask)
 end
 non_missing_ind(action::Action, column_data...) =
-	create_spec(non_missing_ind_impl, action(column_data)...; __version=v"0.0.1")
+	create_spec(non_missing_ind_impl, action(column_data)...; __version=v"0.0.2")
 non_missing_ind_spec(column_data...) =
 	create_spec(Projectable(non_missing_ind), column_data...)
 
@@ -151,7 +151,7 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 
 	h0_design = designmatrix_spec(data, h0...; center, extra_args...) # TODO: Use h0_covariate_descriptions and build_design_matrix?
 
-	matrix = get_matrix(data)
+	matrix = get_matrix_spec(data)
 	var_ids = id_column_spec(get_var_spec(data))
 
 	ttest_table_spec(matrix, var_ids, get_matrix_spec(h1_design), h1_scale, get_matrix_spec(h0_design))
