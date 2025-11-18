@@ -1,7 +1,7 @@
 module SingleCellProjectionsCSVExt
 
 using ReproducibleJobs
-using ReproducibleJobs: create_spec, cached
+using ReproducibleJobs: create_spec, cached, Preprocessing
 using SingleCellProjections
 using SingleCellProjections: Projectable, Action, table_to_compound_result, table_from_compound_result
 
@@ -25,16 +25,11 @@ parse_csv_spec(filepath; delim) =
 
 
 
-function load_csv(::Action, filepath; delim=_auto_delim(filepath), kwargs...)
-	# Ignore the action, there is nothing to project
-	parsed = parse_csv_spec(filepath; delim)
-	table_from_compound_result(parsed)
-end
-
-
+load_csv(::Preprocessing, filepath; delim=_auto_delim(filepath)) =
+	table_from_compound_result(parse_csv_spec(filepath; delim))
 function Jobs.load_csv(filepath::String; kwargs...)
 	filepath_job = checksummedfilepath_job(filepath)
-	Job(create_spec(Projectable(load_csv), filepath_job; kwargs...))
+	Job(create_spec(Preprocess(load_csv), filepath_job; kwargs...))
 end
 
 end
