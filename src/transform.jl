@@ -1,9 +1,3 @@
-# function logtransform_matrix(action::Action, T::DataType, matrix; scale_factor, var_ind)
-# 	matrix = action(matrix)
-# 	var_ind = action(var_ind)
-# 	create_spec(SCPCore.logtransform_matrix, T, matrix; scale_factor, var_ind, __version=v"0.1.0")
-# end
-
 function logtransform(f::Union{Mat,Var}, T::DataType, data; var_filter=:, project_var_ids=:intersect, scale_factor)
 	var_spec = get_var_spec(data)
 	var_ind = prefetched(create_find_matching_ind_spec(var_filter, var_spec; project_ids=project_var_ids))
@@ -12,7 +6,6 @@ function logtransform(f::Union{Mat,Var}, T::DataType, data; var_filter=:, projec
 		table_getindex_spec(var_spec, var_ind)
 	else # if f isa Mat
 		matrix_spec = get_matrix_spec(data)
-		# create_spec(Projectable(logtransform_matrix), T, matrix_spec; var_ind, kwargs...)
 		create_spec(SCPCore.logtransform_matrix, T, matrix_spec; var_ind, scale_factor, __version=v"0.1.0")
 	end
 end
