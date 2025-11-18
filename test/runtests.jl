@@ -3,7 +3,7 @@ using SingleCellProjections
 using .SingleCellProjections.SingleCellProjectionsCore
 using .SingleCellProjectionsCore.MatrixExpressions
 using SCTransform
-using ReproducibleJobs: ReproducibleJobs, Cache, get_cache, with_cache, fetch!, forward
+using ReproducibleJobs: ReproducibleJobs, Cache, TimestampedFilePath, get_cache, with_cache, fetch!, forward
 
 using StableRNGs
 
