@@ -32,9 +32,8 @@ Jobs.add_obs_column(data, name, column) =
 
 
 
-var_counts_fraction_impl(action::Action, counts, sub_ind, tot_ind) =
-	cached(create_spec(SCPCore.counts_fraction, action(counts), action(sub_ind), action(tot_ind); dims=1, __version=v"0.1.0"))
-create_var_counts_fraction_impl_spec(counts, sub_ind, tot_ind) = create_spec(Projectable(var_counts_fraction_impl), counts, sub_ind, tot_ind)
+var_counts_fraction_impl_spec(counts, sub_ind, tot_ind) =
+	create_spec(SCPCore.counts_fraction, counts, sub_ind, tot_ind; dims=1, __version=v"0.1.0")
 
 var_counts_fraction(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
 var_counts_fraction(::Var, counts, args...; kwargs...) = get_var_spec(counts)
@@ -42,8 +41,7 @@ function var_counts_fraction(::Obs, counts, sub_filter, tot_filter, col; project
 	var_spec = get_var_spec(counts)
 	sub_ind = prefetched(create_find_matching_ind_spec(sub_filter, var_spec; project_ids))
 	tot_ind = prefetched(create_find_matching_ind_spec(tot_filter, var_spec; project_ids))
-
-	values_spec = create_var_counts_fraction_impl_spec(get_matrix_spec(counts), sub_ind, tot_ind)
+	values_spec = cached(var_counts_fraction_impl_spec(get_matrix_spec(counts), sub_ind, tot_ind))
 	add_column_spec(get_obs_spec(counts), col, values_spec)
 end
 
@@ -53,15 +51,14 @@ function Jobs.var_counts_fraction(counts, sub_filter, tot_filter, col; project_i
 end
 
 
-var_counts_sum_impl(action::Action, f, counts, ind) =
-	cached(create_spec(SCPCore.counts_sum, f, action(counts), action(ind); dims=1, __version=v"0.1.0"))
-create_var_counts_sum_impl_spec(f, counts, ind) = create_spec(Projectable(var_counts_sum_impl), f, counts, ind)
+var_counts_sum_impl_spec(f, counts, ind) =
+	create_spec(SCPCore.counts_sum, f, counts, ind; dims=1, __version=v"0.1.0")
 
 var_counts_sum(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
 var_counts_sum(::Var, counts, args...; kwargs...) = get_var_spec(counts)
 function var_counts_sum(::Obs, counts, filter, col; project_ids, f=identity)
 	ind = prefetched(create_find_matching_ind_spec(filter, get_var_spec(counts); project_ids))
-	values_spec = create_var_counts_sum_impl_spec(f, get_matrix_spec(counts), ind)
+	values_spec = cached(var_counts_sum_impl_spec(f, get_matrix_spec(counts), ind))
 	add_column_spec(get_obs_spec(counts), col, values_spec)
 end
 
@@ -75,10 +72,9 @@ Jobs.var_counts_sum(counts, filter, col; kwargs...) = Jobs.var_counts_sum(identi
 
 
 
-# TODO: Can we get better code reuse with the `var` functions above
-obs_counts_fraction_impl(action::Action, counts, sub_ind, tot_ind) =
-	cached(create_spec(SCPCore.counts_fraction, action(counts), action(sub_ind), action(tot_ind); dims=2, __version=v"0.1.0"))
-create_obs_counts_fraction_impl_spec(counts, sub_ind, tot_ind) = create_spec(Projectable(obs_counts_fraction_impl), counts, sub_ind, tot_ind)
+# TODO: Can we get better code reuse with the `var` functions above?
+obs_counts_fraction_impl_spec(counts, sub_ind, tot_ind) =
+	create_spec(SCPCore.counts_fraction, counts, sub_ind, tot_ind; dims=2, __version=v"0.1.0")
 
 obs_counts_fraction(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
 function obs_counts_fraction(::Var, counts, sub_filter, tot_filter, col; project_ids)
@@ -86,7 +82,7 @@ function obs_counts_fraction(::Var, counts, sub_filter, tot_filter, col; project
 	sub_ind = prefetched(create_find_matching_ind_spec(sub_filter, obs_spec; project_ids))
 	tot_ind = prefetched(create_find_matching_ind_spec(tot_filter, obs_spec; project_ids))
 
-	values_spec = create_obs_counts_fraction_impl_spec(get_matrix_spec(counts), sub_ind, tot_ind)
+	values_spec = cached(obs_counts_fraction_impl_spec(get_matrix_spec(counts), sub_ind, tot_ind))
 	add_column_spec(get_var_spec(counts), col, values_spec)
 end
 obs_counts_fraction(::Obs, counts, args...; kwargs...) = get_obs_spec(counts)
@@ -96,14 +92,13 @@ function Jobs.obs_counts_fraction(counts, sub_filter, tot_filter, col; project_i
 end
 
 
-obs_counts_sum_impl(action::Action, f, counts, ind) =
-	cached(create_spec(SCPCore.counts_sum, f, action(counts), action(ind); dims=2, __version=v"0.1.0"))
-create_obs_counts_sum_impl_spec(f, counts, ind) = create_spec(Projectable(obs_counts_sum_impl), f, counts, ind)
+obs_counts_sum_impl_spec(f, counts, ind) =
+	create_spec(SCPCore.counts_sum, f, counts, ind; dims=2, __version=v"0.1.0")
 
 obs_counts_sum(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
 function obs_counts_sum(::Var, counts, filter, col; project_ids, f=identity)
 	ind = prefetched(create_find_matching_ind_spec(filter, get_obs_spec(counts); project_ids))
-	values_spec = create_obs_counts_sum_impl_spec(f, get_matrix_spec(counts), ind)
+	values_spec = cached(obs_counts_sum_impl_spec(f, get_matrix_spec(counts), ind))
 	add_column_spec(get_var_spec(counts), col, values_spec)
 end
 obs_counts_sum(::Obs, counts, args...; kwargs...) = get_obs_spec(counts)
