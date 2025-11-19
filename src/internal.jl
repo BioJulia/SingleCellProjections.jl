@@ -106,13 +106,20 @@ function indexin_impl(a::AbstractVector, b::AbstractVector; not_found)
 	ind = indexin(a, b)
 
 	if not_found == :error
-		any(isnothing, ind) && error("Found values in `a` that are not present in `b`.")
+		any(isnothing, ind) && error("Found $(count(isnothing,ind)) values in `a` that are not present in `b`.")
 	elseif not_found == :skip
+		all(isnothing, ind) && @warn "indexin_impl: No values in `a` were present in `b`."
 		filter!(!isnothing, ind)
 	elseif not_found == :nothing && any(isnothing, ind)
 		return ind
 	end
-	return convert(Vector{Int}, ind)
+
+	ind = convert(Vector{Int}, ind)
+	if ind == 1:length(b)
+		return Colon() # simplify common case
+	else
+		return ind
+	end
 end
 
 function indexin_impl(a::DataFrame, b::DataFrame; not_found)
@@ -122,7 +129,7 @@ function indexin_impl(a::DataFrame, b::DataFrame; not_found)
 	indexin_impl(a[!,1], b[!,1]; not_found)
 end
 
-indexin_spec(a, b; not_found=:error) = create_spec(indexin_impl, a, b; not_found, __version=v"0.1.1")
+indexin_spec(a, b; not_found=:error) = create_spec(indexin_impl, a, b; not_found, __version=v"0.1.2")
 
 
 
@@ -209,8 +216,7 @@ create_find_matching_ind_spec(f, df; project_ids) =
 
 
 
-
-
+# Do we need these, or upstream steps always return Colon() when they can?
 index_isnoop_spec(ind, n) =
 	create_spec(SCPCore.index_isnoop, ind, n; __version=v"0.0.1")
 simplify_ind_spec(ind, n) =
@@ -219,12 +225,6 @@ simplify_ind_spec(ind, n) =
 
 
 
-
-
-ids_to_indices(action::Action, df, ids) =
-	cached(create_spec(SCPCore.ids_to_indices, action(df), action(ids); __version=v"0.1.2"))
-create_ids_to_indices_spec(df, ids) =
-	create_spec(Projectable(ids_to_indices), df, ids)
 
 
 

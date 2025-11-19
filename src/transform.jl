@@ -54,7 +54,7 @@ function scparams(action::Action, matrix, var, var_ind; log_cell_counts)
 
 		param_ids = table_getindex_spec(var_ids, var_ind) # The IDs represented in the params table
 		var_ids_proj = intersect_ids_spec(param_ids, var_ids2)
-		var_ind_proj = create_ids_to_indices_spec(param_ids, var_ids_proj)
+		var_ind_proj = indexin_spec(param_ids, var_ids_proj; not_found=:error)
 		return table_getindex_spec(params, prefetched(var_ind_proj))
 	end
 end
