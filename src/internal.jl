@@ -143,7 +143,7 @@ nobs_spec(data) = table_nrow_spec(get_obs_spec(data))
 Jobs.nobs(data) = Job(nobs_spec(data))
 
 
-find_matching_ind_impl_spec(f, df) = create_spec(SCPCore.find_matching_ind, f, df; __version=v"0.1.3")
+find_matching_ind_impl_spec(f, df) = create_spec(SCPCore.find_matching_ind, f, df; __version=v"0.1.4")
 
 
 function find_matching_ind(action::Action, f, df; project_ids::Symbol)

@@ -1,8 +1,15 @@
 # TODO: Replace filter.jl with this file.
 
-find_matching_ind(f, df::DataFrame) = first(parentindices(filter(f, df; view=true)))
-find_matching_ind(f, v::AbstractVector) = findall(f, v)
-find_matching_ind(::Colon, df::DataFrame) = Colon()
+_find_matching_ind(f, df::DataFrame) = first(parentindices(filter(f, df; view=true)))
+_find_matching_ind(f, v::AbstractVector) = findall(f, v)
+# find_matching_ind(::Colon, df::DataFrame) = Colon()
+
+function find_matching_ind(f, x)
+	ind = _find_matching_ind(f, x)
+	ind == 1:size(x,1) ? Colon() : ind
+end
+find_matching_ind(::Colon, ::Any) = Colon()
+
 
 
 # function ids_to_indices(df::DataFrame, ids::DataFrame)
