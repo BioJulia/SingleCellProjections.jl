@@ -106,9 +106,12 @@ function indexin_impl(a::AbstractVector, b::AbstractVector; not_found)
 	ind = indexin(a, b)
 
 	if not_found == :error
-		any(isnothing, ind) && error("Found $(count(isnothing,ind)) values in `a` that are not present in `b`.")
+		if any(isnothing, ind)
+			d = string.(setdiff(a,b)[1:min(3,end)])
+			error("Found $(count(isnothing,ind)) values in `a` (such as $d) that are not present in `b` (which contains e.g. $(b[1:min(3,end)])).")
+		end
 	elseif not_found == :skip
-		all(isnothing, ind) && @warn "indexin_impl: No values in `a` were present in `b`."
+		all(isnothing, ind) && @warn "indexin_impl: No values in `a` (examples: $(a[1:min(3,end)])) were present in `b` (examples $(b[1:min(3,end)]))."
 		filter!(!isnothing, ind)
 	elseif not_found == :nothing && any(isnothing, ind)
 		return ind
@@ -125,7 +128,9 @@ end
 function indexin_impl(a::DataFrame, b::DataFrame; not_found)
 	@assert ncol(a)==1
 	@assert ncol(b)==1
-	@assert only(names(a,1)) == only(names(b,1))
+	name_a = only(names(a,1))
+	name_b = only(names(b,1))
+	@assert name_a == name_b "Column names didn't match \"$name_a\" vs \"$name_b\"."
 	indexin_impl(a[!,1], b[!,1]; not_found)
 end
 
@@ -252,7 +257,7 @@ function _matrix_ind_spec(action::Action, ind, n=nothing)
 	ind_p = fetched(ind_p)
 end
 
-function matrix_getindex_pr(action::Action, matrix; var_ind, obs_ind, nvar=nothing, nobs=nothing)
+function matrix_getindex_pr(action::Action, matrix; var_ind=:, obs_ind=:, nvar=nothing, nobs=nothing)
 	matrix = action(matrix)
 	var_ind = _matrix_ind_spec(action, var_ind, nvar)
 	obs_ind = _matrix_ind_spec(action, obs_ind, nobs)

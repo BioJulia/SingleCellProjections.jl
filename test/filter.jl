@@ -141,8 +141,5 @@
 				@test isequal(f.obs, data.obs[obs_mask, :])
 			end
 		end
-
-
 	end
-	
 end

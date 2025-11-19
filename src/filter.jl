@@ -1,16 +1,16 @@
-function subset_matrix(::Preprocessing, data; var_ids=:, obs_ids=:)
-	var_ind = indexin_spec(id_column_spec(get_var_spec(data)), var_ids; not_found=:error)
-	obs_ind = indexin_spec(id_column_spec(get_obs_spec(data)), obs_ids; not_found=:error)
+function subset_matrix(::Preprocessing, data; var_ids=nothing, obs_ids=nothing)
+	var_ind = var_ids === nothing ? Colon() : indexin_spec(var_ids, id_column_spec(get_var_spec(data)); not_found=:error)
+	obs_ind = obs_ids === nothing ? Colon() : indexin_spec(obs_ids, id_column_spec(get_obs_spec(data)); not_found=:error)
 	create_datamatrix_getindex_spec(data; var_ind, obs_ind)
 end
 
 
-Jobs.subset_matrix(data, var_ids, obs_ids; kwargs...) =
-	Job(create_spec(Preprocess(subset_matrix), data; kwargs..., var_ids, obs_ids))
-Jobs.subset_var(data, var_ids; kwargs...) =
-	Job(create_spec(Preprocess(subset_matrix), data; kwargs..., var_ids))
-Jobs.subset_obs(data, obs_ids; kwargs...) =
-	Job(create_spec(Preprocess(subset_matrix), data; kwargs..., obs_ids))
+Jobs.subset_matrix(data, var_ids, obs_ids) =
+	Job(create_spec(Preprocess(subset_matrix), data; var_ids, obs_ids))
+Jobs.subset_var(data, var_ids) =
+	Job(create_spec(Preprocess(subset_matrix), data; var_ids))
+Jobs.subset_obs(data, obs_ids) =
+	Job(create_spec(Preprocess(subset_matrix), data; obs_ids))
 
 
 
