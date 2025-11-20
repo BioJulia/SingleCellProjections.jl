@@ -7,7 +7,16 @@ ifelse_pr_spec(cond, x, y) = create_spec(Projectable(ifelse_pr), cond, x, y)
 _getindex_error(ind) = throw(ArgumentError("Raw indices not allowed when projecting (unless containers are identical). Got indices: $ind."))
 _getindex_error_spec(ind) = create_spec(_getindex_error, ind; __version=v"0.1.0")
 
-getindex_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_spec(getindex, v, ind; __version=v"0.1.0")
+# getindex_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_spec(getindex, v, ind; __version=v"0.1.0")
+function getindex_impl(::Preprocessing{E}, v, ind) where E
+	if ind === Colon()
+		v
+	elseif E
+		create_spec(Preprocess{false}(getindex_impl), v, fetched(ind)) # NB: This way we fetch after projections are handled!
+	else
+		create_spec(getindex, v, ind; __version=v"0.1.0")
+	end
+end
 getindex_impl_spec(v, ind) = create_spec(Preprocess(getindex_impl), v, fetched(ind))
 
 function getindex_pr(action, v, ind)
@@ -15,7 +24,7 @@ function getindex_pr(action, v, ind)
 	result = getindex_impl_spec(v_p, action(ind))
 
 	if action isa Projection && !(ind isa Spec)
-		cond = isequal_impl_spec(v, v_p)
+		cond = isequal_spec(v, v_p)
 		result = ifelse_spec(cond, result, _getindex_error_spec(ind))
 	end
 
@@ -44,7 +53,7 @@ function getindex_or_missing_pr(action, v, ind)
 	result = getindex_or_missing_impl_spec(v_p, action(ind))
 
 	if action isa Projection && !(ind isa Spec)
-		cond = isequal_impl_spec(v, v_p)
+		cond = isequal_spec(v, v_p)
 		result = ifelse_spec(cond, result, _getindex_or_missing_error_spec(ind))
 	end
 
@@ -250,7 +259,7 @@ end
 function _matrix_ind_spec(action::Action, ind, n=nothing)
 	ind_p = action(ind)
 	if action isa Projection && !(ind isa Spec)
-		cond = isequal_impl_spec(ind, ind_p)
+		cond = isequal_spec(ind, ind_p)
 		ind_p = ifelse_spec(cond, ind_p, _getindex_error_spec(ind))
 	end
 	n !== nothing && (ind_p = simplify_ind_spec(ind_p, n))

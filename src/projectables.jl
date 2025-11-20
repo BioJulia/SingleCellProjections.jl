@@ -114,8 +114,21 @@ function project(::Preprocessing, onto, args...; kwargs...)
 	onto # Keep the value as is
 end
 
-create_project_spec(onto, args...; kwargs...) =
-	create_spec(Preprocess(project), onto, args...; kwargs...)
+# create_project_spec(onto, args...; kwargs...) =
+# 	create_spec(Preprocess(project), onto, args...; kwargs...)
+
+function create_project_spec(onto, args...; kwargs...)
+	# Transfer the op from `onto` to `project`
+	# TODO: make code cleaner
+
+	onto isa Job && (onto = onto.spec)
+	onto::Spec
+
+	op = onto.op
+	onto = Spec(onto.ro)
+	spec = create_spec(Preprocess(project), onto, args...; kwargs...)
+	Spec(spec.ro, op)
+end
 
 function Jobs.project(onto, args...; kwargs...)
 	Job(create_project_spec(onto, args...; kwargs...))

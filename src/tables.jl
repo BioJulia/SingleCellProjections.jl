@@ -248,8 +248,7 @@ function table_getindex(::Preprocessing{E}, table, ind) where E
 		cols = (k=>getindex_spec(v, ind) for (k,v) in table.args)
 		create_table_spec(cols...)
 	elseif E
-		# create_spec(Preprocess{false}(table_getindex), table, ind)
-		create_spec(Preprocess{false}(table_getindex), table, fetched(ind))
+		create_spec(Preprocess{false}(table_getindex), table, fetched(ind)) # NB: This way we fetch after projections are handled!
 	elseif ind == Colon() # Projections have been handled, so indexing by `:` will not be transformed to something else
 		table
 	else
