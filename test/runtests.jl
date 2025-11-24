@@ -40,6 +40,7 @@ let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 				include("tables.jl")
 				include("load.jl")
 				include("transform.jl")
+				include("reduce.jl")
 				include("filter.jl")
 				include("subset.jl")
 			end

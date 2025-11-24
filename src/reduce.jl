@@ -7,15 +7,25 @@ end
 actual_nsv_spec(data, nsv) = create_spec(Projectable(actual_nsv_pr), data, nsv)
 
 
-function implicitsvd_impl(matrix; nsv, kwargs...) # nsv is a required kwarg
-	F = SCPCore.implicitsvd(matrix; nsv, kwargs...)
+function implicitsvd_impl(matrix; kwargs...)
+	F = SCPCore.implicitsvd(matrix; kwargs...)
 	CompoundResult(; F.U, F.S, F.Vt)
 end
-implicitsvd_spec(matrix; kwargs...) =
-	create_spec(implicitsvd_impl, matrix; kwargs..., __version=v"0.1.0") # must be used with cached() to handle the CompoundResult
+function implicitsvd_spec(matrix;
+                          nsv,
+                          seed,
+                          subspacedims = 4nsv,
+                          niter = 3,
+                          stabilize_sign = true,
+                          kwargs...)
+	create_spec(implicitsvd_impl, matrix; nsv, seed, subspacedims, niter, stabilize_sign, kwargs..., __version=v"0.1.0") # must be used with cached() to handle the CompoundResult
+end
 
-svd_projected_vt_spec(U, S, X) =
-	cached(create_spec(SCPCore.svd_projected_vt, U, S, X; __version=v"0.1.0"))
+svd_projected_svt_spec(U, X) =
+	cached(create_spec(SCPCore.svd_projected_svt, U, X; __version=v"0.1.0"))
+
+svd_project_mul_sinv_spec(ΣVt, S) =
+	cached(create_spec(SCPCore.svd_project_mul_sinv, ΣVt, S; __version=v"0.1.0"))
 
 assemble_svd(U, S, Vt) = create_spec(LinearAlgebra.SVD, U, S, Vt; __version=v"0.1.0")
 
@@ -33,13 +43,14 @@ function svd_pr(action::Action, matrix; kwargs...)
 	if action isa Eval
 		Vt = _svd_Vt_spec(svd_spec)
 	else#if action isa Projection
-		Vt = svd_projected_vt_spec(U, S, action(matrix))
+		ΣVt = svd_projected_svt_spec(U, action(matrix))
+		Vt = svd_project_mul_sinv_spec(ΣVt, S)
 	end
 	assemble_svd(U, S, Vt)
 end
 
 function svd(::Mat, data; nsv, kwargs...)
-	nsv = prefetched(actual_nsv_spec(data, nsv))
+	nsv = fetched(actual_nsv_spec(data, nsv))
 	create_spec(Projectable(svd_pr), get_matrix_spec(data); nsv, kwargs...)
 end
 svd(f::Union{Var,Obs}, data; kwargs...) = get_spec(f, data)
@@ -63,21 +74,20 @@ function pca_pr(action::Action, matrix; kwargs...)
 	S = _svd_S_spec(svd_spec) # unaffected by projection
 	if action isa Eval
 		Vt = _svd_Vt_spec(svd_spec)
+		compute_components_spec(S, Vt)
 	else#if action isa Projection
 		U = _svd_U_spec(svd_spec) # unaffected by projection
-		Vt = svd_projected_vt_spec(U, S, action(matrix))
+		svd_projected_svt_spec(U, action(matrix))
 	end
-
-	compute_components_spec(S, Vt)
 end
 
 
 function pca(::Mat, data; nsv, kwargs...)
-	nsv = prefetched(actual_nsv_spec(data, nsv))
+	nsv = fetched(actual_nsv_spec(data, nsv))
 	create_spec(Projectable(pca_pr), get_matrix_spec(data); nsv, kwargs...)
 end
 function pca(::Var, data; nsv, kwargs...)
-	nsv = prefetched(actual_nsv_spec(data, nsv))
+	nsv = fetched(actual_nsv_spec(data, nsv))
 	prefixed_ids_spec("PC_id", "PC", nsv)
 end
 pca(::Obs, data; kwargs...) = get_spec(Obs(), data)
@@ -96,12 +106,12 @@ function loadings_pr(::Action, matrix; kwargs...)
 end
 
 function loadings(::Mat, data; nsv, kwargs...)
-	nsv = prefetched(actual_nsv_spec(data, nsv))
+	nsv = fetched(actual_nsv_spec(data, nsv))
 	create_spec(Projectable(loadings_pr), get_matrix_spec(data); nsv, kwargs...)
 end
 loadings(::Var, data; kwargs...) = get_spec(Var(), data)
 function loadings(::Obs, data; nsv, kwargs...)
-	nsv = prefetched(actual_nsv_spec(data, nsv))
+	nsv = fetched(actual_nsv_spec(data, nsv))
 	prefixed_ids_spec("loadings_id", "loadings", nsv)
 end
 
