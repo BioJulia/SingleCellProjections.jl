@@ -61,7 +61,7 @@ end
 value_vector_model_spec(data, desc::SCPCore.InterceptCovariateDesc; kwargs...) =
 	SCPCore.InterceptValueVectorModel(; kwargs...)
 value_vector_model_spec(data, desc; kwargs...) =
-	cached(create_spec(SCPCore.value_vector_model, data, desc; kwargs..., __version=v"0.1.2"))
+	cached(create_spec(SCPCore.value_vector_model, data, desc; kwargs..., __version=v"0.1.3"))
 
 value_vector(action::Action, model, data) =
 	cached(create_spec(SCPCore.value_vector, model, action(data); __version=v"0.1.2"))
