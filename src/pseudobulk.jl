@@ -30,7 +30,7 @@ function cartesian_product_of_categories(::Preprocessing{E}, table) where E
 	elseif E
 		create_spec(Preprocess{false}(cartesian_product_of_categories), table)
 	else
-		create_spec(cartesian_product_of_categories_fallback, table; __version=v"0.1.0")
+		create_spec(cartesian_product_of_categories_fallback, table; __version=v"0.1.2")
 	end
 end
 cartesian_product_of_categories_spec(table) = create_spec(Preprocess(cartesian_product_of_categories), table)

@@ -36,7 +36,6 @@ struct CategoricalValueVectorModel{T} <: AbstractValueVectorModel
 		any(ismissing, uv) && throw(ArgumentError("Missing values not supported for categorical value vectors."))
 		len = length(uv)
 		len > max_categories && throw(ArgumentError("$len categories in categorical variable, was this intended? Change max_categories (", max_categories, ") if you want to increase the number of allowed categories."))
-		sort!(uv) # Probably good. It make things stable if we e.g. change the order of obs.
 		new{T}(uv)
 	end
 end
