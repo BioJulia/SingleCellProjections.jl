@@ -1,9 +1,3 @@
-# No, we want to implement this at the column level. It's just a repeat with inner and outer. If we know the number of elements in each category.
-# function cartesian_product_of_categories(df::DataFrame)
-# 	u = (DataFrame(name=>unique(values)) for (name=>values) in pairs(eachcol(df)))
-# 	res = crossjoin(u...)
-# end
-
 # TODO: Throw an error if we get an unreasonably large table (e.g. larger than original)
 function repeat_categories(uv, nvalues, ind)
 	@assert nvalues[ind] == length(uv)
@@ -13,41 +7,42 @@ repeat_categories_spec(uv, nvalues, ind) =
 	create_spec(repeat_categories, uv, nvalues, ind; __version=v"0.1.0")
 
 
-function cartesian_product_of_categories_fallback(table::DataFrame)
-	u = [unique(v) for v in eachcol(table)] # unique values in each column
-	n = length.(u)
-	# create a new table, with the original column names, but with inner/outer repeats depending the number of unique values in preceeding/suceeding columns
-	cols = (k=>repeat_categories(uv, n, i) for (i,(k,uv)) in enumerate(zip(names(table), u)))
-	DataFrame(cols...)
-end
-function cartesian_product_of_categories(::Preprocessing{E}, table) where E
-	if is_create_table(table)
-		u = [unique_spec(v) for (k,v) in table.args] # unique values in each column
-		n = prefetched.(length_spec.(u))
-		# create a new table, with the original column names, but with inner/outer repeats depending the number of unique values in preceeding/suceeding columns
-		cols = (k=>repeat_categories_spec(uv, n, i) for (i,((k,_),uv)) in enumerate(zip(table.args, u)))
-		create_table_spec(cols...)
-	elseif E
-		create_spec(Preprocess{false}(cartesian_product_of_categories), table)
-	else
-		create_spec(cartesian_product_of_categories_fallback, table; __version=v"0.1.2")
-	end
-end
-cartesian_product_of_categories_spec(table) = create_spec(Preprocess(cartesian_product_of_categories), table)
 
 
-function pseudobulk_id(::Preprocessing, table; id_colname=nothing, delim='_')
-	if id_colname === nothing
-		cn = get_colnames_spec(table)
-		id_colname = fetched(join_spec(cn, delim))
-		pseudobulk_id_spec(table; id_colname, delim) # Preprocess again - with fetched id_colname
-	else
-		unique_combinations = cartesian_product_of_categories_spec(table)
-		id_values = combine_column_values_spec(unique_combinations; delim)
-		create_table_spec(id_colname=>id_values)
+# NB: It is assumed below that this creates a new vector (that the caller is allowed to modify)
+function unique_column_values_specs(table, colnames)
+	if colnames isa ReadOnly # Can we avoid this?
+		colnames = colnames.value
 	end
+	[unique_spec(column_data_spec(table, cn)) for cn in colnames]
 end
-pseudobulk_id_spec(table; kwargs...) = create_spec(Preprocess(pseudobulk_id), table; kwargs...)
+
+
+
+
+function cartesian_product_of_categories(::Preprocessing, colnames, uv::AbstractVector)
+	if colnames isa ReadOnly # Can we avoid this?
+		colnames = colnames.value
+	end
+
+	@assert length(colnames) == length(uv)
+	n = prefetched.(length_spec.(uv))
+	cols = (name=>repeat_categories_spec(x, n, i) for (i,(name,x)) in enumerate(zip(colnames, uv)))
+	create_table_spec(cols...)
+end
+cartesian_product_of_categories_spec(colnames, uv::AbstractVector) = create_spec(Preprocess(cartesian_product_of_categories), colnames, uv)
+
+
+
+function pseudobulk_id_values(::Preprocessing, colnames, unique_values; delim='_')
+	# unique_values = unique_column_values_specs(table, colnames)
+	unique_combinations = cartesian_product_of_categories_spec(colnames, unique_values)
+	id_values = combine_column_values_spec(unique_combinations; delim)
+end
+pseudobulk_id_values_spec(colnames, unique_values; kwargs...) = create_spec(Preprocess(pseudobulk_id_values), colnames, unique_values; kwargs...)
+
+
+pseudobulk_var_id_colname(colnames, id_colname; delim) = join(vcat(colnames, id_colname), delim)
 
 
 
@@ -73,22 +68,68 @@ end
 
 
 
-function pseudobulk(f::Union{Mat,Obs}, data, colnames...; delim='_')
-	cols = get_columns_spec(get_obs_spec(data), colnames...)
-	pb_id = pseudobulk_id_spec(cols; delim)
+function pseudobulk(::Mat, data, colnames...; delim='_', new_var_colnames=(), kwargs...)
+	colnames = collect(colnames)
+	new_var_colnames = collect(new_var_colnames)
 
-	if f isa Obs
-		pb_id # TODO: Add more annotations?
-	else#if f === Mat
-		id_per_obs = combine_column_values_spec(cols; delim)
-		ind = indexin_spec(id_per_obs, column_data_spec(pb_id,1); not_found=:error) # indices matching each original obs to a pseudobulk obs
-		create_spec(pseudobulk_mat, get_matrix_spec(data), ind, table_nrow_spec(pb_id); __version=v"0.1.1")
+	obs = get_obs_spec(data)
+	all_colnames = vcat(colnames, new_var_colnames) # order here matters for reshape to work
+
+	unique_values = unique_column_values_specs(obs, all_colnames)
+	# pb_id_values = pseudobulk_id_values_spec(obs, all_colnames; delim)
+	pb_id_values = pseudobulk_id_values_spec(all_colnames, unique_values; delim)
+	id_per_obs = combine_column_values_spec(get_columns_spec(obs, all_colnames...); delim)
+	ind = indexin_spec(id_per_obs, pb_id_values; not_found=:error) # indices matching each original obs to a pseudobulk obs
+	mat = create_spec(pseudobulk_mat, get_matrix_spec(data), ind, length_spec(pb_id_values); __version=v"0.1.1")
+
+	if !isempty(new_var_colnames)
+		# We need to reshape the matrix, because we are creating new variables
+
+		# we need the number of vars, and the product of the length of the new var columns
+		# or just the product of the lengths of the obs columns
+		new_obs_unique_values = unique_column_values_specs(obs, colnames)
+		n_new_obs = prefetched(prod_spec(length_spec.(new_obs_unique_values)))
+		mat = reshape_spec(mat, :, n_new_obs)
+	end
+	cached(mat) # or should we cache before the reshape?
+end
+function pseudobulk(::Var, data, args...; delim='_', new_var_colnames=(), new_var_id_colname=nothing, kwargs...)
+	if !isempty(new_var_colnames)
+		new_var_colnames = collect(new_var_colnames)
+		var = get_var_spec(data)
+		obs = get_obs_spec(data)
+		unique_values = unique_column_values_specs(obs, new_var_colnames)
+		push!(unique_values, id_column_data_spec(var)) # unique_column_values_specs creates a fresh vector, so we are allowed to push to it.
+		colnames = vcat(new_var_colnames, get_id_colname_spec(var))
+
+		# Hmm. If we create the table first, we can just get the new IDs by joining columns.
+		new_var_id_values = pseudobulk_id_values_spec(colnames, unique_values; delim)
+		new_var_id_colname = create_spec(pseudobulk_var_id_colname, new_var_colnames, get_id_colname_spec(var); delim, __version=v"0.1.0")
+
+		# First we want "pb_id" column.
+		# Then we want the new_var_colnames repeated (annotations from obs lifted over to var)
+		# Then we want all var columns repeated.
+		# How do we handle name clashes?
+
+		create_table_spec(new_var_id_colname=>new_var_id_values)
+	else
+		@assert new_var_id_colname===nothing # Only allow renaming if new variables are created
+		get_var_spec(data)
 	end
 end
-pseudobulk(::Var, data, args...; kwargs...) = get_var_spec(data)
+function pseudobulk(::Obs, data, colnames...; delim='_', id_colname=nothing, kwargs...)
+	colnames = collect(colnames)
+	obs = get_obs_spec(data)
+
+	unique_values = unique_column_values_specs(obs, colnames)
+	pb_id_values = pseudobulk_id_values_spec(colnames, unique_values; delim)
+
+	id_colname = @something id_colname join(colnames, delim)
+	create_table_spec(id_colname=>pb_id_values)
+end
 
 
-
+# TODO: Use covariates so we can provide external annotations too?
 pseudobulk_spec(data, colname1, colnames...; kwargs...) =
 	create_spec(DataMatrixFunction(pseudobulk), data, colname1, colnames...; kwargs...)
 function Jobs.pseudobulk(data, colname1, colnames...; kwargs...)
