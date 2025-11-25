@@ -20,6 +20,8 @@ import SingleCell10x
 using DataFrames
 import StableHashTraits
 import LinearAlgebra
+using SparseArrays: sparse
+import StatsBase
 
 using ReproducibleJobs
 using ReproducibleJobs: create_spec, cached, ReadOnly, SpecArgs, ChecksummedFilePath, Preprocessing, checksummedfilepath_job, ifelse_spec
@@ -73,6 +75,8 @@ module Jobs
 	function force_layout end
 	function transpose end
 
+	function pseudobulk end
+
 	function ftest end
 	function ttest end
 
@@ -113,6 +117,7 @@ include("design.jl")
 include("normalize.jl")
 include("reduce.jl")
 include("adjoint.jl")
+include("pseudobulk.jl")
 include("statistical_tests.jl")
 
 

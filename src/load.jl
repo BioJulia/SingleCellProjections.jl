@@ -14,11 +14,6 @@ end
 load_barcodes_spec(filename; kwargs...) = create_spec(load_barcodes_impl, filename; kwargs..., __version=v"0.1.0")
 
 
-# Find a better name? It just broadcasts string across the args.
-combine_cols_impl(args...) = string.(args...)
-combine_cols_spec(args...) = create_spec(combine_cols_impl, args...; __version=v"0.1.0")
-
-
 function vcat_tables(tables...; kwargs...)
 	df = vcat(tables...; kwargs...)
 	table_to_compound_result(df)
@@ -31,7 +26,7 @@ function combine_obs(::Preprocessing, filenames, sample_names)
 		sample_names = sample_names.value
 	end
 	sample_barcodes_specs = load_barcodes_spec.(filenames)
-	sample_id_specs = combine_cols_spec.(sample_names, '_', sample_barcodes_specs)
+	sample_id_specs = combine_vectors_spec.(sample_names, '_', sample_barcodes_specs)
 	sample_obs_specs = create_table_spec.("cell_id" .=> sample_id_specs,
 	                                      "sample_name" .=> sample_names,
 	                                      "barcode" .=> sample_barcodes_specs)

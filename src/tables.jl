@@ -301,6 +301,24 @@ Jobs.table_leftjoin(a, b) = Job(table_leftjoin_spec(a, b))
 
 
 
+combine_column_values_fallback(table::DataFrame; kwargs...) = combine_vectors_impl(eachcol(table); kwargs...)
+function combine_column_values(::Preprocessing{E}, table; kwargs...) where E
+	if is_create_table(table)
+		values = (v for (_,v) in table.args)
+		combine_vectors_spec(values...; kwargs...)
+	elseif E
+		create_spec(Preprocess{false}(combine_column_values), table; kwargs...)
+	else
+		create_spec(combine_column_values_fallback, table; kwargs..., __version=v"0.1.0")
+	end
+end
+
+combine_column_values_spec(table; kwargs...) = create_spec(Preprocess(combine_column_values), table; kwargs...)
+
+
+
+
+
 function _intersect_ids(a, b)
 	length(a.args) != 1 && throw(ArgumentError("Expected `a` to have exactly one column."))
 	length(b.args) != 1 && throw(ArgumentError("Expected `b` to have exactly one column."))

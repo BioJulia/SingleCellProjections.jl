@@ -4,6 +4,21 @@
 ifelse_pr(action::Action, cond, x, y) = ifelse_spec(action(cond), action(x), action(y))
 ifelse_pr_spec(cond, x, y) = create_spec(Projectable(ifelse_pr), cond, x, y)
 
+
+# Find a better name?
+function combine_vectors_impl(args...; delim=nothing)
+	if delim !== nothing
+		n = length(args)
+		args = Iterators.take(Iterators.flatten(zip(args, Iterators.cycle(delim))), 2n-1) # insert delim between
+	end
+	string.(args...)
+end
+combine_vectors_spec(args...; kwargs...) = create_spec(combine_vectors_impl, args...; kwargs..., __version=v"0.1.0")
+
+
+
+
+
 _getindex_error(ind) = throw(ArgumentError("Raw indices not allowed when projecting (unless containers are identical). Got indices: $ind."))
 _getindex_error_spec(ind) = create_spec(_getindex_error, ind; __version=v"0.1.0")
 
@@ -66,6 +81,8 @@ getindex_or_missing_spec(v, ind) = create_spec(Projectable(getindex_or_missing_p
 intersect_spec(a, b, args...) = create_spec(intersect, a, b, args...; __version=v"0.1.0")
 hcat_spec(args...; kwargs...) = create_spec(hcat, args...; kwargs..., __version=v"0.1.0")
 length_spec(x) = create_spec(length, x; __version=v"0.1.0")
+unique_spec(x) = create_spec(unique, x; __version=v"0.1.0")
+join_spec(x, args...) = create_spec(join, x, args...; __version=v"0.1.0")
 
 
 
