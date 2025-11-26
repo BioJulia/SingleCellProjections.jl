@@ -99,17 +99,30 @@ function pseudobulk(::Var, data, args...; delim='_', new_var_colnames=(), new_va
 		var = get_var_spec(data)
 		obs = get_obs_spec(data)
 		unique_values = unique_column_values_specs(obs, new_var_colnames)
-		push!(unique_values, id_column_data_spec(var)) # unique_column_values_specs creates a fresh vector, so we are allowed to push to it.
-		colnames = vcat(new_var_colnames, get_id_colname_spec(var))
 
-		# Hmm. If we create the table first, we can just get the new IDs by joining columns.
-		new_var_id_values = pseudobulk_id_values_spec(colnames, unique_values; delim)
-		new_var_id_colname = create_spec(pseudobulk_var_id_colname, new_var_colnames, get_id_colname_spec(var); delim, __version=v"0.1.0")
+
+		# # TODO: Remove this code
+		# # Hmm. If we create the table first, we can just get the new IDs by joining columns.
+		# push!(unique_values, id_column_data_spec(var)) # unique_column_values_specs creates a fresh vector, so we are allowed to push to it.
+		# colnames = vcat(new_var_colnames, get_id_colname_spec(var))
+		# new_var_id_values = pseudobulk_id_values_spec(colnames, unique_values; delim)
+		# new_var_id_colname = create_spec(pseudobulk_var_id_colname, new_var_colnames, get_id_colname_spec(var); delim, __version=v"0.1.0")
 
 		# First we want "pb_id" column.
-		# Then we want the new_var_colnames repeated (annotations from obs lifted over to var)
-		# Then we want all var columns repeated.
+		# Then we want the new_var_colnames repeated (annotations from obs lifted over to var) (inner=...)
+		# Then we want all var columns repeated. (outer=...)
 		# How do we handle name clashes?
+
+
+		# And replace with this
+		unique_combinations = cartesian_product_of_categories_spec(new_var_colnames, unique_values)
+		# repeat the table nvar times
+
+		# and repeat the var table to match
+		# merge them
+		# and insert id_column first
+
+
 
 		create_table_spec(new_var_id_colname=>new_var_id_values)
 	else
@@ -130,8 +143,18 @@ end
 
 
 # TODO: Use covariates so we can provide external annotations too?
-pseudobulk_spec(data, colname1, colnames...; kwargs...) =
-	create_spec(DataMatrixFunction(pseudobulk), data, colname1, colnames...; kwargs...)
+function pseudobulk_spec(data, colname1, colnames...; new_var_colnames=nothing, kwargs...)
+	# Ensure new_var_colnames is not present - or wrapped in a vector/tuple. (This harmonizes the representation, allowing e.g. a string to be passed.)
+	if new_var_colnames === nothing
+		extra_kwargs = (;)
+	elseif new_var_colnames isa Union{AbstractVector,Tuple}
+		extra_kwargs = (; new_var_colnames)
+	else
+		extra_kwargs = (; new_var_colnames=(new_var_colnames,))
+	end
+
+	create_spec(DataMatrixFunction(pseudobulk), data, colname1, colnames...; extra_kwargs..., kwargs...)
+end
 function Jobs.pseudobulk(data, colname1, colnames...; kwargs...)
 	Job(pseudobulk_spec(data, colname1, colnames...; kwargs...))
 end
