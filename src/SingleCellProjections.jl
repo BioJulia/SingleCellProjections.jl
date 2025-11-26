@@ -13,7 +13,7 @@ export
 include("SingleCellProjectionsCore/SingleCellProjectionsCore.jl")
 
 import .SingleCellProjectionsCore as SCPCore
-using .SCPCore: DataMatrix, auto_covariate, intercept_covariate, categorical_covariate, numerical_covariate, twogroup_covariate
+using .SCPCore: DataMatrix, auto_covariate, intercept_covariate, categorical_covariate, numerical_covariate, twogroup_covariate, CategoricalValueVectorModel, TwoGroupValueVectorModel, get_n_categories
 
 import SCTransform
 import SingleCell10x

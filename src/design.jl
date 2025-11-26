@@ -86,6 +86,9 @@ end
 
 
 
+# For Categorical and TwoGroup ValueVectorModels
+get_n_categories_spec(x) = create_spec(get_n_categories, x; __version=v"0.1.0")
+
 
 
 
@@ -130,7 +133,7 @@ function covariate_stages(obs, covariate_descriptions; center, kwargs...)
 	base_name_specs = _covariate_basename.(covariate_descriptions)
 	covariate_names = covariate_names_spec(base_name_specs, vv_model_specs)
 
-	(; covariate_descriptions, vv_data_specs, vv_model_specs, vv_specs, covariate_model_specs, covariate_specs, covariate_names)
+	(; vv_data_specs, vv_model_specs, vv_specs, covariate_model_specs, covariate_specs, base_name_specs, covariate_names)
 end
 
 

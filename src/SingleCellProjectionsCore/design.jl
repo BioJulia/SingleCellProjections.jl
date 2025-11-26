@@ -59,6 +59,13 @@ Base.:(==)(a::CategoricalValueVectorModel, b::CategoricalValueVectorModel) = ise
 Base.:(==)(a::TwoGroupValueVectorModel, b::TwoGroupValueVectorModel) = isequal(a.group_a, b.group_a) && isequal(a.group_b, b.group_b)
 
 
+
+get_n_categories(m::CategoricalValueVectorModel) = length(m.categories)
+get_n_categories(::TwoGroupValueVectorModel) = 2
+
+
+
+
 # DEPRECATED - REMOVE
 value_vector_model(v::AbstractVector{<:Union{Missing,Number}}; kwargs...) = NumericalValueVectorModel(; kwargs...)
 value_vector_model(v::AbstractVector; kwargs...) = CategoricalValueVectorModel(v; kwargs...)
@@ -164,6 +171,7 @@ function covariate_model(v::NumericalValueVector; center::Bool)
 	NumericalCovariateModel(m, s)
 end
 function covariate_model(v::TwoGroupValueVector; center::Bool)
+	# TODO: Perhaps better to treat this as a CategoricalValueVector. The user is more likely to move between Categorical and TwoGroup and that would give a more stable representation.
 	m,s = _mean_and_scale(v.values; center)
 	NumericalCovariateModel(m, s)
 end
