@@ -172,6 +172,7 @@ function covariate_model(v::NumericalValueVector; center::Bool)
 end
 function covariate_model(v::TwoGroupValueVector; center::Bool)
 	# TODO: Perhaps better to treat this as a CategoricalValueVector. The user is more likely to move between Categorical and TwoGroup and that would give a more stable representation.
+	#       But currently, we want a 1-column representation because then we can use it for t-tests.
 	m,s = _mean_and_scale(v.values; center)
 	NumericalCovariateModel(m, s)
 end

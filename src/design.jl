@@ -68,6 +68,19 @@ value_vector(action::Action, model, data) =
 value_vector_spec(model, data) =
 	create_spec(Projectable(value_vector), model, data)
 
+# Idea for how we might want to configure projections
+# function value_vector(action::Action, model, data; project_model=:no)
+# 	@assert project_model in (:yes, :no)
+# 	if project_model == :yes
+# 		model = action(model))
+# 	end
+
+# 	cached(create_spec(SCPCore.value_vector, model, action(data); __version=v"0.1.2"))
+# end
+# value_vector_spec(model, data; kwargs...) =
+# 	create_spec(Projectable(value_vector), model, data; kwargs...)
+
+
 # Special case for intercept, just the number of rows
 _value_vector_data_spec(obs, ::String, ::SCPCore.InterceptCovariateDesc) =
 	table_nrow_spec(obs)

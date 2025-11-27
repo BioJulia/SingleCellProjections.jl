@@ -20,7 +20,7 @@ end
 
 function _verify_models(vv_models)
 	bad_ind = findall(x->!(x isa Union{CategoricalValueVectorModel,TwoGroupValueVectorModel}), vv_models)
-	if any(bad_ind)
+	if !isempty(bad_ind)
 		bad_models = unique(typeof.(vv_models[bad_ind]))
 		throw(ArgumentError("Only Categorical and TwoGroup covariates are allowed in pseudobulk, found $bad_models."))
 	end
@@ -120,13 +120,42 @@ pseudobulk_table_spec(vv_model_specs, base_name_specs; kwargs...) =
 
 
 
-function pseudobulk_dm(::Mat, data, vv_model_specs, vv_specs, base_name_specs; kwargs...)
+function pseudobulk_dm(::Mat, data, vv_model_specs, vv_specs, base_name_specs;
+                       new_var_vv_model_specs=nothing, new_var_vv_specs=nothing,
+                       kwargs...)
 	# TODO: Support new_var_covariates
+
+	# Nah, this won't work out of the box, because we want to project some (obs side) but not others (var side)
+	# So either,
+	# * pass the args separatly to a Projectable
+	# * or add a project_model=:yes/:no argument to the value_vector specs (and to the model specs)
+	combined_vv_model_specs = vv_model_specs
+	combined_vv_specs = vv_specs
+	if new_var_vv_specs !== nothing
+		combined_vv_model_specs = ReproducibleJobs.unsafe_unmanage(combined_vv_model_specs)
+		combined_vv_specs = ReproducibleJobs.unsafe_unmanage(combined_vv_specs)
+		new_var_vv_model_specs = ReproducibleJobs.unsafe_unmanage(new_var_vv_model_specs)
+		new_var_vv_specs = ReproducibleJobs.unsafe_unmanage(new_var_vv_specs)
+
+		combined_vv_model_specs = vcat(new_var_vv_model_specs, combined_vv_model_specs)
+		combined_vv_specs = vcat(new_var_vv_specs, combined_vv_specs)
+	end
+
 
 	# The vv_specs (and vv_model_specs) define multidimensional indices.
 	# We want to convert that into linear indices
-	linear_ind_spec = pseudobulk_linear_indices_spec(vv_model_specs, vv_specs)
+	# linear_ind_spec = pseudobulk_linear_indices_spec(vv_model_specs, vv_specs)
+	linear_ind_spec = pseudobulk_linear_indices_spec(combined_vv_model_specs, combined_vv_specs)
 	mat = create_spec(pseudobulk_mat, get_matrix_spec(data), linear_ind_spec; __version=v"0.1.0")
+
+	# TODO: reshape if needed
+	if new_var_vv_specs !== nothing
+# 		new_obs_unique_values = unique_column_values_specs(obs, colnames)
+# 		n_new_obs = prefetched(prod_spec(length_spec.(new_obs_unique_values)))
+# 		mat = reshape_spec(mat, :, n_new_obs)
+	end
+
+
 
 	cached(mat) # cache this? Or before reshape? (Probably better to cache before reshape **if** we can make it for free, e.g. by inlining specs.)
 end
@@ -154,7 +183,26 @@ function pseudobulk(::Preprocessing, data, obs_covariate1, obs_covariates...; ne
 	# I guess we can only know later, due to auto_covariate()
 
 	pb_kwargs = Pair{Symbol,Any}[]
-	new_var_covariates !== nothing && push!(pb_kwargs, :new_var_covariates=>new_var_covariates)
+	if new_var_covariates !== nothing
+		if !(new_var_covariates isa Union{AbstractVector,Tuple})
+			new_var_covariates = (new_var_covariates,) # wrap in a tuple to harmonize representation
+		end
+
+		# push!(pb_kwargs, :new_var_covariates=>new_var_covariates)
+
+		# TODO: Find a better way to handle that we reuse variable names
+		let
+			local vv_model_specs
+			local vv_specs
+			local base_name_specs
+			new_var_covariate_descriptions, new_var_center = setup_covariate_descriptions(new_var_covariates...; center=false)
+			(; vv_model_specs, vv_specs, base_name_specs) = covariate_stages(obs, new_var_covariate_descriptions; center=new_var_center, kwargs...)
+			push!(pb_kwargs, :new_var_vv_model_specs=>vv_model_specs)
+			push!(pb_kwargs, :new_var_vv_specs=>vv_specs)
+			push!(pb_kwargs, :new_var_base_name_specs=>base_name_specs)
+		end
+
+	end
 	delim = @something delim '_'
 
 	create_spec(DataMatrixFunction(pseudobulk_dm), data, vv_model_specs, vv_specs, base_name_specs; delim, pb_kwargs...)
