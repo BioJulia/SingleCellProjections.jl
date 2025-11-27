@@ -13,8 +13,8 @@ struct TwoGroupCovariateDesc{T} <: AbstractCovariateDesc
 end
 
 
-auto_covariate() = AutoCovariateDesc()
-intercept_covariate() = InterceptCovariateDesc()
+auto_covariate() = AutoCovariateDesc() # deprecated
+intercept_covariate() = InterceptCovariateDesc() # deprecated
 categorical_covariate() = CategoricalCovariateDesc()
 numerical_covariate() = NumericalCovariateDesc()
 twogroup_covariate(group_a, group_b=nothing) = TwoGroupCovariateDesc(group_a, group_b)

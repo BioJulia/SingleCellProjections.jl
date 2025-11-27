@@ -1,8 +1,8 @@
 # Yet another new attempt at a better interface
 # Making it easier to handle with Specs
 
-detect_covariate_desc(::AbstractVector{<:Union{Missing,Number}}) = SCPCore.NumericalCovariateDesc()
-detect_covariate_desc(::AbstractVector) = SCPCore.CategoricalCovariateDesc()
+detect_covariate_desc(::AbstractVector{<:Union{Missing,Number}}) = SCPCore.numerical_covariate()
+detect_covariate_desc(::AbstractVector) = SCPCore.categorical_covariate()
 
 detect_covariate_desc_spec(values) = create_spec(detect_covariate_desc, values; __version=v"0.1.0")
 
@@ -22,15 +22,35 @@ _extract_name(annot) = get_value_colname_spec(annot)
 
 
 
+
+# setup_covariate_description_new(obs, p::Pair{<:Any,<:SCPCore.AbstractCovariateDesc}) = p
+# function setup_covariate_description_new(obs, a)
+# 	@assert !(a isa Pair)
+# 	a => fetched(detect_covariate_desc_spec(_extract_data_spec(obs, a))))
+# end
+# function setup_covariate_descriptions_new(obs, args...)
+# 	annots = []
+# 	descs = []
+# 	for a in args
+# 		p = setup_covariate_description_new(obs, a)
+# 		push!(annots, p.first)
+# 		push!(annots, p.second)
+
+# 	end
+# 	annots, descs
+# end
+
+
+
 function setup_covariate_descriptions_new(obs, args...)
 	annots = []
 	descs = []
 	for a in args
-		if a isa Pair{<:Any, <:SCPCore.AbstractCovariateDesc}
-			push!(annots, a)
+		if a isa Pair
+			@assert a.second isa SCPCore.AbstractCovariateDesc
+			push!(annots, a.first)
 			push!(descs, a.second)
 		else
-			@assert !(a isa Pair)
 			push!(annots, a)
 			push!(descs, fetched(detect_covariate_desc_spec(_extract_data_spec(obs, a))))
 		end
@@ -43,6 +63,7 @@ end
 
 intercept_covariate_matrix(n) = trues(n, 1)
 
+
 mean_and_scale_spec(v; center) = create_spec(SCPCore.mean_and_scale, v; center, __version=v"0.1.0")
 function numerical_covariate_matrix_impl(v, (m,s))
 	N = length(v)
@@ -52,9 +73,10 @@ end
 numerical_covariate_matrix_impl_spec(v, ms) =
 	create_spec(numerical_covariate_matrix_impl, v, ms; __version=v"0.1.0")
 function numerical_covariate_matrix(action::Action, data; center)
-	ms = mean_and_scale_spec(data; center) # model - not affected by action
+	ms = fetched(mean_and_scale_spec(data; center)) # model - not affected by action
 	numerical_covariate_matrix_impl_spec(action(data), ms)
 end
+
 
 categories_spec(data) = unique_spec(data)
 function categorical_covariate_matrix_impl(ind, n_categories)
@@ -69,7 +91,6 @@ categorical_covariate_matrix_impl_spec(ind, n_categories) =
 _too_many_categories_error(len, max_categories) =
 	throw(ArgumentError("$len categories in categorical variable, was this intended? Change max_categories (", max_categories, ") if you want to increase the number of allowed categories."))
 _too_many_categories_error_spec(len, max_categories) = create_spec(_too_many_categories_error, len, max_categories)
-
 
 function categorical_covariate_matrix(action::Action, data; max_categories=100)
 	categories = categories_spec(data) # model - not affected by action
@@ -87,6 +108,10 @@ end
 
 function twogroup_covariate_matrix(::Action, data, group_a, group_b=nothing)
 	error("Not implemented")
+
+	# TODO: Get vector with 1 for group_a and 2 for group_b/other
+	#       Share code with categorical?
+	# TODO: compute mean and scale and return numerical_covariate_matrix_impl_spec
 end
 
 
@@ -115,6 +140,17 @@ end
 extract_covariate_names_spec(data, desc, basename) =
 	create_spec(Preprocess(extract_covariate_names), data, fetched(desc), fetched(basename))
 
+
+
+function has_centering(::Preprocessing, cov_descs)
+	cov_descs = ReproducibleJobs.unsafe_unmanage(cov_descs) # Can we avoid this?
+	if cov_descs isa ReadOnly # Can we avoid this?
+		cov_descs = cov_descs.value
+	end
+	any(x->x isa Union{SCPCore.CategoricalCovariateDesc, SCPCore.TwoGroupCovariateDesc}, cov_descs)
+end
+has_centering_spec(cov_descs) =
+	create_spec(Preprocess(has_centering), cov_descs)
 
 
 function build_designmatrix_dm(::Mat, data, cov_data, cov_descs, ::Any; center, kwargs...)
@@ -151,12 +187,6 @@ build_designmatrix_dm(::Var, data, ::Any, ::Any, ::Any; kwargs...) = get_obs_spe
 
 # This preprocessing step is needed so that the covariate representations are preprocessed
 function build_designmatrix_new(::Preprocessing, data, cov_data, cov_descs, cov_names; center, kwargs...)
-	cov_descs = ReproducibleJobs.unsafe_unmanage(cov_descs) # Can we avoid this?
-	if cov_descs isa ReadOnly # Can we avoid this?
-		cov_descs = cov_descs.value
-	end
-
-	center = center || any(x->x isa Union{SCPCore.InterceptCovariateDesc,SCPCore.CategoricalCovariateDesc,SCPCore.TwoGroupCovariateDesc}, cov_descs)
 	create_spec(DataMatrixFunction(build_designmatrix_dm), data, cov_data, cov_descs, cov_names; center, kwargs...)
 end
 build_designmatrix_new_spec(data, cov_data, cov_descs, cov_names; kwargs...) =
@@ -164,14 +194,15 @@ build_designmatrix_new_spec(data, cov_data, cov_descs, cov_names; kwargs...) =
 
 
 
-function designmatrix_new(::Preprocessing, data, args...; kwargs...)
+function designmatrix_new(::Preprocessing, data, args...; center, kwargs...)
 	obs = get_obs_spec(data)
 	cov_annots, cov_descs = setup_covariate_descriptions_new(obs, args...)
 	cov_data = _extract_data_spec.(Ref(obs), cov_annots)
-	cov_basenames = fetched.(_extract_name.(cov_annots))
+	center = center || fetched(has_centering_spec(cov_descs))
 
+	cov_basenames = fetched.(_extract_name.(cov_annots))
 	cov_names = fetched.(extract_covariate_names_spec.(cov_data, cov_descs, cov_basenames)) # fetch to avoid projecting these
-	build_designmatrix_new_spec(data, cov_data, cov_descs, cov_names; kwargs...)
+	build_designmatrix_new_spec(data, cov_data, cov_descs, cov_names; center, kwargs...)
 end
 
 # Creates a DataMatrix with obs as var and covariates as obs
