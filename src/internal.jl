@@ -79,12 +79,18 @@ getindex_or_missing_spec(v, ind) = create_spec(Projectable(getindex_or_missing_p
 
 
 intersect_spec(a, b, args...) = create_spec(intersect, a, b, args...; __version=v"0.1.0")
+vcat_spec(args...; kwargs...) = create_spec(vcat, args...; kwargs..., __version=v"0.1.0")
 hcat_spec(args...; kwargs...) = create_spec(hcat, args...; kwargs..., __version=v"0.1.0")
 length_spec(x) = create_spec(length, x; __version=v"0.1.0")
 unique_spec(x) = create_spec(unique, x; __version=v"0.1.0")
 join_spec(x, args...) = create_spec(join, x, args...; __version=v"0.1.0")
 reshape_spec(A, args...) = create_spec(reshape, A, args...; __version=v"0.1.0")
 prod_spec(args...; kwargs...) = create_spec(prod, args...; kwargs..., __version=v"0.1.0")
+
+
+apply_impl(f, x) = f(x)
+apply_spec(f, x) = create_spec(apply_impl, f, x; __version=v"0.1.0")
+
 
 
 function intersect_ind_impl(a, b)
@@ -203,6 +209,7 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 		elseif k isa Union{Spec, DataFrame}
 			# k is an "Annotation" - a DataFrame with an ID and a value column. Will be leftjoined and the function will be applied to the leftjoined vector with values.
 
+			# TODO: Share code with `_extract_data_spec`?
 			ids_a = id_column_spec(df)
 			ids_b = id_column_spec(k)
 			ind_spec = indexin_spec(ids_a, ids_b; not_found=:nothing)

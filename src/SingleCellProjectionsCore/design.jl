@@ -3,8 +3,8 @@ abstract type AbstractCovariateDesc end
 Base.copy(x::AbstractCovariateDesc) = x # Must be immutable, so this is fine.
 
 
-struct AutoCovariateDesc <: AbstractCovariateDesc end
-struct InterceptCovariateDesc <: AbstractCovariateDesc end
+struct AutoCovariateDesc <: AbstractCovariateDesc end # Deprecated
+struct InterceptCovariateDesc <: AbstractCovariateDesc end # Deprecated
 struct CategoricalCovariateDesc <: AbstractCovariateDesc end
 struct NumericalCovariateDesc <: AbstractCovariateDesc end
 struct TwoGroupCovariateDesc{T} <: AbstractCovariateDesc
@@ -141,7 +141,7 @@ end
 
 
 
-function _mean_and_scale(v::Vector; center)
+function mean_and_scale(v::Vector; center)
 	m = center ? mean(v) : 0.0
 	# Consider using `norm` or `std` to rescale instead
 	s = max(1e-6, maximum(x->abs(x-m), v)) # Avoid scaling up if values are too small in absolute numbers
@@ -167,13 +167,13 @@ covariate_model(v::CategoricalValueVector; center::Bool) = CategoricalCovariateM
 function covariate_model(v::NumericalValueVector; center::Bool)
 	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
 	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
-	m,s = _mean_and_scale(v.values; center)
+	m,s = mean_and_scale(v.values; center)
 	NumericalCovariateModel(m, s)
 end
 function covariate_model(v::TwoGroupValueVector; center::Bool)
 	# TODO: Perhaps better to treat this as a CategoricalValueVector. The user is more likely to move between Categorical and TwoGroup and that would give a more stable representation.
 	#       But currently, we want a 1-column representation because then we can use it for t-tests.
-	m,s = _mean_and_scale(v.values; center)
+	m,s = mean_and_scale(v.values; center)
 	NumericalCovariateModel(m, s)
 end
 

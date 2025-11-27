@@ -2,22 +2,20 @@ module SingleCellProjectionsCore
 
 export
 	DataMatrix,
-	ProjectionModel,
-	FilterModel,
-	LogTransformModel,
-	LogTransformModel2, # TEMP
-	TFIDFTransformModel,
-	SCTransformModel,
-	# CenteringModel, # TEMP
-	# CenteringModel2, # TEMP
-	DesignMatrixModel,
-	NormalizationModel,
-	SVDModel,
-	NearestNeighborModel,
-	ObsAnnotationModel,
-	VarCountsFractionModel,
-	VarCountsSumModel,
-	PseudoBulkModel,
+	ProjectionModel, # deprecated
+	FilterModel, # deprecated
+	LogTransformModel, # deprecated
+	LogTransformModel2, # deprecated
+	TFIDFTransformModel, # deprecated
+	SCTransformModel, # deprecated
+	DesignMatrixModel, # deprecated
+	NormalizationModel, # deprecated
+	SVDModel, # deprecated
+	NearestNeighborModel, # deprecated
+	ObsAnnotationModel, # deprecated
+	VarCountsFractionModel, # deprecated
+	VarCountsSumModel, # deprecated
+	PseudoBulkModel, # deprecated
 	project,
 	get_matrix,
 	get_var,
