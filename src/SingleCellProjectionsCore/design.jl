@@ -19,6 +19,9 @@ categorical_covariate() = CategoricalCovariateDesc()
 numerical_covariate() = NumericalCovariateDesc()
 twogroup_covariate(group_a, group_b=nothing) = TwoGroupCovariateDesc(group_a, group_b)
 
+# Everything below this line is deprecated
+
+
 
 
 abstract type AbstractValueVectorModel end
