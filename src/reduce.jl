@@ -81,10 +81,13 @@ function pca_pr(action::Action, matrix; kwargs...)
 	end
 end
 
+# This is needed to ensure nsv is fetched - also in the projection case.
+pca_pre(::Preprocessing, matrix; kwargs...) =
+	create_spec(Projectable(pca_pr), matrix; kwargs...)
 
 function pca(::Mat, data; nsv, kwargs...)
 	nsv = fetched(actual_nsv_spec(data, nsv))
-	create_spec(Projectable(pca_pr), get_matrix_spec(data); nsv, kwargs...)
+	create_spec(Preprocess(pca_pre), get_matrix_spec(data); nsv, kwargs...)
 end
 function pca(::Var, data; nsv, kwargs...)
 	nsv = fetched(actual_nsv_spec(data, nsv))
