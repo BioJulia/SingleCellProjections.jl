@@ -77,6 +77,23 @@ mean_and_scale_spec(v, desc::SCPCore.TwoGroupCovariateDesc; center) =
 
 
 
+
+categories_spec(v) = unique_spec(v)
+
+# TODO: These might be useful if we want support for TwoGroup in pseudobulk
+# categories_spec(v, desc::SCPCore.CategoricalCovariateDesc) = categories_spec(v)
+# function categories_spec(::Any, desc::SCPCore.TwoGroupCovariateDesc)
+# 	if desc.group_b === nothing
+# 		[string(desc.group_a), string("!",desc.group_a)] # TODO: Is there a nicer way to handle this? What do we name the "Other" group.
+# 	else
+# 		[desc.group_a, desc.group_b]
+# 	end
+# end
+
+
+
+
+
 function numerical_covariate_matrix_impl(v, (m,s))
 	N = length(v)
 	x = reshape(v, N, 1) # So we return a N×1 matrix
@@ -90,7 +107,6 @@ function numerical_covariate_matrix(action::Action, data; center)
 end
 
 
-categories_spec(data) = unique_spec(data)
 function categorical_covariate_matrix_impl(ind, n_categories)
 	N = length(ind)
 	X = falses(N, n_categories)
