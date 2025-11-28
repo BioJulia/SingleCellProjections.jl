@@ -269,11 +269,6 @@ function population_matrix_mat(ind::AbstractVector{<:Integer}, n_combinations::I
 	category_counts = StatsBase.counts(ind, n_combinations)
 	A = reshape(category_counts, :, n_obs_combinations)
 	A ./ max.(1, sum(A; dims=1))
-
-	# category_weights = 1.0 ./ max.(StatsBase.counts(ind, n_combinations), 1) # avoid div by zero (but we will not even use those values below)
-	# weights = category_weights[ind]
-	# sp = sparse(I, ind, weights, N, n_combinations)
-	# materialize_pseudobulk(matrix, sp)
 end
 
 
