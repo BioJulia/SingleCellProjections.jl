@@ -208,7 +208,7 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 
 	center = center || (h1_cov_desc isa TwoGroupCovariateDesc) # Center if h1 requires it
 	if !center # Figure out if h0 requires centering
-		_, h0_cov_descs = setup_covariate_descriptions_new(obs, h0...)
+		_, h0_cov_descs = setup_covariate_descriptions(obs, h0...)
 		center = fetched(has_centering_spec(h0_cov_descs))
 	end
 
@@ -218,7 +218,7 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	h1_cov_data = _extract_data_spec(obs, h1_cov_annot)
 	ms = mean_and_scale_spec(h1_cov_data, h1_cov_desc; center)
 	h1_scale = fetched(getindex_spec(ms, 2))
-	h1_design_mat = covariate_matrix_new_spec(h1_cov_data, h1_cov_desc; center) # center affects this column, but we don't get an intercept
+	h1_design_mat = covariate_matrix_spec(h1_cov_data, h1_cov_desc; center) # center affects this column, but we don't get an intercept
 
 	matrix = get_matrix_spec(data)
 	var_ids = id_column_spec(get_var_spec(data))
