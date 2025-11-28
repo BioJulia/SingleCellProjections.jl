@@ -9,7 +9,6 @@ function pseudobulk_mat(matrix, ind::AbstractVector{<:Integer}, n_combinations::
 	@assert all(in(1:n_combinations), ind)
 	I = 1:N
 
-	StatsBase.counts(ind, n_combinations)
 	category_weights = 1.0 ./ max.(StatsBase.counts(ind, n_combinations), 1) # avoid div by zero (but we will not even use those values below)
 	weights = category_weights[ind]
 	sp = sparse(I, ind, weights, N, n_combinations)
@@ -161,16 +160,11 @@ function pseudobulk_dm(::Obs, data, obs_cov_categories, ::Any, obs_cov_basenames
 
 	if length(obs_cov_categories)>1
 		# Add ID column if we need it. Otherwise reuse the name of the single covariate.
-
-		obs_cov_basenames = ReproducibleJobs.unsafe_unmanage(obs_cov_basenames) # Can we avoid this?
-		if obs_cov_basenames isa ReadOnly # Can we avoid this?
-			obs_cov_basenames = obs_cov_basenames.value
-		end
 		id_values = combine_column_values_spec(pb_table_spec; delim)
-		obs_id_colname = @something obs_id_colname join(obs_cov_basenames, delim)
-		id_spec = create_table_spec(obs_id_colname=>id_values)
-		pb_table_spec = table_hcat_spec(id_spec, pb_table_spec)
+		obs_id_colname = @something obs_id_colname fetched(join_spec(get_colnames_spec(pb_table_spec), delim))
+		pb_table_spec = table_hcat_spec(create_table_spec(obs_id_colname=>id_values), pb_table_spec)
 	end
+
 	pb_table_spec
 end
 
@@ -248,10 +242,8 @@ function pseudobulk(::Preprocessing, data, obs_covariate1, obs_covariates...; ne
 		push!(pb_kwargs, :new_var_cov_basenames=>new_var_cov_basenames)
 	end
 
-
 	delim = @something delim '_'
-
-	create_spec(Preprocess(build_pseudobulk), data, obs_cov_categories, obs_cov_ind, obs_cov_basenames; delim, pb_kwargs...)
+	create_spec(Preprocess(build_pseudobulk), data, obs_cov_categories, obs_cov_ind, obs_cov_basenames; delim, kwargs..., pb_kwargs...)
 end
 
 
@@ -259,4 +251,115 @@ pseudobulk_spec(data, obs_covariate1, obs_covariates...; kwargs...) =
 	create_spec(Preprocess(pseudobulk), data, obs_covariate1, obs_covariates...; kwargs...)
 function Jobs.pseudobulk(data, obs_covariate1, obs_covariates...; kwargs...)
 	Job(pseudobulk_spec(data, obs_covariate1, obs_covariates...; kwargs...))
+end
+
+
+
+# --- Population matrix test ---
+# TODO: Share code with pseudobulk above?
+
+
+function population_matrix_mat(ind::AbstractVector{<:Integer}, n_combinations::Integer, n_obs_combinations::Integer)
+	N = length(ind)
+	@assert all(in(1:n_combinations), ind)
+
+	# Each column in the matrix should sum to one. So we first create a matrix of counts of each group (defined by var×obs covariates).
+	# Then we normalize the columns.
+
+	category_counts = StatsBase.counts(ind, n_combinations)
+	A = reshape(category_counts, :, n_obs_combinations)
+	A ./ max.(1, sum(A; dims=1))
+
+	# category_weights = 1.0 ./ max.(StatsBase.counts(ind, n_combinations), 1) # avoid div by zero (but we will not even use those values below)
+	# weights = category_weights[ind]
+	# sp = sparse(I, ind, weights, N, n_combinations)
+	# materialize_pseudobulk(matrix, sp)
+end
+
+
+
+function population_matrix_dm(::Mat, obs_cov_categories, obs_cov_ind, ::Any;
+                              new_var_cov_categories,
+                              new_var_cov_ind,
+                              kwargs...)
+	cov_categories = _pseudobulk_combine(obs_cov_categories, new_var_cov_categories)
+	cov_ind = _pseudobulk_combine(obs_cov_ind, new_var_cov_ind)
+
+	n_categories = length_spec.(cov_categories)
+
+	linear_ind_spec = pseudobulk_linear_indices_spec(cov_ind, n_categories)
+
+	n_combinations = prefetched(prod_spec(n_categories))
+	n_obs_combinations = prefetched(prod_spec(length_spec.(obs_cov_categories)))
+
+	mat = create_spec(population_matrix_mat, linear_ind_spec, n_combinations, n_obs_combinations; __version=v"0.1.0")
+	cached(mat)
+end
+function population_matrix_dm(::Var, args...;
+                              new_var_cov_categories,
+                              new_var_cov_basenames,
+                              delim,
+                              var_id_colname = nothing,
+                              kwargs...)
+	# Table for the new covariates, already repeated to match number of variables
+	pb_table_spec = pseudobulk_table_spec(new_var_cov_categories, new_var_cov_basenames; do_project=false)
+
+	if length(new_var_cov_categories)>1
+		# Add ID column if we need it. Otherwise reuse the name of the single covariate.
+		id_values = combine_column_values_spec(pb_table_spec; delim)
+		var_id_colname = @something var_id_colname fetched(join_spec(get_colnames_spec(pb_table_spec), delim))
+		pb_table_spec = table_hcat_spec(create_table_spec(var_id_colname=>id_values), pb_table_spec)
+	end
+	pb_table_spec
+end
+function population_matrix_dm(::Obs, obs_cov_categories, ::Any, obs_cov_basenames; delim, obs_id_colname=nothing, kwargs...)
+	pb_table_spec = pseudobulk_table_spec(obs_cov_categories, obs_cov_basenames; do_project=true)
+
+	if length(obs_cov_categories)>1
+		# Add ID column if we need it. Otherwise reuse the name of the single covariate.
+		id_values = combine_column_values_spec(pb_table_spec; delim)
+		obs_id_colname = @something obs_id_colname fetched(join_spec(get_colnames_spec(pb_table_spec), delim))
+		pb_table_spec = table_hcat_spec(create_table_spec(obs_id_colname=>id_values), pb_table_spec)
+	end
+	pb_table_spec
+end
+
+# TODO: Get rid of this, it is needed to get some fetching to preprocess atm
+function build_population_matrix(::Preprocessing, args...; kwargs...)
+	create_spec(DataMatrixFunction(population_matrix_dm), args...; kwargs...)
+end
+
+
+function population_matrix(::Preprocessing, obs, obs_covariate1, obs_covariates...; new_var_covariates, delim=nothing, kwargs...)
+	# obs_cov_annots, obs_cov_descs = setup_pseudobulk_covariates(obs_covariate1, obs_covariates...) # Something like this for TwoGroup support
+	obs_cov_annots = setup_pseudobulk_covariates(obs_covariate1, obs_covariates...)
+	obs_cov_data = _extract_data_spec.(Ref(obs), obs_cov_annots)
+	obs_cov_basenames = fetched.(_extract_name.(obs_cov_annots))
+
+
+	# obs_cov_categories = categories_spec.(obs_cov_data, obs_cov_descs) # Something like this for TwoGroup support
+	obs_cov_categories = categories_spec.(obs_cov_data)
+	obs_cov_ind = indexin_spec.(obs_cov_data, obs_cov_categories)
+
+
+	if !(new_var_covariates isa Union{AbstractVector,Tuple})
+		new_var_covariates = (new_var_covariates,) # wrap in a tuple to harmonize representation
+	end
+
+	new_var_cov_annots = setup_pseudobulk_covariates(new_var_covariates...)
+	new_var_cov_data = _extract_data_spec.(Ref(obs), new_var_cov_annots)
+	new_var_cov_basenames = fetched.(_extract_name.(new_var_cov_annots))
+
+	new_var_cov_categories = categories_spec.(new_var_cov_data)
+	new_var_cov_ind = indexin_spec.(new_var_cov_data, new_var_cov_categories)
+
+	delim = @something delim '_'
+	create_spec(Preprocess(build_population_matrix), obs_cov_categories, obs_cov_ind, obs_cov_basenames; delim, new_var_cov_categories, new_var_cov_ind, new_var_cov_basenames, kwargs...)
+end
+
+
+population_matrix_spec(obs, obs_covariate1, obs_covariates...; kwargs...) =
+	create_spec(Preprocess(population_matrix), obs, obs_covariate1, obs_covariates...; kwargs...)
+function Jobs.population_matrix(obs, obs_covariate1, obs_covariates...; new_var_covariates, kwargs...)
+	Job(population_matrix_spec(obs, obs_covariate1, obs_covariates...; new_var_covariates, kwargs...))
 end

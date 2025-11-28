@@ -76,6 +76,7 @@ module Jobs
 	function transpose end
 
 	function pseudobulk end
+	function population_matrix end
 
 	function ftest end
 	function ttest end
