@@ -3,7 +3,7 @@ function svd_projected_svt(U, X)
 	Matrix(ΣV')
 end
 
-svd_mul_sinv(ΣVt, S) = ΣVt ./ max.(S,1e-100) # To avoid NaNs if any singular value is zero
+svd_project_mul_sinv(ΣVt, S) = ΣVt ./ max.(S,1e-100) # To avoid NaNs if any singular value is zero
 
 # # Should we have this? Not used by Jobs.
 # function svd_project(F::SVD, X)
