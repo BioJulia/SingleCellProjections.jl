@@ -166,12 +166,11 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	# Check that h1 is of an allowed kind of test
 	if h1 isa Pair
 		let (_,desc)=h1
-			desc isa Union{NumericalCovariateDesc,TwoGroupCovariateDesc} || error("h1 must be a numerical or twogroup covariate, got $(typeof(desc)).")
+			desc isa Union{SCPCore.NumericalCovariateDesc,SCPCore.TwoGroupCovariateDesc} || error("h1 must be a numerical or twogroup covariate, got $(typeof(desc)).")
 		end
 	else
 		h1 = h1=>numerical_covariate() # default to numerical if not given - we want something 1d
 	end
-	center = center || (h1.second isa TwoGroupCovariateDesc) # Ensure h0 is centered if h1 wants it
 
 
 	# Handle missing values
@@ -204,8 +203,11 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	extra_kwargs = max_categories === nothing ? (;) : (; max_categories)
 
 
-	# Figure out if h0 provides centering
-	if !center
+	h1_cov_annot, h1_cov_desc = h1
+
+
+	center = center || (h1_cov_desc isa TwoGroupCovariateDesc) # Center if h1 requires it
+	if !center # Figure out if h0 requires centering
 		_, h0_cov_descs = setup_covariate_descriptions_new(obs, h0...)
 		center = fetched(has_centering_spec(h0_cov_descs))
 	end
@@ -213,17 +215,10 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 
 	h0_design = designmatrix_spec(data, h0...; center, extra_kwargs...)
 
-	h1_cov_annot, h1_cov_desc = h1
-	# TODO: Support TwoGroupCovariateDesc as well
 	h1_cov_data = _extract_data_spec(obs, h1_cov_annot)
-	ms = mean_and_scale_spec(h1_cov_data; center)
+	ms = mean_and_scale_spec(h1_cov_data, h1_cov_desc; center)
 	h1_scale = fetched(getindex_spec(ms, 2))
-
-	if h1_cov_desc isa SCPCore.NumericalCovariateDesc
-		h1_design_mat = numerical_covariate_matrix_spec(h1_cov_data; center) # center affects this column, but we don't getan intercept
-	else
-		error("Not supported yet.")
-	end
+	h1_design_mat = covariate_matrix_new_spec(h1_cov_data, h1_cov_desc; center) # center affects this column, but we don't get an intercept
 
 	matrix = get_matrix_spec(data)
 	var_ids = id_column_spec(get_var_spec(data))

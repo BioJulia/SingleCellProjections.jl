@@ -23,6 +23,12 @@ _extract_name(annot) = get_value_colname_spec(annot)
 
 
 
+function _group_args(desc::SCPCore.TwoGroupCovariateDesc)
+	desc.group_b === nothing ? (desc.group_a,) : (desc.group_a,desc.group_b)
+end
+
+
+
 # setup_covariate_description_new(obs, p::Pair{<:Any,<:SCPCore.AbstractCovariateDesc}) = p
 # function setup_covariate_description_new(obs, a)
 # 	@assert !(a isa Pair)
@@ -60,11 +66,36 @@ end
 
 
 
+function twogroup_values(v, group_a, group_b=nothing)
+	if group_b === nothing
+		ifelse.(isequal.(v, group_a), 1, 2)
+	else
+		groups = [group_a, group_b]
+		ind = indexin(v, groups)
+		if any(isnothing, ind)
+			new_values = setdiff(unique(v), groups)
+			error("Two-group vector has values not present in model. Got [", join(new_values, ','), "], but expected $(group_a) and $(group_b).")
+		end
+		convert(Vector{Int}, ind)
+	end
+end
+twogroup_values_spec(v, group_a, args...) =
+	create_spec(twogroup_values, v, group_a, args...; __version=v"0.1.0")
+
+
+
 
 intercept_covariate_matrix(n) = trues(n, 1)
 
 
+
 mean_and_scale_spec(v; center) = create_spec(SCPCore.mean_and_scale, v; center, __version=v"0.1.0")
+mean_and_scale_spec(v, ::SCPCore.NumericalCovariateDesc; center) = mean_and_scale_spec(v; center)
+mean_and_scale_spec(v, desc::SCPCore.TwoGroupCovariateDesc; center) =
+	mean_and_scale_spec(twogroup_values_spec(v, _group_args(desc)...); center)
+
+
+
 function numerical_covariate_matrix_impl(v, (m,s))
 	N = length(v)
 	x = reshape(v, N, 1) # So we return a N×1 matrix
@@ -106,20 +137,15 @@ function categorical_covariate_matrix(action::Action, data; max_categories=100)
 end
 
 
-function twogroup_covariate_matrix(::Action, data, group_a, group_b=nothing)
-	error("Not implemented")
-
-	# TODO: Get vector with 1 for group_a and 2 for group_b/other
-	#       Share code with categorical?
-	# TODO: compute mean and scale and return numerical_covariate_matrix_impl_spec
-end
-
-
 
 intercept_covariate_matrix_spec(n) = create_spec(intercept_covariate_matrix, n; __version=v"0.1.0")
 numerical_covariate_matrix_spec(data; center) = create_spec(Projectable(numerical_covariate_matrix), data; center)
 categorical_covariate_matrix_spec(data; kwargs...) = create_spec(Projectable(categorical_covariate_matrix), data; kwargs...)
-twogroup_covariate_matrix_spec(data, groups...) = create_spec(Projectable(twogroup_covariate_matrix), data, groups...)
+
+twogroup_covariate_matrix(::Preprocessing, data, args...; center) =
+	numerical_covariate_matrix_spec(twogroup_values_spec(data, args...); center)
+twogroup_covariate_matrix_spec(data, groups...; center) =
+	create_spec(Preprocess(twogroup_covariate_matrix), data, groups...; center)
 
 
 covariate_matrix_new_spec(data, desc::SCPCore.NumericalCovariateDesc; center, kwargs...) =
@@ -129,7 +155,7 @@ function covariate_matrix_new_spec(data, desc::SCPCore.CategoricalCovariateDesc;
 	categorical_covariate_matrix_spec(data; kw...)
 end
 covariate_matrix_new_spec(data, desc::SCPCore.TwoGroupCovariateDesc; kwargs...) =
-	twogroup_covariate_matrix_spec(data, desc.group_a, (desc.group_b===nothing ? () : (desc.group_b,))...)
+	twogroup_covariate_matrix_spec(data, _group_args(desc)...; kwargs...)
 
 
 extract_covariate_names(::Preprocessing, ::Any, ::SCPCore.NumericalCovariateDesc, basename) = basename
