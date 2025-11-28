@@ -85,7 +85,9 @@ length_spec(x) = create_spec(length, x; __version=v"0.1.0")
 unique_spec(x) = create_spec(unique, x; __version=v"0.1.0")
 join_spec(x, args...) = create_spec(join, x, args...; __version=v"0.1.0")
 reshape_spec(A, args...) = create_spec(reshape, A, args...; __version=v"0.1.0")
+repeat_spec(A, args...; kwargs...) = create_spec(repeat, A, args...; kwargs..., __version=v"0.1.0")
 prod_spec(args...; kwargs...) = create_spec(prod, args...; kwargs..., __version=v"0.1.0")
+allequal_spec(x) = create_spec(allequal, x; __version=v"0.1.0")
 
 
 apply_impl(f, x) = f(x)

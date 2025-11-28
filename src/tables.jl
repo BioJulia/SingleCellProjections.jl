@@ -1,5 +1,12 @@
 # NB: Column names here are fixed and expected to be strings.
 create_table(args::Pair{String,<:Any}...) = DataFrame(args...; copycols=false)
+# function create_table(args::Pair{String,<:Any}...)
+# 	# DEBUG
+# 	@show typeof.(args)
+# 	@show first.(args)
+# 	@show size.(last.(args))
+# 	DataFrame(args...; copycols=false)
+# end
 create_table_spec(args...) = create_spec(create_table, args...; __version=v"0.1.0")
 Jobs.create_table(args...) = Job(create_table_spec(args...))
 
@@ -207,37 +214,36 @@ Jobs.add_column(table, name, column) = Job(add_column_spec(table, name, column))
 
 
 
-_table_hcat_nrow_error(n1, n2) = throw(ArgumentError("Expected number of tables rows to match, but got $n1 and $n2."))
-_table_hcat_nrow_error_spec(n1, n2) = create_spec(_table_hcat_nrow_error, n1, n2)
+_table_hcat_nrow_error(n) = throw(ArgumentError("Expected number of tables rows to match, but got $(join(n, ", ", " and "))."))
+_table_hcat_nrow_error_spec(n) = create_spec(_table_hcat_nrow_error, n)
 
-function _table_hcat_validated(a, b)
-	names_a = first.(a.args)
-	names_b = first.(b.args)
-	common_names = intersect(names_a, names_b)
-	isempty(common_names) || throw(ArgumentError("Table columns must be different, found these common columns: $common_names"))
+function _table_hcat_validated(args...)
+	names = vcat((first.(a.args) for a in args)...)
+	common_names = [name for (name,count) in StatsBase.countmap(names) if count>1]
+	isempty(common_names) || throw(ArgumentError("Table column names must be different, found these common names: $common_names"))
 
-	result = create_table_spec(a.args..., b.args...)
+	result = create_table_spec(Iterators.flatten(ReproducibleJobs.unsafe_unmanage.(getproperty.(args,:args)))...)
 
-	# Check that the length of the tables match
-	n_a = table_nrow_spec(a)
-	n_b = table_nrow_spec(b)
-	cond = isequal_spec(n_a, n_b)
-	ifelse_pr_spec(cond, result, _table_hcat_nrow_error_spec(n_a,n_b))
+	# Check that the number of rows in all tables match
+	n = table_nrow_spec.(args)
+	cond = allequal_spec(n)
+	ifelse_pr_spec(cond, result, _table_hcat_nrow_error_spec(n))
 end
 
-table_hcat_fallback(a::DataFrame, b::DataFrame) = hcat(a,b; copycols=false)
-function table_hcat(::Preprocessing{E}, a, b) where E
-	if is_create_table(a) && is_create_table(b)
-		_table_hcat_validated(a, b)
+
+table_hcat_fallback(args::DataFrame...) = hcat(args...; copycols=false)
+function table_hcat(::Preprocessing{E}, args...) where E
+	if all(is_create_table, args)
+		_table_hcat_validated(args...)
 	elseif E
-		create_spec(Preprocess{false}(table_hcat), a, b) # try again with late preprocessing (i.e. after projectables has been hanlded)
+		create_spec(Preprocess{false}(table_hcat), args...) # try again with late preprocessing (i.e. after projectables has been hanlded)
 	else
-		create_spec(table_hcat_fallback, a, b; __version=v"0.1.0")
+		create_spec(table_hcat_fallback, args...; __version=v"0.1.0")
 	end
 end
 
-table_hcat_spec(a, b) = create_spec(Preprocess(table_hcat), a, b)
-Jobs.table_hcat(a, b) = Job(table_hcat_spec(a, b))
+table_hcat_spec(a, args...) = create_spec(Preprocess(table_hcat), a, args...)
+Jobs.table_hcat(a, args...) = Job(table_hcat_spec(a, args...))
 
 
 
@@ -314,6 +320,22 @@ function combine_column_values(::Preprocessing{E}, table; kwargs...) where E
 end
 
 combine_column_values_spec(table; kwargs...) = create_spec(Preprocess(combine_column_values), table; kwargs...)
+
+
+
+repeat_columns_fallback(table::DataFrame; kwargs...) = mapcols(v->repeat(v; kwargs...), table)
+function repeat_columns(::Preprocessing{E}, table; kwargs...) where E
+	if is_create_table(table)
+		cols = (k=>repeat_spec(v; kwargs...) for (k,v) in table.args)
+		create_table_spec(cols...)
+	elseif E
+		create_spec(Preprocess{false}(repeat_columns), table; kwargs...)
+	else
+		create_spec(repeat_columns_fallback, table; kwargs..., __version=v"0.1.0")
+	end
+end
+
+repeat_columns_spec(table; kwargs...) = create_spec(Preprocess(repeat_columns), table; kwargs...)
 
 
 
