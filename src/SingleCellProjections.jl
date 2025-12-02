@@ -5,7 +5,7 @@ export
 	DataMatrix,
 	Jobs, # TODO: remove probably
 	auto_covariate, # deprecated
-	intercept_covariate,
+	intercept_covariate, # deprecated
 	categorical_covariate,
 	numerical_covariate,
 	twogroup_covariate

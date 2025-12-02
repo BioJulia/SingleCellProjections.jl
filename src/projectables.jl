@@ -52,6 +52,10 @@ function try_replace_spec_single(spec::Spec, ::Any, k::Spec, v)
 end
 
 function try_replace_spec(spec::Spec, f::F, args...) where F
+	# @info "try_replace_spec"
+	# @show f
+	# f isa ProjectOnto && @show f
+
 	for (k,v) in args
 		if k isa Spec
 			r = try_replace_spec_single(spec, f, k, v)
@@ -182,5 +186,3 @@ end
 function Jobs.project(onto, args...; kwargs...)
 	Job(create_project_spec(onto, args...; kwargs...))
 end
-
-

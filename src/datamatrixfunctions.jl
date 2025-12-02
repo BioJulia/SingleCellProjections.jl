@@ -1,9 +1,3 @@
-abstract type DataMatrixField end
-struct Mat <: DataMatrixField end
-struct Var <: DataMatrixField end
-struct Obs <: DataMatrixField end
-
-
 is_datamatrix_spec(::Any) = false
 function is_datamatrix_spec(sa::SpecArgs)
 	f = sa.f
@@ -51,24 +45,88 @@ end
 setup_datamatrix(f::DataMatrixField, d::DataMatrixFunction{F}, spec) where F = d.f(f, spec.args...; spec.kwargs...)
 
 
+# # Hopefully deprecated
+# function get_matrix_pr(action::Action, dm_spec)
+# 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_matrix
+# 	action(setup_datamatrix(Mat(), dm_spec))
+# end
+# function get_var_pr(action::Action, dm_spec)
+# 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_var
+# 	action(setup_datamatrix(Var(), dm_spec))
+# end
+# function get_obs_pr(action::Action, dm_spec)
+# 	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_obs
+# 	action(setup_datamatrix(Obs(), dm_spec))
+# end
 
-function get_matrix_pr(action::Action, dm_spec)
-	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_matrix
-	action(setup_datamatrix(Mat(), dm_spec))
+
+# get_matrix(::Preprocessing, dm_spec) = create_spec(Projectable(get_matrix_pr), dm_spec)
+# get_var(::Preprocessing, dm_spec) = create_spec(Projectable(get_var_pr), dm_spec)
+# get_obs(::Preprocessing, dm_spec) = create_spec(Projectable(get_obs_pr), dm_spec)
+
+# New test of improved preprocessing
+# get_matrix(::Preprocessing, dm_spec) = create_spec(MatFunction(dm_spec.f.f), dm_spec.args...; dm_spec.kwargs...)
+# get_var(::Preprocessing, dm_spec) = create_spec(VarFunction(dm_spec.f.f), dm_spec.args...; dm_spec.kwargs...)
+# get_obs(::Preprocessing, dm_spec) = create_spec(ObsFunction(dm_spec.f.f), dm_spec.args...; dm_spec.kwargs...)
+
+# New test
+# TODO: Improve code reuse
+function get_matrix(::Preprocessing, dm_spec)
+	f = dm_spec.f
+	if f isa ProjectOnto
+		# @info "get_matrix ProjectOnto"
+
+		# TODO: Avoid this construct
+		onto = create_spec(f.f, dm_spec.args[2:end]...; dm_spec.kwargs...) # recreate original spec...
+		replaced = try_replace_spec(onto, f.f, dm_spec.args[1]...)
+		replaced !== nothing && return replaced
+
+		create_spec(ProjectOnto(MatFunction(f.f.f)), dm_spec.args...; dm_spec.kwargs...)
+	elseif f isa DataMatrixFunction
+		create_spec(MatFunction(f.f), dm_spec.args...; dm_spec.kwargs...)
+	else
+		error("not implemented yet: ")
+	end
 end
-function get_var_pr(action::Action, dm_spec)
-	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_var
-	action(setup_datamatrix(Var(), dm_spec))
+function get_var(::Preprocessing, dm_spec)
+	f = dm_spec.f
+	if f isa ProjectOnto
+		# @info "get_var ProjectOnto"
+
+		# TODO: Avoid this construct
+		onto = create_spec(f.f, dm_spec.args[2:end]...; dm_spec.kwargs...) # recreate original spec...
+		replaced = try_replace_spec(onto, f.f, dm_spec.args[1]...)
+		replaced !== nothing && return replaced
+
+		create_spec(ProjectOnto(VarFunction(f.f.f)), dm_spec.args...; dm_spec.kwargs...)
+	elseif f isa DataMatrixFunction
+		create_spec(VarFunction(f.f), dm_spec.args...; dm_spec.kwargs...)
+	else
+		error("not implemented yet")
+	end
 end
-function get_obs_pr(action::Action, dm_spec)
-	@assert is_datamatrix_spec(dm_spec) # TODO: We might want to relax this later, and instead call SCPCore.get_obs
-	action(setup_datamatrix(Obs(), dm_spec))
+function get_obs(::Preprocessing, dm_spec)
+	f = dm_spec.f
+	if f isa ProjectOnto
+		@info "get_obs ProjectOnto"
+
+		# TODO: Avoid this construct
+		onto = create_spec(f.f, dm_spec.args[2:end]...; dm_spec.kwargs...) # recreate original spec...
+		replaced = try_replace_spec(onto, f.f, dm_spec.args[1]...)
+		replaced !== nothing && return replaced
+
+		create_spec(ProjectOnto(ObsFunction(f.f.f)), dm_spec.args...; dm_spec.kwargs...)
+	elseif f isa DataMatrixFunction
+		create_spec(ObsFunction(f.f), dm_spec.args...; dm_spec.kwargs...)
+	else
+		error("not implemented yet")
+	end
 end
 
-
-get_matrix(::Preprocessing, dm_spec) = create_spec(Projectable(get_matrix_pr), dm_spec)
-get_var(::Preprocessing, dm_spec) = create_spec(Projectable(get_var_pr), dm_spec)
-get_obs(::Preprocessing, dm_spec) = create_spec(Projectable(get_obs_pr), dm_spec)
+# # DEBUG version
+# get_matrix(::Preprocessing, dm_spec) = (@show dm_spec; @info Mat(); create_spec(MatFunction(dm_spec.f.f), dm_spec.args...; dm_spec.kwargs...))
+# get_var(::Preprocessing, dm_spec) = (@show dm_spec; @info Var(); create_spec(VarFunction(dm_spec.f.f), dm_spec.args...; dm_spec.kwargs...))
+# get_obs(::Preprocessing, dm_spec) = (@show dm_spec; @info Obs(); create_spec(ObsFunction(dm_spec.f.f), dm_spec.args...; dm_spec.kwargs...))
 
 
 # # Testing improved preprocessing
@@ -130,12 +188,21 @@ function (d::DataMatrixFunction{F})(args...; kwargs...) where F
 	create_datamatrix_spec(matrix, var, obs)
 end
 
+# This evaluates a single field of a DataMatrixFunction
+function (d::DataMatrixFieldFunction{T,F})(args...; kwargs...) where {T,F}
+	# @show d
+	d.f(T(), args...; kwargs...)
+end
+
+
 
 
 function _try_replace_get_spec_single(f::DataMatrixField, spec::Spec, k::Spec, v)
+	# @info "_try_replace_get_spec_single"
 	if is_datamatrix_spec(k)
-		# Replace the inner spec
-		res = try_replace_spec_single(spec.args[1], nothing, k, v)
+		# TODO: Improve this code, avoid recreating the original spec
+		onto = create_spec(DataMatrixFunction(spec.f.f), spec.args...; spec.kwargs...) # recreate original spec...
+		res = try_replace_spec_single(onto, nothing, k, v)
 		return res === nothing ? res : get_spec(f, res)
 	else
 		# Fallback to standard replace
@@ -143,11 +210,28 @@ function _try_replace_get_spec_single(f::DataMatrixField, spec::Spec, k::Spec, v
 	end
 end
 
-try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_matrix_pr)}, k::Spec, v) =
+# try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_matrix_pr)}, k::Spec, v) =
+# 	_try_replace_get_spec_single(Mat(), spec, k, v)
+# try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_var_pr)}, k::Spec, v) =
+# 	_try_replace_get_spec_single(Var(), spec, k, v)
+# try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_obs_pr)}, k::Spec, v) =
+# 	_try_replace_get_spec_single(Obs(), spec, k, v)
+
+
+# # Testing ProjectOnto
+# try_replace_spec_single(spec::Spec, ::ProjectOnto{<:MatFunction}, k::Spec, v) =
+# 	_try_replace_get_spec_single(Mat(), spec, k, v)
+# try_replace_spec_single(spec::Spec, ::ProjectOnto{<:VarFunction}, k::Spec, v) =
+# 	_try_replace_get_spec_single(Var(), spec, k, v)
+# try_replace_spec_single(spec::Spec, ::ProjectOnto{<:ObsFunction}, k::Spec, v) =
+# 	_try_replace_get_spec_single(Obs(), spec, k, v)
+
+# Testing ProjectOnto
+try_replace_spec_single(spec::Spec, ::MatFunction, k::Spec, v) =
 	_try_replace_get_spec_single(Mat(), spec, k, v)
-try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_var_pr)}, k::Spec, v) =
+try_replace_spec_single(spec::Spec, ::VarFunction, k::Spec, v) =
 	_try_replace_get_spec_single(Var(), spec, k, v)
-try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_obs_pr)}, k::Spec, v) =
+try_replace_spec_single(spec::Spec, ::ObsFunction, k::Spec, v) =
 	_try_replace_get_spec_single(Obs(), spec, k, v)
 
 
@@ -160,6 +244,10 @@ try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_obs_pr)}, k::Spec, 
 
 # Testing with ProjectOnto
 function project_impl(d::DataMatrixFunction, onto, args...)
+	# @info "project_impl(d::DataMatrixFunction)"
+	replaced = try_replace_spec(onto, d, args...)
+	replaced !== nothing && return replaced
+
 	# Setup as `ProjectOnto`
 	replacements = (args...,)
 	create_spec(ProjectOnto(d), replacements, onto.args...; onto.kwargs...)
@@ -171,4 +259,29 @@ function project_onto_impl(d::DataMatrixFunction{F}, replacements, args...; kwar
 	var = create_project_spec(get_var_spec(onto), replacements...)
 	obs = create_project_spec(get_obs_spec(onto), replacements...)
 	create_datamatrix_spec(matrix, var, obs)
+end
+
+
+# Testing with ProjectOnto
+function project_impl(d::DataMatrixFieldFunction, onto, args...)
+	# @info "project_impl(d::DataMatrixFieldFunction)"
+	replaced = try_replace_spec(onto, d, args...)
+	replaced !== nothing && return replaced
+
+	# Setup as `ProjectOnto`
+	replacements = (args...,)
+	create_spec(ProjectOnto(d), replacements, onto.args...; onto.kwargs...)
+end
+
+function project_onto_impl(d::DataMatrixFieldFunction{T,F}, replacements, args...; kwargs...) where {T,F}
+	# @info "project_onto_impl(d::DataMatrixFieldFunction)"
+	p = Projection(collect(replacements))
+	# Setup data matrix field and then perform projection
+
+	# @show F
+	# @show replacements
+	# @show args
+	# @show kwargs
+
+	p(d.f(T(), args...; kwargs...))
 end
