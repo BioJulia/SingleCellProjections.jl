@@ -9,7 +9,8 @@ function is_datamatrix_spec(sa::SpecArgs)
 	f = sa.f
 	f isa DataMatrixFunction && return true
 	f == SCPCore.DataMatrix && return true
-	if f == project
+	f isa ProjectOnto{<:DataMatrixFunction} && return true # testing ProjectOnto
+	if f == project # TODO: Remove?
 		onto = sa.args[1]
 		return is_datamatrix_spec(onto)
 	end
@@ -34,6 +35,14 @@ setup_datamatrix(::Obs, ::typeof(SCPCore.DataMatrix), spec) = spec.args[3]
 function setup_datamatrix(f::DataMatrixField, ::typeof(project), spec)
 	onto = get_spec(f, spec.args[1])
 	create_project_spec(onto, spec.args[2:end]...)
+end
+
+# TODO: Testing with ProjectOnto
+# This changes get_field(ProjectOnto()) to project(get_field())
+function setup_datamatrix(f::DataMatrixField, p::ProjectOnto{<:DataMatrixFunction}, spec)
+	onto_dm = create_spec(p.f, spec.args[2:end]...; spec.kwargs...) # recreate original spec...
+	onto = get_spec(f, onto_dm)
+	create_project_spec(onto, spec.args[1]...)
 end
 
 
@@ -61,6 +70,33 @@ get_matrix(::Preprocessing, dm_spec) = create_spec(Projectable(get_matrix_pr), d
 get_var(::Preprocessing, dm_spec) = create_spec(Projectable(get_var_pr), dm_spec)
 get_obs(::Preprocessing, dm_spec) = create_spec(Projectable(get_obs_pr), dm_spec)
 
+
+# # Testing improved preprocessing
+# # Doesn't really work with replacements, so we skip it for now...
+# function get_matrix(::Preprocessing, dm_spec)
+# 	if is_datamatrix_spec(dm_spec)
+# 		setup_datamatrix(Mat(), dm_spec)
+# 	else
+# 		# TODO: Get rid of this when we have fixed the projection case
+# 		create_spec(Projectable(get_matrix_pr), dm_spec)
+# 	end
+# end
+# function get_var(::Preprocessing, dm_spec)
+# 	if is_datamatrix_spec(dm_spec)
+# 		setup_datamatrix(Var(), dm_spec)
+# 	else
+# 		# TODO: Get rid of this when we have fixed the projection case
+# 		create_spec(Projectable(get_var_pr), dm_spec)
+# 	end
+# end
+# function get_obs(::Preprocessing, dm_spec)
+# 	if is_datamatrix_spec(dm_spec)
+# 		setup_datamatrix(Obs(), dm_spec)
+# 	else
+# 		# TODO: Get rid of this when we have fixed the projection case
+# 		create_spec(Projectable(get_obs_pr), dm_spec)
+# 	end
+# end
 
 
 get_matrix_spec(x) = create_spec(Preprocess(get_matrix), x)
@@ -115,9 +151,24 @@ try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_obs_pr)}, k::Spec, 
 	_try_replace_get_spec_single(Obs(), spec, k, v)
 
 
-function project_impl(::DataMatrixFunction, onto, args...)
-	matrix = create_project_spec(get_matrix_spec(onto), args...)
-	var = create_project_spec(get_var_spec(onto), args...)
-	obs = create_project_spec(get_obs_spec(onto), args...)
+# function project_impl(::DataMatrixFunction, onto, args...)
+# 	matrix = create_project_spec(get_matrix_spec(onto), args...)
+# 	var = create_project_spec(get_var_spec(onto), args...)
+# 	obs = create_project_spec(get_obs_spec(onto), args...)
+# 	create_datamatrix_spec(matrix, var, obs)
+# end
+
+# Testing with ProjectOnto
+function project_impl(d::DataMatrixFunction, onto, args...)
+	# Setup as `ProjectOnto`
+	replacements = (args...,)
+	create_spec(ProjectOnto(d), replacements, onto.args...; onto.kwargs...)
+end
+
+function project_onto_impl(d::DataMatrixFunction{F}, replacements, args...; kwargs...) where F
+	onto = create_spec(d, args...; kwargs...) # recreate original spec...
+	matrix = create_project_spec(get_matrix_spec(onto), replacements...)
+	var = create_project_spec(get_var_spec(onto), replacements...)
+	obs = create_project_spec(get_obs_spec(onto), replacements...)
 	create_datamatrix_spec(matrix, var, obs)
 end
