@@ -32,6 +32,12 @@ function (p::Projectable{F})(args...; kwargs...) where F
 end
 
 
+# Testing ProjectOnto
+function (p::ProjectOnto{F})(replacements, args...; kwargs...) where F
+	project_onto_impl(p.f, replacements, args...; kwargs...)
+end
+
+
 
 function try_replace_spec_single(spec::Spec, ::Any, k::Spec, v)
 	if spec.ro == k.ro
@@ -79,30 +85,73 @@ end
 
 
 
+
+# function project_impl(f::F, onto, args...) where F
+# 	replaced = try_replace_spec(onto, f, args...)
+# 	replaced !== nothing && return replaced
+
+# 	# Not found in replacements, apply the `Projection` action recursively
+# 	p = Projection(collect(args))
+# 	proj_args = p(onto.ro.value.args)
+# 	proj_kwargs = p(onto.ro.value.kwargs)
+# 	create_spec(f, proj_args...; proj_kwargs...)
+# end
+
+# Testing with ProjectOnto
 function project_impl(f::F, onto, args...) where F
 	replaced = try_replace_spec(onto, f, args...)
 	replaced !== nothing && return replaced
 
-	# Not found in replacements, apply the `Projection` action recursively
-	p = Projection(collect(args))
-	proj_args = p(onto.ro.value.args)
-	proj_kwargs = p(onto.ro.value.kwargs)
+	# Not found in replacements, setup as `ProjectOnto`
+	replacements = (args...,)
+	create_spec(ProjectOnto(f), replacements, onto.args...; onto.kwargs...)
+end
+
+function project_onto_impl(f::F, replacements, args...; kwargs...) where F
+	# apply the `Projection` action recursively, and keep the outer function as is
+	p = Projection(collect(replacements))
+	proj_args = p(args)
+	proj_kwargs = p(kwargs)
 	create_spec(f, proj_args...; proj_kwargs...)
 end
 
 
+
+# function project_impl(p::Projectable{F}, onto, args...) where F
+# 	replaced = try_replace_spec(onto, p, args...)
+# 	replaced !== nothing && return replaced
+
+# 	# Not found in replacements, perform projection
+# 	res = p.f(Projection(collect(args)), onto.args...; onto.kwargs...)
+# 	if res isa Spec
+# 		return Spec(res.ro, onto.op) # Keep the op
+# 	else
+# 		return res
+# 	end
+# end
+
+# Testing with ProjectOnto
 function project_impl(p::Projectable{F}, onto, args...) where F
 	replaced = try_replace_spec(onto, p, args...)
 	replaced !== nothing && return replaced
 
-	# Not found in replacements, perform projection
-	res = p.f(Projection(collect(args)), onto.args...; onto.kwargs...)
-	if res isa Spec
-		return Spec(res.ro, onto.op) # Keep the op
-	else
-		return res
-	end
+	# Not found in replacements, setup as `ProjectOnto`
+	replacements = (args...,)
+	create_spec(ProjectOnto(p), replacements, onto.args...; onto.kwargs...)
 end
+
+function project_onto_impl(p::Projectable{F}, replacements, args...; kwargs...) where F
+	# Perform projection
+	p.f(Projection(collect(replacements)), args...; kwargs...)
+
+	# Do we still need to keep the op? Probably not. It is handled elsewhere.
+	# if res isa Spec
+	# 	return Spec(res.ro, onto.op) # Keep the op
+	# else
+	# 	return res
+	# end
+end
+
 
 
 # Wrapper that dispatches based on the type of `onto.f`

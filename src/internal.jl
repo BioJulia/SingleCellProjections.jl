@@ -38,7 +38,7 @@ function getindex_pr(action, v, ind)
 	v_p = action(v)
 	result = getindex_impl_spec(v_p, action(ind))
 
-	if action isa Projection && !(ind isa Spec)
+	if action isa Projection && !(ind isa Spec) # TODO: Fix, this will trigger even if ind is replaced, which it shouldn't
 		cond = isequal_spec(v, v_p)
 		result = ifelse_spec(cond, result, _getindex_error_spec(ind))
 	end

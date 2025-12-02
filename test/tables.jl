@@ -37,7 +37,7 @@
 	CSV.write(csv_filename_right, df_right)
 	csv_table_right = Jobs.load_csv(csv_filename_right)
 
-	
+
 
 	@testset "$name" for (name,table) in (("DataFrame",df), ("create_table",basic_table), ("CSV",csv_table))
 		if table !== df
