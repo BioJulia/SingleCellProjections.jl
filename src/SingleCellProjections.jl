@@ -28,6 +28,8 @@ using ReproducibleJobs: create_spec, cached, ReadOnly, SpecArgs, ChecksummedFile
 
 using ReadOnlyArrays: ReadOnlyVector
 
+using StyledStrings # For Spec printing
+
 ReproducibleJobs.unmanage_rec(x::DataMatrix) =
 	DataMatrix(ReproducibleJobs.unmanage_rec.((x.matrix, x.var, x.obs))...)
 ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVector) = x
