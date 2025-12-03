@@ -12,11 +12,13 @@ my_rand_impl(S, nrow, ncol; seed) = rand(StableRNG(seed), S, nrow, ncol)
 my_rand_spec(S, nrow, ncol; seed) = create_spec(my_rand_impl, S, nrow, ncol; seed, __version=v"1.0.0")
 TestJobs.my_rand(S, nrow, ncol; seed) = Job(my_rand_spec(S, nrow, ncol; seed))
 
-my_add_spec(a, b) = create_spec(+, a, b; __version=v"1.0.0")
+my_add_impl(a,b) = a .+ b
+my_add_spec(a, b) = create_spec(my_add_impl, a, b; __version=v"1.0.0")
 TestJobs.my_add(a, b) = Job(my_add_spec(a, b))
 
 # Projectable with the first arg fixed
-my_sub(action::Action, a, b) = create_spec(-, a, action(b); __version=v"1.0.0")
+my_sub_impl(a,b) = a .- b
+my_sub(action::Action, a, b) = create_spec(my_sub_impl, a, action(b); __version=v"1.0.0")
 my_sub_spec(a, b) = create_spec(Projectable(my_sub), a, b)
 TestJobs.my_sub(a, b) = Job(my_sub_spec(a, b))
 
@@ -74,7 +76,7 @@ TestJobs.my_div(a, b) = Job(my_div_spec(a, b))
 		@test fetch!(jp1) == Ap_res+Bp_res
 
 		@test isequal(forward(jp1).spec, forward(TestJobs.my_add(Ap, Bp)).spec)
-		@test forward_once(jp1).spec.f == ProjectOnto(+)
+		@test forward_once(jp1).spec.f == ProjectOnto(my_add_impl)
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced) == Bp_res
