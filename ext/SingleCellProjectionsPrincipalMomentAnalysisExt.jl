@@ -1,8 +1,10 @@
 module SingleCellProjectionsPrincipalMomentAnalysisExt
 
+# TODO: Update to use specs
+
 using SingleCellProjections
 using .SingleCellProjections.SingleCellProjectionsCore
-using .SingleCellProjectionsCore: Index, LowRank, implicitsvd, innersize, var_coordinates, obs_coordinates, table_cols_equal
+using .SingleCellProjectionsCore: Index, LowRank, implicitsvd, innersize, var_coordinates, obs_coordinates, table_cols_equal, ProjectionModel
 using .SingleCellProjectionsCore.MatrixExpressions
 
 using LinearAlgebra
