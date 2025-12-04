@@ -23,11 +23,19 @@ _getindex_error(ind) = throw(ArgumentError("Raw indices not allowed when project
 _getindex_error_spec(ind) = create_spec(_getindex_error, ind; __version=v"0.1.0")
 
 # getindex_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_spec(getindex, v, ind; __version=v"0.1.0")
-function getindex_impl(::Preprocessing{E}, v, ind) where E
+# function getindex_impl(::Preprocessing{E}, v, ind) where E
+# 	if ind === Colon()
+# 		v
+# 	elseif E
+# 		create_spec(Preprocess{false}(getindex_impl), v, fetched(ind)) # NB: This way we fetch after projections are handled!
+# 	else
+# 		create_spec(getindex, v, ind; __version=v"0.1.0")
+# 	end
+# end
+
+function getindex_impl(::Preprocessing, v, ind)
 	if ind === Colon()
-		v
-	elseif E
-		create_spec(Preprocess{false}(getindex_impl), v, fetched(ind)) # NB: This way we fetch after projections are handled!
+		v # Projections have been handled, so indexing by `:` is OK
 	else
 		create_spec(getindex, v, ind; __version=v"0.1.0")
 	end
@@ -38,7 +46,7 @@ function getindex_pr(action, v, ind)
 	v_p = action(v)
 	result = getindex_impl_spec(v_p, action(ind))
 
-	if action isa Projection && !(ind isa Spec) # TODO: Fix, this will trigger even if ind is replaced, which it shouldn't
+	if action isa Projection && !(ind isa Spec) # TODO: Fix, this will trigger even if ind is replaced by the action, which it shouldn't - maybe hard to avoid?
 		cond = isequal_spec(v, v_p)
 		result = ifelse_spec(cond, result, _getindex_error_spec(ind))
 	end
