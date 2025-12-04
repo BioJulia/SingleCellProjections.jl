@@ -196,7 +196,7 @@ fwd_spec(job) = forward(job).spec
 		@test jp2fwd.spec.f == ProjectOnto(Projectable(my_div))
 		jp2fwd2 = forward_once(jp2fwd)
 		@test jp2fwd2.spec.f == my_div_impl
-		# TODO: This will be change so that forwarding is done directly to ProjectOnto(Projectable(my_add))!
+		# TODO: This will be change so that forwarding is done directly to ProjectOnto(my_add_impl)!
 		@test jp2fwd2.spec.args[2].f == Preprocess(SingleCellProjections.project)
 
 		jp2b = Jobs.project(j2, B=>Bp) # replacing B=>Bp should have no effect
@@ -217,6 +217,12 @@ fwd_spec(job) = forward(job).spec
 		jp2 = Jobs.project(j2, C=>Cp)
 		@test fetch!(jp2) == (A_res./B_res) + Cp_res
 		@test isequal(fwd_spec(jp2), fwd_spec(A /ʲ B +ʲ Cp))
+		jp2fwd = forward_once(jp2)
+		@test jp2fwd.spec.f == ProjectOnto(my_add_impl)
+		jp2fwd2 = forward_once(jp2fwd)
+		@test jp2fwd2.spec.f == my_add_impl
+		# TODO: This will be change so that forwarding is done directly to ProjectOnto(Projectable(my_div))!
+		@test jp2fwd2.spec.args[2].f == Preprocess(SingleCellProjections.project)
 
 		jp2b = Jobs.project(j2, B=>Bp)
 		@test fetch!(jp2b) == (A_res./Bp_res) + C_res
@@ -347,13 +353,24 @@ end
 		@test jp2fwd.spec.f == ProjectOnto(DataMatrixFunction(dm_div))
 
 		# NB: Here projectables and DataMatrixFunctions differ a bit
+		# NB: The forwarding below will get simpler since we are planning to get rid of the `project` steps!
 		jp2fwd2 = forward_once(jp2fwd)
 		@test jp2fwd2.spec.f == SCPCore.DataMatrix
 		jp2fwd3 = Job(jp2fwd2.spec.args[1]) # the matrix arg
-		# TODO: This will be change so that forwarding is done directly to ProjectOnto(MatFunction(dm_div))!
 		@test jp2fwd3.spec.f == Preprocess(SingleCellProjections.project)
 		jp2fwd4 = forward_once(jp2fwd3)
 		@test jp2fwd4.spec.f == ProjectOnto(MatFunction(dm_div))
+
+		jp2fwd5 = forward_once(jp2fwd4)
+		@test jp2fwd5.spec.f == Preprocess(SingleCellProjections.project)
+		jp2fwd6 = forward_once(jp2fwd5)
+		@test jp2fwd6.spec.f == ProjectOnto(Projectable(my_div))
+
+		jp2fwd7 = forward_once(jp2fwd6)
+		@test jp2fwd7.spec.f == my_div_impl
+		jp2fwd8 = Job(jp2fwd7.spec.args[1]) # NB: the first arg to my_div should not be projected
+		@test jp2fwd8.spec.f == MatFunction(dm_add) # i.e. not projection here
+
 
 		jp2b = Jobs.project(j2, B=>Bp) # replacing B=>Bp should have no effect
 		@test fetch!(jp2b).matrix == (A_res+B_res) ./ C_res
@@ -373,6 +390,35 @@ end
 		jp2 = Jobs.project(j2, C=>Cp)
 		@test fetch!(jp2).matrix == (A_res./B_res) + Cp_res
 		@test isequal(fwd_spec(jp2), fwd_spec(A /ᵈ B +ᵈ Cp))
+		jp2fwd = forward_once(jp2)
+		@test jp2fwd.spec.f == ProjectOnto(DataMatrixFunction(dm_add))
+
+		# NB: Here projectables and DataMatrixFunctions differ a bit
+		# NB: The forwarding below will get simpler since we are planning to get rid of the `project` steps!
+		jp2fwd2 = forward_once(jp2fwd)
+		@test jp2fwd2.spec.f == SCPCore.DataMatrix
+		jp2fwd3 = Job(jp2fwd2.spec.args[1]) # the matrix arg
+		@test jp2fwd3.spec.f == Preprocess(SingleCellProjections.project)
+		jp2fwd4 = forward_once(jp2fwd3)
+		@test jp2fwd4.spec.f == ProjectOnto(MatFunction(dm_add))
+
+		jp2fwd5 = forward_once(jp2fwd4)
+		@test jp2fwd5.spec.f == Preprocess(SingleCellProjections.project)
+		jp2fwd6 = forward_once(jp2fwd5)
+		@test jp2fwd6.spec.f == ProjectOnto(my_add_impl)
+
+		jp2fwd7 = forward_once(jp2fwd6)
+		@test jp2fwd7.spec.f == my_add_impl
+		jp2fwd8 = Job(jp2fwd7.spec.args[1])
+		@test jp2fwd8.spec.f == Preprocess(SingleCellProjections.project)
+
+		jp2fwd9 = forward_once(jp2fwd8)
+		@test jp2fwd9.spec.f == ProjectOnto(MatFunction(dm_div))
+		jp2fwd10 = forward_once(jp2fwd9)
+		@test jp2fwd10.spec.f == Preprocess(SingleCellProjections.project)
+		jp2fwd11 = forward_once(jp2fwd10)
+		@test jp2fwd11.spec.f == ProjectOnto(Projectable(my_div))
+
 
 		jp2b = Jobs.project(j2, B=>Bp)
 		@test fetch!(jp2b).matrix == (A_res./Bp_res) + C_res
