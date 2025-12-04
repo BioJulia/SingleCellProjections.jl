@@ -81,7 +81,6 @@ TestJobs.dm_div(a, b) = Job(create_spec(DataMatrixFunction(dm_div), a, b))
 /ᵈ(a,b) = TestJobs.dm_div(a,b)
 
 fwd_spec(job) = forward(job).spec
-fwd_once_spec(job) = forward_once(job).spec
 
 
 
@@ -132,7 +131,7 @@ fwd_once_spec(job) = forward_once(job).spec
 		@test fetch!(jp1) == Ap_res+Bp_res
 
 		@test isequal(fwd_spec(jp1), fwd_spec(Ap +ʲ Bp))
-		@test fwd_once_spec(jp1).f == ProjectOnto(my_add_impl)
+		@test forward_once(jp1).spec.f == ProjectOnto(my_add_impl)
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced) == Bp_res
@@ -146,7 +145,7 @@ fwd_once_spec(job) = forward_once(job).spec
 		@test fetch!(jp1) == Ap_res.*Bp_res
 
 		@test isequal(fwd_spec(jp1), fwd_spec(Ap *ʲ Bp))
-		@test fwd_once_spec(jp1).f == ProjectOnto(my_mul_impl)
+		@test forward_once(jp1).spec.f == ProjectOnto(my_mul_impl)
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced) == Bp_res
@@ -159,9 +158,10 @@ fwd_once_spec(job) = forward_once(job).spec
 
 		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
 		@test fetch!(jp1) == A_res-Bp_res
-
 		@test isequal(fwd_spec(jp1), fwd_spec(A -ʲ Bp))
-		@test fwd_once_spec(jp1).f == ProjectOnto(Projectable(my_sub))
+
+		jp1fwd = forward_once(jp1)
+		@test jp1fwd.spec.f == ProjectOnto(Projectable(my_sub))
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced) == Bp_res
@@ -174,9 +174,9 @@ fwd_once_spec(job) = forward_once(job).spec
 
 		jp1 = Jobs.project(j1, A=>Ap, B=>Bp) # thus, replacnig A=>Ap has now effect
 		@test fetch!(jp1) == A_res./Bp_res
-
 		@test isequal(fwd_spec(jp1), fwd_spec(A /ʲ Bp))
-		@test fwd_once_spec(jp1).f == ProjectOnto(Projectable(my_div))
+
+		@test forward_once(jp1).spec.f == ProjectOnto(Projectable(my_div))
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced) == Bp_res
@@ -192,6 +192,12 @@ fwd_once_spec(job) = forward_once(job).spec
 		jp2 = Jobs.project(j2, C=>Cp)
 		@test fetch!(jp2) == (A_res+B_res) ./ Cp_res
 		@test isequal(fwd_spec(jp2), fwd_spec((A +ʲ B)/ʲ Cp))
+		jp2fwd = forward_once(jp2)
+		@test jp2fwd.spec.f == ProjectOnto(Projectable(my_div))
+		jp2fwd2 = forward_once(jp2fwd)
+		@test jp2fwd2.spec.f == my_div_impl
+		# TODO: This will be change so that forwarding is done directly to ProjectOnto(Projectable(my_add))!
+		@test jp2fwd2.spec.args[2].f == Preprocess(SingleCellProjections.project)
 
 		jp2b = Jobs.project(j2, B=>Bp) # replacing B=>Bp should have no effect
 		@test fetch!(jp2b) == (A_res+B_res) ./ C_res
@@ -275,9 +281,9 @@ end
 
 		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
 		@test fetch!(jp1).matrix == Ap_res+Bp_res
-
 		@test isequal(fwd_spec(jp1), fwd_spec(Ap +ᵈ Bp))
-		@test fwd_once_spec(jp1).f == ProjectOnto(DataMatrixFunction(dm_add))
+
+		@test forward_once(jp1).spec.f == ProjectOnto(DataMatrixFunction(dm_add))
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced).matrix == Bp_res
@@ -289,9 +295,9 @@ end
 
 		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
 		@test fetch!(jp1).matrix == Ap_res.*Bp_res
-
 		@test isequal(fwd_spec(jp1), fwd_spec(Ap *ᵈ Bp))
-		@test fwd_once_spec(jp1).f == ProjectOnto(DataMatrixFunction(dm_mul))
+
+		@test forward_once(jp1).spec.f == ProjectOnto(DataMatrixFunction(dm_mul))
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced).matrix == Bp_res
@@ -304,9 +310,9 @@ end
 
 		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
 		@test fetch!(jp1).matrix == A_res-Bp_res
-
 		@test isequal(fwd_spec(jp1), fwd_spec(A -ᵈ Bp))
-		@test fwd_once_spec(jp1).f == ProjectOnto(DataMatrixFunction(dm_sub))
+
+		@test forward_once(jp1).spec.f == ProjectOnto(DataMatrixFunction(dm_sub))
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced).matrix == Bp_res
@@ -319,9 +325,9 @@ end
 
 		jp1 = Jobs.project(j1, A=>Ap, B=>Bp) # thus, replacnig A=>Ap has now effect
 		@test fetch!(jp1).matrix == A_res./Bp_res
-
 		@test isequal(fwd_spec(jp1), fwd_spec(A /ᵈ Bp))
-		@test fwd_once_spec(jp1).f == ProjectOnto(DataMatrixFunction(dm_div))
+
+		@test forward_once(jp1).spec.f == ProjectOnto(DataMatrixFunction(dm_div))
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced).matrix == Bp_res
@@ -337,6 +343,17 @@ end
 		jp2 = Jobs.project(j2, C=>Cp)
 		@test fetch!(jp2).matrix == (A_res+B_res) ./ Cp_res
 		@test isequal(fwd_spec(jp2), fwd_spec((A +ᵈ B)/ᵈ Cp))
+		jp2fwd = forward_once(jp2)
+		@test jp2fwd.spec.f == ProjectOnto(DataMatrixFunction(dm_div))
+
+		# NB: Here projectables and DataMatrixFunctions differ a bit
+		jp2fwd2 = forward_once(jp2fwd)
+		@test jp2fwd2.spec.f == SCPCore.DataMatrix
+		jp2fwd3 = Job(jp2fwd2.spec.args[1]) # the matrix arg
+		# TODO: This will be change so that forwarding is done directly to ProjectOnto(MatFunction(dm_div))!
+		@test jp2fwd3.spec.f == Preprocess(SingleCellProjections.project)
+		jp2fwd4 = forward_once(jp2fwd3)
+		@test jp2fwd4.spec.f == ProjectOnto(MatFunction(dm_div))
 
 		jp2b = Jobs.project(j2, B=>Bp) # replacing B=>Bp should have no effect
 		@test fetch!(jp2b).matrix == (A_res+B_res) ./ C_res
