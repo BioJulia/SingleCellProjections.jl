@@ -6,6 +6,12 @@ module TestJobs
 	function my_sub end
 	function my_mul end
 	function my_div end
+
+	function dm_rand end
+	function dm_add end
+	function dm_sub end
+	function dm_mul end
+	function dm_div end
 end
 
 
@@ -37,12 +43,42 @@ my_div_spec(a, b) = create_spec(Projectable(my_div), a, b)
 TestJobs.my_div(a, b) = Job(my_div_spec(a, b))
 
 
+
+# DataMatrix versions
+# NB: We don't do anything interesting with obs/var, that is tested elsewhere, this file is just about testing DataMatrixFunction interactions with projections.
+dm_rand(::Mat, args...; kwargs...) = my_rand_spec(args...; kwargs...)
+dm_rand(::Var, S, nrow, ncol; kwargs...) = SingleCellProjections.prefixed_ids_spec("var_id", "var_", nrow)
+dm_rand(::Obs, S, nrow, ncol; kwargs...) = SingleCellProjections.prefixed_ids_spec("obs_id", "obs_", ncol)
+TestJobs.dm_rand(args...; kwargs...) = Job(create_spec(DataMatrixFunction(dm_rand), args...; kwargs...))
+
+dm_add(::Mat, a, b) = my_add_spec(get_matrix_spec(a), get_matrix_spec(b))
+dm_add(f, a, b) = SingleCellProjections.get_spec(f, a) # Var/Obs
+TestJobs.dm_add(a, b) = Job(create_spec(DataMatrixFunction(dm_add), a, b))
+
+dm_sub(::Mat, a, b) = my_sub_spec(get_matrix_spec(a), get_matrix_spec(b))
+dm_sub(f, a, b) = SingleCellProjections.get_spec(f, a) # Var/Obs
+TestJobs.dm_sub(a, b) = Job(create_spec(DataMatrixFunction(dm_sub), a, b))
+
+dm_mul(::Mat, a, b) = my_mul_spec(get_matrix_spec(a), get_matrix_spec(b))
+dm_mul(f, a, b) = SingleCellProjections.get_spec(f, a) # Var/Obs
+TestJobs.dm_mul(a, b) = Job(create_spec(DataMatrixFunction(dm_mul), a, b))
+
+dm_div(::Mat, a, b) = my_div_spec(get_matrix_spec(a), get_matrix_spec(b))
+dm_div(f, a, b) = SingleCellProjections.get_spec(f, a) # Var/Obs
+TestJobs.dm_div(a, b) = Job(create_spec(DataMatrixFunction(dm_div), a, b))
+
+
 # --- Utilities ---
 # Some utilties that make it possible to write more concise `@test` code below
 +ʲ(a,b) = TestJobs.my_add(a,b)
 -ʲ(a,b) = TestJobs.my_sub(a,b)
 *ʲ(a,b) = TestJobs.my_mul(a,b)
 /ʲ(a,b) = TestJobs.my_div(a,b)
+
++ᵈ(a,b) = TestJobs.dm_add(a,b)
+-ᵈ(a,b) = TestJobs.dm_sub(a,b)
+*ᵈ(a,b) = TestJobs.dm_mul(a,b)
+/ᵈ(a,b) = TestJobs.dm_div(a,b)
 
 fwd_spec(job) = forward(job).spec
 fwd_once_spec(job) = forward_once(job).spec
@@ -51,6 +87,9 @@ fwd_once_spec(job) = forward_once(job).spec
 
 # --- Tests ---
 # TODO: Test much more with forward_once
+
+# Is it worth merging this with the DataMatrixFunction test code below?
+# They are almost identical, but merging them will make the test code harder to read.
 @testset "Projectables" begin
 	P,N = 5,3
 
@@ -99,6 +138,20 @@ fwd_once_spec(job) = forward_once(job).spec
 		@test fetch!(replaced) == Bp_res
 	end
 
+	@testset "my_mul" begin
+		j1 = TestJobs.my_mul(A, B)
+		@test fetch!(j1) == A_res.*B_res
+
+		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+		@test fetch!(jp1) == Ap_res.*Bp_res
+
+		@test isequal(fwd_spec(jp1), fwd_spec(Ap *ʲ Bp))
+		@test fwd_once_spec(jp1).f == ProjectOnto(my_mul_impl)
+
+		replaced = Jobs.project(j1, j1=>Bp)
+		@test fetch!(replaced) == Bp_res
+	end
+
 	 # NB: The first argument to my_sub is not affected by projections
 	@testset "my_sub" begin
 		j1 = TestJobs.my_sub(A, B)
@@ -109,20 +162,6 @@ fwd_once_spec(job) = forward_once(job).spec
 
 		@test isequal(fwd_spec(jp1), fwd_spec(A -ʲ Bp))
 		@test fwd_once_spec(jp1).f == ProjectOnto(Projectable(my_sub))
-
-		replaced = Jobs.project(j1, j1=>Bp)
-		@test fetch!(replaced) == Bp_res
-	end
-
-	@testset "my_mul" begin
-		j1 = TestJobs.my_mul(A, B)
-		@test fetch!(j1) == A_res.*B_res
-
-		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
-		@test fetch!(jp1) == Ap_res.*Bp_res
-
-		@test isequal(fwd_spec(jp1), fwd_spec(Ap *ʲ Bp))
-		@test fwd_once_spec(jp1).f == ProjectOnto(my_mul_impl)
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced) == Bp_res
@@ -185,7 +224,149 @@ fwd_once_spec(job) = forward_once(job).spec
 		@test fetch!(jp2d) == (A_res./B_res) + C_res
 		@test isequal(fwd_spec(jp2d), fwd_spec(A /ʲ B +ʲ C))
 	end
+end
 
 
+# Is it worth merging this with the Projectable test code above?
+# They are almost identical, but merging them will make the test code harder to read.
+@testset "DataMatrixFunction projections" begin
+	P,N = 5,3
 
+	A = TestJobs.dm_rand(1:9, P, N; seed=1001)
+	A_res = rand(StableRNG(1001), 1:9, P, N)
+	Ap = TestJobs.dm_rand(1:9, P, N; seed=1002)
+	Ap_res = rand(StableRNG(1002), 1:9, P, N)
+
+	B = TestJobs.dm_rand(1:9, P, N; seed=1003)
+	B_res = rand(StableRNG(1003), 1:9, P, N)
+	Bp = TestJobs.dm_rand(1:9, P, N; seed=1004)
+	Bp_res = rand(StableRNG(1004), 1:9, P, N)
+
+	C = TestJobs.dm_rand(1:9, P, N; seed=1005)
+	C_res = rand(StableRNG(1005), 1:9, P, N)
+	Cp = TestJobs.dm_rand(1:9, P, N; seed=1006)
+	Cp_res = rand(StableRNG(1006), 1:9, P, N)
+
+	var_res = DataFrame("var_id"=>string.("var_", 1:P))
+	obs_res = DataFrame("obs_id"=>string.("obs_", 1:N))
+
+	@testset "Basics" begin
+		@test allunique([A_res, Ap_res, B_res, Bp_res])
+		@test fetch!(A).matrix == A_res
+		@test fetch!(Ap).matrix == Ap_res
+		@test fetch!(B).matrix == B_res
+		@test fetch!(Bp).matrix == Bp_res
+		@test fetch!(C).matrix == C_res
+		@test fetch!(Cp).matrix == Cp_res
+
+		@test fetch!(A).var == var_res
+		@test fetch!(A).obs == obs_res
+	end
+
+	@testset "Outer replacement" begin
+		jp1 = Jobs.project(A, A=>Ap)
+		@test fetch!(jp1).matrix == Ap_res
+		@test isequal(fwd_spec(jp1), fwd_spec(Ap))
+	end
+
+	@testset "my_add" begin
+		j1 = TestJobs.dm_add(A, B)
+		@test fetch!(j1).matrix == A_res+B_res
+
+		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+		@test fetch!(jp1).matrix == Ap_res+Bp_res
+
+		@test isequal(fwd_spec(jp1), fwd_spec(Ap +ᵈ Bp))
+		@test fwd_once_spec(jp1).f == ProjectOnto(DataMatrixFunction(dm_add))
+
+		replaced = Jobs.project(j1, j1=>Bp)
+		@test fetch!(replaced).matrix == Bp_res
+	end
+
+	@testset "dm_mul" begin
+		j1 = TestJobs.dm_mul(A, B)
+		@test fetch!(j1).matrix == A_res.*B_res
+
+		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+		@test fetch!(jp1).matrix == Ap_res.*Bp_res
+
+		@test isequal(fwd_spec(jp1), fwd_spec(Ap *ᵈ Bp))
+		@test fwd_once_spec(jp1).f == ProjectOnto(DataMatrixFunction(dm_mul))
+
+		replaced = Jobs.project(j1, j1=>Bp)
+		@test fetch!(replaced).matrix == Bp_res
+	end
+
+	# NB: The first argument to dm_sub is not affected by projections
+	@testset "dm_sub" begin
+		j1 = TestJobs.dm_sub(A, B)
+		@test fetch!(j1).matrix == A_res-B_res
+
+		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+		@test fetch!(jp1).matrix == A_res-Bp_res
+
+		@test isequal(fwd_spec(jp1), fwd_spec(A -ᵈ Bp))
+		@test fwd_once_spec(jp1).f == ProjectOnto(DataMatrixFunction(dm_sub))
+
+		replaced = Jobs.project(j1, j1=>Bp)
+		@test fetch!(replaced).matrix == Bp_res
+	end
+
+	 # NB: The first argument to dm_div is not affected by projections
+	@testset "dm_div" begin
+		j1 = TestJobs.dm_div(A, B)
+		@test fetch!(j1).matrix == A_res./B_res
+
+		jp1 = Jobs.project(j1, A=>Ap, B=>Bp) # thus, replacnig A=>Ap has now effect
+		@test fetch!(jp1).matrix == A_res./Bp_res
+
+		@test isequal(fwd_spec(jp1), fwd_spec(A /ᵈ Bp))
+		@test fwd_once_spec(jp1).f == ProjectOnto(DataMatrixFunction(dm_div))
+
+		replaced = Jobs.project(j1, j1=>Bp)
+		@test fetch!(replaced).matrix == Bp_res
+	end
+
+
+	@testset "dm_add_div" begin
+		j1 = TestJobs.dm_add(A, B)
+		j2 = TestJobs.dm_div(j1, C)
+
+		@test fetch!(j2).matrix == (A_res+B_res) ./ C_res
+
+		jp2 = Jobs.project(j2, C=>Cp)
+		@test fetch!(jp2).matrix == (A_res+B_res) ./ Cp_res
+		@test isequal(fwd_spec(jp2), fwd_spec((A +ᵈ B)/ᵈ Cp))
+
+		jp2b = Jobs.project(j2, B=>Bp) # replacing B=>Bp should have no effect
+		@test fetch!(jp2b).matrix == (A_res+B_res) ./ C_res
+		@test isequal(fwd_spec(jp2b), fwd_spec((A +ᵈ B)/ᵈ C))
+
+		jp2c = Jobs.project(j2, j1=>Bp) # replacing j1=>Bp should have no effect
+		@test fetch!(jp2c).matrix == (A_res+B_res) ./ C_res
+		@test isequal(fwd_spec(jp2c), fwd_spec((A +ᵈ B)/ᵈ C))
+	end
+
+	@testset "dm_div_add" begin
+		j1 = TestJobs.dm_div(A, B)
+		j2 = TestJobs.dm_add(j1, C)
+
+		@test fetch!(j2).matrix == (A_res./B_res) + C_res
+
+		jp2 = Jobs.project(j2, C=>Cp)
+		@test fetch!(jp2).matrix == (A_res./B_res) + Cp_res
+		@test isequal(fwd_spec(jp2), fwd_spec(A /ᵈ B +ᵈ Cp))
+
+		jp2b = Jobs.project(j2, B=>Bp)
+		@test fetch!(jp2b).matrix == (A_res./Bp_res) + C_res
+		@test isequal(fwd_spec(jp2b), fwd_spec(A /ᵈ Bp +ᵈ C))
+
+		jp2c = Jobs.project(j2, j1=>Bp)
+		@test fetch!(jp2c).matrix == Bp_res + C_res
+		@test isequal(fwd_spec(jp2c), fwd_spec(Bp +ᵈ C))
+
+		jp2d = Jobs.project(j2, A=>Ap) # replacing A=>Ap should have no effect
+		@test fetch!(jp2d).matrix == (A_res./B_res) + C_res
+		@test isequal(fwd_spec(jp2d), fwd_spec(A /ᵈ B +ᵈ C))
+	end
 end
