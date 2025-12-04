@@ -8,6 +8,9 @@ module TestJobs
 	function my_div end
 end
 
+
+# --- Test jobs ---
+
 my_rand_impl(S, nrow, ncol; seed) = rand(StableRNG(seed), S, nrow, ncol)
 my_rand_spec(S, nrow, ncol; seed) = create_spec(my_rand_impl, S, nrow, ncol; seed, __version=v"1.0.0")
 TestJobs.my_rand(S, nrow, ncol; seed) = Job(my_rand_spec(S, nrow, ncol; seed))
@@ -33,6 +36,20 @@ my_div(action::Action, a, b) = create_spec(my_div_impl, a, action(b); __version=
 my_div_spec(a, b) = create_spec(Projectable(my_div), a, b)
 TestJobs.my_div(a, b) = Job(my_div_spec(a, b))
 
+
+# --- Utilities ---
+# Some utilties that make it possible to write more concise `@test` code below
++ʲ(a,b) = TestJobs.my_add(a,b)
+-ʲ(a,b) = TestJobs.my_sub(a,b)
+*ʲ(a,b) = TestJobs.my_mul(a,b)
+/ʲ(a,b) = TestJobs.my_div(a,b)
+
+fwd_spec(job) = forward(job).spec
+fwd_once_spec(job) = forward_once(job).spec
+
+
+
+# --- Tests ---
 # TODO: Test much more with forward_once
 @testset "Projectables" begin
 	P,N = 5,3
@@ -65,7 +82,7 @@ TestJobs.my_div(a, b) = Job(my_div_spec(a, b))
 	@testset "Outer replacement" begin
 		jp1 = Jobs.project(A, A=>Ap)
 		@test fetch!(jp1) == Ap_res
-		@test isequal(forward(jp1).spec, forward(Ap).spec)
+		@test isequal(fwd_spec(jp1), fwd_spec(Ap))
 	end
 
 	@testset "my_add" begin
@@ -75,8 +92,8 @@ TestJobs.my_div(a, b) = Job(my_div_spec(a, b))
 		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
 		@test fetch!(jp1) == Ap_res+Bp_res
 
-		@test isequal(forward(jp1).spec, forward(TestJobs.my_add(Ap, Bp)).spec)
-		@test forward_once(jp1).spec.f == ProjectOnto(my_add_impl)
+		@test isequal(fwd_spec(jp1), fwd_spec(Ap +ʲ Bp))
+		@test fwd_once_spec(jp1).f == ProjectOnto(my_add_impl)
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced) == Bp_res
@@ -90,8 +107,8 @@ TestJobs.my_div(a, b) = Job(my_div_spec(a, b))
 		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
 		@test fetch!(jp1) == A_res-Bp_res
 
-		@test isequal(forward(jp1).spec, forward(TestJobs.my_sub(A, Bp)).spec)
-		@test forward_once(jp1).spec.f == ProjectOnto(Projectable(my_sub))
+		@test isequal(fwd_spec(jp1), fwd_spec(A -ʲ Bp))
+		@test fwd_once_spec(jp1).f == ProjectOnto(Projectable(my_sub))
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced) == Bp_res
@@ -104,8 +121,8 @@ TestJobs.my_div(a, b) = Job(my_div_spec(a, b))
 		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
 		@test fetch!(jp1) == Ap_res.*Bp_res
 
-		@test isequal(forward(jp1).spec, forward(TestJobs.my_mul(Ap, Bp)).spec)
-		@test forward_once(jp1).spec.f == ProjectOnto(my_mul_impl)
+		@test isequal(fwd_spec(jp1), fwd_spec(Ap *ʲ Bp))
+		@test fwd_once_spec(jp1).f == ProjectOnto(my_mul_impl)
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced) == Bp_res
@@ -119,8 +136,8 @@ TestJobs.my_div(a, b) = Job(my_div_spec(a, b))
 		jp1 = Jobs.project(j1, A=>Ap, B=>Bp) # thus, replacnig A=>Ap has now effect
 		@test fetch!(jp1) == A_res./Bp_res
 
-		@test isequal(forward(jp1).spec, forward(TestJobs.my_div(A, Bp)).spec)
-		@test forward_once(jp1).spec.f == ProjectOnto(Projectable(my_div))
+		@test isequal(fwd_spec(jp1), fwd_spec(A /ʲ Bp))
+		@test fwd_once_spec(jp1).f == ProjectOnto(Projectable(my_div))
 
 		replaced = Jobs.project(j1, j1=>Bp)
 		@test fetch!(replaced) == Bp_res
@@ -135,12 +152,15 @@ TestJobs.my_div(a, b) = Job(my_div_spec(a, b))
 
 		jp2 = Jobs.project(j2, C=>Cp)
 		@test fetch!(jp2) == (A_res+B_res) ./ Cp_res
+		@test isequal(fwd_spec(jp2), fwd_spec((A +ʲ B)/ʲ Cp))
 
 		jp2b = Jobs.project(j2, B=>Bp) # replacing B=>Bp should have no effect
 		@test fetch!(jp2b) == (A_res+B_res) ./ C_res
+		@test isequal(fwd_spec(jp2b), fwd_spec((A +ʲ B)/ʲ C))
 
 		jp2c = Jobs.project(j2, j1=>Bp) # replacing j1=>Bp should have no effect
 		@test fetch!(jp2c) == (A_res+B_res) ./ C_res
+		@test isequal(fwd_spec(jp2c), fwd_spec((A +ʲ B)/ʲ C))
 	end
 
 	@testset "my_div_add" begin
@@ -151,15 +171,19 @@ TestJobs.my_div(a, b) = Job(my_div_spec(a, b))
 
 		jp2 = Jobs.project(j2, C=>Cp)
 		@test fetch!(jp2) == (A_res./B_res) + Cp_res
+		@test isequal(fwd_spec(jp2), fwd_spec(A /ʲ B +ʲ Cp))
 
 		jp2b = Jobs.project(j2, B=>Bp)
 		@test fetch!(jp2b) == (A_res./Bp_res) + C_res
+		@test isequal(fwd_spec(jp2b), fwd_spec(A /ʲ Bp +ʲ C))
 
 		jp2c = Jobs.project(j2, j1=>Bp)
 		@test fetch!(jp2c) == Bp_res + C_res
+		@test isequal(fwd_spec(jp2c), fwd_spec(Bp +ʲ C))
 
 		jp2d = Jobs.project(j2, A=>Ap) # replacing A=>Ap should have no effect
 		@test fetch!(jp2d) == (A_res./B_res) + C_res
+		@test isequal(fwd_spec(jp2d), fwd_spec(A /ʲ B +ʲ C))
 	end
 
 
