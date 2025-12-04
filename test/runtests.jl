@@ -1,10 +1,10 @@
 using Test
 using SingleCellProjections
-using SingleCellProjections: Projectable, ProjectOnto, Action, DataMatrixFunction, DataMatrixField, DataMatrixFieldFunction, Mat, Var, Obs, MatFunction, VarFunction, ObsFunction
-using .SingleCellProjections.SingleCellProjectionsCore
+using SingleCellProjections: Projectable, ProjectOnto, Action, DataMatrixFunction, DataMatrixField, DataMatrixFieldFunction, Mat, Var, Obs, MatFunction, VarFunction, ObsFunction, get_matrix_spec
+import .SingleCellProjectionsCore as SCPCore
 using .SingleCellProjectionsCore.MatrixExpressions
 using SCTransform
-using ReproducibleJobs: ReproducibleJobs, Cache, TimestampedFilePath, get_cache, with_cache, fetch!, forward, forward_once, create_spec, Job
+using ReproducibleJobs: ReproducibleJobs, Cache, TimestampedFilePath, get_cache, with_cache, fetch!, forward, forward_once, create_spec, Job, Preprocess
 
 using StableRNGs
 
