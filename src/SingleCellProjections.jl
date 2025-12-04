@@ -11,7 +11,7 @@ export
 include("SingleCellProjectionsCore/SingleCellProjectionsCore.jl")
 
 import .SingleCellProjectionsCore as SCPCore
-using .SCPCore: DataMatrix
+using .SCPCore: DataMatrix, categorical_covariate, numerical_covariate, twogroup_covariate
 
 import SCTransform
 import SingleCell10x
