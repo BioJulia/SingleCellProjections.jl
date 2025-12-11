@@ -1,7 +1,7 @@
 module SingleCellProjectionsUMAPExt
 
 using ReproducibleJobs
-using ReproducibleJobs: create_spec
+using ReproducibleJobs: create_spec, cached
 using SingleCellProjections
 using SingleCellProjections: DataMatrixFunction, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_matrix_spec, get_spec, prefixed_ids_spec
 import .SingleCellProjectionsCore as SCPCore
