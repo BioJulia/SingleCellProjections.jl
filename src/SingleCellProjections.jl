@@ -53,7 +53,6 @@ module Jobs
 	function var_counts_sum end
 	function obs_counts_fraction end
 	function obs_counts_sum end
-	# function find_matching_ids end
 	function subset_annotation end
 	function subset_var end
 	function subset_obs end

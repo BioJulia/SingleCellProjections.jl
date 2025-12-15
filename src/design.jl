@@ -8,13 +8,13 @@ detect_covariate_desc_spec(values) = create_spec(detect_covariate_desc, values; 
 
 
 # TODO: Move this to internal? It can be used in many places.
-_extract_data_spec(obs, column::String) = column_data_spec(obs, column) # Column in obs
-function _extract_data_spec(obs, annot) # External annotation (DataFrame or spec)
-	ids_a = id_column_spec(obs)
+_extract_data_spec(table, column::String) = column_data_spec(table, column) # Column in the table (typically obs)
+function _extract_data_spec(table, annot) # External annotation (DataFrame or spec)
+	ids_a = id_column_spec(table)
 	ids_b = id_column_spec(annot)
 	ind_spec = indexin_spec(ids_a, ids_b; not_found=:nothing)
 	v = value_column_data_spec(annot)
-	getindex_or_missing_spec(v, ind_spec) # The values of the annotation, reordered to match the order in df.
+	getindex_or_missing_spec(v, ind_spec) # The values of the annotation, reordered to match the order in table.
 end
 
 _extract_name(column::String) = column

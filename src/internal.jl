@@ -264,6 +264,28 @@ create_find_matching_ind_spec(f, df; project_ids) =
 
 
 
+_nrow(df::DataFrame) = nrow(df)
+_nrow(v::AbstractVector) = length(df)
+function _colon_to_single_ind(x)
+	n = _nrow(x)
+	n==1 ? 1 : error("Expected a single element, got $n.")
+end
+_colon_to_single_ind_spec(x) = create_spec(_colon_to_single_ind, x; __version=v"0.1.0")
+
+function find_single_ind(::Preprocessing, f, df; project_id::Symbol)
+	ind = create_find_matching_ind_spec(f, df; project_ids=project_id)
+
+	cond = isequal_spec(ind, Colon())
+	a = _colon_to_single_ind_spec(df) # This is an obscure edge case, because `:` is allowed iff there is only one element in the container. We could handle it nicer with more preprocessing, but it's probably not worth it.
+	b = apply_spec(only, ind)
+	ifelse_pr_spec(cond, a, b)
+end
+
+find_single_ind_spec(f, df; project_id) =
+	create_spec(Preprocess(find_single_ind), f, df; project_id)
+
+
+
 
 # Do we need these, or upstream steps always return Colon() when they can?
 index_isnoop_spec(ind, n) =
@@ -324,6 +346,40 @@ datamatrix_getindex(::Obs, data; obs_ind=:, kwargs...) =
 
 create_datamatrix_getindex_spec(data; kwargs...) =
 	create_spec(DataMatrixFunction(datamatrix_getindex), data; kwargs...)
+
+
+
+
+function get_matrix_row(matrix, ind::Integer)
+	P,N = size(matrix)
+	@assert 1 <= ind <= P
+	if matrix isa AbstractMatrix
+		res = matrix[ind, :]
+	else # Matrix Expression
+		S = sparse([1], [ind], true, 1, P)
+		res = S*matrix
+		@assert size(res) == (1,N)
+		res = vec(res)
+	end
+	convert(Vector, res)
+end
+function get_matrix_col(matrix, ind::Integer)
+	P,N = size(matrix)
+	@assert 1 <= ind <= N
+	if matrix isa AbstractMatrix
+		res = matrix[:, ind]
+	else # Matrix Expression
+		S = sparse([ind], [1], true, N, 1)
+		res = matrix*S
+		@assert size(res) == (P,1)
+		res = vec(res)
+	end
+	convert(Vector, res)
+end
+get_matrix_row_spec(matrix, ind) =
+	create_spec(get_matrix_row, matrix, ind; __version=v"0.1.0")
+get_matrix_col_spec(matrix, ind) =
+	create_spec(get_matrix_col, matrix, ind; __version=v"0.1.0")
 
 
 
