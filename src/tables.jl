@@ -460,3 +460,29 @@ function intersect_ids(::Preprocessing{E}, a, b) where E
 	end
 end
 intersect_ids_spec(a, b) = create_spec(Preprocess(intersect_ids), a, b)
+
+
+
+
+# Move to internal and rename to broadcasted_something?
+transform_values(f, v) = f.(v)
+transform_values_spec(f, v) = create_spec(transform_values, f, v; __version=v"0.1.0")
+
+function transform_annotation_fallback(f, table; new_name=nothing)
+	_check_ncol(table; require_n_cols=2)
+	name = @something new_name only(names(table,2))
+	DataFrame(only(names(table,1))=>table[!,1], name=>transform_values(f, table[!,2]); copycols=false)
+end
+function transform_annotation(::Preprocessing{E}, f, table; kwargs...) where E
+	if is_create_table(table)
+		_check_ncol(table; require_n_cols=2)
+		name = @something get(kwargs, :new_name, nothing) table.args[2].first
+		create_table_spec(table.args[1], name => transform_values_spec(f, table.args[2]))
+	elseif E
+		create_spec(Preprocess{false}(transform_annotation), f, table; kwargs...)
+	else
+		create_spec(transform_annotation_fallback, f, table; kwargs..., __version=v"0.1.0")
+	end
+end
+transform_annotation_spec(f, table; kwargs...) = create_spec(Preprocess(transform_annotation), f, table; kwargs...)
+Jobs.transform_annotation(f, table; kwargs...) = Job(transform_annotation_spec(f, table; kwargs...))

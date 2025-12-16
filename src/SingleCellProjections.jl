@@ -96,6 +96,7 @@ module Jobs
 	function add_column end
 	function table_leftjoin end
 	function table_hcat end
+	function transform_annotation end
 
 	function load_csv end
 	function umap end
