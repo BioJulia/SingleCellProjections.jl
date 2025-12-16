@@ -78,7 +78,9 @@ mean_and_scale_spec(v, desc::SCPCore.TwoGroupCovariateDesc; center) =
 
 
 
-categories_spec(v) = unique_spec(v)
+# categories_spec(v) = unique_spec(v) # Doesn't work - because it accepts `missing` as a value
+categories_impl(v) = unique(skipmissing(v)) # removes missing and narrows type
+categories_spec(v) = create_spec(categories_impl, v; __version=v"0.1.1")
 
 # TODO: These might be useful if we want support for TwoGroup in pseudobulk
 # categories_spec(v, desc::SCPCore.CategoricalCovariateDesc) = categories_spec(v)
