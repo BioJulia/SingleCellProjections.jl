@@ -56,7 +56,7 @@ end
 
 
 
-function ftest_table2(matrix, var_ids::DataFrame, h1, h0;
+function ftest_table2(matrix, var::DataFrame, h1, h0;
                       statistic_col="F", pvalue_col="pValue")
 	ssExplained, ssUnexplained, rank0, rank1, _, _ = _linear_test2(matrix, h1, h0)
 	N = size(matrix,2)
@@ -71,14 +71,14 @@ function ftest_table2(matrix, var_ids::DataFrame, h1, h0;
 		p = ones(size(ssExplained))
 	end
 
-	table = copy(var_ids; copycols=false)
+	table = copy(var; copycols=false)
 	statistic_col !== nothing && insertcols!(table, statistic_col=>F; copycols=false)
 	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
 	table
 end
 
 
-function ttest_table2(matrix, var_ids, h1, h1_scale, h0;
+function ttest_table2(matrix, var, h1, h1_scale, h0;
                        statistic_col="t", pvalue_col="pValue", difference_col="difference")
 	_, ssUnexplained, rank0, rank1, β1, scale = _linear_test2(matrix, h1, h0)
 	N = size(matrix,2)
@@ -96,7 +96,7 @@ function ttest_table2(matrix, var_ids, h1, h1_scale, h0;
 		d = zeros(size(ssUnexplained))
 	end
 
-	table = copy(var_ids; copycols=false)
+	table = copy(var; copycols=false)
 	statistic_col !== nothing && insertcols!(table, statistic_col=>t; copycols=false)
 	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
 	difference_col !== nothing && insertcols!(table, difference_col=>d; copycols=false)
