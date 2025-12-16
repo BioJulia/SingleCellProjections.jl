@@ -57,7 +57,8 @@ end
 
 
 function ftest_table2(matrix, var::DataFrame, h1, h0;
-                      statistic_col="F", pvalue_col="pValue")
+                      statistic_col="F", pvalue_col="pValue",
+                      do_sort=true)
 	ssExplained, ssUnexplained, rank0, rank1, _, _ = _linear_test2(matrix, h1, h0)
 	N = size(matrix,2)
 	ν1 = (rank1-rank0)
@@ -71,15 +72,19 @@ function ftest_table2(matrix, var::DataFrame, h1, h0;
 		p = ones(size(ssExplained))
 	end
 
-	table = copy(var; copycols=false)
+	table = copy(var; copycols=do_sort)
 	statistic_col !== nothing && insertcols!(table, statistic_col=>F; copycols=false)
 	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
+
+	do_sort && sort!(table, statistic_col; rev=true) # TODO: This only works if statistic_col !== nothing - but we can fix that by finding the order based on `F` regardless of whether it is added or not
+
 	table
 end
 
 
 function ttest_table2(matrix, var, h1, h1_scale, h0;
-                       statistic_col="t", pvalue_col="pValue", difference_col="difference")
+                      statistic_col="t", pvalue_col="pValue", difference_col="difference",
+                      do_sort=true)
 	_, ssUnexplained, rank0, rank1, β1, scale = _linear_test2(matrix, h1, h0)
 	N = size(matrix,2)
 	ν1 = (rank1-rank0)
@@ -96,9 +101,12 @@ function ttest_table2(matrix, var, h1, h1_scale, h0;
 		d = zeros(size(ssUnexplained))
 	end
 
-	table = copy(var; copycols=false)
+	table = copy(var; copycols=do_sort)
 	statistic_col !== nothing && insertcols!(table, statistic_col=>t; copycols=false)
 	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
 	difference_col !== nothing && insertcols!(table, difference_col=>d; copycols=false)
+
+	do_sort && sort!(table, statistic_col; by=abs, rev=true) # TODO: This only works if statistic_col !== nothing - but we can fix that by finding the order based on `F` regardless of whether it is added or not
+
 	table
 end

@@ -63,17 +63,18 @@ end
 
 
 
-function ftest_table_pr(action::Action, matrix, var, h1_design, h0_design)
+function ftest_table_pr(action::Action, matrix, var, h1_design, h0_design; do_sort)
 	cached(create_spec(SCPCore.ftest_table2,
 	                   action(matrix), action(var), action(h1_design), action(h0_design);
+	                   do_sort,
 	                   __version=v"0.0.1"))
 end
 
-ftest_table_spec(matrix, var, h1_design, h0_design) =
-	create_spec(Projectable(ftest_table_pr), matrix, var, h1_design, h0_design)
+ftest_table_spec(matrix, var, h1_design, h0_design; kwargs...) =
+	create_spec(Projectable(ftest_table_pr), matrix, var, h1_design, h0_design; kwargs...)
 
 
-function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=nothing, h1_missing=:skip, h0_missing=:error, var_cols=nothing)
+function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=nothing, h1_missing=:skip, h0_missing=:error, var_cols=nothing, do_sort=true)
 	@assert h1_missing in (:skip,:error)
 	@assert h0_missing in (:skip,:error)
 
@@ -99,7 +100,7 @@ function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 		table_var = table_hcat_spec(table_var, get_columns_spec(var, var_cols...))
 	end
 
-	ftest_table_spec(matrix, table_var, get_matrix_spec(h1_design), get_matrix_spec(h0_design))
+	ftest_table_spec(matrix, table_var, get_matrix_spec(h1_design), get_matrix_spec(h0_design); do_sort)
 end
 
 
@@ -113,21 +114,22 @@ end
 
 
 
-function ttest_table_pr(action::Action, matrix, var, h1_design, h1_scale, h0_design)
+function ttest_table_pr(action::Action, matrix, var, h1_design, h1_scale, h0_design; do_sort)
 	cached(create_spec(SCPCore.ttest_table2,
 	                   action(matrix), action(var),
 	                   action(h1_design), prefetched(action(h1_scale)),
 	                   action(h0_design);
+	                   do_sort,
 	                   __version=v"0.0.1"))
 end
 
-ttest_table_spec(matrix, var, h1_design, h1_scale, h0_design) =
-	create_spec(Projectable(ttest_table_pr), matrix, var, h1_design, h1_scale, h0_design)
+ttest_table_spec(matrix, var, h1_design, h1_scale, h0_design; kwargs...) =
+	create_spec(Projectable(ttest_table_pr), matrix, var, h1_design, h1_scale, h0_design; kwargs...)
 
 
 
 # TODO: This does not work properly with projections. Fix.
-function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=nothing, h1_missing=:skip, h0_missing=:error, var_cols=nothing)
+function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=nothing, h1_missing=:skip, h0_missing=:error, var_cols=nothing, do_sort=true)
 	@assert h1_missing in (:skip,:error)
 	@assert h0_missing in (:skip,:error)
 
@@ -179,7 +181,7 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 		table_var = table_hcat_spec(table_var, get_columns_spec(var, var_cols...))
 	end
 
-	ttest_table_spec(matrix, table_var, h1_design_mat, h1_scale, get_matrix_spec(h0_design))
+	ttest_table_spec(matrix, table_var, h1_design_mat, h1_scale, get_matrix_spec(h0_design); do_sort)
 end
 
 
