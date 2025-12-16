@@ -48,6 +48,7 @@
 		@test fetch!(Jobs.get_id_colname(table)) == "id"
 		@test fetch!(Jobs.id_column(table)) == select(df, "id"; copycols=false)
 		@test fetch!(Jobs.table_nrow(table)) == n
+		@test fetch!(Jobs.table_ncol(table)) == 3
 
 		let cols = ["y", "id"]
 			@test isequal(fetch!(Jobs.get_columns(table, cols...)), select(df, cols))
@@ -81,6 +82,7 @@
 			df2 = insertcols(df, "u"=>u_data)
 			table2 = Jobs.add_column(table, "u", u_data)
 			@test isequal(fetch!(table2), df2)
+			@test fetch!(Jobs.table_ncol(table2)) == 4
 		end
 
 		let ind = collect(n:-2:1)
@@ -96,6 +98,7 @@
 		@testset "Leftjoin with $name" for (name,table_right) in (("DataFrame",df_right), ("create_table",basic_table_right), ("CSV",csv_table_right))
 			table2 = Jobs.table_leftjoin(table, table_right)
 			@test isequal(fetch!(table2), leftjoin(df, df_right; on=:id, order=:left))
+			@test fetch!(Jobs.table_ncol(table2)) == 5
 		end
 	end
 

@@ -92,6 +92,7 @@ module Jobs
 	function id_column_data end
 	function value_column_data end
 	function table_nrow end
+	function table_ncol end
 	function add_column end
 	function table_leftjoin end
 	function table_hcat end

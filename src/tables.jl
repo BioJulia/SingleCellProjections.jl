@@ -181,6 +181,21 @@ Jobs.table_nrow(table) = Job(table_nrow_spec(table))
 
 
 
+table_ncol_fallback(table) = ncol(table)
+function table_ncol(::Preprocessing{E}, table) where E
+	if is_create_table(table)
+		length(table.args)
+	elseif E
+		create_spec(Preprocess{false}(table_ncol), table)
+	else
+		create_spec(table_ncol_fallback, table; __version=v"0.1.0")
+	end
+end
+table_ncol_spec(table) = create_spec(Preprocess(table_ncol), table)
+Jobs.table_ncol(table) = Job(table_ncol_spec(table))
+
+
+
 _add_column_length_error(n1, n2, name) = throw(ArgumentError("Expected column \"$name\" to have length $n1, but got $n2."))
 _add_column_length_error_spec(n1, n2, name) = create_spec(_add_column_length_error, n1, n2, name)
 
