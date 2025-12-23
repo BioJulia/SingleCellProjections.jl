@@ -98,6 +98,9 @@ using Distributions
 import SCTransform: SCTransform, scparams, sctransform
 using SingleCell10x
 
+using ChunkSplitters
+using OhMyThreads
+
 
 include("../MatrixExpressions/MatrixExpressions.jl")
 using .MatrixExpressions
