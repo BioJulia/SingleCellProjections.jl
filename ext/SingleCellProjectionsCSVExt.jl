@@ -25,11 +25,11 @@ parse_csv_spec(filepath; delim) =
 
 
 
-load_csv(::Preprocessing, filepath; delim=_auto_delim(filepath)) =
+load_csv(::Preprocessing, filepath; delim) =
 	table_from_compound_result(parse_csv_spec(filepath; delim))
-function Jobs.load_csv(filepath::String; kwargs...)
+function Jobs.load_csv(filepath::String; delim=_auto_delim(filepath), kwargs...)
 	filepath_job = checksummedfilepath_job(filepath)
-	Job(create_spec(Preprocess(load_csv), filepath_job; kwargs...))
+	Job(create_spec(Preprocess(load_csv), filepath_job; delim, kwargs...))
 end
 
 end
