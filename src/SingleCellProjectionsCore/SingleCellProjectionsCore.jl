@@ -159,6 +159,8 @@ include("counts_sum.jl")
 include("counts_sum2.jl")
 include("pseudobulk.jl")
 
+include("annotation_transfer.jl")
+
 include("local_outlier_factor.jl")
 
 # include("precompile.jl")

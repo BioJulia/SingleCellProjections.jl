@@ -57,9 +57,9 @@ function find_nearest_neighbors(X; k, tree_fun=KDTree)
 
 	# TODO: Threaded version
 
+	# From vectors of vectors to matrices
 	indices = reduce(hcat, indices)
 	dists = reduce(hcat, dists)
-
 	indices, dists # k × size(X,2) matrices
 end
 
@@ -76,8 +76,8 @@ Returns a pair of `k×N` matrices (where `N` is the number of points (columns) o
 function find_nearest_neighbors(X, Y; k, tree_fun=KDTree)
 	N1 = size(X,2)
 	N2 = size(Y,2)
-	@assert size(X,1) == size(Y,1) # must have the same variables
-	k = min(N1,k) # cannot have more neighbors than points!
+	@assert size(X,1) == size(Y,1) # Must have the same (number of) variables
+	k = min(N1,k) # Cannot have more neighbors than points!
 
 	tree = tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
 
@@ -91,7 +91,7 @@ function find_nearest_neighbors(X, Y; k, tree_fun=KDTree)
 	results = tmap(c) do chunk
 		knn(tree, @view(Y[:,chunk]), k)
 	end
-	# combine results from each chunk
+	# Combine results from each chunk
 	indices = reduce(vcat, first.(results))
 	dists = reduce(vcat, last.(results))
 
@@ -99,4 +99,55 @@ function find_nearest_neighbors(X, Y; k, tree_fun=KDTree)
 	indices = reduce(hcat, indices)
 	dists = reduce(hcat, dists)
 	indices, dists # k × size(Y,2) matrices
+end
+
+
+function adjacency_matrix(indices; make_symmetric) # TODO: support normalize_weights::Bool kwarg (which is not allowed together with make_symmetric)?
+	N = size(indices,2)
+	k = size(indices,1)
+
+	I = vec(indices)
+	J = repeat(1:N; inner=k)
+
+	adj = sparse(I,J,true,N,N)
+	if make_symmetric
+		adj = adj.|adj'
+	end
+	adj
+end
+
+
+
+"""
+	weighted_adjacency_matrix(f, indices, dists; NX=size(indices,2), normalize_weights=true)
+
+Construct a weighted adjacency matrix.
+* `f(x)` - convert a distance `x` to a weight.
+* `indices` - A `k×NY` matrix where each column contains the indices of the `k` nearest neighbors for that point.
+* `dists` - A `k×NY` matrix where each entry contains the distances to the corresponding point in `indices`.
+
+Optional kwargs:
+* `NX` - If indices corresponds to a set of indices in *another* data set, `NX` must be used to specify the number of points in that data set.
+* `normalize_weights` - If true (which is the default), the weights will be normalized to sum to one in each column.
+
+Returns a `NX×NY` sparse adjacency matrix with non-zeroes set to the given weights.
+"""
+function weighted_adjacency_matrix(f, indices, dists; NX=size(indices,2), normalize_weights=true)
+	@assert size(indices) == size(dists)
+
+	NY = size(indices,2)
+	k = size(indices,1)
+
+	I = reduce(vcat, indices)
+	J = repeat(1:NY; inner=k)
+
+	if normalize_weights
+		weights = float.(f.(dists)) # floats are required to do the division in-place
+		weights ./= sum(weights; dims=1)
+	else
+		weights = f.(dists)
+	end
+	weights = reduce(vcat, weights)
+
+	A = sparse(I, J, weights, NX, NY)
 end

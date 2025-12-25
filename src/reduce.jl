@@ -126,12 +126,13 @@ end
 
 
 
-
+# Deprecated
 knn_adjacency_matrix_spec(matrix; kwargs...) =
 	cached(create_spec(SCPCore.knn_adjacency_matrix, matrix; kwargs..., __version=v"0.1.0"))
 
 
 
+# Deprecated
 # Whoa. Shorten this name.
 function inv_dist_squared_adjacency_matrix2(X, Y; min_dist=1e-6, kwargs...)
 	SCPCore.knn_adjacency_matrix2(X, Y; kwargs...) do x
@@ -165,7 +166,7 @@ function force_layout(action::Action, matrix;
                       min_dist_projection = 1e-6,
                      )
 	# First force layout of unprojected
-	adj_spec = knn_adjacency_matrix_spec(matrix; k, make_symmetric)
+	adj_spec = knn_adjacency_matrix_spec(matrix; k, make_symmetric) # Deprecated
 	fl_spec = cached(create_spec(SCPCore.force_layout, adj_spec;
 	                             ndim,
 	                             niter,
@@ -182,7 +183,7 @@ function force_layout(action::Action, matrix;
 	if action isa Eval
 		return fl_spec
 	else#if actions isa Projection
-		weighted_adj_spec = create_inv_dist_squared_adjacency_matrix2_spec(matrix, action(matrix);
+		weighted_adj_spec = create_inv_dist_squared_adjacency_matrix2_spec(matrix, action(matrix); # Deprecated
 		                                                                   k=k_projection,
 		                                                                   min_dist=min_dist_projection)
 		return create_embed_points_spec(weighted_adj_spec, fl_spec)

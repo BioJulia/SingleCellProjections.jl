@@ -83,6 +83,8 @@ module Jobs
 	function ftest end
 	function ttest end
 
+	function transfer_annotation end
+
 	function create_table end
 	function get_colnames end
 	function get_id_colname end
@@ -120,10 +122,12 @@ include("filter.jl")
 include("transform.jl")
 include("design.jl")
 include("normalize.jl")
+include("nearest_neighbors.jl")
 include("reduce.jl")
 include("adjoint.jl")
 include("pseudobulk.jl")
 include("statistical_tests.jl")
+include("annotation_transfer.jl")
 
 
 # include("precompile.jl")

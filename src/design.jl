@@ -28,19 +28,21 @@ end
 
 
 
+function setup_covariate_description(obs, a::Pair)
+	@assert a.second isa SCPCore.AbstractCovariateDesc
+	a
+end
+function setup_covariate_description(obs, a)
+	a => fetched(detect_covariate_desc_spec(_extract_data_spec(obs, a)))
+end
 
 function setup_covariate_descriptions(obs, args...)
 	annots = []
 	descs = []
 	for a in args
-		if a isa Pair
-			@assert a.second isa SCPCore.AbstractCovariateDesc
-			push!(annots, a.first)
-			push!(descs, a.second)
-		else
-			push!(annots, a)
-			push!(descs, fetched(detect_covariate_desc_spec(_extract_data_spec(obs, a))))
-		end
+		a2 = setup_covariate_description(obs, a)
+		push!(annots, a2.first)
+		push!(descs, a2.second)
 	end
 	annots, descs
 end
