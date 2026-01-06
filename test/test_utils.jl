@@ -1,3 +1,6 @@
+fwd_spec(job) = forward(job).spec
+
+
 isgz(fn) = lowercase(splitext(fn)[2])==".gz"
 _open(f, fn) = open(fn) do io
     f(isgz(fn) ? GzipDecompressorStream(io) : io)

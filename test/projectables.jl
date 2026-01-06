@@ -80,8 +80,6 @@ TestJobs.dm_div(a, b) = Job(create_spec(DataMatrixFunction(dm_div), a, b))
 *ᵈ(a,b) = TestJobs.dm_mul(a,b)
 /ᵈ(a,b) = TestJobs.dm_div(a,b)
 
-fwd_spec(job) = forward(job).spec
-
 
 
 # --- Tests ---

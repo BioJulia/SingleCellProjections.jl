@@ -1,7 +1,7 @@
 function subset_matrix(::Preprocessing, data; var_ids=nothing, obs_ids=nothing)
-	var_ind = var_ids === nothing ? Colon() : indexin_spec(var_ids, id_column_spec(get_var_spec(data)); not_found=:error)
-	obs_ind = obs_ids === nothing ? Colon() : indexin_spec(obs_ids, id_column_spec(get_obs_spec(data)); not_found=:error)
-	create_datamatrix_getindex_spec(data; var_ind, obs_ind)
+	var_ind_args = var_ids === nothing ? (;) : (; var_ind=indexin_spec(var_ids, id_column_spec(get_var_spec(data)); not_found=:error))
+	obs_ind_args = obs_ids === nothing ? (;) : (; obs_ind=indexin_spec(obs_ids, id_column_spec(get_obs_spec(data)); not_found=:error))
+	create_datamatrix_getindex_spec(data; var_ind_args..., obs_ind_args...)
 end
 
 

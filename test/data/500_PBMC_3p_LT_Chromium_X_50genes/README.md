@@ -23,7 +23,7 @@ expected_matrix.csv.gz
 
 
 # Subsetting of barcodes
-path/to/cellranger-9.0.1/bin/cellranger reanalyze --disable-ui --id 500_PBMC_3p_LT_Chromium_X_50genes_272barcodes  --barcodes barcodes_272.csv --matrix filtered_feature_bc_matrix.h5
+path/to/cellranger-9.0.1/bin/cellranger reanalyze --disable-ui --id 500_PBMC_3p_LT_Chromium_X_50genes_272barcodes --barcodes barcodes_272.csv --matrix filtered_feature_bc_matrix.h5
 
 The output file 500_PBMC_3p_LT_Chromium_X_50genes_272barcodes/outs/filtered_feature_bc_matrix.h5
 was renamed to

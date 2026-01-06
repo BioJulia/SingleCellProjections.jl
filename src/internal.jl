@@ -314,34 +314,40 @@ end
 
 
 function _matrix_ind_spec(action::Action, ind, n=nothing)
+	ind === nothing && return Colon()
+
 	ind_p = action(ind)
 	if action isa Projection && !(ind isa Spec)
 		cond = isequal_spec(ind, ind_p)
 		ind_p = ifelse_spec(cond, ind_p, _getindex_error_spec(ind))
 	end
 	n !== nothing && (ind_p = simplify_ind_spec(ind_p, n))
-	ind_p = fetched(ind_p)
+	return fetched(ind_p)
 end
 
-function matrix_getindex_pr(action::Action, matrix; var_ind=:, obs_ind=:, nvar=nothing, nobs=nothing)
+function matrix_getindex_pr(action::Action, matrix; var_ind=nothing, obs_ind=nothing, nvar=nothing, nobs=nothing)
 	matrix = action(matrix)
 	var_ind = _matrix_ind_spec(action, var_ind, nvar)
 	obs_ind = _matrix_ind_spec(action, obs_ind, nobs)
 	create_spec(Preprocess(matrix_getindex_pre), matrix; var_ind, obs_ind)
 end
 
-function create_matrix_getindex_spec(matrix; var_ind=:, obs_ind=:, kwargs...)
-	create_spec(Projectable(matrix_getindex_pr), matrix; var_ind, obs_ind, kwargs...)
+function create_matrix_getindex_spec(matrix; kwargs...)
+	create_spec(Projectable(matrix_getindex_pr), matrix; kwargs...)
 end
 
 
 
 datamatrix_getindex(::Mat, data; kwargs...) =
 	create_matrix_getindex_spec(get_matrix_spec(data); nvar=nvar_spec(data), nobs=nobs_spec(data), kwargs...)
-datamatrix_getindex(::Var, data; var_ind=:, kwargs...) =
-	table_getindex_spec(get_var_spec(data), var_ind)
-datamatrix_getindex(::Obs, data; obs_ind=:, kwargs...) =
-	table_getindex_spec(get_obs_spec(data), obs_ind)
+function datamatrix_getindex(::Var, data; var_ind=nothing, kwargs...)
+	var = get_var_spec(data)
+	var_ind === nothing ? var : table_getindex_spec(var, var_ind)
+end
+function datamatrix_getindex(::Obs, data; obs_ind=nothing, kwargs...)
+	obs = get_obs_spec(data)
+	obs_ind === nothing ? obs : table_getindex_spec(obs, obs_ind)
+end
 
 
 create_datamatrix_getindex_spec(data; kwargs...) =
