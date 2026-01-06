@@ -19,7 +19,7 @@ update_name_spec(old_name; kwargs...) =
 	create_spec(update_name, old_name; kwargs..., __version=v"0.1.0")
 
 
-function transfer_annotation(::Preprocessing, base, new, covariate; k, weight_fun=InvDistSquared(1e-6), new_suffix="_transferred", kwargs...)
+function transfer_annotation(::Preprocessing, base, new, covariate; k, weight_fun=InvDistSquared(1e-6), kwargs...)
 	# TODO: Check that var agree
 	base_mat = get_matrix_spec(base)
 	new_mat = get_matrix_spec(new)
@@ -43,7 +43,7 @@ function transfer_annotation(::Preprocessing, base, new, covariate; k, weight_fu
 
 	# make into table
 	new_obs_ids = id_column_spec(get_obs_spec(new))
-	transferred_name = fetched(update_name_spec(annot_name; new_suffix, kwargs...))
+	transferred_name = fetched(update_name_spec(annot_name; kwargs...))
 	score_name = fetched(update_name_spec(transferred_name; new_suffix="_score"))
 	table_hcat_spec(new_obs_ids, create_table_spec(transferred_name=>transferred, score_name=>score))
 end
