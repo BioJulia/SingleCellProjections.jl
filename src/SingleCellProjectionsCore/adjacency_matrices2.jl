@@ -87,7 +87,6 @@ function find_nearest_neighbors(X, Y; k, tree_fun=KDTree)
 	# Threaded version
 	nt = max(1, Threads.nthreads()-1) # TODO: What's a good choice?
 	c = chunks(1:N2; n=nt)
-	@show collect(c)
 	results = tmap(c) do chunk
 		knn(tree, @view(Y[:,chunk]), k)
 	end
