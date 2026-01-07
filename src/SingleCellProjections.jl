@@ -6,7 +6,16 @@ export
 	Jobs, # TODO: remove probably
 	categorical_covariate,
 	numerical_covariate,
-	twogroup_covariate
+	twogroup_covariate,
+	rot2d, # experimental
+	flipx2d, # experimental
+	flipy2d, # experimental
+	rotx, # experimental
+	roty, # experimental
+	rotz, # experimental
+	flipx3d, # experimental
+	flipy3d, # experimental
+	flipz3d # experimental
 
 include("SingleCellProjectionsCore/SingleCellProjectionsCore.jl")
 
@@ -77,6 +86,8 @@ module Jobs
 	function force_layout end
 	function transpose end
 
+	function transform_coords end
+
 	function pseudobulk end
 	function population_matrix end
 
@@ -125,6 +136,7 @@ include("normalize.jl")
 include("nearest_neighbors.jl")
 include("reduce.jl")
 include("adjoint.jl")
+include("transform_coords.jl")
 include("pseudobulk.jl")
 include("statistical_tests.jl")
 include("annotation_transfer.jl")
