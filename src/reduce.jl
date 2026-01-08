@@ -126,23 +126,6 @@ end
 
 
 
-# Deprecated
-knn_adjacency_matrix_spec(matrix; kwargs...) =
-	cached(create_spec(SCPCore.knn_adjacency_matrix, matrix; kwargs..., __version=v"0.1.0"))
-
-
-
-# Deprecated
-# Whoa. Shorten this name.
-function inv_dist_squared_adjacency_matrix2(X, Y; min_dist=1e-6, kwargs...)
-	SCPCore.knn_adjacency_matrix2(X, Y; kwargs...) do x
-		1.0 / max(min_dist, x)^2
-	end
-end
-create_inv_dist_squared_adjacency_matrix2_spec(X, Y; kwargs...) =
-	cached(create_spec(inv_dist_squared_adjacency_matrix2, X, Y; kwargs..., __version=v"0.1.0"))
-
-
 
 embed_points(weighted_adj, matrix) = matrix*weighted_adj
 create_embed_points_spec(weighted_adj, matrix) =
@@ -164,9 +147,13 @@ function force_layout(action::Action, matrix;
                       seed = 1234,
                       k_projection = 10,
                       min_dist_projection = 1e-6,
+                      nobs,
                      )
 	# First force layout of unprojected
-	adj_spec = knn_adjacency_matrix_spec(matrix; k, make_symmetric) # Deprecated
+	knn = find_nearest_neighbors_spec(matrix; k)
+	indices = cached(knn, "indices") # Unwrap CompoundResult
+	adj_spec = adjacency_matrix_spec(indices; make_symmetric)
+
 	fl_spec = cached(create_spec(SCPCore.force_layout, adj_spec;
 	                             ndim,
 	                             niter,
@@ -183,9 +170,12 @@ function force_layout(action::Action, matrix;
 	if action isa Eval
 		return fl_spec
 	else#if actions isa Projection
-		weighted_adj_spec = create_inv_dist_squared_adjacency_matrix2_spec(matrix, action(matrix); # Deprecated
-		                                                                   k=k_projection,
-		                                                                   min_dist=min_dist_projection)
+		knn_p = find_nearest_neighbors_spec(matrix, action(matrix); k=k_projection)
+		indices_p = cached(knn_p, "indices") # Unwrap CompoundResult
+		dists_p = cached(knn_p, "distances") # Unwrap CompoundResult
+
+		weighted_adj_spec = weighted_adjacency_matrix_spec(InvDistSquared(min_dist_projection), indices_p, dists_p; NX=fetched(nobs))
+
 		return create_embed_points_spec(weighted_adj_spec, fl_spec)
 	end
 end
@@ -195,7 +185,7 @@ end
 
 function force_layout(::Mat, data; kwargs...)
 	matrix_spec = get_matrix_spec(data)
-	create_spec(Projectable(force_layout), matrix_spec; kwargs...)
+	create_spec(Projectable(force_layout), matrix_spec; nobs=nobs_spec(data), kwargs...)
 end
 force_layout(::Obs, data; kwargs...) = get_spec(Obs(), data)
 force_layout(::Var, data; ndim, kwargs...) = prefixed_ids_spec("id", "Force Layout Dim ", ndim)

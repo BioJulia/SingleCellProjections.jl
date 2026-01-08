@@ -85,7 +85,7 @@ function get_matrix(::Preprocessing, dm_spec)
 	elseif f isa DataMatrixFunction
 		create_spec(MatFunction(f.f), dm_spec.args...; dm_spec.kwargs...)
 	else
-		error("not implemented yet: ")
+		error("get_matrix cannot be used on a $(typeof(f))")
 	end
 end
 function get_var(::Preprocessing, dm_spec)
@@ -102,7 +102,7 @@ function get_var(::Preprocessing, dm_spec)
 	elseif f isa DataMatrixFunction
 		create_spec(VarFunction(f.f), dm_spec.args...; dm_spec.kwargs...)
 	else
-		error("not implemented yet")
+		error("get_var cannot be used on a $(typeof(f))")
 	end
 end
 function get_obs(::Preprocessing, dm_spec)
@@ -119,7 +119,7 @@ function get_obs(::Preprocessing, dm_spec)
 	elseif f isa DataMatrixFunction
 		create_spec(ObsFunction(f.f), dm_spec.args...; dm_spec.kwargs...)
 	else
-		error("not implemented yet")
+		error("get_obs cannot be used on a $(typeof(f))")
 	end
 end
 
