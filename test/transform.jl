@@ -144,7 +144,7 @@
 			# @show forward(Jobs.get_var(p_job))
 
 			let p = fetch!(p_job), counts_sub = fetch!(counts_sub_job)
-				Xs = sctransform(expected_sparse[:, pbmc_subset_ind], counts.var, params)
+				Xs = sctransform(expected_sparse[:, pbmc_subset_ind], counts.var, params; clip=sqrt(size(X,2)/30))
 
 				# var
 				cols = ["id", "name", "feature_type", "genome"]
@@ -219,7 +219,7 @@
 			# @show forward(Jobs.get_var(p_job))
 
 			let p = fetch!(p_job), counts_sub = fetch!(counts_sub_job)
-				Xs = sctransform(es[:, pbmc_subset_ind], counts.var[var_mask,:], params_filtered)
+				Xs = sctransform(es[:, pbmc_subset_ind], counts.var[var_mask,:], params_filtered; clip=sqrt(size(X,2)/30))
 
 				# var
 				cols = ["id", "name", "feature_type", "genome"]

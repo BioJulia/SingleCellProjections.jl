@@ -63,13 +63,15 @@ create_scparams_spec(matrix, var, var_ind; log_cell_counts) =
 
 
 
-# counts[var_ind,:] must match params exactly
-function sctransform_matrix_spec(T, matrix, params;
-                                 var_ind,
-                                 clip=nothing, rtol=1e-3, atol=0.0)
-	kwclip = clip===nothing ? (;) : (;clip)
-	create_spec(SCPCore.sctransform_matrix, T, matrix, params, var_ind; kwclip..., rtol, atol, __version=v"0.1.0")
+# matrix[var_ind,:] must match params exactly
+function sctransform_matrix_pr(action::Action, T, matrix, params; var_ind, nobs=nothing, clip=nothing, rtol=1e-3, atol=0.0)
+	@assert nobs !== nothing || clip !== nothing "Must specify either nobs or clip"
+	clip = @something clip sqrt(nobs/30)
+	create_spec(SCPCore.sctransform_matrix, T, action(matrix), action(params), action(var_ind); clip, rtol, atol, __version=v"0.1.0")
 end
+
+sctransform_matrix_spec(T, matrix, params; var_ind, kwargs...) =
+	create_spec(Projectable(sctransform_matrix_pr), T, matrix, params; var_ind, kwargs...)
 
 
 
@@ -95,7 +97,8 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=:, min_cel
 		end
 		return var_out
 	else # if f isa Mat
-		return sctransform_matrix_spec(T, matrix_spec, params_spec; var_ind, kwargs...)
+		nobs = fetched(nobs_spec(counts)) # fetch since we need the value now and the value should **not** be affected by projecion
+		return sctransform_matrix_spec(T, matrix_spec, params_spec; var_ind, nobs, kwargs...)
 	end
 end
 sctransform(::Obs, ::DataType, counts; kwargs...) = get_obs_spec(counts)
