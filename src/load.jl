@@ -66,18 +66,23 @@ end
 load_sample_matrix_metadata_spec(filename, var_ind; kwargs...) =
 	cached(create_spec(load_sample_matrix_metadata_impl, filename, var_ind; kwargs..., __version=v"0.1.0"))
 
-function load_hcat_sample_matrices_impl(filenames, matrix_metadatas, var_inds; kwargs...)
+function load_hcat_sample_matrices_impl(filenames, matrix_metadatas, var_inds; Tv=Int, Ti=Int32)
 	@assert all(x->x isa ChecksummedFilePath, filenames)
 	filenames = string.(filenames)
-	SCPCore.load_hcat_sample_matrices(filenames, matrix_metadatas, var_inds; kwargs...)
+	SCPCore.load_hcat_sample_matrices(Tv, Ti, filenames, matrix_metadatas, var_inds)
 end
-load_hcat_sample_matrices_spec(filenames, matrix_metadatas, var_inds; kwargs...) =
+function load_hcat_sample_matrices_spec(filenames, matrix_metadatas, var_inds; Tv=Int, Ti=Int32)
+	kwargs = (;)
+	if Tv != Int || Ti != Int32
+		kwargs = (; Tv, Ti)
+	end
 	create_spec(load_hcat_sample_matrices_impl, filenames, matrix_metadatas, var_inds; kwargs..., __version=v"0.1.0")
+end
 
 
 
 
-function load_counts(f::Union{Mat,Var}, filename_specs; sample_names, prefilter, extra_id_cols)
+function load_counts(f::Union{Mat,Var}, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
 	sample_var_specs = load_var_spec.(filename_specs)
 	var_spec = combine_var_spec(sample_var_specs; prefilter, extra_id_cols)
 
@@ -86,10 +91,10 @@ function load_counts(f::Union{Mat,Var}, filename_specs; sample_names, prefilter,
 	else # if f isa Mat
 		var_ind_specs = prefetched.(sample_var_indices_spec.(sample_var_specs, var_spec; extra_id_cols))
 		metadata_specs = prefetched.(load_sample_matrix_metadata_spec.(filename_specs, var_ind_specs))
-		return load_hcat_sample_matrices_spec(filename_specs, metadata_specs, var_ind_specs)
+		return load_hcat_sample_matrices_spec(filename_specs, metadata_specs, var_ind_specs; kwargs...)
 	end
 end
-load_counts(::Obs, filename_specs; sample_names, prefilter, extra_id_cols) =
+load_counts(::Obs, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...) =
 	combine_obs_spec(filename_specs, sample_names)
 
 

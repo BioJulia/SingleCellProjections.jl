@@ -71,53 +71,65 @@ setup_datamatrix(f::DataMatrixField, d::DataMatrixFunction{F}, spec) where F = d
 
 # New test
 # TODO: Improve code reuse
-function get_matrix(::Preprocessing, dm_spec)
-	f = dm_spec.f
+function get_matrix(::Preprocessing, dm)
+	if dm isa DataMatrix
+		return dm.matrix
+	end
+
+	f = dm.f
 	if f isa ProjectOnto
 		# @info "get_matrix ProjectOnto"
 
 		# TODO: Avoid this construct
-		onto = create_spec(f.f, dm_spec.args[2:end]...; dm_spec.kwargs...) # recreate original spec...
-		replaced = try_replace_spec(onto, f.f, dm_spec.args[1]...)
+		onto = create_spec(f.f, dm.args[2:end]...; dm.kwargs...) # recreate original spec...
+		replaced = try_replace_spec(onto, f.f, dm.args[1]...)
 		replaced !== nothing && return replaced
 
-		create_spec(ProjectOnto(MatFunction(f.f.f)), dm_spec.args...; dm_spec.kwargs...)
+		create_spec(ProjectOnto(MatFunction(f.f.f)), dm.args...; dm.kwargs...)
 	elseif f isa DataMatrixFunction
-		create_spec(MatFunction(f.f), dm_spec.args...; dm_spec.kwargs...)
+		create_spec(MatFunction(f.f), dm.args...; dm.kwargs...)
 	else
 		error("get_matrix cannot be used on a $(typeof(f))")
 	end
 end
-function get_var(::Preprocessing, dm_spec)
-	f = dm_spec.f
+function get_var(::Preprocessing, dm)
+	if dm isa DataMatrix
+		return dm.var
+	end
+
+	f = dm.f
 	if f isa ProjectOnto
 		# @info "get_var ProjectOnto"
 
 		# TODO: Avoid this construct
-		onto = create_spec(f.f, dm_spec.args[2:end]...; dm_spec.kwargs...) # recreate original spec...
-		replaced = try_replace_spec(onto, f.f, dm_spec.args[1]...)
+		onto = create_spec(f.f, dm.args[2:end]...; dm.kwargs...) # recreate original spec...
+		replaced = try_replace_spec(onto, f.f, dm.args[1]...)
 		replaced !== nothing && return replaced
 
-		create_spec(ProjectOnto(VarFunction(f.f.f)), dm_spec.args...; dm_spec.kwargs...)
+		create_spec(ProjectOnto(VarFunction(f.f.f)), dm.args...; dm.kwargs...)
 	elseif f isa DataMatrixFunction
-		create_spec(VarFunction(f.f), dm_spec.args...; dm_spec.kwargs...)
+		create_spec(VarFunction(f.f), dm.args...; dm.kwargs...)
 	else
 		error("get_var cannot be used on a $(typeof(f))")
 	end
 end
-function get_obs(::Preprocessing, dm_spec)
-	f = dm_spec.f
+function get_obs(::Preprocessing, dm)
+	if dm isa DataMatrix
+		return dm.obs
+	end
+
+	f = dm.f
 	if f isa ProjectOnto
-		@info "get_obs ProjectOnto"
+		# @info "get_obs ProjectOnto"
 
 		# TODO: Avoid this construct
-		onto = create_spec(f.f, dm_spec.args[2:end]...; dm_spec.kwargs...) # recreate original spec...
-		replaced = try_replace_spec(onto, f.f, dm_spec.args[1]...)
+		onto = create_spec(f.f, dm.args[2:end]...; dm.kwargs...) # recreate original spec...
+		replaced = try_replace_spec(onto, f.f, dm.args[1]...)
 		replaced !== nothing && return replaced
 
-		create_spec(ProjectOnto(ObsFunction(f.f.f)), dm_spec.args...; dm_spec.kwargs...)
+		create_spec(ProjectOnto(ObsFunction(f.f.f)), dm.args...; dm.kwargs...)
 	elseif f isa DataMatrixFunction
-		create_spec(ObsFunction(f.f), dm_spec.args...; dm_spec.kwargs...)
+		create_spec(ObsFunction(f.f), dm.args...; dm.kwargs...)
 	else
 		error("get_obs cannot be used on a $(typeof(f))")
 	end

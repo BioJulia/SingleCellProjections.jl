@@ -123,7 +123,12 @@ function load_sample_matrix_metadata(args...)
 end
 
 # Probably find a nicer way?
-read10x_matrix_int_int32(io) = read10x_matrix(io, SparseMatrixCSC{Int,Int32})
+# read10x_matrix_int_int32(io) = read10x_matrix(io, SparseMatrixCSC{Int,Int32})
+
+
+read10x_typed_matrix(::Type{Tv}=Int, ::Type{Ti}=Int32) where {Tv,Ti} =
+	io->read10x_matrix(io, SparseMatrixCSC{Tv,Ti})
+
 
 
 # WIP
@@ -134,7 +139,8 @@ function load_sample_matrix(f, io, var_ind::Vector{<:Union{Int,Nothing}})
 	X = f(io)
 	subset_by_var_indices(X, var_ind; reuse_memory=true)
 end
-load_sample_matrix(io, var_ind) = load_sample_matrix(read10x_matrix_int_int32, io, var_ind)
+# load_sample_matrix(io, var_ind) = load_sample_matrix(read10x_matrix_int_int32, io, var_ind)
+load_sample_matrix(io, var_ind) = load_sample_matrix(read10x_typed_matrix(), io, var_ind)
 
 
 # WIP
@@ -190,7 +196,9 @@ function load_hcat_sample_matrices(fs, ::Type{Tv}, ::Type{Ti},
 end
 load_hcat_sample_matrices(fs, ios, matrix_metadatas, var_inds) =
 	load_hcat_sample_matrices(fs, Int, Int32, ios, matrix_metadatas, var_inds)
+# load_hcat_sample_matrices(Tv::DataType, Ti::DataType, ios, matrix_metadatas, var_inds) =
+# 	load_hcat_sample_matrices(read10x_matrix_int_int32, Tv, Ti, ios, matrix_metadatas, var_inds)
 load_hcat_sample_matrices(Tv::DataType, Ti::DataType, ios, matrix_metadatas, var_inds) =
-	load_hcat_sample_matrices(read10x_matrix_int_int32, Tv, Ti, ios, matrix_metadatas, var_inds)
+	load_hcat_sample_matrices(read10x_typed_matrix(Tv,Ti), Tv, Ti, ios, matrix_metadatas, var_inds)
 load_hcat_sample_matrices(ios, matrix_metadatas, var_inds) =
-	load_hcat_sample_matrices(read10x_matrix_int_int32, ios, matrix_metadatas, var_inds)
+	load_hcat_sample_matrices(read10x_typed_matrix(), ios, matrix_metadatas, var_inds)
