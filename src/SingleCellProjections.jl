@@ -34,7 +34,7 @@ using ChunkSplitters
 using OhMyThreads
 
 using ReproducibleJobs
-using ReproducibleJobs: create_spec, cached, ReadOnly, SpecArgs, ChecksummedFilePath, Preprocessing, checksummedfilepath_job, ifelse_spec
+using ReproducibleJobs: create_spec, cached, ReadOnly, SpecArgs, ChecksummedFilePath, Preprocessing, checksummedfilepath_spec, ifelse_spec
 
 using ReadOnlyArrays: ReadOnlyVector
 
