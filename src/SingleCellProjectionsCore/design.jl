@@ -1,6 +1,6 @@
 abstract type AbstractCovariateDesc end
 
-Base.copy(x::AbstractCovariateDesc) = x # Must be immutable, so this is fine.
+# Base.copy(x::AbstractCovariateDesc) = x # Must be immutable, so this is fine.
 
 
 struct AutoCovariateDesc <: AbstractCovariateDesc end # Deprecated
@@ -26,7 +26,7 @@ twogroup_covariate(group_a, group_b=nothing) = TwoGroupCovariateDesc(group_a, gr
 
 abstract type AbstractValueVectorModel end
 
-Base.copy(x::AbstractValueVectorModel) = x # Must be immutable, so this is fine.
+# Base.copy(x::AbstractValueVectorModel) = x # Must be immutable, so this is fine.
 
 
 
@@ -34,7 +34,7 @@ struct InterceptValueVectorModel <: AbstractValueVectorModel end
 struct NumericalValueVectorModel <: AbstractValueVectorModel end
 struct CategoricalValueVectorModel{T} <: AbstractValueVectorModel
 	categories::Vector{T} # Change to ReadOnlyVector?
-	function CategoricalValueVectorModel(v::Vector{T}; max_categories=100) where T
+	function CategoricalValueVectorModel(v::Vector{T}; max_categories=100) where T # Hmm. The inner constructors shouldn't do this much work.
 		uv = unique(v)
 		any(ismissing, uv) && throw(ArgumentError("Missing values not supported for categorical value vectors."))
 		len = length(uv)
@@ -144,7 +144,7 @@ end
 
 
 
-function mean_and_scale(v::Vector; center)
+function mean_and_scale(v::AbstractVector; center)
 	m = center ? mean(v) : 0.0
 	# Consider using `norm` or `std` to rescale instead
 	s = max(1e-6, maximum(x->abs(x-m), v)) # Avoid scaling up if values are too small in absolute numbers
