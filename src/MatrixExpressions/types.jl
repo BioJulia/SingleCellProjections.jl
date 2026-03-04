@@ -13,9 +13,12 @@ MatrixRef(t::Tuple{Symbol,T}) where T = MatrixRef(t...)
 MatrixRef(p::Pair{Symbol,T}) where T = MatrixRef(p...)
 
 struct MatrixProduct{T<:AbstractMatrixSum} <: MatrixExpression
-	factors::Vector{Union{MatrixRef,T}}
+	# factors::Vector{Union{MatrixRef,T}}
+	factors::Any # Refactoring TODO: Find a better solution (we need to handle deduplication somehow, and that can narrow the type)
 
 	function MatrixProduct{T}(factors) where T
+		# @show eltype(factors) == Union{MatrixRef,T} # DEBUG
+
 		@assert !isempty(factors)
 		sz_prev = (0,size(first(factors),1))
 		for (i,f) in enumerate(factors)
@@ -27,9 +30,12 @@ struct MatrixProduct{T<:AbstractMatrixSum} <: MatrixExpression
 	end
 end
 struct MatrixSum <: AbstractMatrixSum
-	terms::Vector{Union{MatrixRef,MatrixProduct}}
+	# terms::Vector{Union{MatrixRef,MatrixProduct}}
+	terms::Any # Refactoring TODO: Find a better solution (we need to handle deduplication somehow, and that can narrow the type)
 
 	function MatrixSum(terms)
+		# @show eltype(terms) == Union{MatrixRef,MatrixProduct} # DEBUG
+
 		@assert !isempty(terms)
 		sz = size(first(terms))
 		for (i,t) in enumerate(terms)

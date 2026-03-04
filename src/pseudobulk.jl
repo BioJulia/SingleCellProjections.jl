@@ -46,18 +46,19 @@ pseudobulk_linear_indices_spec(cov_data, cov_descs) =
 
 
 function pseudobulk_table_impl(::Preprocessing, categories, basenames, n_categories; extra_inner=1)
-	categories = ReproducibleJobs.unsafe_unmanage(categories) # Can we avoid this?
-	basenames = ReproducibleJobs.unsafe_unmanage(basenames) # Can we avoid this?
-	n_categories = ReproducibleJobs.unsafe_unmanage(n_categories) # Can we avoid this?
-	if categories isa ReadOnly # Can we avoid this?
-		categories = categories.value
-	end
-	if basenames isa ReadOnly # Can we avoid this?
-		basenames = basenames.value
-	end
-	if n_categories isa ReadOnly # Can we avoid this?
-		n_categories = n_categories.value
-	end
+	# Removed in refactoring
+	# categories = ReproducibleJobs.unsafe_unmanage(categories) # Can we avoid this?
+	# basenames = ReproducibleJobs.unsafe_unmanage(basenames) # Can we avoid this?
+	# n_categories = ReproducibleJobs.unsafe_unmanage(n_categories) # Can we avoid this?
+	# if categories isa ReadOnly # Can we avoid this?
+	# 	categories = categories.value
+	# end
+	# if basenames isa ReadOnly # Can we avoid this?
+	# 	basenames = basenames.value
+	# end
+	# if n_categories isa ReadOnly # Can we avoid this?
+	# 	n_categories = n_categories.value
+	# end
 
 	n_cov = length(categories)
 	@assert n_cov >= 1
@@ -95,14 +96,15 @@ pseudobulk_table_spec(categories, basenames; kwargs...) =
 # TODO: Can we simplify this code?
 function _pseudobulk_combine(a, b)
 	b === nothing && return a
-	a = ReproducibleJobs.unsafe_unmanage(a) # Can we avoid this?
-	b = ReproducibleJobs.unsafe_unmanage(b) # Can we avoid this?
-	if a isa ReadOnly # Can we avoid this?
-		a = a.value
-	end
-	if b isa ReadOnly # Can we avoid this?
-		b = b.value
-	end
+	# Removed in refactoring
+	# a = ReproducibleJobs.unsafe_unmanage(a) # Can we avoid this?
+	# b = ReproducibleJobs.unsafe_unmanage(b) # Can we avoid this?
+	# if a isa ReadOnly # Can we avoid this?
+	# 	a = a.value
+	# end
+	# if b isa ReadOnly # Can we avoid this?
+	# 	b = b.value
+	# end
 	vcat(a, b)
 end
 

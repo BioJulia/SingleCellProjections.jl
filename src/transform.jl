@@ -30,10 +30,10 @@ end
 logcellcounts_spec(X, var_ind) = create_spec(logcellcounts_impl, X, var_ind; __version=v"0.1.0")
 
 
-function scparams_impl(matrix; var_ind, log_cell_counts)
+function scparams_impl(matrix; var_ind, log_cell_counts::ROVec)
 	feature_mask = falses(size(matrix,1))
 	feature_mask[var_ind] .= true
-	df = DataFrame(SCTransform.compute_scparams(matrix; log_cell_counts, feature_mask); copycols=false)
+	df = DataFrame(SCTransform.compute_scparams(matrix; log_cell_counts=parent(log_cell_counts), feature_mask); copycols=false)
 	table_to_compound_result(df)
 end
 create_scparams_impl_spec(matrix; var_ind, log_cell_counts) =

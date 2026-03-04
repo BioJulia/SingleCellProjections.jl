@@ -40,9 +40,9 @@ end
 
 
 function try_replace_spec_single(spec::Spec, ::Any, k::Spec, v)
-	if spec.ro == k.ro
+	if spec.sa === k.sa # Because of deduplication we can use ===
 		if v isa Spec
-			return Spec(v.ro, spec.op) # Keep the op
+			return Spec(v.sa, spec.op) # Keep the op
 		else
 			return v # Replaced by a value, the op doesn't apply anymore
 		end
@@ -71,7 +71,7 @@ end
 
 function do_replacement(replacements, spec::Spec)
 	p_spec = create_project_spec(spec, replacements...)
-	Spec(p_spec.ro, spec.op) # Keep the op
+	Spec(p_spec.sa, spec.op) # Keep the op
 end
 function do_replacement(replacements, x)
 	for (k,v) in replacements
@@ -82,8 +82,9 @@ end
 
 
 function (proj::Projection)(x)
-	# unsafe_unmanage is OK since we are only reading from proj_args and proj_kwargs
-	x = ReproducibleJobs.unsafe_unmanage(x)
+	# Removed in refactoring
+	# # unsafe_unmanage is OK since we are only reading from proj_args and proj_kwargs
+	# x = ReproducibleJobs.unsafe_unmanage(x)
 	ReproducibleJobs.copy_nested(y->do_replacement(proj.replacements, y), x)
 end
 
@@ -178,9 +179,9 @@ function create_project_spec(onto, args...; kwargs...)
 	onto::Spec
 
 	op = onto.op
-	onto = Spec(onto.ro)
+	onto = Spec(onto.sa)
 	spec = create_spec(Preprocess(project), onto, args...; kwargs...)
-	Spec(spec.ro, op)
+	Spec(spec.sa, op)
 end
 
 function Jobs.project(onto, args...; kwargs...)

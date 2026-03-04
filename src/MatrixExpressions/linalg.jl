@@ -1,7 +1,8 @@
 LinearAlgebra.adjoint(X::MatrixRef) = MatrixRef(X.name, adjoint(X.matrix))
 function LinearAlgebra.adjoint(X::MatrixProduct)
-	f = reverse(X.factors) # copies vector and keeps eltype
-	MatrixProduct(map!(adjoint,f,f))
+	# f = reverse(X.factors) # copies vector and keeps eltype
+	# MatrixProduct(map!(adjoint,f,f))
+	MatrixProduct(map(adjoint, reverse(X.factors)))
 end
 LinearAlgebra.adjoint(X::MatrixSum) = MatrixSum(adjoint.(X.terms))
 

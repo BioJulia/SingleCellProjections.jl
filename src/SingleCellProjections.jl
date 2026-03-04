@@ -34,17 +34,59 @@ using ChunkSplitters
 using OhMyThreads
 
 using ReproducibleJobs
-using ReproducibleJobs: create_spec, cached, ReadOnly, SpecArgs, ChecksummedFilePath, Preprocessing, checksummedfilepath_spec, ifelse_spec
+using ReproducibleJobs: Deduplicators, create_spec, cached, SpecArgs, ChecksummedFilePath, Preprocessing, checksummedfilepath_spec, ifelse_spec
+using .Deduplicators: ROArray, ROVec, ROMat, ROBitArray, ROBitVec, ROBitMat, TypeTag
 
 using ReadOnlyArrays: ReadOnlyVector
 
 using StyledStrings # For Spec printing
 
-ReproducibleJobs.unmanage_rec(x::DataMatrix) =
-	DataMatrix(ReproducibleJobs.unmanage_rec.((x.matrix, x.var, x.obs))...)
-ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVector) = x
-ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVectorModel) = x
-ReproducibleJobs.unmanage_rec(x::SCPCore.ProjectionModel) = x
+# ReproducibleJobs.unmanage_rec(x::DataMatrix) =
+# 	DataMatrix(ReproducibleJobs.unmanage_rec.((x.matrix, x.var, x.obs))...)
+# ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVector) = x
+# ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVectorModel) = x
+# ReproducibleJobs.unmanage_rec(x::SCPCore.ProjectionModel) = x
+
+
+# TODO: Where to put these?
+Deduplicators.deduplicate_type(::Type{<:DataMatrix}) = true
+Deduplicators.deconstruct_type(::Type{<:DataMatrix}) = true
+Deduplicators.type_to_tag(::Type{<:DataMatrix}) = TypeTag(:DataMatrix)
+Deduplicators.tag_to_type(::Val{:DataMatrix}) = DataMatrix
+Deduplicators.deconstruct(data::DataMatrix{T,Tv,To}) where {T,Tv,To} = (data.matrix, data.var, data.obs)
+Deduplicators.reconstruct(::Type{<:DataMatrix}, (matrix,var,obs)::Tuple{T,Tv,To}) where {T,Tv,To} =
+	DataMatrix(matrix, var, obs) # TODO: Avoid doing validation when reconstructing!
+
+
+# TODO: Where to put these?
+Deduplicators.deduplicate_type(::Type{<:SCPCore.MatrixExpressions.MatrixRef}) = true
+Deduplicators.deconstruct_type(::Type{<:SCPCore.MatrixExpressions.MatrixRef}) = true
+Deduplicators.type_to_tag(::Type{<:SCPCore.MatrixExpressions.MatrixRef}) = TypeTag(:MatrixRef)
+Deduplicators.tag_to_type(::Val{:MatrixRef}) = SCPCore.MatrixExpressions.MatrixRef
+Deduplicators.deconstruct(r::SCPCore.MatrixExpressions.MatrixRef{T}) where T = (r.name, r.matrix)
+Deduplicators.reconstruct(::Type{<:SCPCore.MatrixExpressions.MatrixRef}, (name,matrix)::Tuple{Symbol,T}) where T =
+	SCPCore.MatrixExpressions.MatrixRef(name, matrix)
+Deduplicators.reconstruct(::Type{<:SCPCore.MatrixExpressions.MatrixRef}, (name,matrix)::Tuple{Symbol,ROArray{T}}) where T =
+	SCPCore.MatrixExpressions.MatrixRef(name, parent(matrix))
+Deduplicators.reconstruct(::Type{<:SCPCore.MatrixExpressions.MatrixRef}, (name,matrix)::Tuple{Symbol,ROBitArray{T}}) where T =
+	SCPCore.MatrixExpressions.MatrixRef(name, parent(matrix))
+
+Deduplicators.deduplicate_type(::Type{<:SCPCore.MatrixExpressions.MatrixProduct}) = true
+Deduplicators.deconstruct_type(::Type{<:SCPCore.MatrixExpressions.MatrixProduct}) = true
+Deduplicators.type_to_tag(::Type{<:SCPCore.MatrixExpressions.MatrixProduct}) = TypeTag(:MatrixProduct)
+Deduplicators.tag_to_type(::Val{:MatrixProduct}) = SCPCore.MatrixExpressions.MatrixProduct
+Deduplicators.deconstruct(r::SCPCore.MatrixExpressions.MatrixProduct{T}) where T = (r.factors, )
+Deduplicators.reconstruct(::Type{<:SCPCore.MatrixExpressions.MatrixProduct}, (factors,)::Tuple{T}) where T =
+	SCPCore.MatrixExpressions.MatrixProduct(parent(factors)) # Is this enough or do we need to convert to get the right eltype?
+
+Deduplicators.deduplicate_type(::Type{<:SCPCore.MatrixExpressions.MatrixSum}) = true
+Deduplicators.deconstruct_type(::Type{<:SCPCore.MatrixExpressions.MatrixSum}) = true
+Deduplicators.type_to_tag(::Type{<:SCPCore.MatrixExpressions.MatrixSum}) = TypeTag(:MatrixSum)
+Deduplicators.tag_to_type(::Val{:MatrixSum}) = SCPCore.MatrixExpressions.MatrixSum
+Deduplicators.deconstruct(r::SCPCore.MatrixExpressions.MatrixSum) = (r.terms, )
+Deduplicators.reconstruct(::Type{<:SCPCore.MatrixExpressions.MatrixSum}, (terms,)::Tuple{T}) where T =
+	SCPCore.MatrixExpressions.MatrixSum(parent(terms)) # Is this enough or do we need to convert to get the right eltype?
+
 
 
 # TODO: This is a temporary solution when refactoring, remove
