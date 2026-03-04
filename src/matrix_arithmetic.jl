@@ -1,9 +1,9 @@
 _map_value(f, p::Pair) = p.first => f(p.second)
-_map_value(f, m::ReproducibleJobs.Managed{<:Pair}) = _map_value(f, ReproducibleJobs.unsafe_unmanage(m))
+# _map_value(f, m::ReproducibleJobs.Managed{<:Pair}) = _map_value(f, ReproducibleJobs.unsafe_unmanage(m))
 _map_value(f, x::Any) = f(x)
 
 _get_value(p::Pair) = p.second
-_get_value(m::ReproducibleJobs.Managed{<:Pair}) = _get_value(ReproducibleJobs.unsafe_unmanage(m))
+# _get_value(m::ReproducibleJobs.Managed{<:Pair}) = _get_value(ReproducibleJobs.unsafe_unmanage(m))
 _get_value(x::Any) = x
 
 

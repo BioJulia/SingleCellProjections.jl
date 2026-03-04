@@ -18,7 +18,7 @@
 
 
 # Normalization without model struct
-function negative_regression_matrix(matrix, dm::Matrix; rtol=sqrt(eps()))
+function negative_regression_matrix(matrix, dm::AbstractMatrix; rtol=sqrt(eps()))
 	A = matrix
 	X = dm
 

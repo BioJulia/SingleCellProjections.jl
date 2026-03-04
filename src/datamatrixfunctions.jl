@@ -11,7 +11,7 @@ function is_datamatrix_spec(sa::SpecArgs)
 	# TODO: Are there more cases that should return true?
 	return false
 end
-is_datamatrix_spec(spec::Spec) = is_datamatrix_spec(spec.ro.value)
+is_datamatrix_spec(spec::Spec) = is_datamatrix_spec(spec.sa)
 
 
 

@@ -29,7 +29,7 @@ end
 
 # WIP.
 # Intended to be public function in low-level API.
-function combine_var(var::Vector{DataFrame};
+function combine_var(var::AbstractVector{DataFrame};
                      prefilter = "feature_type"=>isequal("Gene Expression"),
                      extra_id_cols = "feature_type")
 	isempty(var) && return DataFrame()
@@ -74,7 +74,7 @@ end
 # WIP.
 # Later intended to be public function in low-level API.
 function subset_by_var_indices(X::SparseMatrixCSC{Tv,Ti},
-                               var_ind::Vector{<:Union{Integer,Nothing}};
+                               var_ind::AbstractVector{<:Union{Integer,Nothing}};
                                reuse_memory=false) where {Tv,Ti}
 	# Rows where `var_ind` is nothing, should be filled with zeros.
 	# Otherwise pick corresponding row from `X`.
@@ -135,7 +135,7 @@ read10x_typed_matrix(::Type{Tv}=Int, ::Type{Ti}=Int32) where {Tv,Ti} =
 # Later intended to be public function in low-level API.
 # f is function that loads raw sample matrix
 # io is filename or IO
-function load_sample_matrix(f, io, var_ind::Vector{<:Union{Int,Nothing}})
+function load_sample_matrix(f, io, var_ind::AbstractVector{<:Union{Int,Nothing}})
 	X = f(io)
 	subset_by_var_indices(X, var_ind; reuse_memory=true)
 end
@@ -150,8 +150,8 @@ load_sample_matrix(io, var_ind) = load_sample_matrix(read10x_typed_matrix(), io,
 # matrix_metadatas: Vector of (P,N,nnz) for each sample_matrix (after `subset_by_var_indices` has been applied)
 # var_inds:         Vector of var_ind for each matrix
 function load_hcat_sample_matrices(fs, ::Type{Tv}, ::Type{Ti},
-                                   ios::Vector, matrix_metadatas::Vector{Tuple{Int,Int,Int}},
-                                   var_inds::Vector{<:Vector{<:Union{Int,Nothing}}}) where {Tv,Ti}
+                                   ios::Vector, matrix_metadatas::AbstractVector{Tuple{Int,Int,Int}},
+                                   var_inds::AbstractVector{<:AbstractVector{<:Union{Int,Nothing}}}) where {Tv,Ti}
 	n_samples = length(ios)
 	@assert n_samples >= 1
 	@assert length(matrix_metadatas) == n_samples

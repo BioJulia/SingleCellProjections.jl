@@ -16,7 +16,8 @@ is_create_table(x) = x isa Spec && x.f == create_table
 
 
 function table_to_compound_result(table)
-	CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(table))])
+	# CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(table))])
+	CompoundResult(; pairs(eachcol(table))...)
 end
 
 
@@ -95,7 +96,8 @@ Jobs.get_value_colname(table) = Job(get_value_colname_spec(table))
 
 function _colnames_to_colind(table, colnames::String...)
 	table_colnames = first.(table.args)
-	ind = indexin(colnames, table_colnames)
+	# ind = indexin(colnames, table_colnames)
+	ind = indexin(colnames, collect(table_colnames)) # Refactoring TODO: avoid converting tuple to arrays?
 	any(isnothing, ind) && throw(ArgumentError("The following column names where not found: $(setdiff(colnames, table_colnames))"))
 	convert(Vector{Int}, ind)
 end
@@ -237,7 +239,8 @@ function _table_hcat_validated(args...)
 	common_names = [name for (name,count) in StatsBase.countmap(names) if count>1]
 	isempty(common_names) || throw(ArgumentError("Table column names must be different, found these common names: $common_names"))
 
-	result = create_table_spec(Iterators.flatten(ReproducibleJobs.unsafe_unmanage.(getproperty.(args,:args)))...)
+	# result = create_table_spec(Iterators.flatten(ReproducibleJobs.unsafe_unmanage.(getproperty.(args,:args)))...)
+	result = create_table_spec(Iterators.flatten(getproperty.(args,:args))...)
 
 	# Check that the number of rows in all tables match
 	n = table_nrow_spec.(args)

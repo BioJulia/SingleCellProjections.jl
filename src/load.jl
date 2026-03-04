@@ -22,9 +22,10 @@ vcat_tables_spec(tables...; kwargs...) = create_spec(vcat_tables, tables...; kwa
 
 
 function combine_obs(::Preprocessing, filenames, sample_names)
-	if sample_names isa ReadOnly # Can we avoid this?
-		sample_names = sample_names.value
-	end
+	# Removed in refactoring
+	# if sample_names isa ReadOnly # Can we avoid this?
+	# 	sample_names = sample_names.value
+	# end
 	sample_barcodes_specs = load_barcodes_spec.(filenames)
 	sample_id_specs = combine_vectors_spec.(sample_names, '_', sample_barcodes_specs)
 	sample_obs_specs = create_table_spec.("cell_id" .=> sample_id_specs,
