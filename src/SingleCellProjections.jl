@@ -55,37 +55,70 @@ Deduplicators.type_to_tag(::Type{<:DataMatrix}) = TypeTag(:DataMatrix)
 Deduplicators.tag_to_type(::Val{:DataMatrix}) = DataMatrix
 Deduplicators.deconstruct(data::DataMatrix{T,Tv,To}) where {T,Tv,To} = (data.matrix, data.var, data.obs)
 Deduplicators.reconstruct(::Type{<:DataMatrix}, (matrix,var,obs)::Tuple{T,Tv,To}) where {T,Tv,To} =
-	DataMatrix(matrix, var, obs) # TODO: Avoid doing validation when reconstructing!
+	DataMatrix(matrix, var, obs) # Refactoring TODO: Avoid doing validation when reconstructing!
+
+
+# TODO: Where to put these?
+Deduplicators.deduplicate_type(::Type{<:SCPCore.AbstractCovariateDesc}) = false
+Deduplicators.deconstruct_weak_rec(x::T) where T<:SCPCore.AbstractCovariateDesc = x
+Deduplicators.reconstruct_weak_rec(x::T) where T<:SCPCore.AbstractCovariateDesc = x
+
+Deduplicators.deduplicate_type(::Type{<:SCPCore.AbstractValueVectorModel}) = false
+Deduplicators.deconstruct_weak_rec(x::T) where T<:SCPCore.AbstractValueVectorModel = x
+Deduplicators.reconstruct_weak_rec(x::T) where T<:SCPCore.AbstractValueVectorModel = x
+
+Deduplicators.deduplicate_type(::Type{<:SCPCore.CategoricalValueVectorModel}) = true
+Deduplicators.deconstruct_type(::Type{<:SCPCore.CategoricalValueVectorModel}) = true
+Deduplicators.type_to_tag(::Type{<:SCPCore.CategoricalValueVectorModel}) = TypeTag(:CategoricalValueVectorModel)
+Deduplicators.tag_to_type(::Val{:CategoricalValueVectorModel}) = SCPCore.CategoricalValueVectorModel
+Deduplicators.deconstruct(m::SCPCore.CategoricalValueVectorModel{T}) where T = (m.categories,)
+Deduplicators.reconstruct(::Type{<:SCPCore.CategoricalValueVectorModel}, (categories,)::Tuple{T}) where T =
+	SCPCore.CategoricalValueVectorModel(parent(categories)) # Refactoring TODO: Avoid doing validation when reconstructing!
+
 
 
 # TODO: Where to put these?
 Deduplicators.deduplicate_type(::Type{<:SCPCore.MatrixExpressions.MatrixRef}) = true
 Deduplicators.deconstruct_type(::Type{<:SCPCore.MatrixExpressions.MatrixRef}) = true
-Deduplicators.type_to_tag(::Type{<:SCPCore.MatrixExpressions.MatrixRef}) = TypeTag(:MatrixRef)
-Deduplicators.tag_to_type(::Val{:MatrixRef}) = SCPCore.MatrixExpressions.MatrixRef
-Deduplicators.deconstruct(r::SCPCore.MatrixExpressions.MatrixRef{T}) where T = (r.name, r.matrix)
+Deduplicators.type_to_tag(::Type{<:SCPCore.MatrixExpressions.MatrixRef}) = TypeTag(:ME_MatrixRef)
+Deduplicators.tag_to_type(::Val{:ME_MatrixRef}) = SCPCore.MatrixExpressions.MatrixRef
+Deduplicators.deconstruct(A::SCPCore.MatrixExpressions.MatrixRef{T}) where T = (A.name, A.matrix)
 Deduplicators.reconstruct(::Type{<:SCPCore.MatrixExpressions.MatrixRef}, (name,matrix)::Tuple{Symbol,T}) where T =
 	SCPCore.MatrixExpressions.MatrixRef(name, matrix)
 Deduplicators.reconstruct(::Type{<:SCPCore.MatrixExpressions.MatrixRef}, (name,matrix)::Tuple{Symbol,ROArray{T}}) where T =
 	SCPCore.MatrixExpressions.MatrixRef(name, parent(matrix))
-Deduplicators.reconstruct(::Type{<:SCPCore.MatrixExpressions.MatrixRef}, (name,matrix)::Tuple{Symbol,ROBitArray{T}}) where T =
-	SCPCore.MatrixExpressions.MatrixRef(name, parent(matrix))
 
 Deduplicators.deduplicate_type(::Type{<:SCPCore.MatrixExpressions.MatrixProduct}) = true
 Deduplicators.deconstruct_type(::Type{<:SCPCore.MatrixExpressions.MatrixProduct}) = true
-Deduplicators.type_to_tag(::Type{<:SCPCore.MatrixExpressions.MatrixProduct}) = TypeTag(:MatrixProduct)
-Deduplicators.tag_to_type(::Val{:MatrixProduct}) = SCPCore.MatrixExpressions.MatrixProduct
-Deduplicators.deconstruct(r::SCPCore.MatrixExpressions.MatrixProduct{T}) where T = (r.factors, )
+Deduplicators.type_to_tag(::Type{<:SCPCore.MatrixExpressions.MatrixProduct}) = TypeTag(:ME_MatrixProduct)
+Deduplicators.tag_to_type(::Val{:ME_MatrixProduct}) = SCPCore.MatrixExpressions.MatrixProduct
+Deduplicators.deconstruct(A::SCPCore.MatrixExpressions.MatrixProduct{T}) where T = (A.factors,)
 Deduplicators.reconstruct(::Type{<:SCPCore.MatrixExpressions.MatrixProduct}, (factors,)::Tuple{T}) where T =
 	SCPCore.MatrixExpressions.MatrixProduct(parent(factors)) # Is this enough or do we need to convert to get the right eltype?
 
 Deduplicators.deduplicate_type(::Type{<:SCPCore.MatrixExpressions.MatrixSum}) = true
 Deduplicators.deconstruct_type(::Type{<:SCPCore.MatrixExpressions.MatrixSum}) = true
-Deduplicators.type_to_tag(::Type{<:SCPCore.MatrixExpressions.MatrixSum}) = TypeTag(:MatrixSum)
-Deduplicators.tag_to_type(::Val{:MatrixSum}) = SCPCore.MatrixExpressions.MatrixSum
-Deduplicators.deconstruct(r::SCPCore.MatrixExpressions.MatrixSum) = (r.terms, )
+Deduplicators.type_to_tag(::Type{<:SCPCore.MatrixExpressions.MatrixSum}) = TypeTag(:ME_MatrixSum)
+Deduplicators.tag_to_type(::Val{:ME_MatrixSum}) = SCPCore.MatrixExpressions.MatrixSum
+Deduplicators.deconstruct(A::SCPCore.MatrixExpressions.MatrixSum) = (A.terms,)
 Deduplicators.reconstruct(::Type{<:SCPCore.MatrixExpressions.MatrixSum}, (terms,)::Tuple{T}) where T =
 	SCPCore.MatrixExpressions.MatrixSum(parent(terms)) # Is this enough or do we need to convert to get the right eltype?
+
+Deduplicators.deduplicate_type(::Type{<:SCPCore.MatrixExpressions.DiagGram}) = true
+Deduplicators.deconstruct_type(::Type{<:SCPCore.MatrixExpressions.DiagGram}) = true
+Deduplicators.type_to_tag(::Type{<:SCPCore.MatrixExpressions.DiagGram}) = TypeTag(:ME_DiagGram)
+Deduplicators.tag_to_type(::Val{:ME_DiagGram}) = SCPCore.MatrixExpressions.DiagGram
+Deduplicators.deconstruct(A::SCPCore.MatrixExpressions.DiagGram{T}) where T = (A.A,)
+Deduplicators.reconstruct(::Type{<:SCPCore.MatrixExpressions.DiagGram}, (A,)::Tuple{T}) where T =
+	SCPCore.MatrixExpressions.DiagGram(A)
+
+Deduplicators.deduplicate_type(::Type{<:SCPCore.MatrixExpressions.Diag}) = true
+Deduplicators.deconstruct_type(::Type{<:SCPCore.MatrixExpressions.Diag}) = true
+Deduplicators.type_to_tag(::Type{<:SCPCore.MatrixExpressions.Diag}) = TypeTag(:ME_Diag)
+Deduplicators.tag_to_type(::Val{:ME_Diag}) = SCPCore.MatrixExpressions.Diag
+Deduplicators.deconstruct(A::SCPCore.MatrixExpressions.Diag) = (A.A,)
+Deduplicators.reconstruct(::Type{<:SCPCore.MatrixExpressions.Diag}, (A,)::Tuple{SCPCore.MatrixProduct}) =
+	SCPCore.MatrixExpressions.Diag(A)
 
 
 
