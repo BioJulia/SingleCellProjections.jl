@@ -82,10 +82,8 @@ end
 
 
 function (proj::Projection)(x)
-	# Removed in refactoring
-	# # unsafe_unmanage is OK since we are only reading from proj_args and proj_kwargs
-	# x = ReproducibleJobs.unsafe_unmanage(x)
-	ReproducibleJobs.copy_nested(y->do_replacement(proj.replacements, y), x)
+	# Refactoring Todo: map_specs works when replacing specs. But we want to be able to replace other values as well.
+	ReproducibleJobs.map_specs(y->do_replacement(proj.replacements, y), x)
 end
 
 
