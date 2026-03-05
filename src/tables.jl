@@ -61,7 +61,7 @@ function get_colnames_fallback(table, args...; kwargs...)
 	_get_colnames_fallback(table, args...)
 end
 
-_get_colnames(table) = first.(table.args)
+_get_colnames(table) = collect(first.(table.args))
 _get_colnames(table, ind) = first(table.args[ind])
 
 
@@ -239,7 +239,6 @@ function _table_hcat_validated(args...)
 	common_names = [name for (name,count) in StatsBase.countmap(names) if count>1]
 	isempty(common_names) || throw(ArgumentError("Table column names must be different, found these common names: $common_names"))
 
-	# result = create_table_spec(Iterators.flatten(ReproducibleJobs.unsafe_unmanage.(getproperty.(args,:args)))...)
 	result = create_table_spec(Iterators.flatten(getproperty.(args,:args))...)
 
 	# Check that the number of rows in all tables match
@@ -365,12 +364,11 @@ function _table_leftjoin(a, b)
 
 	names_a = first.(a.args)
 	names_b = first.(b.args)
-	common_names = intersect(@view(names_a[2:end]), @view(names_b[2:end]))
+	common_names = intersect(names_a[2:end], names_b[2:end])
 	isempty(common_names) || throw(ArgumentError("Table columns must be different (except ID column), found these common columns: $common_names"))
 
 	ind_spec = indexin_spec(ids_a, ids_b; not_found=:nothing)
-	b_cols = ReproducibleJobs.unsafe_unmanage(b.args)
-	joined_cols = [k=>getindex_or_missing_spec(v,ind_spec) for (k,v) in @view(b_cols[2:end])]
+	joined_cols = [k=>getindex_or_missing_spec(v,ind_spec) for (k,v) in b.args[2:end]]
 	create_table_spec(a.args..., joined_cols...)
 end
 

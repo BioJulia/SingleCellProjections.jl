@@ -4,7 +4,7 @@ using SingleCellProjections: Projectable, ProjectOnto, Action, DataMatrixFunctio
 import .SingleCellProjectionsCore as SCPCore
 using .SingleCellProjectionsCore.MatrixExpressions
 using SCTransform
-using ReproducibleJobs: ReproducibleJobs, Cache, TimestampedFilePath, get_cache, with_cache, fetch!, forward, forward_once, create_spec, Job, Preprocess
+using ReproducibleJobs: ReproducibleJobs, Scheduler, TimestampedFilePath, get_scheduler, with_scheduler, fetch!, forward, forward_once, create_spec, Job, Preprocess
 
 using StableRNGs
 
@@ -29,14 +29,15 @@ include("common_data.jl")
 # mktempdir() do tmp # Cleanup directly
 let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 	@testset "SingleCellProjections.jl" begin
-		with_cache(Cache(tmp)) do
+		scheduler = Scheduler(; dir=tmp)
+		with_scheduler(scheduler) do
 
 			# Consider doing this kind of cache testing in ReproducibleJobs.jl only.
 			@testset "$cache_status" for cache_status in ("New Disk Cache", "Reused Disk Cache")
 			# @testset "$cache_status" for cache_status in ("New Disk Cache",)
 				# TODO: Find a better way to do this (probably similar to how we replace and reset the Cache above)
-				empty!(ReproducibleJobs.default_scheduler())
-				empty!(ReproducibleJobs.default_deduplicator().d)
+
+				empty!(scheduler)
 
 				include("projectables.jl")
 				include("tables.jl")
