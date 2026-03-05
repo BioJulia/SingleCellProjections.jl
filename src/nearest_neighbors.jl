@@ -24,7 +24,16 @@ end
 InvDistSquared() = InvDistSquared(0.0)
 (x::InvDistSquared)(d::Float64) = 1.0 / max(x.min_dist, d)^2
 
-ReproducibleJobs.copy_arg(x::InvDistSquared) = x
+Deduplicators.deduplicate_type(::Type{InvDistSquared}) = false
+Deduplicators.deconstruct_weak_rec(x::InvDistSquared) = x
+Deduplicators.reconstruct_weak_rec(x::InvDistSquared) = x
+
+function Deduplicators.cache_save(io, name, x::InvDistSquared)
+	# Refactoring TODO: Do not save the structs as is, use either custom cache_save or custom_wrap.
+	io[name] = x
+	nothing
+end
+
 
 
 weighted_adjacency_matrix_spec(f, indices, dists; kwargs...) =
