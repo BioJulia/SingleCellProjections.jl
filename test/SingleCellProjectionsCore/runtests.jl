@@ -13,14 +13,10 @@ using .SingleCellProjectionsCore: BarnesHutTree, build!, CovariateDesc, covariat
 
 @testset "SingleCellProjectionsCore.jl" begin
 	# include("ranktests.jl")
-	# include("datamatrix.jl")
-	# include("load.jl")
-	# include("basic.jl")
+	include("datamatrix.jl")
 	# include("duplicate_var_ids.jl")
-	# include("annotate.jl")
 	# include("ftest_tests.jl")
 	# include("ttest_tests.jl")
 	# include("mannwhitney_tests.jl")
-	# include("projections.jl")
 	include("test_barnes_hut.jl")
 end

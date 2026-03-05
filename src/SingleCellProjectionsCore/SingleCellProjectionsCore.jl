@@ -56,7 +56,6 @@ include("adjacency_matrices.jl")
 
 include("barnes_hut.jl")
 include("force_layout.jl")
-include("embed.jl")
 
 include("h5ad.jl")
 
