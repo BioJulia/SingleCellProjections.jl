@@ -24,800 +24,800 @@ twogroup_covariate(group_a, group_b=nothing) = TwoGroupCovariateDesc(group_a, gr
 
 
 
-abstract type AbstractValueVectorModel end
+# abstract type AbstractValueVectorModel end
 
-# Base.copy(x::AbstractValueVectorModel) = x # Must be immutable, so this is fine.
+# # Base.copy(x::AbstractValueVectorModel) = x # Must be immutable, so this is fine.
 
 
 
-struct InterceptValueVectorModel <: AbstractValueVectorModel end
-struct NumericalValueVectorModel <: AbstractValueVectorModel end
-struct CategoricalValueVectorModel{T} <: AbstractValueVectorModel
-	categories::Vector{T} # Change to ReadOnlyVector?
-	function CategoricalValueVectorModel(v::Vector{T}; max_categories=100) where T # Hmm. The inner constructors shouldn't do this much work.
-		uv = unique(v)
-		any(ismissing, uv) && throw(ArgumentError("Missing values not supported for categorical value vectors."))
-		len = length(uv)
-		len > max_categories && throw(ArgumentError("$len categories in categorical variable, was this intended? Change max_categories (", max_categories, ") if you want to increase the number of allowed categories."))
-		new{T}(uv)
-	end
-end
-struct TwoGroupValueVectorModel{T} <: AbstractValueVectorModel
-	group_a::T
-	group_b::Union{T,Nothing}
-end
-function TwoGroupValueVectorModel(group_a::T, group_b::Union{T,Nothing}, v::Vector{T}) where T
-	uv = unique(v)
-	any(ismissing, uv) && throw(ArgumentError("Missing values not supported for twgroup value vectors."))
+# struct InterceptValueVectorModel <: AbstractValueVectorModel end
+# struct NumericalValueVectorModel <: AbstractValueVectorModel end
+# struct CategoricalValueVectorModel{T} <: AbstractValueVectorModel
+# 	categories::Vector{T} # Change to ReadOnlyVector?
+# 	function CategoricalValueVectorModel(v::Vector{T}; max_categories=100) where T # Hmm. The inner constructors shouldn't do this much work.
+# 		uv = unique(v)
+# 		any(ismissing, uv) && throw(ArgumentError("Missing values not supported for categorical value vectors."))
+# 		len = length(uv)
+# 		len > max_categories && throw(ArgumentError("$len categories in categorical variable, was this intended? Change max_categories (", max_categories, ") if you want to increase the number of allowed categories."))
+# 		new{T}(uv)
+# 	end
+# end
+# struct TwoGroupValueVectorModel{T} <: AbstractValueVectorModel
+# 	group_a::T
+# 	group_b::Union{T,Nothing}
+# end
+# function TwoGroupValueVectorModel(group_a::T, group_b::Union{T,Nothing}, v::Vector{T}) where T
+# 	uv = unique(v)
+# 	any(ismissing, uv) && throw(ArgumentError("Missing values not supported for twgroup value vectors."))
 
-	if group_b !== nothing && any(x->!isequal(x,group_a) && !isequal(x,group_b), uv)
-		throw(ArgumentError("Expected only values $group_a (Group A) and $group_b (Group B), but got values $(join(uv, ", ", " and "))."))
-	end
+# 	if group_b !== nothing && any(x->!isequal(x,group_a) && !isequal(x,group_b), uv)
+# 		throw(ArgumentError("Expected only values $group_a (Group A) and $group_b (Group B), but got values $(join(uv, ", ", " and "))."))
+# 	end
 
-	TwoGroupValueVectorModel{T}(group_a, group_b)
-end
+# 	TwoGroupValueVectorModel{T}(group_a, group_b)
+# end
 
 
-Base.:(==)(a::CategoricalValueVectorModel, b::CategoricalValueVectorModel) = isequal(a.categories, b.categories)
-Base.:(==)(a::TwoGroupValueVectorModel, b::TwoGroupValueVectorModel) = isequal(a.group_a, b.group_a) && isequal(a.group_b, b.group_b)
+# Base.:(==)(a::CategoricalValueVectorModel, b::CategoricalValueVectorModel) = isequal(a.categories, b.categories)
+# Base.:(==)(a::TwoGroupValueVectorModel, b::TwoGroupValueVectorModel) = isequal(a.group_a, b.group_a) && isequal(a.group_b, b.group_b)
 
 
 
-get_n_categories(m::CategoricalValueVectorModel) = length(m.categories)
-get_n_categories(::TwoGroupValueVectorModel) = 2
+# get_n_categories(m::CategoricalValueVectorModel) = length(m.categories)
+# get_n_categories(::TwoGroupValueVectorModel) = 2
 
 
 
 
-# DEPRECATED - REMOVE
-value_vector_model(v::AbstractVector{<:Union{Missing,Number}}; kwargs...) = NumericalValueVectorModel(; kwargs...)
-value_vector_model(v::AbstractVector; kwargs...) = CategoricalValueVectorModel(v; kwargs...)
+# # DEPRECATED - REMOVE
+# value_vector_model(v::AbstractVector{<:Union{Missing,Number}}; kwargs...) = NumericalValueVectorModel(; kwargs...)
+# value_vector_model(v::AbstractVector; kwargs...) = CategoricalValueVectorModel(v; kwargs...)
 
 
-# This is not really used, but might be good for consistency
-value_vector_model(::Any, ::InterceptCovariateDesc; kwargs...) = InterceptValueVectorModel(; kwargs...)
+# # This is not really used, but might be good for consistency
+# value_vector_model(::Any, ::InterceptCovariateDesc; kwargs...) = InterceptValueVectorModel(; kwargs...)
 
-# Hmm. Not perfect to rely on eltype. But I guess it works in practice.
-value_vector_model(::AbstractVector{<:Union{Missing,Number}}, ::AutoCovariateDesc; kwargs...) = NumericalValueVectorModel(; kwargs...)
-value_vector_model(column::AbstractVector, ::AutoCovariateDesc; kwargs...) = CategoricalValueVectorModel(column; kwargs...)
+# # Hmm. Not perfect to rely on eltype. But I guess it works in practice.
+# value_vector_model(::AbstractVector{<:Union{Missing,Number}}, ::AutoCovariateDesc; kwargs...) = NumericalValueVectorModel(; kwargs...)
+# value_vector_model(column::AbstractVector, ::AutoCovariateDesc; kwargs...) = CategoricalValueVectorModel(column; kwargs...)
 
-value_vector_model(column, ::CategoricalCovariateDesc; kwargs...) = CategoricalValueVectorModel(column; kwargs...)
-value_vector_model(::Any, ::NumericalCovariateDesc; kwargs...) = NumericalValueVectorModel(; kwargs...)
+# value_vector_model(column, ::CategoricalCovariateDesc; kwargs...) = CategoricalValueVectorModel(column; kwargs...)
+# value_vector_model(::Any, ::NumericalCovariateDesc; kwargs...) = NumericalValueVectorModel(; kwargs...)
 
 
-value_vector_model(column, desc::TwoGroupCovariateDesc; kwargs...) = TwoGroupValueVectorModel(desc.group_a, desc.group_b, column; kwargs...)
+# value_vector_model(column, desc::TwoGroupCovariateDesc; kwargs...) = TwoGroupValueVectorModel(desc.group_a, desc.group_b, column; kwargs...)
 
 
 
 
-abstract type AbstractValueVector end
+# abstract type AbstractValueVector end
 
-struct InterceptValueVector <: AbstractValueVector
-	n::Int
-end
-struct NumericalValueVector <: AbstractValueVector
-	values::Vector{Float64} # Change to ReadOnlyVector?
-end
-struct CategoricalValueVector <: AbstractValueVector
-	values::Vector{Int} # Change to ReadOnlyVector?
-end
-struct TwoGroupValueVector <: AbstractValueVector
-	values::Vector{Int} # with values 1 for groupA and 2 for groupB
-end
+# struct InterceptValueVector <: AbstractValueVector
+# 	n::Int
+# end
+# struct NumericalValueVector <: AbstractValueVector
+# 	values::Vector{Float64} # Change to ReadOnlyVector?
+# end
+# struct CategoricalValueVector <: AbstractValueVector
+# 	values::Vector{Int} # Change to ReadOnlyVector?
+# end
+# struct TwoGroupValueVector <: AbstractValueVector
+# 	values::Vector{Int} # with values 1 for groupA and 2 for groupB
+# end
 
-Base.:(==)(a::NumericalValueVector, b::NumericalValueVector) = isequal(a.values, b.values)
-Base.:(==)(a::CategoricalValueVector, b::CategoricalValueVector) = isequal(a.values, b.values)
-Base.:(==)(a::TwoGroupValueVector, b::TwoGroupValueVector) = isequal(a.values, b.values)
+# Base.:(==)(a::NumericalValueVector, b::NumericalValueVector) = isequal(a.values, b.values)
+# Base.:(==)(a::CategoricalValueVector, b::CategoricalValueVector) = isequal(a.values, b.values)
+# Base.:(==)(a::TwoGroupValueVector, b::TwoGroupValueVector) = isequal(a.values, b.values)
 
 
 
-value_vector(::InterceptValueVectorModel, n) = InterceptValueVector(n)
+# value_vector(::InterceptValueVectorModel, n) = InterceptValueVector(n)
 
-function value_vector(::NumericalValueVectorModel, v)
-	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
-	NumericalValueVector(convert(Vector{Float64},v))
-end
-function value_vector(m::CategoricalValueVectorModel, v)
-	ind = indexin(v, m.categories)
-	new_values = setdiff(unique(v), m.categories)
-	isempty(new_values) || error("Categorical vector has values not present in model. Got [", join(new_values, ','), "], but expected [", join(m.categories, ','), "].")
-	CategoricalValueVector(ind)
-end
+# function value_vector(::NumericalValueVectorModel, v)
+# 	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
+# 	NumericalValueVector(convert(Vector{Float64},v))
+# end
+# function value_vector(m::CategoricalValueVectorModel, v)
+# 	ind = indexin(v, m.categories)
+# 	new_values = setdiff(unique(v), m.categories)
+# 	isempty(new_values) || error("Categorical vector has values not present in model. Got [", join(new_values, ','), "], but expected [", join(m.categories, ','), "].")
+# 	CategoricalValueVector(ind)
+# end
 
-function value_vector(m::TwoGroupValueVectorModel, v)
-	if m.group_b === nothing
-		x = ifelse.(isequal.(v, m.group_a), 1, 2)
-		TwoGroupValueVector(x)
-	else
-		groups = [m.group_a, m.group_b]
-		ind = indexin(v, groups)
+# function value_vector(m::TwoGroupValueVectorModel, v)
+# 	if m.group_b === nothing
+# 		x = ifelse.(isequal.(v, m.group_a), 1, 2)
+# 		TwoGroupValueVector(x)
+# 	else
+# 		groups = [m.group_a, m.group_b]
+# 		ind = indexin(v, groups)
 
-		if any(isnothing, ind)
-			new_values = setdiff(unique(v), groups)
-			error("Two-group vector has values not present in model. Got [", join(new_values, ','), "], but expected $(m.group_a) and $(m.group_b).")
-		end
+# 		if any(isnothing, ind)
+# 			new_values = setdiff(unique(v), groups)
+# 			error("Two-group vector has values not present in model. Got [", join(new_values, ','), "], but expected $(m.group_a) and $(m.group_b).")
+# 		end
 
-		TwoGroupValueVector(ind)
-	end
-end
-
-
-
-
-function mean_and_scale(v::AbstractVector; center)
-	m = center ? mean(v) : 0.0
-	# Consider using `norm` or `std` to rescale instead
-	s = max(1e-6, maximum(x->abs(x-m), v)) # Avoid scaling up if values are too small in absolute numbers
-	m, s
-end
-
-
-abstract type AbstractCovariateModel end
-
-struct InterceptCovariateModel <: AbstractCovariateModel end
-
-struct NumericalCovariateModel <: AbstractCovariateModel
-	mean::Float64
-	scale::Float64
-end
-struct CategoricalCovariateModel <: AbstractCovariateModel
-	n_categories::Int
-end
-
-
-covariate_model(::InterceptValueVector; center::Bool) = (@assert center; InterceptCovariateModel())
-covariate_model(v::CategoricalValueVector; center::Bool) = CategoricalCovariateModel(maximum(v.values))
-function covariate_model(v::NumericalValueVector; center::Bool)
-	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
-	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
-	m,s = mean_and_scale(v.values; center)
-	NumericalCovariateModel(m, s)
-end
-function covariate_model(v::TwoGroupValueVector; center::Bool)
-	# TODO: Perhaps better to treat this as a CategoricalValueVector. The user is more likely to move between Categorical and TwoGroup and that would give a more stable representation.
-	#       But currently, we want a 1-column representation because then we can use it for t-tests.
-	m,s = mean_and_scale(v.values; center)
-	NumericalCovariateModel(m, s)
-end
-
-
-
-covariate_scale(m::NumericalCovariateModel) = m.scale
+# 		TwoGroupValueVector(ind)
+# 	end
+# end
+
+
+
+
+# function mean_and_scale(v::AbstractVector; center)
+# 	m = center ? mean(v) : 0.0
+# 	# Consider using `norm` or `std` to rescale instead
+# 	s = max(1e-6, maximum(x->abs(x-m), v)) # Avoid scaling up if values are too small in absolute numbers
+# 	m, s
+# end
+
+
+# abstract type AbstractCovariateModel end
+
+# struct InterceptCovariateModel <: AbstractCovariateModel end
+
+# struct NumericalCovariateModel <: AbstractCovariateModel
+# 	mean::Float64
+# 	scale::Float64
+# end
+# struct CategoricalCovariateModel <: AbstractCovariateModel
+# 	n_categories::Int
+# end
+
+
+# covariate_model(::InterceptValueVector; center::Bool) = (@assert center; InterceptCovariateModel())
+# covariate_model(v::CategoricalValueVector; center::Bool) = CategoricalCovariateModel(maximum(v.values))
+# function covariate_model(v::NumericalValueVector; center::Bool)
+# 	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
+# 	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
+# 	m,s = mean_and_scale(v.values; center)
+# 	NumericalCovariateModel(m, s)
+# end
+# function covariate_model(v::TwoGroupValueVector; center::Bool)
+# 	# TODO: Perhaps better to treat this as a CategoricalValueVector. The user is more likely to move between Categorical and TwoGroup and that would give a more stable representation.
+# 	#       But currently, we want a 1-column representation because then we can use it for t-tests.
+# 	m,s = mean_and_scale(v.values; center)
+# 	NumericalCovariateModel(m, s)
+# end
+
+
+
+# covariate_scale(m::NumericalCovariateModel) = m.scale
 
 
-covariate_matrix(::InterceptCovariateModel, v::InterceptValueVector) = ones(v.n, 1)
-function covariate_matrix(m::CategoricalCovariateModel, v::CategoricalValueVector)
-	isequal.(v.values, (1:m.n_categories)')
-end
-
-
-function _covariate_matrix(m::NumericalCovariateModel, v::Vector)
-	N = length(v)
-	x = reshape(v, N, 1) # So we return a N×1 matrix
-	(x .- m.mean)./m.scale
-end
-
-function covariate_matrix(m::NumericalCovariateModel, v::NumericalValueVector)
-	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
-	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
-	_covariate_matrix(m, v.values)
-end
-function covariate_matrix(m::NumericalCovariateModel, v::TwoGroupValueVector)
-	_covariate_matrix(m, v.values)
-end
-
-
-
-
-# --- Old ----------------------------------------------------------------------
-
-
-
-# Maybe these should be considered models?
-abstract type AbstractCovariate2 end
-struct InterceptCovariate2 <: AbstractCovariate2 end
-struct NumericalCovariate2 <: AbstractCovariate2
-	name::String
-	mean::Float64
-	scale::Float64
-end
-function numerical_covariate2(name::String, v::AbstractVector, center::Bool)
-	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
-	any(isnan, v) && throw(ArgumentError("NaN values not supported for numerical covariates."))
-	any(isinf, v) && throw(ArgumentError("Inf values not supported for numerical covariates."))
-	m = center ? mean(v) : 0.0
-	s = max(1e-6, maximum(x->abs(x-m), v)) # Avoid scaling up if values are too small in absolute numbers
-	NumericalCovariate2(name, m, s)
-end
-
-struct CategoricalCovariate2{T} <: AbstractCovariate2
-	name::String
-	values::Vector{T}
-end
-function categorical_covariate2(name::String, v::AbstractVector; max_categories=100)
-	uv = unique(v)
-	@show uv
-	any(ismissing, uv) && throw(ArgumentError("Missing values not supported for categorical covariates."))
-	len = length(uv)
-	len > max_categories && throw(ArgumentError("$len categories in categorical variable, was this intended? Change max_categories (", max_categories, ") if you want to increase the number of allowed categories."))
-	CategoricalCovariate2(name, uv)
-end
-
-
-struct TwoGroupCovariate2{T} <: AbstractCovariate2
-	name::String
-	group_a::T
-	group_b::Union{Nothing,T}
-	mean::Float64
-end
-function twogroup_covariate2(name::String, v::AbstractVector, group_a, group_b, center::Bool)
-	uv = unique(v)
-	any(ismissing, uv) && throw(ArgumentError("Missing values not supported for two-group covariates."))
+# covariate_matrix(::InterceptCovariateModel, v::InterceptValueVector) = ones(v.n, 1)
+# function covariate_matrix(m::CategoricalCovariateModel, v::CategoricalValueVector)
+# 	isequal.(v.values, (1:m.n_categories)')
+# end
+
+
+# function _covariate_matrix(m::NumericalCovariateModel, v::Vector)
+# 	N = length(v)
+# 	x = reshape(v, N, 1) # So we return a N×1 matrix
+# 	(x .- m.mean)./m.scale
+# end
+
+# function covariate_matrix(m::NumericalCovariateModel, v::NumericalValueVector)
+# 	any(isnan, v.values) && throw(ArgumentError("NaN values not supported for numerical covariates."))
+# 	any(isinf, v.values) && throw(ArgumentError("Inf values not supported for numerical covariates."))
+# 	_covariate_matrix(m, v.values)
+# end
+# function covariate_matrix(m::NumericalCovariateModel, v::TwoGroupValueVector)
+# 	_covariate_matrix(m, v.values)
+# end
+
+
+
+
+# # --- Old ----------------------------------------------------------------------
+
+
+
+# # Maybe these should be considered models?
+# abstract type AbstractCovariate2 end
+# struct InterceptCovariate2 <: AbstractCovariate2 end
+# struct NumericalCovariate2 <: AbstractCovariate2
+# 	name::String
+# 	mean::Float64
+# 	scale::Float64
+# end
+# function numerical_covariate2(name::String, v::AbstractVector, center::Bool)
+# 	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
+# 	any(isnan, v) && throw(ArgumentError("NaN values not supported for numerical covariates."))
+# 	any(isinf, v) && throw(ArgumentError("Inf values not supported for numerical covariates."))
+# 	m = center ? mean(v) : 0.0
+# 	s = max(1e-6, maximum(x->abs(x-m), v)) # Avoid scaling up if values are too small in absolute numbers
+# 	NumericalCovariate2(name, m, s)
+# end
+
+# struct CategoricalCovariate2{T} <: AbstractCovariate2
+# 	name::String
+# 	values::Vector{T}
+# end
+# function categorical_covariate2(name::String, v::AbstractVector; max_categories=100)
+# 	uv = unique(v)
+# 	@show uv
+# 	any(ismissing, uv) && throw(ArgumentError("Missing values not supported for categorical covariates."))
+# 	len = length(uv)
+# 	len > max_categories && throw(ArgumentError("$len categories in categorical variable, was this intended? Change max_categories (", max_categories, ") if you want to increase the number of allowed categories."))
+# 	CategoricalCovariate2(name, uv)
+# end
+
+
+# struct TwoGroupCovariate2{T} <: AbstractCovariate2
+# 	name::String
+# 	group_a::T
+# 	group_b::Union{Nothing,T}
+# 	mean::Float64
+# end
+# function twogroup_covariate2(name::String, v::AbstractVector, group_a, group_b, center::Bool)
+# 	uv = unique(v)
+# 	any(ismissing, uv) && throw(ArgumentError("Missing values not supported for two-group covariates."))
 
-	if group_a === nothing && group_b === nothing
-		length(uv) != 2 && throw(ArgumentError("Column \"$name\" must have exactly two groups (found \"$uv\")."))
-		group_a,group_b = minmax(uv[1],uv[2]) # Keep order stable
-	else
-		group_a in uv || throw(ArgumentError("Group A (\"$group_a\") not found in column \"$name\"."))
-		if group_b !== nothing
-			# only group_a and group_b allowed
-			group_b in uv || throw(ArgumentError("Group B (\"$group_b\") not found in column \"$name\"."))
-			length(uv) > 2 && throw(ArgumentError("Only two groups allowed in column \"$name\" (found \"$uv\")."))
-		end
-	end
+# 	if group_a === nothing && group_b === nothing
+# 		length(uv) != 2 && throw(ArgumentError("Column \"$name\" must have exactly two groups (found \"$uv\")."))
+# 		group_a,group_b = minmax(uv[1],uv[2]) # Keep order stable
+# 	else
+# 		group_a in uv || throw(ArgumentError("Group A (\"$group_a\") not found in column \"$name\"."))
+# 		if group_b !== nothing
+# 			# only group_a and group_b allowed
+# 			group_b in uv || throw(ArgumentError("Group B (\"$group_b\") not found in column \"$name\"."))
+# 			length(uv) > 2 && throw(ArgumentError("Only two groups allowed in column \"$name\" (found \"$uv\")."))
+# 		end
+# 	end
 
-	center || throw(ArgumentError("Two-group covariates require center=true."))
+# 	center || throw(ArgumentError("Two-group covariates require center=true."))
 
-	m = center ? (1.0./count(isequal(group_a),v)) : 0.0
-	TwoGroupCovariate2(name, group_a, group_b, m)
-end
+# 	m = center ? (1.0./count(isequal(group_a),v)) : 0.0
+# 	TwoGroupCovariate2(name, group_a, group_b, m)
+# end
 
 
-_length(::AbstractCovariate2) = 1
-_length(c::CategoricalCovariate2) = length(c.values)
+# _length(::AbstractCovariate2) = 1
+# _length(c::CategoricalCovariate2) = length(c.values)
 
-_covariate_scale(::AbstractCovariate2) = 1.0
-_covariate_scale(n::NumericalCovariate2) = n.scale
+# _covariate_scale(::AbstractCovariate2) = 1.0
+# _covariate_scale(n::NumericalCovariate2) = n.scale
 
 
 
 
 
-struct CovariateDesc2{S,A,B}
-	type::Symbol
-	src::S
-	group_a::A
-	group_b::B
-	function CovariateDesc2(type::Symbol, src::S, group_a::A, group_b::B) where {S,A,B}
-		@assert type in (:auto, :numerical, :categorical, :twogroup, :intercept)
-		new{S,A,B}(type, src, group_a, group_b)
-	end
-end
-CovariateDesc2(type, src) = CovariateDesc2(type, src, nothing, nothing)
+# struct CovariateDesc2{S,A,B}
+# 	type::Symbol
+# 	src::S
+# 	group_a::A
+# 	group_b::B
+# 	function CovariateDesc2(type::Symbol, src::S, group_a::A, group_b::B) where {S,A,B}
+# 		@assert type in (:auto, :numerical, :categorical, :twogroup, :intercept)
+# 		new{S,A,B}(type, src, group_a, group_b)
+# 	end
+# end
+# CovariateDesc2(type, src) = CovariateDesc2(type, src, nothing, nothing)
 
-function covariate_prefix(c::CovariateDesc2{S,A,B}, suffix='_') where {S,A,B}
-	name = _get_name(c)
-	if c.type == :twogroup
-		if c.group_b !== nothing
-			return string(name, '_', c.group_a, "_vs_", c.group_b, suffix)
-		elseif c.group_a !== nothing
-			return string(name, '_', c.group_a, suffix)
-		end
-	end
-	return string(name, suffix)
-end
+# function covariate_prefix(c::CovariateDesc2{S,A,B}, suffix='_') where {S,A,B}
+# 	name = _get_name(c)
+# 	if c.type == :twogroup
+# 		if c.group_b !== nothing
+# 			return string(name, '_', c.group_a, "_vs_", c.group_b, suffix)
+# 		elseif c.group_a !== nothing
+# 			return string(name, '_', c.group_a, suffix)
+# 		end
+# 	end
+# 	return string(name, suffix)
+# end
 
 
-"""
-	covariate(src, type=:auto)
+# """
+# 	covariate(src, type=:auto)
 
-Create a `covariate` referring to `src`.
+# Create a `covariate` referring to `src`.
 
-`src` is one of:
-* `String` - referring to a column in the DataMatrix `obs`.
-* `DataFrame` - with exactly two columns, the first should contain IDs matching IDs in `obs`, and the second should be the covariate.
-* `Annotations` (experimental) - with ID matching the DataMatrix `obs` and a second column for the covariate.
+# `src` is one of:
+# * `String` - referring to a column in the DataMatrix `obs`.
+# * `DataFrame` - with exactly two columns, the first should contain IDs matching IDs in `obs`, and the second should be the covariate.
+# * `Annotations` (experimental) - with ID matching the DataMatrix `obs` and a second column for the covariate.
 
-`type` must be one of `:auto`, `:numerical`, `:categorical`, `:twogroup` and `:intercept`.
-`:auto` means auto-detection by checking if the values in the column are numerical or categorical.
-`type==:intercept` adds an intercept to the model (in which case the `src` parameter is ignored).
+# `type` must be one of `:auto`, `:numerical`, `:categorical`, `:twogroup` and `:intercept`.
+# `:auto` means auto-detection by checking if the values in the column are numerical or categorical.
+# `type==:intercept` adds an intercept to the model (in which case the `src` parameter is ignored).
 
-See also: [`designmatrix`](@ref)
-"""
-covariate2(src, type::Symbol=:auto) = CovariateDesc2(type, src)
+# See also: [`designmatrix`](@ref)
+# """
+# covariate2(src, type::Symbol=:auto) = CovariateDesc2(type, src)
 
-"""
-	covariate(src, group_a, [group_b])
+# """
+# 	covariate(src, group_a, [group_b])
 
-Create a two-group `covariate` referring to `src`, comparing `group_a` to `group_b`.
+# Create a two-group `covariate` referring to `src`, comparing `group_a` to `group_b`.
 
-`src` is one of:
-* `String` - referring to a column in the DataMatrix `obs`.
-* `DataFrame` - with exactly two columns, the first should contain IDs matching IDs in `obs`, and the second should be the covariate.
-* `Annotations` (experimental) - with ID matching the DataMatrix `obs` and a second column for the covariate.
+# `src` is one of:
+# * `String` - referring to a column in the DataMatrix `obs`.
+# * `DataFrame` - with exactly two columns, the first should contain IDs matching IDs in `obs`, and the second should be the covariate.
+# * `Annotations` (experimental) - with ID matching the DataMatrix `obs` and a second column for the covariate.
 
-If `src` is a `String` it will refer to a column in the DataMatrix `obs`.
-`src` can also be an `Annotations` object, with ID matching the DataMatrix `obs`.
-`group_a` and `group_b` must be values occuring in the column `src`.
+# If `src` is a `String` it will refer to a column in the DataMatrix `obs`.
+# `src` can also be an `Annotations` object, with ID matching the DataMatrix `obs`.
+# `group_a` and `group_b` must be values occuring in the column `src`.
 
-If `group_b` is not given, `group_a` will be compared to all other observations.
+# If `group_b` is not given, `group_a` will be compared to all other observations.
 
-See also: [`designmatrix`](@ref)
-"""
-covariate2(src, group_a, group_b=nothing) = CovariateDesc2(:twogroup, src, group_a, group_b)
+# See also: [`designmatrix`](@ref)
+# """
+# covariate2(src, group_a, group_b=nothing) = CovariateDesc2(:twogroup, src, group_a, group_b)
 
-covariate2(c::CovariateDesc2) = c
+# covariate2(c::CovariateDesc2) = c
 
 
-# _get_name(c::CovariateDesc2{String}) = c.src
-_get_name(c::CovariateDesc2{Annotations}) = annotation_name(c.src)
-_get_name(c::CovariateDesc2{DataFrame}) = (@assert size(c.src,2)==2; only(names(c.src,2)))
+# # _get_name(c::CovariateDesc2{String}) = c.src
+# _get_name(c::CovariateDesc2{Annotations}) = annotation_name(c.src)
+# _get_name(c::CovariateDesc2{DataFrame}) = (@assert size(c.src,2)==2; only(names(c.src,2)))
 
-_get_src_df(cov::CovariateDesc2{T}) where T<:AbstractDataFrame = cov.src
-_get_src_df(cov::CovariateDesc2{Annotations}) = get_table(cov.src)
+# _get_src_df(cov::CovariateDesc2{T}) where T<:AbstractDataFrame = cov.src
+# _get_src_df(cov::CovariateDesc2{Annotations}) = get_table(cov.src)
+
+# # _get_values(obs::DataFrame, c::CovariateDesc{String}) = c.src, obs[!,c.src]
+# function _get_values(obs_id::DataFrame, c::CovariateDesc2)
+# 	@assert size(obs_id,2)==1
+
+# 	df = _get_src_df(c)
+# 	size(df,2) == 2 || throw(ArgumentError("Covariate must have exactly one ID column and one value column."))
+
+# 	obs = leftjoin!(obs_id, df; on=names(obs_id,1))
+# 	obs[!,2]
+# end
+
+
+# function instantiate_covariate(obs_id::DataFrame, c::CovariateDesc2, center::Bool)
+# 	t = c.type
+# 	t == :intercept && return InterceptCovariate2()
+
+# 	v = _get_values(obs_id,c)
+# 	name = _get_name(c)
+
+# 	if t == :auto
+# 		# Hmm. Not perfect to check eltype. But I guess it works in practice.
+# 		t = eltype(v) <: Union{Missing,Number} ? :numerical : :categorical
+# 	end
+
+# 	if t == :numerical
+# 		return numerical_covariate2(name, v, center)
+# 	elseif t == :categorical
+# 		return categorical_covariate2(name, v)
+# 	elseif t == :twogroup
+# 		return twogroup_covariate2(name, v, c.group_a, c.group_b, center)
+# 	else
+# 		error("Unknown covariate type.")
+# 	end
+# end
+
+
+
+
+
+
+# struct DesignMatrixModel <: ProjectionModel
+# 	covariates::Vector{AbstractCovariate2}
+# end
+
+# # args can be annotations (we will autodetect numerical/categorical)
+# function DesignMatrixModel(obs_id::DataFrame, args...; center=true)
+# 	covariates = AbstractCovariate2[]
+
+# 	center |= any(==(InterceptCovariate2()), args)
+# 	center |= any(x->x isa TwoGroupCovariate2, args) # intercept is needed so we can represent the two-group covariate using a single column
+
+# 	if center
+# 		push!(covariates, InterceptCovariate2())
+# 	end
+# 	for x in args
+# 		x == InterceptCovariate2() && continue # intercept already handled above
+# 		cov = instantiate_covariate(obs_id, covariate2(x), center)
+# 		push!(covariates, cov)
+# 	end
+# 	DesignMatrixModel(covariates)
+# end
+# DesignMatrixModel(data::DataMatrix, args...; kwargs...) = DesignMatrixModel(select(data.obs,1), args...; kwargs...)
+
+
+
+# # TODO: Revise
+# _annotation_name(df::DataFrame) = (@assert size(df,2)==2; only(names(df,2)))
+# _annotation_name(a::Annotations) = annotation_name(a)
+# _get_table(df::DataFrame) = df
+# _get_table(a::Annotations) = get_table(a)
+
+
+
+# covariate_design!(A, ::InterceptCovariate2, ::Any) = A .= 1.0
+# function covariate_design!(A, c::NumericalCovariate2, v::AbstractVector)
+# 	any(ismissing, v) && throw(ArgumentError("Numerical covariate \"$(c.name)\" contains missing values."))
+# 	any(isnan, v) && throw(ArgumentError("Numerical covariate \"$(c.name)\" contains NaN values."))
+# 	any(isinf, v) && throw(ArgumentError("Numerical covariate \"$(c.name)\" contains Inf values."))
+
+# 	# Center and scale for numerical stability
+# 	A .= (v .- c.mean)./c.scale
+# end
+# function covariate_design!(A, c::CategoricalCovariate2, v::AbstractVector)
+# 	new_values = setdiff(unique(v), c.values)
+# 	isempty(new_values) || error("Categorical covariate ", c.name, " has values not present in the model: ", join(new_value, ','))
+
+# 	A .= isequal.(v, permutedims(c.values))
+# end
+# function covariate_design!(A, t::TwoGroupCovariate2, v::AbstractVector)
+# 	any(ismissing, v) && throw(ArgumentError("Two-group covariate \"$(t.name)\" contains missing values."))
+
+# 	if t.group_b !== nothing
+# 		new_values = setdiff(unique(v), (t.group_a, t.group_b))
+# 		isempty(new_values) || throw(ArgumentError(string("Two-group covariate ", t.name, " has values not present in the model: ", join(new_value, ','))))
+# 	end
+
+# 	nA = count(==(t.group_a), v)
+# 	nB = length(v)-nA
+# 	nA == 0 && throw(ArgumentError("No values belong to group A (\"$(t.group_a)\")."))
+# 	if nB == 0
+# 		suffix = t.group_b !== nothing ? string(" (\"", t.group_b, "\")") : ""
+# 		throw(ArgumentError("No values belong to group B$suffix."))
+# 	end
+
+# 	A .= (v.==t.group_a) .- t.mean
+# end
+
+
+
+# # TODO: exact interface might change
+# function designmatrix_project(model::DesignMatrixModel, obs_id::DataFrame, annotations::DataFrame...)
+# 	C = sum(_length, model.covariates; init=0)
+# 	# N = size(data,2) # ah. This is needed if there are no annotations. Or maybe rather the obs_id are needed (to leftjoin annotations).
+# 	N = size(obs_id,1)
+
+# 	A = zeros(N,C) # might want to transpose this?
+# 	covariate_id = fill("", C)
+
+
+# 	id_col = only(names(obs_id))
+# 	obs = copy(obs_id; copy_cols=false)
+
+
+# 	# Gather names of columns we need
+# 	cols_needed = String[id_col]
+# 	for c in model.covariates
+# 		c isa InterceptCovariate2 || push!(cols_needed, c.name)
+# 	end
+
+# 	# Extract colunmns we need from each DataFrame, and leftjoin to get same order as obs_id
+# 	for a in annotations
+# 		if only(names(a,1)) == id_col # ID column name must match
+# 			cols_found = intersect(names(a), cols_needed)
+# 			if length(cols_found) >= 2 # must be ID + at least one more column
+# 				leftjoin!(obs, select(a, cols_found); on=id_col) # TODO: Give a nice error message if column appear twice
+# 			end
+# 		end
+# 	end
+
+
+
+# 	i = 1
+# 	# for (c,v) in zip(covariates,value_vectors)
+# 	# for (c,a) in zip(model.covariates,annotations) # Maybe not assume same order?
+# 	for c in model.covariates
+# 		len = _length(c)
+
+# 		# get vector of values
+# 		if c isa InterceptCovariate2
+# 			name = "intercept"
+# 			v = nothing
+# 		else
+# 			name = c.name
+# 			v = obs[!,name]
+# 		end
+
+# 		covariate_design!(view(A,:,i:i+len-1), c, v)
+
+# 		# TODO: make nicer
+# 		if len == 1
+# 			covariate_id[i] = name
+# 		else
+# 			for j in 1:len
+# 				covariate_id[i+j-1] = string(name,'_',j)
+# 			end
+# 		end
+
+# 		i += len
+# 	end
+
+# 	DataMatrix(A, obs_id, DataFrame(;covariate_id))
+# end
+
+# designmatrix_project(model::DesignMatrixModel, data::DataMatrix, args...; kwargs...) =
+# 	designmatrix_project(model, select(data.obs,1), args...; kwargs...)
+
+
+
+
+
+# # --- Old ----------------------------------------------------------------------
+
+# abstract type AbstractCovariate end
+# struct InterceptCovariate <: AbstractCovariate end
+# struct NumericalCovariate <: AbstractCovariate
+# 	name::String
+# 	external::Bool # false if present in data.obs, true if given as external annotation
+# 	mean::Float64
+# 	scale::Float64
+# end
+# function NumericalCovariate(data::DataMatrix, name::String, external::Bool, v::AbstractVector, center::Bool)
+# 	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
+# 	any(isnan, v) && throw(ArgumentError("NaN values not supported for numerical covariates."))
+# 	any(isinf, v) && throw(ArgumentError("Inf values not supported for numerical covariates."))
+# 	m = center ? mean(v) : 0.0
+# 	s = max(1e-6, maximum(x->abs(x-m), v)) # Avoid scaling up if values are too small in absolute numbers
+# 	NumericalCovariate(name, external, m, s)
+# end
+
+# struct CategoricalCovariate{T} <: AbstractCovariate
+# 	name::String
+# 	external::Bool # false if present in data.obs, true if given as external annotation
+# 	values::Vector{T}
+# end
+# function CategoricalCovariate(data::DataMatrix, name::String, external::Bool, v::AbstractVector)
+# 	uv = unique(v)
+# 	any(ismissing, uv) && throw(ArgumentError("Missing values not supported for categorical covariates."))
+# 	CategoricalCovariate(name, external, uv)
+# end
+
+# struct TwoGroupCovariate{T} <: AbstractCovariate
+# 	name::String
+# 	external::Bool # false if present in data.obs, true if given as external annotation
+# 	group_a::T
+# 	group_b::Union{Nothing,T}
+# 	mean::Float64
+# end
+# function TwoGroupCovariate(data::DataMatrix, name::String, external::Bool, v::AbstractVector, group_a, group_b, center::Bool)
+# 	uv = unique(v)
+# 	any(ismissing, uv) && throw(ArgumentError("Missing values not supported for two-group covariates."))
+
+# 	if group_a === nothing && group_b === nothing
+# 		length(uv) != 2 && throw(ArgumentError("Column \"$name\" have exactly two groups (found \"$uv\")."))
+# 		group_a,group_b = minmax(uv[1],uv[2]) # Keep order stable
+# 	else
+# 		group_a in uv || throw(ArgumentError("Group A (\"$group_a\") not found in column \"$name\"."))
+# 		if group_b !== nothing
+# 			# only group_a and group_b allowed
+# 			group_b in uv || throw(ArgumentError("Group B (\"$group_b\") not found in column \"$name\"."))
+# 			length(uv) > 2 && throw(ArgumentError("Only two groups allowed in column \"$name\" (found \"$uv\")."))
+# 		end
+# 	end
+
+# 	m = center ? (1.0./count(isequal(group_a),v)) : 0.0
+# 	TwoGroupCovariate(name, external, group_a, group_b, m)
+# end
+
+# _length(::AbstractCovariate) = 1
+# _length(c::CategoricalCovariate) = length(c.values)
+
+# _covariate_scale(::AbstractCovariate) = 1.0
+# _covariate_scale(n::NumericalCovariate) = n.scale
+
+
+# struct CovariateDesc{T,T2}
+# 	type::Symbol
+# 	src::T
+# 	group_a::T2
+# 	group_b::Union{Nothing,T2}
+# 	function CovariateDesc(type::Symbol, src::T, group_a::T2, group_b::Union{Nothing,T2}) where {T,T2}
+# 		@assert type in (:auto, :numerical, :categorical, :twogroup, :intercept)
+# 		new{T,T2}(type, src, group_a, group_b)
+# 	end
+# end
+# CovariateDesc(type, src) = CovariateDesc(type, src, nothing, nothing)
+
+# function covariate_prefix(c::CovariateDesc{T,T2}, suffix='_') where {T,T2}
+# 	name = _get_name(c)
+# 	if c.type == :twogroup
+# 		if c.group_b !== nothing
+# 			return string(name, '_', c.group_a, "_vs_", c.group_b, suffix)
+# 		elseif c.group_a !== nothing
+# 			return string(name, '_', c.group_a, suffix)
+# 		end
+# 	end
+# 	return string(name, suffix)
+# end
+
+
+# """
+# 	covariate(src, type=:auto)
+
+# Create a `covariate` referring to `src`.
+
+# `src` is one of:
+# * `String` - referring to a column in the DataMatrix `obs`.
+# * `DataFrame` - with exactly two columns, the first should contain IDs matching IDs in `obs`, and the second should be the covariate.
+# * `Annotations` (experimental) - with ID matching the DataMatrix `obs` and a second column for the covariate.
+
+# `type` must be one of `:auto`, `:numerical`, `:categorical`, `:twogroup` and `:intercept`.
+# `:auto` means auto-detection by checking if the values in the column are numerical or categorical.
+# `type==:intercept` adds an intercept to the model (in which case the `src` parameter is ignored).
+
+# See also: [`designmatrix`](@ref)
+# """
+# covariate(src, type::Symbol=:auto) = CovariateDesc(type, src)
+
+# """
+# 	covariate(src, group_a, [group_b])
+
+# Create a two-group `covariate` referring to `src`, comparing `group_a` to `group_b`.
+
+# `src` is one of:
+# * `String` - referring to a column in the DataMatrix `obs`.
+# * `DataFrame` - with exactly two columns, the first should contain IDs matching IDs in `obs`, and the second should be the covariate.
+# * `Annotations` (experimental) - with ID matching the DataMatrix `obs` and a second column for the covariate.
+
+# If `src` is a `String` it will refer to a column in the DataMatrix `obs`.
+# `src` can also be an `Annotations` object, with ID matching the DataMatrix `obs`.
+# `group_a` and `group_b` must be values occuring in the column `src`.
+
+# If `group_b` is not given, `group_a` will be compared to all other observations.
+
+# See also: [`designmatrix`](@ref)
+# """
+# covariate(src, group_a, group_b=nothing) = CovariateDesc(:twogroup, src, group_a, group_b)
+
+# covariate(c::CovariateDesc) = c
+
+
+# _get_name(c::CovariateDesc{String}) = c.src
+# _get_name(c::CovariateDesc) = annotation_name(c.src)
+
+# _get_src_df(cov::CovariateDesc{T}) where T<:AbstractDataFrame = cov.src
+# _get_src_df(cov::CovariateDesc{Annotations}) = get_table(cov.src)
 
 # _get_values(obs::DataFrame, c::CovariateDesc{String}) = c.src, obs[!,c.src]
-function _get_values(obs_id::DataFrame, c::CovariateDesc2)
-	@assert size(obs_id,2)==1
-
-	df = _get_src_df(c)
-	size(df,2) == 2 || throw(ArgumentError("Covariate must have exactly one ID column and one value column."))
-
-	obs = leftjoin!(obs_id, df; on=names(obs_id,1))
-	obs[!,2]
-end
-
-
-function instantiate_covariate(obs_id::DataFrame, c::CovariateDesc2, center::Bool)
-	t = c.type
-	t == :intercept && return InterceptCovariate2()
-
-	v = _get_values(obs_id,c)
-	name = _get_name(c)
-
-	if t == :auto
-		# Hmm. Not perfect to check eltype. But I guess it works in practice.
-		t = eltype(v) <: Union{Missing,Number} ? :numerical : :categorical
-	end
-
-	if t == :numerical
-		return numerical_covariate2(name, v, center)
-	elseif t == :categorical
-		return categorical_covariate2(name, v)
-	elseif t == :twogroup
-		return twogroup_covariate2(name, v, c.group_a, c.group_b, center)
-	else
-		error("Unknown covariate type.")
-	end
-end
-
-
-
-
-
-
-struct DesignMatrixModel <: ProjectionModel
-	covariates::Vector{AbstractCovariate2}
-end
-
-# args can be annotations (we will autodetect numerical/categorical)
-function DesignMatrixModel(obs_id::DataFrame, args...; center=true)
-	covariates = AbstractCovariate2[]
-
-	center |= any(==(InterceptCovariate2()), args)
-	center |= any(x->x isa TwoGroupCovariate2, args) # intercept is needed so we can represent the two-group covariate using a single column
-
-	if center
-		push!(covariates, InterceptCovariate2())
-	end
-	for x in args
-		x == InterceptCovariate2() && continue # intercept already handled above
-		cov = instantiate_covariate(obs_id, covariate2(x), center)
-		push!(covariates, cov)
-	end
-	DesignMatrixModel(covariates)
-end
-DesignMatrixModel(data::DataMatrix, args...; kwargs...) = DesignMatrixModel(select(data.obs,1), args...; kwargs...)
-
-
-
-# TODO: Revise
-_annotation_name(df::DataFrame) = (@assert size(df,2)==2; only(names(df,2)))
-_annotation_name(a::Annotations) = annotation_name(a)
-_get_table(df::DataFrame) = df
-_get_table(a::Annotations) = get_table(a)
-
-
-
-covariate_design!(A, ::InterceptCovariate2, ::Any) = A .= 1.0
-function covariate_design!(A, c::NumericalCovariate2, v::AbstractVector)
-	any(ismissing, v) && throw(ArgumentError("Numerical covariate \"$(c.name)\" contains missing values."))
-	any(isnan, v) && throw(ArgumentError("Numerical covariate \"$(c.name)\" contains NaN values."))
-	any(isinf, v) && throw(ArgumentError("Numerical covariate \"$(c.name)\" contains Inf values."))
-
-	# Center and scale for numerical stability
-	A .= (v .- c.mean)./c.scale
-end
-function covariate_design!(A, c::CategoricalCovariate2, v::AbstractVector)
-	new_values = setdiff(unique(v), c.values)
-	isempty(new_values) || error("Categorical covariate ", c.name, " has values not present in the model: ", join(new_value, ','))
-
-	A .= isequal.(v, permutedims(c.values))
-end
-function covariate_design!(A, t::TwoGroupCovariate2, v::AbstractVector)
-	any(ismissing, v) && throw(ArgumentError("Two-group covariate \"$(t.name)\" contains missing values."))
-
-	if t.group_b !== nothing
-		new_values = setdiff(unique(v), (t.group_a, t.group_b))
-		isempty(new_values) || throw(ArgumentError(string("Two-group covariate ", t.name, " has values not present in the model: ", join(new_value, ','))))
-	end
-
-	nA = count(==(t.group_a), v)
-	nB = length(v)-nA
-	nA == 0 && throw(ArgumentError("No values belong to group A (\"$(t.group_a)\")."))
-	if nB == 0
-		suffix = t.group_b !== nothing ? string(" (\"", t.group_b, "\")") : ""
-		throw(ArgumentError("No values belong to group B$suffix."))
-	end
-
-	A .= (v.==t.group_a) .- t.mean
-end
-
-
-
-# TODO: exact interface might change
-function designmatrix_project(model::DesignMatrixModel, obs_id::DataFrame, annotations::DataFrame...)
-	C = sum(_length, model.covariates; init=0)
-	# N = size(data,2) # ah. This is needed if there are no annotations. Or maybe rather the obs_id are needed (to leftjoin annotations).
-	N = size(obs_id,1)
-
-	A = zeros(N,C) # might want to transpose this?
-	covariate_id = fill("", C)
-
-
-	id_col = only(names(obs_id))
-	obs = copy(obs_id; copy_cols=false)
-
-
-	# Gather names of columns we need
-	cols_needed = String[id_col]
-	for c in model.covariates
-		c isa InterceptCovariate2 || push!(cols_needed, c.name)
-	end
-
-	# Extract colunmns we need from each DataFrame, and leftjoin to get same order as obs_id
-	for a in annotations
-		if only(names(a,1)) == id_col # ID column name must match
-			cols_found = intersect(names(a), cols_needed)
-			if length(cols_found) >= 2 # must be ID + at least one more column
-				leftjoin!(obs, select(a, cols_found); on=id_col) # TODO: Give a nice error message if column appear twice
-			end
-		end
-	end
-
-
-
-	i = 1
-	# for (c,v) in zip(covariates,value_vectors)
-	# for (c,a) in zip(model.covariates,annotations) # Maybe not assume same order?
-	for c in model.covariates
-		len = _length(c)
-
-		# get vector of values
-		if c isa InterceptCovariate2
-			name = "intercept"
-			v = nothing
-		else
-			name = c.name
-			v = obs[!,name]
-		end
-
-		covariate_design!(view(A,:,i:i+len-1), c, v)
-
-		# TODO: make nicer
-		if len == 1
-			covariate_id[i] = name
-		else
-			for j in 1:len
-				covariate_id[i+j-1] = string(name,'_',j)
-			end
-		end
-
-		i += len
-	end
-
-	DataMatrix(A, obs_id, DataFrame(;covariate_id))
-end
-
-designmatrix_project(model::DesignMatrixModel, data::DataMatrix, args...; kwargs...) =
-	designmatrix_project(model, select(data.obs,1), args...; kwargs...)
-
-
-
-
-
-# --- Old ----------------------------------------------------------------------
-
-abstract type AbstractCovariate end
-struct InterceptCovariate <: AbstractCovariate end
-struct NumericalCovariate <: AbstractCovariate
-	name::String
-	external::Bool # false if present in data.obs, true if given as external annotation
-	mean::Float64
-	scale::Float64
-end
-function NumericalCovariate(data::DataMatrix, name::String, external::Bool, v::AbstractVector, center::Bool)
-	any(ismissing, v) && throw(ArgumentError("Missing values not supported for numerical covariates."))
-	any(isnan, v) && throw(ArgumentError("NaN values not supported for numerical covariates."))
-	any(isinf, v) && throw(ArgumentError("Inf values not supported for numerical covariates."))
-	m = center ? mean(v) : 0.0
-	s = max(1e-6, maximum(x->abs(x-m), v)) # Avoid scaling up if values are too small in absolute numbers
-	NumericalCovariate(name, external, m, s)
-end
-
-struct CategoricalCovariate{T} <: AbstractCovariate
-	name::String
-	external::Bool # false if present in data.obs, true if given as external annotation
-	values::Vector{T}
-end
-function CategoricalCovariate(data::DataMatrix, name::String, external::Bool, v::AbstractVector)
-	uv = unique(v)
-	any(ismissing, uv) && throw(ArgumentError("Missing values not supported for categorical covariates."))
-	CategoricalCovariate(name, external, uv)
-end
-
-struct TwoGroupCovariate{T} <: AbstractCovariate
-	name::String
-	external::Bool # false if present in data.obs, true if given as external annotation
-	group_a::T
-	group_b::Union{Nothing,T}
-	mean::Float64
-end
-function TwoGroupCovariate(data::DataMatrix, name::String, external::Bool, v::AbstractVector, group_a, group_b, center::Bool)
-	uv = unique(v)
-	any(ismissing, uv) && throw(ArgumentError("Missing values not supported for two-group covariates."))
-
-	if group_a === nothing && group_b === nothing
-		length(uv) != 2 && throw(ArgumentError("Column \"$name\" have exactly two groups (found \"$uv\")."))
-		group_a,group_b = minmax(uv[1],uv[2]) # Keep order stable
-	else
-		group_a in uv || throw(ArgumentError("Group A (\"$group_a\") not found in column \"$name\"."))
-		if group_b !== nothing
-			# only group_a and group_b allowed
-			group_b in uv || throw(ArgumentError("Group B (\"$group_b\") not found in column \"$name\"."))
-			length(uv) > 2 && throw(ArgumentError("Only two groups allowed in column \"$name\" (found \"$uv\")."))
-		end
-	end
-
-	m = center ? (1.0./count(isequal(group_a),v)) : 0.0
-	TwoGroupCovariate(name, external, group_a, group_b, m)
-end
-
-_length(::AbstractCovariate) = 1
-_length(c::CategoricalCovariate) = length(c.values)
-
-_covariate_scale(::AbstractCovariate) = 1.0
-_covariate_scale(n::NumericalCovariate) = n.scale
-
-
-struct CovariateDesc{T,T2}
-	type::Symbol
-	src::T
-	group_a::T2
-	group_b::Union{Nothing,T2}
-	function CovariateDesc(type::Symbol, src::T, group_a::T2, group_b::Union{Nothing,T2}) where {T,T2}
-		@assert type in (:auto, :numerical, :categorical, :twogroup, :intercept)
-		new{T,T2}(type, src, group_a, group_b)
-	end
-end
-CovariateDesc(type, src) = CovariateDesc(type, src, nothing, nothing)
-
-function covariate_prefix(c::CovariateDesc{T,T2}, suffix='_') where {T,T2}
-	name = _get_name(c)
-	if c.type == :twogroup
-		if c.group_b !== nothing
-			return string(name, '_', c.group_a, "_vs_", c.group_b, suffix)
-		elseif c.group_a !== nothing
-			return string(name, '_', c.group_a, suffix)
-		end
-	end
-	return string(name, suffix)
-end
-
-
-"""
-	covariate(src, type=:auto)
-
-Create a `covariate` referring to `src`.
-
-`src` is one of:
-* `String` - referring to a column in the DataMatrix `obs`.
-* `DataFrame` - with exactly two columns, the first should contain IDs matching IDs in `obs`, and the second should be the covariate.
-* `Annotations` (experimental) - with ID matching the DataMatrix `obs` and a second column for the covariate.
-
-`type` must be one of `:auto`, `:numerical`, `:categorical`, `:twogroup` and `:intercept`.
-`:auto` means auto-detection by checking if the values in the column are numerical or categorical.
-`type==:intercept` adds an intercept to the model (in which case the `src` parameter is ignored).
-
-See also: [`designmatrix`](@ref)
-"""
-covariate(src, type::Symbol=:auto) = CovariateDesc(type, src)
-
-"""
-	covariate(src, group_a, [group_b])
-
-Create a two-group `covariate` referring to `src`, comparing `group_a` to `group_b`.
-
-`src` is one of:
-* `String` - referring to a column in the DataMatrix `obs`.
-* `DataFrame` - with exactly two columns, the first should contain IDs matching IDs in `obs`, and the second should be the covariate.
-* `Annotations` (experimental) - with ID matching the DataMatrix `obs` and a second column for the covariate.
-
-If `src` is a `String` it will refer to a column in the DataMatrix `obs`.
-`src` can also be an `Annotations` object, with ID matching the DataMatrix `obs`.
-`group_a` and `group_b` must be values occuring in the column `src`.
-
-If `group_b` is not given, `group_a` will be compared to all other observations.
-
-See also: [`designmatrix`](@ref)
-"""
-covariate(src, group_a, group_b=nothing) = CovariateDesc(:twogroup, src, group_a, group_b)
-
-covariate(c::CovariateDesc) = c
-
-
-_get_name(c::CovariateDesc{String}) = c.src
-_get_name(c::CovariateDesc) = annotation_name(c.src)
-
-_get_src_df(cov::CovariateDesc{T}) where T<:AbstractDataFrame = cov.src
-_get_src_df(cov::CovariateDesc{Annotations}) = get_table(cov.src)
-
-_get_values(obs::DataFrame, c::CovariateDesc{String}) = c.src, obs[!,c.src]
-function _get_values(obs::DataFrame, c::CovariateDesc)
-	df = _get_src_df(c)
-	size(df,2) == 2 || throw(ArgumentError("Covariate must have exactly one ID column and one value column."))
-
-	obs = select(obs,1)
-	leftjoin!(obs, df; on=names(obs,1))
-	only(names(obs,2)), obs[!,2]
-end
-_get_values(data::DataMatrix, c::CovariateDesc) = _get_values(data.obs, c)
-
-
-function instantiate_covariate(data::DataMatrix, c::CovariateDesc, center::Bool)
-	t = c.type
-	name,v = c.type != :intercept ? _get_values(data,c) : ("",nothing)
-	external = !(c.src isa String)
-
-	if t == :auto
-		t = eltype(v) <: Union{Missing,Number} ? :numerical : :categorical
-	end
-
-	if t == :numerical
-		NumericalCovariate(data, name, external, v, center), v
-	elseif t == :categorical
-		CategoricalCovariate(data, name, external, v), v
-	elseif t == :twogroup
-		TwoGroupCovariate(data, name, external, v, c.group_a, c.group_b, center), v
-	elseif t == :intercept
-		InterceptCovariate(), nothing
-	else
-		error("Unknown covariate type.")
-	end
-end
-
-
-function setup_covariates(data::DataMatrix, args...; center=true)
-	covariates = AbstractCovariate[]
-	value_vectors = Any[]
-
-	center |= any(==(InterceptCovariate()), args)
-
-	if center
-		push!(covariates, InterceptCovariate())
-		push!(value_vectors, nothing)
-	end
-	for x in args
-		x == InterceptCovariate() && continue # intercept already handled above
-		cov,v = instantiate_covariate(data, covariate(x), center)
-		push!(covariates, cov)
-		push!(value_vectors, v)
-	end
-	covariates, value_vectors
-end
-
-
-struct DesignMatrix
-	matrix::Matrix{Float64}
-	covariates::Vector{AbstractCovariate}
-	obs_match::DataFrame
-end
-
-covariate_design!(A, data, ::InterceptCovariate, ::Any) = A .= 1.0
-function covariate_design!(A, data, c::NumericalCovariate, v::AbstractVector)
-	any(ismissing, v) && throw(ArgumentError("Numerical covariate \"$(c.name)\" contains missing values."))
-	any(isnan, v) && throw(ArgumentError("Numerical covariate \"$(c.name)\" contains NaN values."))
-	any(isinf, v) && throw(ArgumentError("Numerical covariate \"$(c.name)\" contains Inf values."))
-
-	# Center and scale for numerical stability
-	A .= (v .- c.mean)./c.scale
-end
-function covariate_design!(A, data, c::CategoricalCovariate, v::AbstractVector)
-	new_values = setdiff(unique(v), c.values)
-	isempty(new_values) || error("Categorical covariate ", c.name, " has values not present in the model: ", join(new_value, ','))
-
-	A .= isequal.(v, permutedims(c.values))
-end
-function covariate_design!(A, data, t::TwoGroupCovariate, v::AbstractVector)
-	any(ismissing, v) && throw(ArgumentError("Two-group covariate \"$(t.name)\" contains missing values."))
-
-	if t.group_b !== nothing
-		new_values = setdiff(unique(v), (t.group_a, t.group_b))
-		isempty(new_values) || throw(ArgumentError(string("Two-group covariate ", t.name, " has values not present in the model: ", join(new_value, ','))))
-	end
-
-	nA = count(==(t.group_a), v)
-	nB = length(v)-nA
-	nA == 0 && throw(ArgumentError("No values belong to group A (\"$(t.group_a)\")."))
-	if nB == 0
-		suffix = t.group_b !== nothing ? string(" (\"", t.group_b, "\")") : ""
-		throw(ArgumentError("No values belong to group B$suffix."))
-	end
-
-	A .= (v.==t.group_a) .- t.mean
-end
-
-function designmatrix(data::DataMatrix, covariates::Vector{<:AbstractCovariate}, value_vectors::Vector; max_categories=nothing)
-	@assert length(covariates) == length(value_vectors)
-
-	# This little trick is to get the same default parameters through different code paths
-	max_categories===nothing && (max_categories=100)
-	max_categories::Int
-
-	C = sum(_length, covariates; init=0)
-	N = size(data,2)
-
-	A = zeros(N,C)
-	i = 1
-	for (c,v) in zip(covariates,value_vectors)
-		len = _length(c)
-		len > max_categories && error(len, " categories in categorical variable, was this intended? Change max_categories (", max_categories, ") if you want to increase the number of allowed categories.")
-		covariate_design!(view(A,:,i:i+len-1), data, c, v)
-		i += len
-	end
-
-	DesignMatrix(A, covariates, select(data.obs, 1))
-end
-
-
-"""
-	designmatrix(data::DataMatrix, [covariates...]; center=true, max_categories=100)
-
-Creates a design matrix from `data.obs` and the given `covariates`.
-Covariates can be specied using strings (column name in data.obs), with autodetection of whether the covariate is numerical or categorical, or using the `covariate` function for more control.
-
-* `center` - If `true`, an intercept is added to the design matrix. (Should only be set to `false` in very rare circumstances.)
-* `max_categories` - Safety parameter, an error will be thrown if there are too many categories. In this case, it is likely a mistake that the covariate was used as a categorical covariate. Using a very large number of categories is also bad for performance and memory consumption.
-
-# Examples
-Centering only:
-```julia
-julia> designmatrix(data)
-```
-
-Regression model with intercept (centering) and "fraction_mt" (numerical annotation):
-```julia
-julia> designmatrix(data, "fraction_mt")
-```
-
-As above, but also including "batch" (categorical annotation):
-```julia
-julia> designmatrix(data, "fraction_mt", "batch")
-```
-
-See also: [`normalize_matrix`](@ref), [`NormalizationModel`](@ref), [`covariate`](@ref)
-"""
-function designmatrix(data::DataMatrix, args...; center=true, kwargs...)
-	covariates, value_vectors = setup_covariates(data, args...; center)
-	designmatrix(data, covariates, value_vectors; kwargs...)
-end
+# function _get_values(obs::DataFrame, c::CovariateDesc)
+# 	df = _get_src_df(c)
+# 	size(df,2) == 2 || throw(ArgumentError("Covariate must have exactly one ID column and one value column."))
+
+# 	obs = select(obs,1)
+# 	leftjoin!(obs, df; on=names(obs,1))
+# 	only(names(obs,2)), obs[!,2]
+# end
+# _get_values(data::DataMatrix, c::CovariateDesc) = _get_values(data.obs, c)
+
+
+# function instantiate_covariate(data::DataMatrix, c::CovariateDesc, center::Bool)
+# 	t = c.type
+# 	name,v = c.type != :intercept ? _get_values(data,c) : ("",nothing)
+# 	external = !(c.src isa String)
+
+# 	if t == :auto
+# 		t = eltype(v) <: Union{Missing,Number} ? :numerical : :categorical
+# 	end
+
+# 	if t == :numerical
+# 		NumericalCovariate(data, name, external, v, center), v
+# 	elseif t == :categorical
+# 		CategoricalCovariate(data, name, external, v), v
+# 	elseif t == :twogroup
+# 		TwoGroupCovariate(data, name, external, v, c.group_a, c.group_b, center), v
+# 	elseif t == :intercept
+# 		InterceptCovariate(), nothing
+# 	else
+# 		error("Unknown covariate type.")
+# 	end
+# end
+
+
+# function setup_covariates(data::DataMatrix, args...; center=true)
+# 	covariates = AbstractCovariate[]
+# 	value_vectors = Any[]
+
+# 	center |= any(==(InterceptCovariate()), args)
+
+# 	if center
+# 		push!(covariates, InterceptCovariate())
+# 		push!(value_vectors, nothing)
+# 	end
+# 	for x in args
+# 		x == InterceptCovariate() && continue # intercept already handled above
+# 		cov,v = instantiate_covariate(data, covariate(x), center)
+# 		push!(covariates, cov)
+# 		push!(value_vectors, v)
+# 	end
+# 	covariates, value_vectors
+# end
+
+
+# struct DesignMatrix
+# 	matrix::Matrix{Float64}
+# 	covariates::Vector{AbstractCovariate}
+# 	obs_match::DataFrame
+# end
+
+# covariate_design!(A, data, ::InterceptCovariate, ::Any) = A .= 1.0
+# function covariate_design!(A, data, c::NumericalCovariate, v::AbstractVector)
+# 	any(ismissing, v) && throw(ArgumentError("Numerical covariate \"$(c.name)\" contains missing values."))
+# 	any(isnan, v) && throw(ArgumentError("Numerical covariate \"$(c.name)\" contains NaN values."))
+# 	any(isinf, v) && throw(ArgumentError("Numerical covariate \"$(c.name)\" contains Inf values."))
+
+# 	# Center and scale for numerical stability
+# 	A .= (v .- c.mean)./c.scale
+# end
+# function covariate_design!(A, data, c::CategoricalCovariate, v::AbstractVector)
+# 	new_values = setdiff(unique(v), c.values)
+# 	isempty(new_values) || error("Categorical covariate ", c.name, " has values not present in the model: ", join(new_value, ','))
+
+# 	A .= isequal.(v, permutedims(c.values))
+# end
+# function covariate_design!(A, data, t::TwoGroupCovariate, v::AbstractVector)
+# 	any(ismissing, v) && throw(ArgumentError("Two-group covariate \"$(t.name)\" contains missing values."))
+
+# 	if t.group_b !== nothing
+# 		new_values = setdiff(unique(v), (t.group_a, t.group_b))
+# 		isempty(new_values) || throw(ArgumentError(string("Two-group covariate ", t.name, " has values not present in the model: ", join(new_value, ','))))
+# 	end
+
+# 	nA = count(==(t.group_a), v)
+# 	nB = length(v)-nA
+# 	nA == 0 && throw(ArgumentError("No values belong to group A (\"$(t.group_a)\")."))
+# 	if nB == 0
+# 		suffix = t.group_b !== nothing ? string(" (\"", t.group_b, "\")") : ""
+# 		throw(ArgumentError("No values belong to group B$suffix."))
+# 	end
+
+# 	A .= (v.==t.group_a) .- t.mean
+# end
+
+# function designmatrix(data::DataMatrix, covariates::Vector{<:AbstractCovariate}, value_vectors::Vector; max_categories=nothing)
+# 	@assert length(covariates) == length(value_vectors)
+
+# 	# This little trick is to get the same default parameters through different code paths
+# 	max_categories===nothing && (max_categories=100)
+# 	max_categories::Int
+
+# 	C = sum(_length, covariates; init=0)
+# 	N = size(data,2)
+
+# 	A = zeros(N,C)
+# 	i = 1
+# 	for (c,v) in zip(covariates,value_vectors)
+# 		len = _length(c)
+# 		len > max_categories && error(len, " categories in categorical variable, was this intended? Change max_categories (", max_categories, ") if you want to increase the number of allowed categories.")
+# 		covariate_design!(view(A,:,i:i+len-1), data, c, v)
+# 		i += len
+# 	end
+
+# 	DesignMatrix(A, covariates, select(data.obs, 1))
+# end
+
+
+# """
+# 	designmatrix(data::DataMatrix, [covariates...]; center=true, max_categories=100)
+
+# Creates a design matrix from `data.obs` and the given `covariates`.
+# Covariates can be specied using strings (column name in data.obs), with autodetection of whether the covariate is numerical or categorical, or using the `covariate` function for more control.
+
+# * `center` - If `true`, an intercept is added to the design matrix. (Should only be set to `false` in very rare circumstances.)
+# * `max_categories` - Safety parameter, an error will be thrown if there are too many categories. In this case, it is likely a mistake that the covariate was used as a categorical covariate. Using a very large number of categories is also bad for performance and memory consumption.
+
+# # Examples
+# Centering only:
+# ```julia
+# julia> designmatrix(data)
+# ```
+
+# Regression model with intercept (centering) and "fraction_mt" (numerical annotation):
+# ```julia
+# julia> designmatrix(data, "fraction_mt")
+# ```
+
+# As above, but also including "batch" (categorical annotation):
+# ```julia
+# julia> designmatrix(data, "fraction_mt", "batch")
+# ```
+
+# See also: [`normalize_matrix`](@ref), [`NormalizationModel`](@ref), [`covariate`](@ref)
+# """
+# function designmatrix(data::DataMatrix, args...; center=true, kwargs...)
+# 	covariates, value_vectors = setup_covariates(data, args...; center)
+# 	designmatrix(data, covariates, value_vectors; kwargs...)
+# end

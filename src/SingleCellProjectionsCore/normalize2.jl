@@ -1,20 +1,36 @@
-# # TEMP simplified normalization for testing projections via Specs
-# struct CenteringModel2 <: ProjectionModel
-# 	negβT::Matrix{Float64}
+function variable_sum_squares(matrix)
+	X = matrixexpression(matrix)
+	d = DiagGram(X')
+	r = compute(d)
+	max.(0.0, r)
+end
+variable_sum_squares(data::DataMatrix) = variable_sum_squares(data.matrix)
 
-# 	function CenteringModel2(A)
-# 		N = size(A,2)
-# 		X = ones(N,1)
-# 		negβT = (A*X) .* (-1/N)
-# 		new(negβT)
-# 	end
-# end
+"""
+	variable_var(data::DataMatrix)
 
-# function center_matrix_project(model::CenteringModel2, A)
-# 	N = size(A,2)
-# 	X = ones(N,1)
-# 	matrixsum(_named_matrix(A,:A), matrixproduct(Symbol("(-β)")=>model.negβT, :X=>X'))
-# end
+Computes the variance of each variable in `data`.
+
+!!! note
+	`data` must be mean-centered. E.g. by using `normalize_matrix` before calling `variable_var`.
+
+See also: [`variable_std`](@ref), [`normalize_matrix`](@ref)
+"""
+variable_var(data::DataMatrix) = variable_sum_squares(data) ./= size(data,2)-1
+
+"""
+	variable_std(data::DataMatrix)
+
+Computes the variance of each variable in `data`.
+
+!!! note
+	`data` must be mean-centered. E.g. by using `normalize_matrix` before calling `variable_std`.
+
+See also: [`variable_var`](@ref), [`normalize_matrix`](@ref)
+"""
+variable_std(data::DataMatrix) = sqrt.(variable_var(data))
+
+
 
 
 # Normalization without model struct

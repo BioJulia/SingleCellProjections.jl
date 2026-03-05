@@ -27,6 +27,9 @@ function combine_obs(obs::Vector{DataFrame}, sample_names::Vector{String};
 	vcat(obs...; cols=:union)
 end
 
+_value_or_ambiguous(x) = Ref(length(unique(x))!=1 ? "ambiguous" : first(x))
+
+
 # WIP.
 # Intended to be public function in low-level API.
 function combine_var(var::AbstractVector{DataFrame};

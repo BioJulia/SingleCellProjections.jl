@@ -53,8 +53,8 @@ Deduplicators.deduplicate_type(::Type{<:DataMatrix}) = true
 Deduplicators.deconstruct_type(::Type{<:DataMatrix}) = true
 Deduplicators.type_to_tag(::Type{<:DataMatrix}) = TypeTag(:DataMatrix)
 Deduplicators.tag_to_type(::Val{:DataMatrix}) = DataMatrix
-Deduplicators.deconstruct(data::DataMatrix{T,Tv,To}) where {T,Tv,To} = (data.matrix, data.var, data.obs)
-Deduplicators.reconstruct(::Type{<:DataMatrix}, (matrix,var,obs)::Tuple{T,Tv,To}) where {T,Tv,To} =
+Deduplicators.deconstruct(data::DataMatrix{T}) where T = (data.matrix, data.var, data.obs)
+Deduplicators.reconstruct(::Type{<:DataMatrix}, (matrix,var,obs)::Tuple{T,DataFrame,DataFrame}) where T =
 	DataMatrix(matrix, var, obs; duplicate_var=:ignore, duplicate_obs=:ignore) # Avoid doing validation when reconstructing!
 
 
@@ -63,17 +63,17 @@ Deduplicators.deduplicate_type(::Type{<:SCPCore.AbstractCovariateDesc}) = false
 Deduplicators.deconstruct_weak_rec(x::T) where T<:SCPCore.AbstractCovariateDesc = x
 Deduplicators.reconstruct_weak_rec(x::T) where T<:SCPCore.AbstractCovariateDesc = x
 
-Deduplicators.deduplicate_type(::Type{<:SCPCore.AbstractValueVectorModel}) = false
-Deduplicators.deconstruct_weak_rec(x::T) where T<:SCPCore.AbstractValueVectorModel = x
-Deduplicators.reconstruct_weak_rec(x::T) where T<:SCPCore.AbstractValueVectorModel = x
+# Deduplicators.deduplicate_type(::Type{<:SCPCore.AbstractValueVectorModel}) = false
+# Deduplicators.deconstruct_weak_rec(x::T) where T<:SCPCore.AbstractValueVectorModel = x
+# Deduplicators.reconstruct_weak_rec(x::T) where T<:SCPCore.AbstractValueVectorModel = x
 
-Deduplicators.deduplicate_type(::Type{<:SCPCore.CategoricalValueVectorModel}) = true
-Deduplicators.deconstruct_type(::Type{<:SCPCore.CategoricalValueVectorModel}) = true
-Deduplicators.type_to_tag(::Type{<:SCPCore.CategoricalValueVectorModel}) = TypeTag(:CategoricalValueVectorModel)
-Deduplicators.tag_to_type(::Val{:CategoricalValueVectorModel}) = SCPCore.CategoricalValueVectorModel
-Deduplicators.deconstruct(m::SCPCore.CategoricalValueVectorModel{T}) where T = (m.categories,)
-Deduplicators.reconstruct(::Type{<:SCPCore.CategoricalValueVectorModel}, (categories,)::Tuple{T}) where T =
-	SCPCore.CategoricalValueVectorModel(parent(categories)) # Refactoring TODO: Avoid doing validation when reconstructing!
+# Deduplicators.deduplicate_type(::Type{<:SCPCore.CategoricalValueVectorModel}) = true
+# Deduplicators.deconstruct_type(::Type{<:SCPCore.CategoricalValueVectorModel}) = true
+# Deduplicators.type_to_tag(::Type{<:SCPCore.CategoricalValueVectorModel}) = TypeTag(:CategoricalValueVectorModel)
+# Deduplicators.tag_to_type(::Val{:CategoricalValueVectorModel}) = SCPCore.CategoricalValueVectorModel
+# Deduplicators.deconstruct(m::SCPCore.CategoricalValueVectorModel{T}) where T = (m.categories,)
+# Deduplicators.reconstruct(::Type{<:SCPCore.CategoricalValueVectorModel}, (categories,)::Tuple{T}) where T =
+# 	SCPCore.CategoricalValueVectorModel(parent(categories)) # Refactoring TODO: Avoid doing validation when reconstructing!
 
 
 

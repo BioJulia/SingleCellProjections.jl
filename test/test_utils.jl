@@ -44,7 +44,6 @@ end
 materialize(X) = X
 materialize(X::MatrixExpression) = X*I(size(X,2))
 materialize(X::SVD) = convert(Matrix,X)
-materialize(X::SingleCellProjectionsCore.LowRank) = X.U*X.Vt
 materialize(X::PMA) = X.U*Diagonal(X.S)*X.Vt
 materialize(X::DataMatrix) = materialize(X.matrix)
 
