@@ -17,6 +17,7 @@ end
 validateunique_var(table, col; report) = _validateunique(table,col,report," Use duplicate_var=x, where x is :error, :warn or :ignore to control behavior.")
 validateunique_obs(table, col; report) = _validateunique(table,col,report," Use duplicate_obs=x, where x is :error, :warn or :ignore to control behavior.")
 
+
 """
 	struct DataMatrix{T}
 
@@ -28,6 +29,18 @@ Fields:
 * `obs::DataFrame` - Observation annotations.
 
 The first column of the `var` and `obs` tables should contain unique IDs.
+
+Main constructor:
+
+	DataMatrix(matrix, var::DataFrame, obs::DataFrame; kwargs...)
+
+Create a `DataMatrix`, from the given `matrix`, `var` and `obs`.
+
+The first column of `var`/`obs` are used as IDs.
+
+Kwargs:
+* `duplicate_var` - Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate var IDs are found.
+* `duplicate_obs` - Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate obs IDs are found.
 """
 struct DataMatrix{T}
 	matrix::T
@@ -49,19 +62,6 @@ struct DataMatrix{T}
 end
 
 
-# """
-# 	DataMatrix(matrix, var, obs; kwargs...)
-
-# Create a `DataMatrix` with the given `matrix`, `var` and `obs`.
-
-# The first column of `var`/`obs` are used as IDs.
-
-# Kwargs:
-# * `duplicate_var` - Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate var IDs are found.
-# * `duplicate_obs` - Set to `:ignore`, `:warn` or `:error` to decide what happens if duplicate obs IDs are found.
-# """
-# DataMatrix(matrix, var, obs; kwargs...) =
-# 	DataMatrix(matrix, var, obs, ProjectionModel[]; kwargs...)
 
 
 """
@@ -83,24 +83,6 @@ Base.size(data::DataMatrix, dim::Integer) = size(data.matrix, dim)
 Base.axes(data::DataMatrix, d::Integer) = axes(data)[d] # needed to make end work in getindex
 
 
-
-# """
-# 	copy(data::DataMatrix; var=:copy, obs=:copy, matrix=:keep)
-
-# Copy DataMatrix `data`. By default, `var` and `obs` annotations are copied, but the `matrix` is shared.
-# Set kwargs `var`, `obs` and `matrix` to `:keep`/`:copy` for fine grained control.
-# """
-# function Base.copy(data::DataMatrix; var=:copy, obs=:copy, matrix=:keep)
-# 	@assert var in (:copy,:keep)
-# 	@assert obs in (:copy,:keep)
-# 	@assert matrix in (:copy,:keep)
-
-# 	X = matrix==:copy ? copy(data.matrix) : data.matrix
-# 	v = var==:copy ? copy(data.var) : data.var
-# 	o = obs==:copy ? copy(data.obs) : data.obs
-
-# 	DataMatrix(X, v, o, copy(data.models))
-# end
 
 
 
