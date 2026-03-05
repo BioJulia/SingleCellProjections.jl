@@ -1,24 +1,12 @@
 # NB: Column names here are fixed and expected to be strings.
 create_table(args::Pair{String,<:Any}...) = DataFrame(args...; copycols=false)
-# function create_table(args::Pair{String,<:Any}...)
-# 	# DEBUG
-# 	@show typeof.(args)
-# 	@show first.(args)
-# 	@show size.(last.(args))
-# 	DataFrame(args...; copycols=false)
-# end
 create_table_spec(args...) = create_spec(create_table, args...; __version=v"0.1.0")
 Jobs.create_table(args...) = Job(create_table_spec(args...))
 
 is_create_table(x) = x isa Spec && x.f == create_table
 
 
-
-
-function table_to_compound_result(table)
-	# CompoundResult(Pair{String,Any}[string(name)=>col for (name,col) in pairs(eachcol(table))])
-	CompoundResult(; pairs(eachcol(table))...)
-end
+table_to_compound_result(table) = CompoundResult(; pairs(eachcol(table))...)
 
 
 # With known colnames
