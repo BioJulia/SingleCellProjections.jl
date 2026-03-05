@@ -68,25 +68,19 @@ function ncommon_neighbors(A,B; k=20)
 	ncommon
 end
 
-# function test_show(data::DataMatrix; matrix=nothing, var=nothing, obs=nothing, models=nothing)
-#     io = IOBuffer()
-#     show(io, MIME("text/plain"), data)
-#     str = String(take!(io))
-#     s = split(str, '\n')
-#     @test 4<=length(s)<=5
-#     @test s[1] == "DataMatrix ($(size(data,1)) variables and $(size(data,2)) observations)"
-#     matrix!==nothing && @test contains(s[2][3:end], matrix)
-#     @test startswith(s[3],"  Variables: ")
-#     var!==nothing && @test sort(split(s[3][14:end], ", "))==sort(var)
-#     @test startswith(s[4],"  Observations: ")
-#     obs!==nothing && @test sort(split(s[4][17:end], ", "))==sort(obs)
-
-#     length(s)>4 && @test startswith(s[5],"  Models: ")
-#     if models !== nothing
-#         m = replace(get(s,5,""),"  Models: "=>"")
-#         @test contains(m, models)
-#     end
-# end
+function test_show(data::DataMatrix; matrix=nothing, var=nothing, obs=nothing)
+    io = IOBuffer()
+    show(io, MIME("text/plain"), data)
+    str = String(take!(io))
+    s = split(str, '\n')
+    @test 4<=length(s)<=5
+    @test s[1] == "DataMatrix ($(size(data,1)) variables and $(size(data,2)) observations)"
+    matrix!==nothing && @test contains(s[2][3:end], matrix)
+    @test startswith(s[3],"  Variables: ")
+    var!==nothing && @test sort(split(s[3][14:end], ", "))==sort(var)
+    @test startswith(s[4],"  Observations: ")
+    obs!==nothing && @test sort(split(s[4][17:end], ", "))==sort(obs)
+end
 
 function _formula(args...; center=true)
 	if center
