@@ -82,6 +82,8 @@ using LinearAlgebra
 using SparseArrays
 using Statistics
 
+using ReadOnlyArrays
+
 using HDF5, H5Zblosc
 using DataFrames
 
