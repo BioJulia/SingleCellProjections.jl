@@ -1,4 +1,4 @@
-# TODO: Replace filter.jl with this file.
+_subsetmatrix(X::AbstractMatrix, I::Index, J::Index) = X[I,J]
 
 _find_matching_ind(f, df::DataFrame) = first(parentindices(filter(f, df; view=true)))
 _find_matching_ind(f, v::AbstractVector) = findall(f, v)

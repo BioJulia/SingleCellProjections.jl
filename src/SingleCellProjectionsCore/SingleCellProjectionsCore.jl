@@ -112,6 +112,10 @@ using .MatrixExpressions
 # isdefined(Base, :get_extension) || using Requires
 
 
+# TODO: Is this still needed?
+const Index = Union{AbstractVector, Colon}
+
+
 include("random.jl")
 include("utils.jl")
 include("table_utils.jl")
@@ -122,15 +126,9 @@ include("sctransformsparse.jl")
 
 include("implicitsvd.jl")
 
-include("annotations.jl")
-include("annotation_utils.jl")
-
-include("lowrank.jl")
-include("projectionmodels.jl")
 include("datamatrix.jl")
 include("subset_expression.jl")
 
-include("adjacency_matrices.jl")
 include("adjacency_matrices2.jl")
 
 include("barnes_hut.jl")
@@ -141,25 +139,15 @@ include("h5ad.jl")
 
 include("mannwhitney.jl")
 
-include("filter.jl") # will be removed
-include("filter2.jl") # will be renamed to filter.jl
-include("load.jl")
+include("filter2.jl")
 include("load2.jl")
-include("transform.jl")
 include("transform2.jl")
 include("design.jl")
-include("normalize.jl")
 include("normalize2.jl")
-include("reduce.jl")
 include("reduce2.jl")
-include("annotate.jl")
-include("statistical_tests.jl")
 include("statistical_tests2.jl")
-include("counts_fraction.jl")
 include("counts_fraction2.jl")
-include("counts_sum.jl")
 include("counts_sum2.jl")
-include("pseudobulk.jl")
 
 include("annotation_transfer.jl")
 
