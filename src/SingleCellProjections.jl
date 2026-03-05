@@ -41,12 +41,6 @@ using ReadOnlyArrays: ReadOnlyVector
 
 using StyledStrings # For Spec printing
 
-# ReproducibleJobs.unmanage_rec(x::DataMatrix) =
-# 	DataMatrix(ReproducibleJobs.unmanage_rec.((x.matrix, x.var, x.obs))...)
-# ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVector) = x
-# ReproducibleJobs.unmanage_rec(x::SCPCore.AbstractValueVectorModel) = x
-# ReproducibleJobs.unmanage_rec(x::SCPCore.ProjectionModel) = x
-
 
 # TODO: Where to put these?
 Deduplicators.deduplicate_type(::Type{<:DataMatrix}) = true
@@ -62,19 +56,6 @@ Deduplicators.reconstruct(::Type{<:DataMatrix}, (matrix,var,obs)::Tuple{T,DataFr
 Deduplicators.deduplicate_type(::Type{<:SCPCore.AbstractCovariateDesc}) = false
 Deduplicators.deconstruct_weak_rec(x::T) where T<:SCPCore.AbstractCovariateDesc = x
 Deduplicators.reconstruct_weak_rec(x::T) where T<:SCPCore.AbstractCovariateDesc = x
-
-# Deduplicators.deduplicate_type(::Type{<:SCPCore.AbstractValueVectorModel}) = false
-# Deduplicators.deconstruct_weak_rec(x::T) where T<:SCPCore.AbstractValueVectorModel = x
-# Deduplicators.reconstruct_weak_rec(x::T) where T<:SCPCore.AbstractValueVectorModel = x
-
-# Deduplicators.deduplicate_type(::Type{<:SCPCore.CategoricalValueVectorModel}) = true
-# Deduplicators.deconstruct_type(::Type{<:SCPCore.CategoricalValueVectorModel}) = true
-# Deduplicators.type_to_tag(::Type{<:SCPCore.CategoricalValueVectorModel}) = TypeTag(:CategoricalValueVectorModel)
-# Deduplicators.tag_to_type(::Val{:CategoricalValueVectorModel}) = SCPCore.CategoricalValueVectorModel
-# Deduplicators.deconstruct(m::SCPCore.CategoricalValueVectorModel{T}) where T = (m.categories,)
-# Deduplicators.reconstruct(::Type{<:SCPCore.CategoricalValueVectorModel}, (categories,)::Tuple{T}) where T =
-# 	SCPCore.CategoricalValueVectorModel(parent(categories)) # Refactoring TODO: Avoid doing validation when reconstructing!
-
 
 
 # TODO: Where to put these?

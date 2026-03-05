@@ -1,29 +1,3 @@
-# # It's confusing with center_matrix, Jobs.center_matrix and SCPCore.center_matrix being different functions having the same name.
-# # But we'll get rid of it so that doesn't matter!
-# function center_matrix(action::Action, matrix)
-# 	# model is created from original data
-# 	model = cached(create_spec(SCPCore.CenteringModel2, matrix; __version=v"0.1.0"))
-# 	create_spec(SCPCore.center_project, model, action(matrix); __version=v"0.1.0")
-# end
-
-
-# function center_matrix(::Mat, data; kwargs...)
-# 	matrix_spec = get_matrix_spec(data)
-# 	create_spec(Projectable(center_matrix), matrix_spec; kwargs...)
-# end
-# center_matrix(f::Union{Var,Obs}, data; kwargs...) = get_spec(f, data)
-
-
-# # TEMP, use this as a simple example for testing out projections and specs
-# function Jobs.center_matrix(args...; kwargs...)
-# 	Job(create_spec(DataMatrixFunction(center_matrix), args...; kwargs...))
-# end
-
-
-
-
-
-
 negative_regression_matrix_impl(::Action, data, dm; kwargs...) =
 	cached(create_spec(SCPCore.negative_regression_matrix, data, dm; kwargs..., __version=v"0.1.0")) # NB: No action, always use original
 negative_regression_matrix_impl_spec(data, dm; kwargs...) =
