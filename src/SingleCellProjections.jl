@@ -55,7 +55,7 @@ Deduplicators.type_to_tag(::Type{<:DataMatrix}) = TypeTag(:DataMatrix)
 Deduplicators.tag_to_type(::Val{:DataMatrix}) = DataMatrix
 Deduplicators.deconstruct(data::DataMatrix{T,Tv,To}) where {T,Tv,To} = (data.matrix, data.var, data.obs)
 Deduplicators.reconstruct(::Type{<:DataMatrix}, (matrix,var,obs)::Tuple{T,Tv,To}) where {T,Tv,To} =
-	DataMatrix(matrix, var, obs) # Refactoring TODO: Avoid doing validation when reconstructing!
+	DataMatrix(matrix, var, obs; duplicate_var=:ignore, duplicate_obs=:ignore) # Avoid doing validation when reconstructing!
 
 
 # TODO: Where to put these?
