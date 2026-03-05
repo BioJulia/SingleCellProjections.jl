@@ -17,7 +17,7 @@
 		@test d.obs == DataFrame(id=["a","b","c","d"], o1=["A","A","B","B"], o2=["1","2","1","2"])
 		@test names(d.var,1) == ["id"] == names(d.obs,1)
 		@test string(d) == "3×4 Matrix{$Int}"
-		# test_show(d; matrix="Matrix{$Int}", var=["id","id2","v1","v2"], obs=["id","o1","o2"])
+		test_show(d; matrix="Matrix{$Int}", var=["id","id2","v1","v2"], obs=["id","o1","o2"])
 
 		@test_throws ErrorException DataMatrix(mat, var_annot[:,[:v1]], obs_annot; duplicate_var=:error)
 		d = DataMatrix(mat, var_annot[:,[:v1]], obs_annot; duplicate_var=:ignore)
