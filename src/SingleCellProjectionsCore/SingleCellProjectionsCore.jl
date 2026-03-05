@@ -129,7 +129,7 @@ include("implicitsvd.jl")
 include("datamatrix.jl")
 include("subset_expression.jl")
 
-include("adjacency_matrices2.jl")
+include("adjacency_matrices.jl")
 
 include("barnes_hut.jl")
 include("force_layout.jl")
@@ -139,15 +139,15 @@ include("h5ad.jl")
 
 include("mannwhitney.jl")
 
-include("filter2.jl")
-include("load2.jl")
-include("transform2.jl")
+include("filter.jl")
+include("load.jl")
+include("transform.jl")
 include("design.jl")
-include("normalize2.jl")
-include("reduce2.jl")
-include("statistical_tests2.jl")
-include("counts_fraction2.jl")
-include("counts_sum2.jl")
+include("normalize.jl")
+include("reduce.jl")
+include("statistical_tests.jl")
+include("counts_fraction.jl")
+include("counts_sum.jl")
 
 include("annotation_transfer.jl")
 
