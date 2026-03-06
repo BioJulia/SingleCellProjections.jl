@@ -17,7 +17,7 @@ adjacency_matrix_spec(indices; kwargs...) =
 	create_spec(SCPCore.adjacency_matrix, indices; kwargs..., __version=v"0.1.0")
 
 
-
+# NB: If we change how InvDistSquared works, we must change its stable_hash too.
 struct InvDistSquared
 	min_dist::Float64
 end
@@ -29,8 +29,7 @@ Deduplicators.deconstruct_weak_rec(x::InvDistSquared) = x
 Deduplicators.reconstruct_weak_rec(x::InvDistSquared) = x
 
 function Deduplicators.cache_save(io, name, x::InvDistSquared)
-	# Refactoring TODO: Do not save the structs as is, use either custom cache_save or custom_wrap.
-	io[name] = x
+	io[name] = x # Rely on JLD2 standard handling for saving/loading
 	nothing
 end
 
