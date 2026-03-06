@@ -74,21 +74,6 @@ Base.:(==)(A::DiagGram, B::DiagGram) = A.A == B.A
 Base.:(==)(A::Diag, B::Diag) = A.A == B.A
 
 
-function _copy_rec(v::Vector)
-	out = similar(v)
-	for i in eachindex(v)
-		out[i] = copy(v[i])
-	end
-	out
-end
-
-Base.copy(A::MatrixRef) = MatrixRef(A.name, A.matrix)
-Base.copy(A::MatrixProduct{T}) where T = MatrixProduct{T}(_copy_rec(A.factors))
-Base.copy(A::MatrixSum) = MatrixSum(_copy_rec(A.terms))
-Base.copy(A::DiagGram) = DiagGram(copy(A.A))
-Base.copy(A::Diag) = Diag(copy(A.A))
-
-
 
 
 matrixexpression(X::MatrixExpression) = X
