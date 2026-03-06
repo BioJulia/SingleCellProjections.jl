@@ -171,12 +171,6 @@ extract_covariate_names_spec(data, desc, basename) =
 
 
 function has_centering(::Preprocessing, cov_descs)
-	# Removed in refactoring
-	# cov_descs = ReproducibleJobs.unsafe_unmanage(cov_descs) # Can we avoid this?
-	# if cov_descs isa ReadOnly # Can we avoid this?
-	# 	cov_descs = cov_descs.value
-	# end
-
 	any(x->x isa Union{SCPCore.CategoricalCovariateDesc, SCPCore.TwoGroupCovariateDesc}, cov_descs)
 end
 has_centering_spec(cov_descs) =
@@ -184,16 +178,6 @@ has_centering_spec(cov_descs) =
 
 
 function build_designmatrix_dm(::Mat, data, cov_data, cov_descs, ::Any; center, kwargs...)
-	# Removed in refactoring
-	# cov_data = ReproducibleJobs.unsafe_unmanage(cov_data) # Can we avoid this?
-	# cov_descs = ReproducibleJobs.unsafe_unmanage(cov_descs) # Can we avoid this?
-	# if cov_data isa ReadOnly # Can we avoid this?
-	# 	cov_data = cov_data.value
-	# end
-	# if cov_descs isa ReadOnly # Can we avoid this?
-	# 	cov_descs = cov_descs.value
-	# end
-
 	@assert length(cov_data) == length(cov_descs)
 	obs = get_obs_spec(data)
 
@@ -206,11 +190,6 @@ function build_designmatrix_dm(::Mat, data, cov_data, cov_descs, ::Any; center, 
 	end
 end
 function build_designmatrix_dm(::Obs, ::Any, ::Any, ::Any, cov_names; center, kwargs...)
-	# Removed in refactoring
-	# cov_names = ReproducibleJobs.unsafe_unmanage(cov_names) # Can we avoid this?
-	# if cov_names isa ReadOnly # Can we avoid this?
-	# 	cov_names = cov_names.value
-	# end
 	center && (cov_names = vcat("Intercept", cov_names))
 	create_table_spec("covariate"=>vcat_spec(cov_names...))
 end
