@@ -14,7 +14,7 @@ MatrixRef(p::Pair{Symbol,T}) where T = MatrixRef(p...)
 
 struct MatrixProduct{T<:AbstractMatrixSum} <: MatrixExpression
 	# factors::Vector{Union{MatrixRef,T}}
-	factors::Any # Refactoring TODO: Find a better solution (we need to handle deduplication somehow, and that can narrow the type)
+	factors::Vector # Refactoring TODO: Find a better solution (we need to handle deduplication somehow, and that can narrow the type)
 
 	function MatrixProduct{T}(factors) where T
 		# @show eltype(factors) == Union{MatrixRef,T} # DEBUG
@@ -31,7 +31,7 @@ struct MatrixProduct{T<:AbstractMatrixSum} <: MatrixExpression
 end
 struct MatrixSum <: AbstractMatrixSum
 	# terms::Vector{Union{MatrixRef,MatrixProduct}}
-	terms::Any # Refactoring TODO: Find a better solution (we need to handle deduplication somehow, and that can narrow the type)
+	terms::Vector # Refactoring TODO: Find a better solution (we need to handle deduplication somehow, and that can narrow the type)
 
 	function MatrixSum(terms)
 		# @show eltype(terms) == Union{MatrixRef,MatrixProduct} # DEBUG
