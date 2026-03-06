@@ -209,11 +209,6 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 	elseif f isa Pair
 		k = first(f)
 
-		# Removed in refactoring
-		# if k isa ReadOnly # Can we avoid this?
-		# 	k = k.value
-		# end
-
 		# subset the columns to only depend on those that are used
 		if k isa AbstractString
 			x = get_columns_spec(df, k)
