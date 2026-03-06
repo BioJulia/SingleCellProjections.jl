@@ -77,12 +77,11 @@ function do_replacement(replacements, x)
 	for (k,v) in replacements
 		isequal(k, x) && return v # replaced
 	end
-	return x # not replaced
+	return nothing # not replaced
 end
 
 
 function (proj::Projection)(x)
-	# Refactoring Todo: map_specs works when replacing specs. But we want to be able to replace other values as well.
 	ReproducibleJobs.map_specs(y->do_replacement(proj.replacements, y), x)
 end
 
