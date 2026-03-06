@@ -1,15 +1,11 @@
 using SingleCellProjections
 using .SingleCellProjections.SingleCellProjectionsCore
-# using .SingleCellProjectionsCore.MatrixExpressions
 using Test
-# using Random
 using StaticArrays
 using Statistics
-# using SCTransform
 
 
-# using .SingleCellProjectionsCore: Annotations
-using .SingleCellProjectionsCore: BarnesHutTree, build!, CovariateDesc, covariate_prefix
+using .SingleCellProjectionsCore: BarnesHutTree, build!
 
 @testset "SingleCellProjectionsCore.jl" begin
 	# include("ranktests.jl")
