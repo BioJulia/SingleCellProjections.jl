@@ -23,7 +23,10 @@ flipy3d() = [ 1 0 0; 0 -1 0; 0 0  1]
 flipz3d() = [ 1 0 0; 0  1 0; 0 0 -1]
 
 
-function transform_coords_impl(X::Matrix, transform)
+function transform_coords_impl(X, transform)
+	X = X isa ROMat ? parent(X) : X
+	transform = transform isa ROMat ? parent(transform) : transform
+
 	@assert allequal(size(transform))
 	@assert size(X,1) == size(transform,2)
 	transform * X
