@@ -24,11 +24,11 @@ end
 InvDistSquared() = InvDistSquared(0.0)
 (x::InvDistSquared)(d::Float64) = 1.0 / max(x.min_dist, d)^2
 
-Deduplicators.deduplicate_type(::Type{InvDistSquared}) = false
-Deduplicators.deconstruct_weak_rec(x::InvDistSquared) = x
-Deduplicators.reconstruct_weak_rec(x::InvDistSquared) = x
+ReproducibleJobs.deduplicate_type(::Type{InvDistSquared}) = false
+ReproducibleJobs.deconstruct_weak_rec(x::InvDistSquared) = x
+ReproducibleJobs.reconstruct_weak_rec(x::InvDistSquared) = x
 
-function Deduplicators.cache_save(io, name, x::InvDistSquared)
+function ReproducibleJobs.cache_save(io, name, x::InvDistSquared)
 	io[name] = x # Rely on JLD2 standard handling for saving/loading
 	nothing
 end
