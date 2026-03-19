@@ -1,11 +1,11 @@
 is_datamatrix_spec(::Any) = false
-function is_datamatrix_spec(sa::SpecArgs)
-	f = sa.f
+function is_datamatrix_spec(spec::Spec)
+	f = spec.f
 	f isa DataMatrixFunction && return true
 	f == SCPCore.DataMatrix && return true
 	f isa ProjectOnto{<:DataMatrixFunction} && return true # testing ProjectOnto
 	if f == project # TODO: Remove?
-		onto = sa.args[1]
+		onto = spec.args[1]
 		return is_datamatrix_spec(onto)
 	end
 	# TODO: Are there more cases that should return true?

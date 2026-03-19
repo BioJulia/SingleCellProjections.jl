@@ -34,7 +34,7 @@ using ChunkSplitters
 using OhMyThreads
 
 using ReproducibleJobs
-using ReproducibleJobs: create_spec, cached, SpecArgs, ChecksummedFilePath, Preprocessing, checksummedfilepath_spec, ifelse_spec, ROArray, ROVec, ROMat, ROBitArray, ROBitVec, ROBitMat, TypeTag
+using ReproducibleJobs: create_spec, cached, ChecksummedFilePath, Preprocessing, checksummedfilepath_spec, ifelse_spec, ROArray, ROVec, ROMat, ROBitArray, ROBitVec, ROBitMat, TypeTag
 
 using ReadOnlyArrays: ReadOnlyVector
 
