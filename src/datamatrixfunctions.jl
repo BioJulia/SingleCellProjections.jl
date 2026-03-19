@@ -222,22 +222,6 @@ function _try_replace_get_spec_single(f::DataMatrixField, spec::SpecUnion, k::Sp
 	end
 end
 
-# try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_matrix_pr)}, k::Spec, v) =
-# 	_try_replace_get_spec_single(Mat(), spec, k, v)
-# try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_var_pr)}, k::Spec, v) =
-# 	_try_replace_get_spec_single(Var(), spec, k, v)
-# try_replace_spec_single(spec::Spec, ::Projectable{typeof(get_obs_pr)}, k::Spec, v) =
-# 	_try_replace_get_spec_single(Obs(), spec, k, v)
-
-
-# # Testing ProjectOnto
-# try_replace_spec_single(spec::Spec, ::ProjectOnto{<:MatFunction}, k::Spec, v) =
-# 	_try_replace_get_spec_single(Mat(), spec, k, v)
-# try_replace_spec_single(spec::Spec, ::ProjectOnto{<:VarFunction}, k::Spec, v) =
-# 	_try_replace_get_spec_single(Var(), spec, k, v)
-# try_replace_spec_single(spec::Spec, ::ProjectOnto{<:ObsFunction}, k::Spec, v) =
-# 	_try_replace_get_spec_single(Obs(), spec, k, v)
-
 # Testing ProjectOnto
 try_replace_spec_single(spec::SpecUnion, ::MatFunction, k::SpecUnion, v) =
 	_try_replace_get_spec_single(Mat(), spec, k, v)
@@ -246,13 +230,6 @@ try_replace_spec_single(spec::SpecUnion, ::VarFunction, k::SpecUnion, v) =
 try_replace_spec_single(spec::SpecUnion, ::ObsFunction, k::SpecUnion, v) =
 	_try_replace_get_spec_single(Obs(), spec, k, v)
 
-
-# function project_impl(::DataMatrixFunction, onto, args...)
-# 	matrix = create_project_spec(get_matrix_spec(onto), args...)
-# 	var = create_project_spec(get_var_spec(onto), args...)
-# 	obs = create_project_spec(get_obs_spec(onto), args...)
-# 	create_datamatrix_spec(matrix, var, obs)
-# end
 
 # Testing with ProjectOnto
 function project_impl(d::DataMatrixFunction, onto, args...)

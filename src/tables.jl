@@ -3,7 +3,6 @@ create_table(args::Pair{String,<:Any}...) = DataFrame(args...; copycols=false)
 create_table_spec(args...) = create_spec(create_table, args...; __version=v"0.1.0")
 Jobs.create_table(args...) = create_table_spec(args...)
 
-# is_create_table(x) = x isa Spec && x.f == create_table
 is_create_table(x::WrappedSpec) = x.f == create_table
 is_create_table(::Any) = false
 
@@ -254,51 +253,6 @@ Jobs.table_hcat(a, args...) = table_hcat_spec(a, args...)
 
 
 
-
-# table_getindex_fallback(table, ind) = table[ind,:]
-# function table_getindex(::Preprocessing{E}, table, ind) where E
-# 	if is_create_table(table)
-# 		cols = (k=>getindex_spec(v, ind) for (k,v) in table.args)
-# 		create_table_spec(cols...)
-# 	elseif E
-# 		create_spec(Preprocess{false}(table_getindex), table, fetched(ind)) # NB: This way we fetch after projections are handled!
-# 		# TODO: This is a temporary fix until we have finished the refactoring with ProjectOnto
-# 		# create_spec(Preprocess{false}(table_getindex), table, ind)
-# 	elseif ind == Colon() # Projections have been handled, so indexing by `:` will not be transformed to something else
-# 		table
-# 	else
-# 		create_spec(table_getindex_fallback, table, ind; __version=v"0.1.0")
-# 	end
-# end
-# table_getindex_spec(table, ind) = create_spec(Preprocess(table_getindex), table, ind)
-
-
-# table_getindex_fallback(table, ind) = table[ind,:]
-# function table_getindex_impl(::Preprocessing, table, ind)
-# 	# NB: This is called after projections are handled, and fetched(ind) has been performed.
-# 	if ind == Colon() # Projections have been handled, so indexing by `:` will not be transformed to something else
-# 		table
-# 	elseif is_create_table(table)
-# 		cols = (k=>getindex_spec(v, ind) for (k,v) in table.args)
-# 		create_table_spec(cols...)
-# 	else
-# 		create_spec(table_getindex_fallback, table, ind; __version=v"0.1.0")
-# 	end
-# end
-# table_getindex_impl_spec(table, ind) = create_spec(Preprocess(table_getindex_impl), table, fetched(ind))
-
-# function table_getindex(action, table, ind)
-# 	table_p = action(table)
-# 	result = table_getindex_impl_spec(table_p, action(ind))
-
-# 	if action isa Projection && !(ind isa Spec) # TODO: Fix, this will trigger even if ind is replaced by the action, which it shouldn't - maybe hard to avoid?
-# 		cond = isequal_spec(table, table_p)
-# 		result = ifelse_spec(cond, result, _getindex_error_spec(ind))
-# 	end
-
-# 	result
-# end
-# table_getindex_spec(table, ind) = create_spec(Projectable(table_getindex), table, ind)
 
 
 # Another try

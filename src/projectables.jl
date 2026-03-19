@@ -8,18 +8,7 @@ end
 
 
 
-is_projectable_spec(x) = x isa SpecUnion && x.f isa Projectable
-
-# is_projectable_spec(::Any) = false
-# function is_projectable_spec(sa::SpecArgs)
-# 	f = sa.f
-# 	f isa Projectable && return true
-# 	# TODO: Are there more cases that should return true?
-# 	return false
-# end
-# is_projectable_spec(spec::Spec) = is_projectable_spec(spec.ro.value)
-
-
+# is_projectable_spec(x) = x isa SpecUnion && x.f isa Projectable
 
 
 
@@ -42,7 +31,6 @@ end
 function try_replace_spec_single(spec::SpecUnion, ::Any, k::T, v) where T <: SpecUnion
 	if ReproducibleJobs.get_sa(spec) === ReproducibleJobs.get_sa(k) # Because of deduplication we can use ===
 		if v isa SpecUnion
-			# return Spec(v.sa, spec.op) # Keep the op
 			return ReproducibleJobs.transfer_op(k, v) # Keep the op
 		else
 			return v # Replaced by a value, the op doesn't apply anymore
@@ -72,8 +60,6 @@ end
 
 function do_replacement(replacements, spec::T) where T<:SpecUnion
 	p_spec = create_project_spec(spec, replacements...)
-	# Spec(p_spec.sa, spec.op) # Keep the op
-
 	ReproducibleJobs.transfer_op(spec, p_spec) # Keep the op
 end
 function do_replacement(replacements, x)
@@ -122,19 +108,6 @@ end
 
 
 
-# function project_impl(p::Projectable{F}, onto, args...) where F
-# 	replaced = try_replace_spec(onto, p, args...)
-# 	replaced !== nothing && return replaced
-
-# 	# Not found in replacements, perform projection
-# 	res = p.f(Projection(collect(args)), onto.args...; onto.kwargs...)
-# 	if res isa Spec
-# 		return Spec(res.ro, onto.op) # Keep the op
-# 	else
-# 		return res
-# 	end
-# end
-
 # Testing with ProjectOnto
 function project_impl(p::Projectable{F}, onto, args...) where F
 	replaced = try_replace_spec(onto, p, args...)
@@ -148,13 +121,7 @@ end
 function project_onto_impl(p::Projectable{F}, replacements, args...; kwargs...) where F
 	# Perform projection
 	p.f(Projection(collect(replacements)), args...; kwargs...)
-
 	# Do we still need to keep the op? Probably not. It is handled elsewhere.
-	# if res isa Spec
-	# 	return Spec(res.ro, onto.op) # Keep the op
-	# else
-	# 	return res
-	# end
 end
 
 
@@ -171,19 +138,8 @@ end
 # create_project_spec(onto, args...; kwargs...) =
 # 	create_spec(Preprocess(project), onto, args...; kwargs...)
 
-function create_project_spec(onto, args...; kwargs...)
+function create_project_spec(onto::SpecUnion, args...; kwargs...)
 	# Transfer the op from `onto` to `project`
-	# TODO: make code cleaner
-
-	# onto isa Job && (onto = onto.spec)
-	onto::SpecUnion
-
-
-	# op = onto.op
-	# onto = Spec(onto.sa)
-	# spec = create_spec(Preprocess(project), onto, args...; kwargs...)
-	# Spec(spec.sa, op)
-
 	onto_sa = ReproducibleJobs.get_sa(onto)
 	spec = create_spec(Preprocess(project), onto_sa, args...; kwargs...)
 	ReproducibleJobs.transfer_op(onto, spec)
