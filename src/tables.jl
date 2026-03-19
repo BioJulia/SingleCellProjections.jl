@@ -1,9 +1,11 @@
 # NB: Column names here are fixed and expected to be strings.
 create_table(args::Pair{String,<:Any}...) = DataFrame(args...; copycols=false)
 create_table_spec(args...) = create_spec(create_table, args...; __version=v"0.1.0")
-Jobs.create_table(args...) = Job(create_table_spec(args...))
+Jobs.create_table(args...) = create_table_spec(args...)
 
-is_create_table(x) = x isa Spec && x.f == create_table
+# is_create_table(x) = x isa Spec && x.f == create_table
+is_create_table(x::WrappedSpec) = x.f == create_table
+is_create_table(::Any) = false
 
 
 table_to_compound_result(table) = CompoundResult(; pairs(eachcol(table))...)
@@ -31,7 +33,7 @@ table_from_compound_result(compound_result) =
 
 
 _get_ncol(table::DataFrame) = ncol(table)
-_get_ncol(table::Spec) = length(table.args) # NB: only valid for create_table spec
+_get_ncol(table::SpecUnion) = length(table.args) # NB: only valid for create_table spec
 
 function _check_ncol(table; require_n_cols=nothing)
 	if require_n_cols !== nothing
@@ -66,18 +68,18 @@ end
 
 get_colnames_spec(table; kwargs...) = create_spec(Preprocess(get_colnames), table; kwargs...)
 get_colnames_spec(table, ind::Int; kwargs...) = create_spec(Preprocess(get_colnames), table, ind; kwargs...)
-Jobs.get_colnames(table, args...; kwargs...) = Job(get_colnames_spec(table, args...; kwargs...))
+Jobs.get_colnames(table, args...; kwargs...) = get_colnames_spec(table, args...; kwargs...)
 
 
 
 
 # Should add another layer of Preprocessing so that we see `get_id_colname` when forwarding Specs one step at a time?
 get_id_colname_spec(table) = create_spec(Preprocess(get_colnames), table, 1)
-Jobs.get_id_colname(table) = Job(get_id_colname_spec(table))
+Jobs.get_id_colname(table) = get_id_colname_spec(table)
 
 # Should add another layer of Preprocessing so that we see `get_value_colname` when forwarding Specs one step at a time?
 get_value_colname_spec(table) = create_spec(Preprocess(get_colnames), table, 2; require_n_cols=2)
-Jobs.get_value_colname(table) = Job(get_value_colname_spec(table))
+Jobs.get_value_colname(table) = get_value_colname_spec(table)
 
 
 
@@ -107,21 +109,21 @@ function get_columns(::Preprocessing{E}, table, colnames...; kwargs...) where E
 	end
 end
 get_columns_spec(table, colname1, colnames...; kwargs...) = create_spec(Preprocess(get_columns), table, colname1, colnames...; kwargs...)
-Jobs.get_columns(table, colname1, colnames...; kwargs...) = Job(get_columns_spec(table, colname1, colnames...; kwargs...))
+Jobs.get_columns(table, colname1, colnames...; kwargs...) = get_columns_spec(table, colname1, colnames...; kwargs...)
 
 
 
 id_column(::Preprocessing, table) = get_columns_spec(table, 1)
 id_column_spec(table) = create_spec(Preprocess(id_column), table)
-Jobs.id_column(table) = Job(id_column_spec(table))
+Jobs.id_column(table) = id_column_spec(table)
 
 value_column(::Preprocessing, table) = get_columns_spec(table, 2; require_n_cols=2)
 value_column_spec(table) = create_spec(Preprocess(value_column), table)
-Jobs.value_column(table) = Job(value_column_spec(table))
+Jobs.value_column(table) = value_column_spec(table)
 
 annotation(::Preprocessing, table, colname) = get_columns_spec(table, fetched(get_id_colname_spec(table)), colname) # If we add support for mixed column indexing, this could be (1, colname)
 annotation_spec(table, colname) = create_spec(Preprocess(annotation), table, colname)
-Jobs.annotation(table, colname) = Job(annotation_spec(table, colname))
+Jobs.annotation(table, colname) = annotation_spec(table, colname)
 
 
 
@@ -148,18 +150,18 @@ function column_data(::Preprocessing{E}, table, col; kwargs...) where E
 	end
 end
 column_data_spec(table, col; kwargs...) = create_spec(Preprocess(column_data), table, col; kwargs...)
-Jobs.column_data(table, col; kwargs...) = Job(column_data_spec(table, col; kwargs...))
+Jobs.column_data(table, col; kwargs...) = column_data_spec(table, col; kwargs...)
 
 
 
 
 id_column_data(::Preprocessing, table) = column_data_spec(table, 1)
 id_column_data_spec(table) = create_spec(Preprocess(id_column_data), table)
-Jobs.id_column_data(table) = Job(id_column_data_spec(table))
+Jobs.id_column_data(table) = id_column_data_spec(table)
 
 value_column_data(::Preprocessing, table) = column_data_spec(table, 2; require_n_cols=2)
 value_column_data_spec(table) = create_spec(Preprocess(value_column_data), table)
-Jobs.value_column_data(table) = Job(value_column_data_spec(table))
+Jobs.value_column_data(table) = value_column_data_spec(table)
 
 
 
@@ -167,7 +169,7 @@ Jobs.value_column_data(table) = Job(value_column_data_spec(table))
 
 table_nrow(::Preprocessing, table) = length_spec(column_data_spec(table,1))
 table_nrow_spec(table) = create_spec(Preprocess(table_nrow), table)
-Jobs.table_nrow(table) = Job(table_nrow_spec(table))
+Jobs.table_nrow(table) = table_nrow_spec(table)
 
 
 
@@ -182,7 +184,7 @@ function table_ncol(::Preprocessing{E}, table) where E
 	end
 end
 table_ncol_spec(table) = create_spec(Preprocess(table_ncol), table)
-Jobs.table_ncol(table) = Job(table_ncol_spec(table))
+Jobs.table_ncol(table) = table_ncol_spec(table)
 
 
 
@@ -215,7 +217,7 @@ function add_column(::Preprocessing{E}, table, name, column) where E
 	end
 end
 add_column_spec(table, name, column) = create_spec(Preprocess(add_column), table, name, column)
-Jobs.add_column(table, name, column) = Job(add_column_spec(table, name, column))
+Jobs.add_column(table, name, column) = add_column_spec(table, name, column)
 
 
 
@@ -248,7 +250,7 @@ function table_hcat(::Preprocessing{E}, args...) where E
 end
 
 table_hcat_spec(a, args...) = create_spec(Preprocess(table_hcat), a, args...)
-Jobs.table_hcat(a, args...) = Job(table_hcat_spec(a, args...))
+Jobs.table_hcat(a, args...) = table_hcat_spec(a, args...)
 
 
 
@@ -306,7 +308,7 @@ function table_getindex_pr(action, table, ind)
 	table_p = action(table)
 	result = create_spec(Preprocess{false}(table_getindex), table_p, action(ind))
 
-	if action isa Projection && !(ind isa Spec) # TODO: Fix, this will trigger even if ind is replaced by the action, which it shouldn't - maybe hard to avoid?
+	if action isa Projection && !(ind isa SpecUnion) # TODO: Fix, this will trigger even if ind is replaced by the action, which it shouldn't - maybe hard to avoid?
 		cond = isequal_spec(table, table_p)
 		result = ifelse_spec(cond, result, _getindex_error_spec(ind))
 	end
@@ -380,7 +382,7 @@ function table_leftjoin(::Preprocessing{E}, a, b) where E
 end
 
 table_leftjoin_spec(a, b) = create_spec(Preprocess(table_leftjoin), a, b)
-Jobs.table_leftjoin(a, b) = Job(table_leftjoin_spec(a, b))
+Jobs.table_leftjoin(a, b) = table_leftjoin_spec(a, b)
 
 
 
@@ -474,4 +476,4 @@ function transform_annotation(::Preprocessing{E}, f, table; kwargs...) where E
 	end
 end
 transform_annotation_spec(f, table; kwargs...) = create_spec(Preprocess(transform_annotation), f, table; kwargs...)
-Jobs.transform_annotation(f, table; kwargs...) = Job(transform_annotation_spec(f, table; kwargs...))
+Jobs.transform_annotation(f, table; kwargs...) = transform_annotation_spec(f, table; kwargs...)

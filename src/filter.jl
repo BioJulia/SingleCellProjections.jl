@@ -6,11 +6,11 @@ end
 
 
 Jobs.subset_matrix(data, var_ids, obs_ids) =
-	Job(create_spec(Preprocess(subset_matrix), data; var_ids, obs_ids))
+	create_spec(Preprocess(subset_matrix), data; var_ids, obs_ids)
 Jobs.subset_var(data, var_ids) =
-	Job(create_spec(Preprocess(subset_matrix), data; var_ids))
+	create_spec(Preprocess(subset_matrix), data; var_ids)
 Jobs.subset_obs(data, obs_ids) =
-	Job(create_spec(Preprocess(subset_matrix), data; obs_ids))
+	create_spec(Preprocess(subset_matrix), data; obs_ids)
 
 
 
@@ -36,8 +36,8 @@ end
 
 
 Jobs.filter_matrix(fvar, fobs, data; kwargs...) =
-	Job(create_spec(Preprocess(filter_matrix), data; kwargs..., fvar, fobs))
+	create_spec(Preprocess(filter_matrix), data; kwargs..., fvar, fobs)
 Jobs.filter_var(fvar, data; kwargs...) =
-	Job(create_spec(Preprocess(filter_matrix), data; kwargs..., fvar))
+	create_spec(Preprocess(filter_matrix), data; kwargs..., fvar)
 Jobs.filter_obs(fobs, data; kwargs...) =
-	Job(create_spec(Preprocess(filter_matrix), data; kwargs..., fobs))
+	create_spec(Preprocess(filter_matrix), data; kwargs..., fobs)

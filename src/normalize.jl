@@ -17,7 +17,7 @@ function negative_regression_matrix_spec(data, dm; rtol=nothing)
 	create_spec(DataMatrixFunction(negative_regression_matrix), data, dm; rtol)
 end
 function Jobs.negative_regression_matrix(args...; kwargs...)
-	Job(negative_regression_matrix_spec(args...; kwargs...))
+	negative_regression_matrix_spec(args...; kwargs...)
 end
 
 
@@ -35,5 +35,5 @@ end
 
 
 function Jobs.normalize_matrix(data, args...; kwargs...)
-	Job(create_spec(Preprocess(normalize_matrix), data, args...; kwargs...))
+	create_spec(Preprocess(normalize_matrix), data, args...; kwargs...)
 end

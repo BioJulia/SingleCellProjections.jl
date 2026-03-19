@@ -229,7 +229,7 @@ end
 pseudobulk_spec(data, obs_covariate1, obs_covariates...; kwargs...) =
 	create_spec(Preprocess(pseudobulk), data, obs_covariate1, obs_covariates...; kwargs...)
 function Jobs.pseudobulk(data, obs_covariate1, obs_covariates...; kwargs...)
-	Job(pseudobulk_spec(data, obs_covariate1, obs_covariates...; kwargs...))
+	pseudobulk_spec(data, obs_covariate1, obs_covariates...; kwargs...)
 end
 
 
@@ -335,5 +335,5 @@ end
 population_matrix_spec(obs, obs_covariate1, obs_covariates...; kwargs...) =
 	create_spec(Preprocess(population_matrix), obs, obs_covariate1, obs_covariates...; kwargs...)
 function Jobs.population_matrix(obs, obs_covariate1, obs_covariates...; new_var_covariates, kwargs...)
-	Job(population_matrix_spec(obs, obs_covariate1, obs_covariates...; new_var_covariates, kwargs...))
+	population_matrix_spec(obs, obs_covariate1, obs_covariates...; new_var_covariates, kwargs...)
 end

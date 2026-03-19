@@ -52,4 +52,4 @@ transfer_annotation_spec(base, new, covariate; k, kwargs...) =
 	create_spec(Preprocess(transfer_annotation), base, new, covariate; k, kwargs...)
 
 Jobs.transfer_annotation(base, new, covariate; k, kwargs...) =
-	Job(transfer_annotation_spec(base, new, covariate; k, kwargs...))
+	transfer_annotation_spec(base, new, covariate; k, kwargs...)

@@ -7,23 +7,23 @@ function annotate(f::Union{Var,Obs}, data; kwargs...)
 end
 
 Jobs.annotate_obs(data, df; kwargs...) =
-	Job(create_spec(DataMatrixFunction(annotate), data; kwargs..., obs=df))
+	create_spec(DataMatrixFunction(annotate), data; kwargs..., obs=df)
 Jobs.annotate_var(data, df; kwargs...) =
-	Job(create_spec(DataMatrixFunction(annotate), data; kwargs..., var=df))
+	create_spec(DataMatrixFunction(annotate), data; kwargs..., var=df)
 Jobs.annotate(data, var_df, obs_df; kwargs...) =
-	Job(create_spec(DataMatrixFunction(annotate), data; kwargs..., var=var_df, obs=obs_df))
+	create_spec(DataMatrixFunction(annotate), data; kwargs..., var=var_df, obs=obs_df)
 
 
 
 add_var_column(f::Union{Mat,Obs}, data, name, column) = get_spec(f, data)
 add_var_column(::Var, data, name, column) = add_column_spec(get_var_spec(data), name, column)
 Jobs.add_var_column(data, name, column) =
-	Job(create_spec(DataMatrixFunction(add_var_column), data, name, column))
+	create_spec(DataMatrixFunction(add_var_column), data, name, column)
 
 add_obs_column(f::Union{Mat,Var}, data, name, column) = get_spec(f, data)
 add_obs_column(::Obs, data, name, column) = add_column_spec(get_obs_spec(data), name, column)
 Jobs.add_obs_column(data, name, column) =
-	Job(create_spec(DataMatrixFunction(add_obs_column), data, name, column))
+	create_spec(DataMatrixFunction(add_obs_column), data, name, column)
 
 
 
@@ -48,7 +48,7 @@ end
 
 # TODO: project_ids should it be :yes or :intersect by default???
 function Jobs.var_counts_fraction(counts, sub_filter, tot_filter, col; project_ids=:intersect)
-	Job(create_spec(DataMatrixFunction(var_counts_fraction), counts, sub_filter, tot_filter, col; project_ids))
+	create_spec(DataMatrixFunction(var_counts_fraction), counts, sub_filter, tot_filter, col; project_ids)
 end
 
 
@@ -62,7 +62,7 @@ end
 
 # TODO: project_ids should it be :yes or :intersect by default???
 function Jobs.var_counts_sum(f, counts, filter, col; project_ids=:intersect)
-	Job(create_spec(DataMatrixFunction(var_counts_sum), counts, filter, col; f, project_ids))
+	create_spec(DataMatrixFunction(var_counts_sum), counts, filter, col; f, project_ids)
 end
 Jobs.var_counts_sum(counts, filter, col; kwargs...) = Jobs.var_counts_sum(identity, counts, filter, col; kwargs...)
 
@@ -83,7 +83,7 @@ end
 obs_counts_fraction(::Obs, counts, args...; kwargs...) = get_obs_spec(counts)
 
 function Jobs.obs_counts_fraction(counts, sub_filter, tot_filter, col; project_ids=:no)
-	Job(create_spec(DataMatrixFunction(obs_counts_fraction), counts, sub_filter, tot_filter, col; project_ids))
+	create_spec(DataMatrixFunction(obs_counts_fraction), counts, sub_filter, tot_filter, col; project_ids)
 end
 
 
@@ -97,6 +97,6 @@ end
 obs_counts_sum(::Obs, counts, args...; kwargs...) = get_obs_spec(counts)
 
 function Jobs.obs_counts_sum(f, counts, filter, col; project_ids=:no)
-	Job(create_spec(DataMatrixFunction(obs_counts_sum), counts, filter, col; f, project_ids))
+	create_spec(DataMatrixFunction(obs_counts_sum), counts, filter, col; f, project_ids)
 end
 Jobs.obs_counts_sum(counts, filter, col; kwargs...) = Jobs.obs_counts_sum(identity, counts, filter, col; kwargs...)

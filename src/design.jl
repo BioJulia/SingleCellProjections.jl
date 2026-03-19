@@ -222,6 +222,6 @@ end
 designmatrix_spec(data, args...; center=true, kwargs...) =
 	create_spec(Preprocess(designmatrix), data, args...; center, kwargs...)
 function Jobs.designmatrix(data, args...; kwargs...)
-	Job(designmatrix_spec(data, args...; kwargs...))
+	designmatrix_spec(data, args...; kwargs...)
 end
 

@@ -11,7 +11,7 @@ function is_datamatrix_spec(sa::SpecArgs)
 	# TODO: Are there more cases that should return true?
 	return false
 end
-is_datamatrix_spec(spec::Spec) = is_datamatrix_spec(spec.sa)
+is_datamatrix_spec(ws::WrappedSpec) = is_datamatrix_spec(get_sa(ws))
 
 
 
@@ -170,13 +170,13 @@ end
 
 
 get_matrix_spec(x) = create_spec(Preprocess(get_matrix), x)
-Jobs.get_matrix(x) = Job(get_matrix_spec(x))
+Jobs.get_matrix(x) = get_matrix_spec(x)
 
 get_var_spec(x) = create_spec(Preprocess(get_var), x)
-Jobs.get_var(x) = Job(get_var_spec(x))
+Jobs.get_var(x) = get_var_spec(x)
 
 get_obs_spec(x) = create_spec(Preprocess(get_obs), x)
-Jobs.get_obs(x) = Job(get_obs_spec(x))
+Jobs.get_obs(x) = get_obs_spec(x)
 
 get_spec(::Mat, x) = get_matrix_spec(x)
 get_spec(::Var, x) = get_var_spec(x)
@@ -187,7 +187,7 @@ get_spec(::Obs, x) = get_obs_spec(x)
 
 
 # for dispatch
-setup_datamatrix(f::DataMatrixField, spec::Spec) = setup_datamatrix(f, spec.f, spec)
+setup_datamatrix(f::DataMatrixField, spec::SpecUnion) = setup_datamatrix(f, spec.f, spec)
 
 
 
@@ -209,7 +209,7 @@ end
 
 
 
-function _try_replace_get_spec_single(f::DataMatrixField, spec::Spec, k::Spec, v)
+function _try_replace_get_spec_single(f::DataMatrixField, spec::SpecUnion, k::SpecUnion, v)
 	# @info "_try_replace_get_spec_single"
 	if is_datamatrix_spec(k)
 		# TODO: Improve this code, avoid recreating the original spec
@@ -239,11 +239,11 @@ end
 # 	_try_replace_get_spec_single(Obs(), spec, k, v)
 
 # Testing ProjectOnto
-try_replace_spec_single(spec::Spec, ::MatFunction, k::Spec, v) =
+try_replace_spec_single(spec::SpecUnion, ::MatFunction, k::SpecUnion, v) =
 	_try_replace_get_spec_single(Mat(), spec, k, v)
-try_replace_spec_single(spec::Spec, ::VarFunction, k::Spec, v) =
+try_replace_spec_single(spec::SpecUnion, ::VarFunction, k::SpecUnion, v) =
 	_try_replace_get_spec_single(Var(), spec, k, v)
-try_replace_spec_single(spec::Spec, ::ObsFunction, k::Spec, v) =
+try_replace_spec_single(spec::SpecUnion, ::ObsFunction, k::SpecUnion, v) =
 	_try_replace_get_spec_single(Obs(), spec, k, v)
 
 

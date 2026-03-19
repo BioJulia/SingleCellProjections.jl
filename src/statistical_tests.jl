@@ -107,7 +107,7 @@ end
 ftest_spec(data, h1; kwargs...) =
 	create_spec(Preprocess(ftest), data, h1; kwargs...)
 function Jobs.ftest(data, h1; kwargs...)
-	Job(ftest_spec(data, h1; kwargs...))
+	ftest_spec(data, h1; kwargs...)
 end
 
 
@@ -189,5 +189,5 @@ end
 ttest_spec(data, h1; kwargs...) =
 	create_spec(Preprocess(ttest), data, h1; kwargs...)
 function Jobs.ttest(data, h1; kwargs...)
-	Job(ttest_spec(data, h1; kwargs...))
+	ttest_spec(data, h1; kwargs...)
 end

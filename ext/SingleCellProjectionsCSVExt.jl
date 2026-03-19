@@ -29,7 +29,7 @@ load_csv(::Preprocessing, filepath; kwargs...) =
 	table_from_compound_result(parse_csv_spec(filepath; kwargs...))
 function Jobs.load_csv(filepath::Union{String,TimestampedFilePath}; kwargs...)
 	filepath_spec = checksummedfilepath_spec(filepath)
-	Job(create_spec(Preprocess(load_csv), filepath_spec; kwargs...))
+	create_spec(Preprocess(load_csv), filepath_spec; kwargs...)
 end
 
 end

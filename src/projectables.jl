@@ -8,7 +8,7 @@ end
 
 
 
-is_projectable_spec(x) = x isa Spec && x.f isa Projectable
+is_projectable_spec(x) = x isa SpecUnion && x.f isa Projectable
 
 # is_projectable_spec(::Any) = false
 # function is_projectable_spec(sa::SpecArgs)
@@ -39,10 +39,11 @@ end
 
 
 
-function try_replace_spec_single(spec::Spec, ::Any, k::Spec, v)
-	if spec.sa === k.sa # Because of deduplication we can use ===
-		if v isa Spec
-			return Spec(v.sa, spec.op) # Keep the op
+function try_replace_spec_single(spec::SpecUnion, ::Any, k::T, v) where T <: SpecUnion
+	if ReproducibleJobs.get_sa(spec) === ReproducibleJobs.get_sa(k) # Because of deduplication we can use ===
+		if v isa SpecUnion
+			# return Spec(v.sa, spec.op) # Keep the op
+			return ReproducibleJobs.transfer_op(k, v) # Keep the op
 		else
 			return v # Replaced by a value, the op doesn't apply anymore
 		end
@@ -51,13 +52,13 @@ function try_replace_spec_single(spec::Spec, ::Any, k::Spec, v)
 	return nothing
 end
 
-function try_replace_spec(spec::Spec, f::F, args...) where F
+function try_replace_spec(spec::SpecUnion, f::F, args...) where F
 	# @info "try_replace_spec"
 	# @show f
 	# f isa ProjectOnto && @show f
 
 	for (k,v) in args
-		if k isa Spec
+		if k isa SpecUnion
 			r = try_replace_spec_single(spec, f, k, v)
 			r !== nothing && return r
 		end
@@ -69,9 +70,11 @@ end
 
 
 
-function do_replacement(replacements, spec::Spec)
+function do_replacement(replacements, spec::T) where T<:SpecUnion
 	p_spec = create_project_spec(spec, replacements...)
-	Spec(p_spec.sa, spec.op) # Keep the op
+	# Spec(p_spec.sa, spec.op) # Keep the op
+
+	ReproducibleJobs.transfer_op(spec, p_spec) # Keep the op
 end
 function do_replacement(replacements, x)
 	for (k,v) in replacements
@@ -157,7 +160,7 @@ end
 
 
 # Wrapper that dispatches based on the type of `onto.f`
-project(::Preprocessing, onto::Spec, args...; kwargs...) = project_impl(onto.f, onto, args...; kwargs...)
+project(::Preprocessing, onto::SpecUnion, args...; kwargs...) = project_impl(onto.f, onto, args...; kwargs...)
 
 function project(::Preprocessing, onto, args...; kwargs...)
 	# Due to forwarding, `onto` might be a value.
@@ -172,15 +175,20 @@ function create_project_spec(onto, args...; kwargs...)
 	# Transfer the op from `onto` to `project`
 	# TODO: make code cleaner
 
-	onto isa Job && (onto = onto.spec)
-	onto::Spec
+	# onto isa Job && (onto = onto.spec)
+	onto::SpecUnion
 
-	op = onto.op
-	onto = Spec(onto.sa)
-	spec = create_spec(Preprocess(project), onto, args...; kwargs...)
-	Spec(spec.sa, op)
+
+	# op = onto.op
+	# onto = Spec(onto.sa)
+	# spec = create_spec(Preprocess(project), onto, args...; kwargs...)
+	# Spec(spec.sa, op)
+
+	onto_sa = ReproducibleJobs.get_sa(onto)
+	spec = create_spec(Preprocess(project), onto_sa, args...; kwargs...)
+	ReproducibleJobs.transfer_op(onto, spec)
 end
 
 function Jobs.project(onto, args...; kwargs...)
-	Job(create_project_spec(onto, args...; kwargs...))
+	create_project_spec(onto, args...; kwargs...)
 end

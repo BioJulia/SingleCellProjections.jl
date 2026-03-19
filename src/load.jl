@@ -108,5 +108,5 @@ function Jobs.load_counts(filenames;
 	@assert all(x->lowercase(splitext(x)[2])==".h5", filenames) "Only 10x .h5 files are currently supported"
 
 	filename_specs = checksummedfilepath_spec.(filenames)
-	Job(create_spec(DataMatrixFunction(load_counts), filename_specs; sample_names, prefilter, extra_id_cols, kwargs...))
+	create_spec(DataMatrixFunction(load_counts), filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
 end

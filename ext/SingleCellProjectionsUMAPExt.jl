@@ -85,7 +85,7 @@ umap(::Var, data; ndim, kwargs...) = prefixed_ids_spec("id", "UMAP ", ndim)
 
 
 function Jobs.umap(data; ndim, kwargs...)
-	Job(create_spec(DataMatrixFunction(umap), data; ndim, kwargs...))
+	create_spec(DataMatrixFunction(umap), data; ndim, kwargs...)
 end
 
 

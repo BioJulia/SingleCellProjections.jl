@@ -16,5 +16,5 @@ adjoint_spec(data) = create_spec(DataMatrixFunction(adjoint_impl), data)
 # NB: We call it transpose even though we use adjoint internally.
 #     Because a user is more likely to use data' than transpose(data) even when they mean transposing.
 function Jobs.transpose(data)
-	Job(adjoint_spec)
+	adjoint_spec(data)
 end

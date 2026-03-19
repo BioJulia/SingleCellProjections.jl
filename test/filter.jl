@@ -7,10 +7,10 @@
 
 
 	var_annot_df = select(fetch!(Jobs.get_var(counts_job)), ["id", "name"])[end:-4:1, :]
-	var_annot_spec = ReproducibleJobs.Job(SingleCellProjections.table_getindex_spec(Jobs.annotation(Jobs.get_var(counts_job), "name"), P:-4:1))
+	var_annot_spec = SingleCellProjections.table_getindex_spec(Jobs.annotation(Jobs.get_var(counts_job), "name"), P:-4:1)
 
 	obs_annot_df = select(fetch!(Jobs.get_obs(counts_job)), ["cell_id", "barcode"])[end:-5:1, :]
-	obs_annot_spec = ReproducibleJobs.Job(SingleCellProjections.table_getindex_spec(Jobs.annotation(Jobs.get_obs(counts_job), "barcode"), N:-5:1))
+	obs_annot_spec = SingleCellProjections.table_getindex_spec(Jobs.annotation(Jobs.get_obs(counts_job), "barcode"), N:-5:1)
 
 
 	# TODO: projections
@@ -43,7 +43,7 @@
 			test_dataframe_columns_identical("f.obs vs data.obs", f.obs, data.obs)
 		end
 		@test forward(Jobs.get_obs(f_job)).spec == obs_spec_forwarded
-		ref_job = ReproducibleJobs.Job(SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=1:2:P))
+		ref_job = SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=1:2:P)
 		@test forward(f_job).spec == forward(ref_job).spec
 		# NB: Projection should fail unless the var IDs are identical!
 
@@ -54,7 +54,7 @@
 			@test isequal(f.obs, data.obs[1:2:N,:])
 		end
 		@test forward(Jobs.get_var(f_job)).spec == var_spec_forwarded
-		ref_job = ReproducibleJobs.Job(SingleCellProjections.create_datamatrix_getindex_spec(data_job; obs_ind=1:2:N))
+		ref_job = SingleCellProjections.create_datamatrix_getindex_spec(data_job; obs_ind=1:2:N)
 		@test forward(f_job).spec == forward(ref_job).spec
 		# NB: Projection should fail unless the obs IDs are identical!
 
@@ -64,7 +64,7 @@
 			@test isequal(f.var, data.var[1:3:P,:])
 			@test isequal(f.obs, data.obs[1:10:N,:])
 		end
-		ref_job = ReproducibleJobs.Job(SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=1:3:P, obs_ind=1:10:N))
+		ref_job = SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=1:3:P, obs_ind=1:10:N)
 		@test forward(f_job).spec == forward(ref_job).spec
 		# NB: Projection should fail unless the var and obs IDs are identical!
 
@@ -76,7 +76,7 @@
 			@test isequal(f.obs, filter("group"=>==("A"), data.obs))
 		end
 		ref_obs_ind = findall(==("A"), data.obs.group)
-		ref_job = ReproducibleJobs.Job(SingleCellProjections.create_datamatrix_getindex_spec(data_job; obs_ind=ref_obs_ind))
+		ref_job = SingleCellProjections.create_datamatrix_getindex_spec(data_job; obs_ind=ref_obs_ind)
 		@test forward(f_job).spec == forward(ref_job).spec
 
 		# Hmm. How do we support this? The problem is the anonymous function that cannot be hashed currently. Implement HashableFunctions?
@@ -95,7 +95,7 @@
 			@test isequal(f.obs, data.obs[data.obs.group.=="A",:])
 		end
 		ref_obs_ind = findall(==("A"), data.obs.group)
-		ref_job = ReproducibleJobs.Job(SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=1:3:P, obs_ind=ref_obs_ind))
+		ref_job = SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=1:3:P, obs_ind=ref_obs_ind)
 		@test forward(f_job).spec == forward(ref_job).spec
 		# NB: Projection should fail unless the var IDs are identical!
 
@@ -108,7 +108,7 @@
 		end
 		@test forward(Jobs.get_obs(f_job)).spec == obs_spec_forwarded
 		ref_var_ind = findall(>=("D"), data.var.name)
-		ref_job = ReproducibleJobs.Job(SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=ref_var_ind))
+		ref_job = SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=ref_var_ind)
 		@test forward(f_job).spec == forward(ref_job).spec
 
 		f_job = Jobs.filter_matrix("name"=>>("D"), 1:10:N, data_job)
@@ -118,7 +118,7 @@
 			@test isequal(f.obs, data.obs[1:10:N,:])
 		end
 		ref_var_ind = findall(>=("D"), data.var.name)
-		ref_job = ReproducibleJobs.Job(SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=ref_var_ind, obs_ind=1:10:N))
+		ref_job = SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=ref_var_ind, obs_ind=1:10:N)
 		@test forward(f_job).spec == forward(ref_job).spec
 		# NB: Projection should fail unless the obs IDs are identical!
 
@@ -130,13 +130,13 @@
 		end
 		ref_var_ind = findall(>=("D"), data.var.name)
 		ref_obs_ind = findall(==("A"), data.obs.group)
-		ref_job = ReproducibleJobs.Job(SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=ref_var_ind, obs_ind=ref_obs_ind))
+		ref_job = SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=ref_var_ind, obs_ind=ref_obs_ind)
 		@test forward(f_job).spec == forward(ref_job).spec
 
 
 		# annotations
 		let var_mask = var_mask = in(var_annot_df.name).(data.var.name)
-			f1_job = ReproducibleJobs.Job(SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=findall(var_mask)))
+			f1_job = SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=findall(var_mask))
 			f2_job = Jobs.filter_var(var_annot_df=>!ismissing, data_job)
 			f3_job = Jobs.filter_var(var_annot_spec=>!ismissing, data_job)
 
@@ -150,7 +150,7 @@
 			end
 		end
 		let obs_mask = obs_mask = in(obs_annot_df.barcode).(data.obs.barcode)
-			f1_job = ReproducibleJobs.Job(SingleCellProjections.create_datamatrix_getindex_spec(data_job; obs_ind=findall(obs_mask)))
+			f1_job = SingleCellProjections.create_datamatrix_getindex_spec(data_job; obs_ind=findall(obs_mask))
 			f2_job = Jobs.filter_obs(obs_annot_df=>!ismissing, data_job)
 			f3_job = Jobs.filter_obs(obs_annot_spec=>!ismissing, data_job)
 

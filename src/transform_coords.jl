@@ -48,4 +48,4 @@ transform_coords(::Obs, data, transform; kwargs...) = get_obs_spec(data)
 transform_coords_spec(data, transform; kwargs...) =
 	create_spec(DataMatrixFunction(transform_coords), data, transform; kwargs...)
 Jobs.transform_coords(data, transform; kwargs...) =
-	Job(transform_coords_spec(data, transform; kwargs...))
+	transform_coords_spec(data, transform; kwargs...)
