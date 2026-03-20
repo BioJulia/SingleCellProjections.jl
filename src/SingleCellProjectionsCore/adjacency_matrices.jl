@@ -50,17 +50,67 @@ function find_nearest_neighbors(X; k, tree_fun=KDTree)
 	N = size(X,2)
 	k = min(N-1, k) # Cannot have more neighbors than points! (Excluding the point itself.)
 
+	# Should we move the tree building to a separate spec? The downside is that we need to serialize/deserialize the tree...
 	tree = tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
 
-	# Single-threaded version
-	indices,dists = allknn(tree, k) # NB: This exludes the points themselves
+	# # Single-threaded version
+	# indices,dists = allknn(tree, k) # NB: This exludes the points themselves
 
-	# TODO: Threaded version
+	# # From vectors of vectors to matrices
+	# indices = reduce(hcat, indices)
+	# dists = reduce(hcat, dists)
+	# indices, dists # k × size(X,2) matrices
+
+
+
+	# # Single-threaded version to compare with threaded
+	# indices_old,dists_old = allknn(tree, k) # NB: This exludes the points themselves
+
+	# for (iv,dv) in zip(indices_old, dists_old)
+	# 	perm = sortperm(iv)
+	# 	permute!(iv, perm)
+	# 	permute!(dv, perm)
+	# end
+
+	# # From vectors of vectors to matrices
+	# indices_old = reduce(hcat, indices_old)
+	# dists_old = reduce(hcat, dists_old)
+	# indices_old, dists_old # k × size(X,2) matrices
+
+
+	# Threaded version - We are waiting for a resolution to https://github.com/KristofferC/NearestNeighbors.jl/issues/237
+
+	# Workaround to get threading but still exclude the points themselves
+	nt = max(1, Threads.nthreads()-1) # TODO: What's a good choice?
+	c = chunks(1:N; n=nt)
+	results = tmap(c) do chunk
+		inds,ds = knn(tree, @view(X[:,chunk]), k+1) # We need +1 to include the point itself (which will be the closest point, typically)
+		# Now remove the point itself, and sort the outputs by index
+		for (j,iv,dv) in zip(chunk, inds, ds)
+			# order = sortperm(iv)
+			remove_ind = findfirst(==(j), iv) # index of the point itself
+			remove_ind = @something remove_ind argmax(dv) # If it didn't find the point itself (due to many colocated points maybe?), remove the point with highest dist instead
+			# Avoiding allocations is important due to threading
+			deleteat!(iv, remove_ind)
+			deleteat!(dv, remove_ind)
+			perm = sortperm(iv)
+			permute!(iv, perm)
+			permute!(dv, perm)
+		end
+		inds,ds
+	end
+	# Combine results from each chunk
+	indices = reduce(vcat, first.(results))
+	dists = reduce(vcat, last.(results))
 
 	# From vectors of vectors to matrices
 	indices = reduce(hcat, indices)
 	dists = reduce(hcat, dists)
-	indices, dists # k × size(X,2) matrices
+
+	# @assert indices == indices_old
+	# @assert dists ≈ dists_old
+
+	indices, dists # k × size(Y,2) matrices
 end
 
 
@@ -79,6 +129,7 @@ function find_nearest_neighbors(X, Y; k, tree_fun=KDTree)
 	@assert size(X,1) == size(Y,1) # Must have the same (number of) variables
 	k = min(N1,k) # Cannot have more neighbors than points!
 
+	# Should we move the tree building to a separate spec? The downside is that we need to serialize/deserialize the tree...
 	tree = tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
 
 	# # Single-threaded version
@@ -88,7 +139,14 @@ function find_nearest_neighbors(X, Y; k, tree_fun=KDTree)
 	nt = max(1, Threads.nthreads()-1) # TODO: What's a good choice?
 	c = chunks(1:N2; n=nt)
 	results = tmap(c) do chunk
-		knn(tree, @view(Y[:,chunk]), k)
+		inds,ds = knn(tree, @view(Y[:,chunk]), k)
+		# Sort by index for stability of results
+		for (iv,dv) in zip(inds, ds)
+			perm = sortperm(iv)
+			permute!(iv, perm)
+			permute!(dv, perm)
+		end
+		inds, ds
 	end
 	# Combine results from each chunk
 	indices = reduce(vcat, first.(results))

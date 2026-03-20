@@ -6,9 +6,9 @@ end
 # It could be argued that this should be handled by projection, e.g. base case is X and projected case is X,action(X).
 # But let's keep the separetly for now and use them as lower-level operations in other Projectables. Because it's not obvious that the above is always true.
 find_nearest_neighbors_spec(X; k, kwargs...) =
-	create_spec(find_nearest_neighbors, X; k, kwargs..., __version=v"0.1.0")
+	create_spec(find_nearest_neighbors, X; k, kwargs..., __version=v"0.1.2")
 find_nearest_neighbors_spec(X, Y; k, kwargs...) =
-	create_spec(find_nearest_neighbors, X, Y; k, kwargs..., __version=v"0.1.0")
+	create_spec(find_nearest_neighbors, X, Y; k, kwargs..., __version=v"0.1.2")
 
 
 
