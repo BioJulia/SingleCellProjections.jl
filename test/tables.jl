@@ -64,6 +64,15 @@
 
 
 		annot = Jobs.annotation(table, "y")
+
+		if name != "DataFrame" # TODO: Enable this test for DataFrames to when I make it work
+			let annot_fwd = forward!(annot)
+				@test annot_fwd.f === SingleCellProjections.create_table
+				@test first.(annot_fwd.args) == ("id", "y")
+			end
+		end
+
+		
 		
 		@test fetch!(Jobs.get_id_colname(annot)) == "id"
 		@test fetch!(Jobs.get_value_colname(annot)) == "y"
@@ -86,7 +95,7 @@
 		end
 
 		let ind = collect(n:-2:1)
-			table2 = ReproducibleJobs.Job(SingleCellProjections.table_getindex_spec(table, ind))
+			table2 = SingleCellProjections.table_getindex_spec(table, ind)
 			@test isequal(fetch!(table2), df[ind,:])
 		end
 
@@ -106,7 +115,7 @@
 	# TODO: This is slightly inconvenient, since we need to replace filenames at the TimestampedFilePath level. Can we get around that somehow?
 	@testset "ReplaceFilename" begin
 		csv_table_p = Jobs.project(csv_table, TimestampedFilePath(csv_filename)=>TimestampedFilePath(csv_filename_right))
-		@test isequal(forward(csv_table_p).spec, forward(csv_table_right).spec)
+		@test isequal(forward!(csv_table_p), forward!(csv_table_right))
 	end
 
 	# TODO: Projections

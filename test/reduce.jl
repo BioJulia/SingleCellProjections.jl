@@ -14,8 +14,8 @@
 
 	@testset "PCA $name" for (name,data_job) in (("logtransformed",transformed_job), ("normalized", normalized_job))
 		data = fetch!(data_job)
-		var_spec_forwarded = forward(Jobs.get_var(data_job)).spec
-		obs_spec_forwarded = forward(Jobs.get_obs(data_job)).spec
+		var_spec_forwarded = forward!(Jobs.get_var(data_job))
+		obs_spec_forwarded = forward!(Jobs.get_obs(data_job))
 
 		X = convert(Matrix, materialize(data.matrix))
 
@@ -24,7 +24,7 @@
 			F = SVD(F.U[:,1:nsv], F.S[1:nsv], F.Vt[1:nsv,:])
 			pca_job = Jobs.pca(data_job; nsv)
 
-			@test forward(Jobs.get_obs(pca_job)).spec == obs_spec_forwarded
+			@test forward!(Jobs.get_obs(pca_job)) == obs_spec_forwarded
 
 			let pca = fetch!(pca_job)
 				# var

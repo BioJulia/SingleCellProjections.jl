@@ -16,8 +16,8 @@
 
 			l_job = Jobs.logtransform(T_args..., counts_job; kwargs...)
 
-			@test forward(Jobs.get_obs(l_job)).spec == forward(Jobs.get_obs(counts_job)).spec
-			@test forward(Jobs.get_var(l_job)).spec == forward(Jobs.get_var(counts_job)).spec
+			@test forward!(Jobs.get_obs(l_job)) == forward!(Jobs.get_obs(counts_job))
+			@test forward!(Jobs.get_var(l_job)) == forward!(Jobs.get_var(counts_job))
 
 			let l = fetch!(l_job)
 				@test l.matrix.matrix ≈ X
@@ -33,13 +33,13 @@
 			# Test that it is identical to logtransforming the matrix without projection
 			p_matrix_job = Jobs.get_matrix(p_job)
 			p_matrix_job2 = Jobs.get_matrix(Jobs.logtransform(T_args..., counts_sub_job; kwargs...))
-			@test forward(p_matrix_job).spec == forward(p_matrix_job2).spec
+			@test forward!(p_matrix_job) == forward!(p_matrix_job2)
 
 			# Vars shouldn't be changed by the projection
-			@test forward(Jobs.get_var(p_job)).spec == forward(Jobs.get_var(counts_sub_job)).spec
+			@test forward!(Jobs.get_var(p_job)) == forward!(Jobs.get_var(counts_sub_job))
 
 			# Obs shouldn't be changed by the projection
-			@test forward(Jobs.get_obs(p_job)).spec == forward(Jobs.get_obs(counts_sub_job)).spec
+			@test forward!(Jobs.get_obs(p_job)) == forward!(Jobs.get_obs(counts_sub_job))
 
 
 			let p = fetch!(p_job), Xs = sparse(X[:,pbmc_subset_ind]), counts_sub = fetch!(counts_sub_job)
@@ -59,7 +59,7 @@
 
 			l_job = Jobs.logtransform(T_args..., counts_job; var_filter="name"=>>("L"), kwargs...)
 
-			@test forward(Jobs.get_obs(l_job)).spec == forward(Jobs.get_obs(counts_job)).spec
+			@test forward!(Jobs.get_obs(l_job)) == forward!(Jobs.get_obs(counts_job))
 
 			let l = fetch!(l_job)
 				@test l.matrix.matrix ≈ X
@@ -75,13 +75,13 @@
 			# Test that it is identical to logtransforming the matrix without projection
 			p_matrix_job = Jobs.get_matrix(p_job)
 			p_matrix_job2 = Jobs.get_matrix(Jobs.logtransform(T_args..., counts_sub_job; var_filter="name"=>>("L"), kwargs...))
-			@test forward(p_matrix_job).spec == forward(p_matrix_job2).spec
+			@test forward!(p_matrix_job) == forward!(p_matrix_job2)
 
 			# Vars where subsetted. Alternatively to testing the result, we could've tested the spec.
 			@test isequal(fetch!(Jobs.get_var(p_job)), fetch!(Jobs.get_var(counts_sub_job))[var_mask,:])
 
 			# Obs shouldn't be changed by the projection
-			@test forward(Jobs.get_obs(p_job)).spec == forward(Jobs.get_obs(counts_sub_job)).spec
+			@test forward!(Jobs.get_obs(p_job)) == forward!(Jobs.get_obs(counts_sub_job))
 
 
 			let p = fetch!(p_job), Xs = sparse(X[:, pbmc_subset_ind]), counts_sub = fetch!(counts_sub_job)
@@ -107,9 +107,9 @@
 			X = sctransform(expected_sparse, counts.var, params)
 			sct_job = Jobs.sctransform(T_args..., counts_job; kwargs...)
 
-			@test forward(Jobs.get_obs(sct_job)).spec == forward(Jobs.get_obs(counts_job)).spec
+			@test forward!(Jobs.get_obs(sct_job)) == forward!(Jobs.get_obs(counts_job))
 			# TODO: test var forwarding?
-			# @show forward(Jobs.get_var(sct_job))
+			# @show forward!(Jobs.get_var(sct_job))
 
 			let sct = fetch!(sct_job)
 				# var
@@ -139,9 +139,9 @@
 
 			p_job = Jobs.project(sct_job, counts_job=>counts_sub_job)
 
-			@test forward(Jobs.get_obs(p_job)).spec == forward(Jobs.get_obs(counts_sub_job)).spec
+			@test forward!(Jobs.get_obs(p_job)) == forward!(Jobs.get_obs(counts_sub_job))
 			# TODO: test var forwarding?
-			# @show forward(Jobs.get_var(p_job))
+			# @show forward!(Jobs.get_var(p_job))
 
 			let p = fetch!(p_job), counts_sub = fetch!(counts_sub_job)
 				Xs = sctransform(expected_sparse[:, pbmc_subset_ind], counts.var, params; clip=sqrt(size(X,2)/30))
@@ -180,10 +180,10 @@
 
 			sct_job = Jobs.sctransform(T_args..., counts_job; var_filter="name"=>.>("C"), kwargs...)
 
-			@test forward(Jobs.get_obs(sct_job)).spec == forward(Jobs.get_obs(counts_job)).spec
+			@test forward!(Jobs.get_obs(sct_job)) == forward!(Jobs.get_obs(counts_job))
 
 			# TODO: test var forwarding?
-			# @show forward(Jobs.get_var(sct_job))
+			# @show forward!(Jobs.get_var(sct_job))
 
 			let sct = fetch!(sct_job)
 				# var
@@ -214,9 +214,9 @@
 
 			p_job = Jobs.project(sct_job, counts_job=>counts_sub_job)
 
-			@test forward(Jobs.get_obs(p_job)).spec == forward(Jobs.get_obs(counts_sub_job)).spec
+			@test forward!(Jobs.get_obs(p_job)) == forward!(Jobs.get_obs(counts_sub_job))
 			# TODO: test var forwarding?
-			# @show forward(Jobs.get_var(p_job))
+			# @show forward!(Jobs.get_var(p_job))
 
 			let p = fetch!(p_job), counts_sub = fetch!(counts_sub_job)
 				Xs = sctransform(es[:, pbmc_subset_ind], counts.var[var_mask,:], params_filtered; clip=sqrt(size(X,2)/30))

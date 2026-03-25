@@ -4,7 +4,7 @@ using SingleCellProjections: Projectable, ProjectOnto, Action, DataMatrixFunctio
 import .SingleCellProjectionsCore as SCPCore
 using .SingleCellProjectionsCore.MatrixExpressions
 using SCTransform
-using ReproducibleJobs: ReproducibleJobs, Scheduler, TimestampedFilePath, get_scheduler, with_scheduler, fetch!, forward, forward_once, create_spec, Job, Preprocess
+using ReproducibleJobs: ReproducibleJobs, Scheduler, TimestampedFilePath, get_scheduler, with_scheduler, fetch!, forward!, forward_once!, create_spec, Preprocess
 
 using StableRNGs
 
