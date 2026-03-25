@@ -3,7 +3,7 @@ create_table(args::Pair{String,<:Any}...) = DataFrame(args...; copycols=false)
 create_table_spec(args...) = create_spec(create_table, args...; __version=v"0.1.0")
 Jobs.create_table(args...) = create_table_spec(args...)
 
-is_create_table(x::WrappedSpec) = x.f == create_table
+is_create_table(x::SpecUnion) = x.f == create_table
 is_create_table(::Any) = false
 
 
