@@ -29,6 +29,7 @@ import StableHashTraits
 import LinearAlgebra
 using SparseArrays: sparse
 import StatsBase
+using Statistics: mean
 
 using ChunkSplitters
 using OhMyThreads
@@ -142,6 +143,7 @@ module Jobs
 	function transpose end
 
 	function transform_coords end
+	function find_optimal_coord_transform end
 
 	function pseudobulk end
 	function population_matrix end
