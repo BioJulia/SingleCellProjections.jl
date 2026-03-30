@@ -77,7 +77,7 @@ function getindex_or_missing_pr(action, v, ind)
 
 	if action isa Projection && !(ind isa SpecUnion)
 		cond = isequal_spec(v, v_p)
-		result = ifelse_spec(cond, result, _getindex_or_missing_error_spec(ind))
+		result = ifelse_spec(cond, result, _getindex_or_missing_error_spec(ind)) # TODO: Fix _getindex_or_missing_error_spec isn't defined anywhere...
 	end
 
 	result
