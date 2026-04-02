@@ -29,3 +29,8 @@ matrix_sum(::Obs, args...) = get_obs_spec(_get_value(first(args)))
 function matrix_sum_spec(arg1, args...)
 	create_spec(DataMatrixFunction(matrix_sum), arg1, args...)
 end
+
+
+# TODO: Do we need these?
+# matrix_ref(name, matrix) = SCPCore.MatrixRef(name, matrix)
+# matrix_ref_spec(name, matrix) = create_spec(matrix_ref, name, matrix; __version=v"0.1.0")

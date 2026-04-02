@@ -105,6 +105,10 @@ function _showoverview(io, data)
 end
 
 _showmatrix(io, matrix::T) where T = print(io, T)
+function _showmatrix(io, matrix::Blocks)
+	h,w = size(matrix.blocks)
+	print(io, "Block Matrix ($h×$w)")
+end
 _showmatrix(io, matrix::SVD) = print(io, "SVD (", innersize(matrix), " dimensions)")
 # _showmatrix(io, matrix::LowRank) = print(io, "LowRank (", innersize(matrix), " dimensions)")
 _showmatrix(io, matrix::MatrixExpression) = show(io, matrix)

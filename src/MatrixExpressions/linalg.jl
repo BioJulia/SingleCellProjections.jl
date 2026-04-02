@@ -39,7 +39,6 @@ compute(A::MatrixSum) = sum(compute, A.terms)
 
 
 # Should be fast in Julia 1.7+ for different matrix types - TEST!
-# But we probably want to support Julia 1.6. So maybe some additional methods are needed.
 compute_diaggram(A::AbstractMatrix) = vec(sum(abs2, A; dims=1))
 
 

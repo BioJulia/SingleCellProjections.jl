@@ -8,7 +8,8 @@ struct MatrixRef{T} <: MatrixExpression
 	name::Symbol
 	matrix::T
 end
-MatrixRef(matrix) = MatrixRef(Symbol("(",String(rand('a':'z',6)),")"), matrix)
+# MatrixRef(matrix) = MatrixRef(Symbol("(",String(rand('a':'z',6)),")"), matrix)
+MatrixRef(matrix) = MatrixRef(:unnamed, matrix)
 MatrixRef(t::Tuple{Symbol,T}) where T = MatrixRef(t...)
 MatrixRef(p::Pair{Symbol,T}) where T = MatrixRef(p...)
 

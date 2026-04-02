@@ -33,7 +33,7 @@ function implicitsvd(::Type{T}, P, N, A, AT;
 
 	if subspacedims>=min(P,N)
 		# revert to standard SVD.
-		B = convert(Matrix, A*I(N))
+		B = convert(Matrix, A*I(N)) # TODO: Add `convert(Matrix, A)` to MatrixExpressions instead and use that.
 		Q = I
 	else
 		local Zj

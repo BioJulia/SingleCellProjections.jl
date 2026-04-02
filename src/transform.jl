@@ -1,3 +1,24 @@
+
+
+# TODO: Make code cleaner
+# function logtransform_matrix(::Preprocessing, T, matrix; var_ind, scale_factor)
+# 	if is_hblock(matrix)
+# 		hblock_spec([
+# 			create_spec(SCPCore.logtransform_matrix, T, m; var_ind, scale_factor, __version=v"0.1.0")
+# 			for m in matrix.args[1]
+# 		])
+# 	else
+# 		create_spec(SCPCore.logtransform_matrix, T, matrix; var_ind, scale_factor, __version=v"0.1.0")
+# 	end
+# end
+
+function logtransform_matrix(::Preprocessing, T, matrix; var_ind, scale_factor)
+	hblock_map(matrix) do x
+		create_spec(SCPCore.logtransform_matrix, T, x; var_ind, scale_factor, __version=v"0.1.0")
+	end
+end
+
+
 function logtransform(f::Union{Mat,Var}, T::DataType, data; var_filter=:, project_var_ids=:intersect, scale_factor)
 	var_spec = get_var_spec(data)
 	var_ind = prefetched(create_find_matching_ind_spec(var_filter, var_spec; project_ids=project_var_ids))
@@ -6,7 +27,11 @@ function logtransform(f::Union{Mat,Var}, T::DataType, data; var_filter=:, projec
 		table_getindex_spec(var_spec, var_ind)
 	else # if f isa Mat
 		matrix_spec = get_matrix_spec(data)
-		create_spec(SCPCore.logtransform_matrix, T, matrix_spec; var_ind, scale_factor, __version=v"0.1.0")
+
+		# New experimental version supporting blocks
+		create_spec(Preprocess{false}(logtransform_matrix), T, matrix_spec; var_ind, scale_factor)
+
+		# create_spec(SCPCore.logtransform_matrix, T, matrix_spec; var_ind, scale_factor, __version=v"0.1.0")
 	end
 end
 logtransform(::Obs, ::DataType, data; kwargs...) = get_obs_spec(data)

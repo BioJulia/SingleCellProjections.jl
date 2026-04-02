@@ -110,3 +110,52 @@ function Jobs.load_counts(filenames;
 	filename_specs = checksummedfilepath_spec.(filenames)
 	create_spec(DataMatrixFunction(load_counts), filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
 end
+
+
+
+# --- Experimental Blocked version -----------------------------------------------------------------
+
+load_sample_matrix_impl(filename::ChecksummedFilePath, var_ind; Tv=Int, Ti=Int32) =
+	SCPCore.load_sample_matrix(Tv, Ti, string(filename), var_ind)
+load_sample_matrix_spec(filename, var_ind) = create_spec(load_sample_matrix_impl, filename, var_ind; __version=v"0.0.1")
+
+
+
+function load_counts2(f::Union{Mat,Var}, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
+	sample_var_specs = load_var_spec.(filename_specs)
+	var_spec = combine_var_spec(sample_var_specs; prefilter, extra_id_cols)
+
+	if f isa Var
+		return var_spec
+	else # if f isa Mat
+		var_ind_specs = prefetched.(sample_var_indices_spec.(sample_var_specs, var_spec; extra_id_cols))
+		sample_specs = load_sample_matrix_spec.(filename_specs, var_ind_specs)
+
+		if length(sample_specs)	== 1
+			return only(sample_specs)
+		else
+			return hblock_spec(sample_specs)
+		end
+
+		# metadata_specs = prefetched.(load_sample_matrix_metadata_spec.(filename_specs, var_ind_specs))
+		# return load_hcat_sample_matrices_spec(filename_specs, metadata_specs, var_ind_specs; kwargs...)
+	end
+end
+load_counts2(::Obs, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...) =
+	combine_obs_spec(filename_specs, sample_names)
+
+function Jobs.load_counts2(filenames;
+                           sample_names,
+                           prefilter = "feature_type"=>isequal("Gene Expression"),
+                           extra_id_cols = "feature_type",
+                           kwargs...)
+	filenames isa AbstractArray || (filenames = [filenames])
+	sample_names isa AbstractArray || (sample_names = [sample_names])
+
+	# TODO: Support .mtx.gz, with the added complication that we need to find matching
+	#       feature/barcode files already here so that they can be checksummed too.
+	@assert all(x->lowercase(splitext(x)[2])==".h5", filenames) "Only 10x .h5 files are currently supported"
+
+	filename_specs = checksummedfilepath_spec.(filenames)
+	create_spec(DataMatrixFunction(load_counts2), filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
+end

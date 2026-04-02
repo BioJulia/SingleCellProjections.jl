@@ -39,6 +39,9 @@ using .MatrixExpressions
 const Index = Union{AbstractVector, Colon}
 
 
+include("blocks.jl")
+
+
 include("random.jl")
 include("utils.jl")
 include("table_utils.jl")
