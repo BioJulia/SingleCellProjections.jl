@@ -1,25 +1,3 @@
-# TODO: Decide name
-# This is a loose data structure for block matrices
-# The blocks can be sparse/dense/matrix expressions/whatever
-# struct Blocks{T} <: AbstractMatrix{T}
-# 	blocks::Matrix{T} # Make immutable? Use tuples somehow?
-# end
-
-
-# # AbstractArray interface
-# Base.size(b::Blocks) = size(b.blocks)
-# Base.size(b::Blocks, d::Int) = size(b.blocks, d)
-# Base.getindex(b::Blocks, i::Int) = getindex(b.blocks, i)
-# Base.getindex(b::Blocks, i::Int, j::Int) = getindex(b.blocks, i, j)
-# Base.parent(b::Blocks) = b.blocks
-# Base.IndexStyle(::Type{<:Blocks}) = IndexLinear()
-
-
-
-# hblock(blocks) = Blocks([block for i in 1:1, block in blocks]) # create 1xN matrix of blocks
-# vblock(blocks) = Blocks([block for block in blocks, j in 1:1]) # create Nx1 matrix of blocks
-
-
 function _validated_size(sizes::Matrix{Tuple{Int,Int}})
 	# Compute sizes and ensure they are consistent
 	hs = sum(first, sizes; dims=1)
@@ -50,9 +28,6 @@ function Base.convert(::Type{Matrix{T}}, b::Blocks) where T
 end
 
 
-# Base.adjoint(A::Blocks) = Blocks(copy(adjoint(A.blocks)))
-# Base.transpose(A::Blocks) = Blocks(copy(transpose(A.blocks)))
-
 Base.adjoint(A::Blocks) = Blocks([adjoint(A.blocks[j,i]) for i in 1:size(A.blocks,2), j in 1:size(A.blocks,1)])
 Base.transpose(A::Blocks) = Blocks([transpose(A.blocks[j,i]) for i in 1:size(A.blocks,2), j in 1:size(A.blocks,1)])
 
@@ -79,7 +54,6 @@ _row_view(A::Matrix{T}, range) where T = @view(A[range, :])
 
 
 function row_block_view(A::Matrix{T}, heights) where T
-	# heights = size.(A.blocks[1,:], 2)
 	ends = cumsum(heights)
 	starts = vcat(1, ends[1:end-1].+1)
 	row_ranges = range.(starts, ends)
@@ -94,21 +68,11 @@ function Base.:*(A::Blocks{T1}, B::AbstractMatrix{T2}) where {T1,T2}
 	wA == hB || (DimensionMismatch("incompatible dimensions for matrix multiplication: tried to multiply a matrix of size ($hA, $wA) with a matrix of size ($hB, $wB). The second dimension of the first matrix: $wA, does not match the first dimension of the second matrix: $hB."))
 
 	heights = size.(A.blocks[1,:], 2)
-	@show heights
-	@show typeof(B)
+	# @show heights
+	# @show typeof(B)
 	BB = row_block_view(B, heights)
-	@show typeof(BB)
-
-	# Figure out how to block `B` - TODO: Move to utility function?
-	# heights = size.(A.blocks[1,:], 2)
-	# ends = cumsum(heights)
-	# starts = vcat(1, ends[1:end-1].+1)
-	# # ranges = range.(starts, ends)
-
-	# blocks = [@view(B[starts[i]:ends[i],:]) for i in 1:size(A.blocks,2), j in 1:1]
-	# BB = Blocks(blocks)
-
-	@info size(BB.blocks)
+	# @show typeof(BB)
+	# @info size(BB.blocks)
 
 	A*BB
 end
