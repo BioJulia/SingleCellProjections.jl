@@ -40,12 +40,18 @@ function implicitsvd(::Type{T}, P, N, A, AT;
 		for j=0:niter # TODO: change to 1:niter and alter at call sites? Require niter>=1.
 			if j==0
 				Ω = randn(rng, T, N, subspacedims)
+				# Ω = randn(rng, T, subspacedims, N)' # TESTING
 			else
 				Ω = Matrix(qr(Zj).Q)
+				# Ω = copy(Matrix(qr(Zj).Q)')' # TESTING
 			end
+			# @show typeof(Ω), size(Ω)
 			Yj = A*Ω
+			# @show typeof(Yj), size(Yj)
 			Q = Matrix(qr(Yj).Q)
+			# Q = copy(Matrix(qr(Yj).Q)')' # TESTING
 			Zj = AT*Q
+			# @show typeof(Zj), size(Zj)
 		end
 		B = convert(Matrix,Zj)'
 	end

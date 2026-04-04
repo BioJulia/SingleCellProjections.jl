@@ -37,7 +37,6 @@ variable_std(data::DataMatrix) = sqrt.(variable_var(data))
 function negative_regression_matrix(A, X::AbstractMatrix; rtol=sqrt(eps()))
 	# TODO: No need to run svd etc. if there just is an intercept.
 	F = svd(X)
-	@show typeof(A)
 	AU = A*F.U
 	# FU = block_as_lhs(A, F.U) ?
 	negΣinv = Diagonal([σ>rtol ? -1.0/σ : 0.0 for σ in F.S]) # cutoff for numerical stability

@@ -8,7 +8,7 @@ actual_nsv_spec(data, nsv) = create_spec(Projectable(actual_nsv_pr), data, nsv)
 
 
 function implicitsvd_impl(matrix; kwargs...)
-	F = SCPCore.implicitsvd(matrix; kwargs...)
+	@time F = SCPCore.implicitsvd(matrix; kwargs...)
 	CompoundResult(; F.U, F.S, F.Vt)
 end
 function implicitsvd_spec(matrix;
@@ -18,7 +18,8 @@ function implicitsvd_spec(matrix;
                           niter = 3,
                           stabilize_sign = true,
                           kwargs...)
-	create_spec(implicitsvd_impl, matrix; nsv, seed, subspacedims, niter, stabilize_sign, kwargs..., __version=v"0.1.0") # must be used with cached() to handle the CompoundResult
+	# create_spec(implicitsvd_impl, matrix; nsv, seed, subspacedims, niter, stabilize_sign, kwargs..., __version=v"0.1.0") # must be used with cached() to handle the CompoundResult
+	create_spec(implicitsvd_impl, matrix; nsv, seed, subspacedims, niter, stabilize_sign, kwargs..., __version=v"0.0.1-a9") # TEMP
 end
 
 svd_projected_svt_spec(U, X) =

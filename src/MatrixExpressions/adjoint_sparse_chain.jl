@@ -22,29 +22,34 @@ MatrixInfo(A) = MatrixInfo(size(A), typeof(A), _pnz(A))
 Base.size(M::MatrixInfo) = M.sz
 Base.size(M::MatrixInfo, ind) = ind>2 ? 1 : M.sz[ind]
 
-_is_adjoint(T::Type) = T <: Adjoint
-_is_adjoint(M::MatrixInfo) = _is_adjoint(M.type)
+_is_adjoint_type(::Type{T}) where T = T <: Adjoint
+_is_adjoint(M::MatrixInfo) = _is_adjoint_type(M.type)
+_is_adjoint(X::T) where T = _is_adjoint_type(T)
 
 
 # is there a nicer way to do this?
-(_remove_adjoint(::Type{<:T}) where T<:Adjoint{<:Any,S} where S) = S
+(_remove_adjoint(::Type{T}) where T<:Adjoint{<:Any,S} where S) = S
 _remove_adjoint(T::UnionAll) = _remove_adjoint(T.body)
 
 _add_adjoint(::Type{T}) where T<:AbstractMatrix{S} where S = Adjoint{S,T}
-_add_adjoint(T::Type) = Adjoint{<:Any,T}
+_add_adjoint(::Type{T}) where T = Adjoint{<:Any,T}
 
-_adjoint_type(T) = _is_adjoint(T) ? _remove_adjoint(T) : _add_adjoint(T)
-_strip_adjoint(T::Type) = _is_adjoint(T) ? _remove_adjoint(T) : T
+_adjoint_type(T) = _is_adjoint_type(T) ? _remove_adjoint(T) : _add_adjoint(T)
+_strip_adjoint(::Type{T}) where T = _is_adjoint_type(T) ? _remove_adjoint(T) : T
 
 _adjoint(M::MatrixInfo) = MatrixInfo(reverse(M.sz), _adjoint_type(M.type), M.pnz)
 
 
 
-_is_dense(T::Type) = _strip_adjoint(T) <: Matrix
-_is_dense(M::MatrixInfo) = _is_dense(M.type)
+# Hmmm. is_dense is only used in tests, remove?
+# _is_dense_type(::Type{T}) where T = _strip_adjoint(T) <: Matrix
+_is_dense_type(::Type{T}) where T = _strip_adjoint(T) <: StridedMatrix
+_is_dense(M::MatrixInfo) = _is_dense_type(M.type)
+_is_dense(X::T) where T = _is_dense_type(T)
 
-_is_sparse(T::Type) = _strip_adjoint(T) <: SparseArrays.AbstractSparseMatrixCSC
-_is_sparse(M::MatrixInfo) = _is_sparse(M.type)
+_is_sparse_type(::Type{T}) where T = _strip_adjoint(T) <: SparseArrays.AbstractSparseMatrixCSC
+_is_sparse(M::MatrixInfo) = _is_sparse_type(M.type)
+_is_sparse(X::T) where T = _is_sparse_type(T)
 
 
 
@@ -140,16 +145,22 @@ function add_operations!(co, left, right, S::SubResult)
 end
 
 
-function _wrap_sparse_matrix(X)
-	issparse(X) || return X
-	if X isa Adjoint
-		return ThreadedSparseMatrixCSC(X')'
-	else
-		return ThreadedSparseMatrixCSC(X)
-	end
-end
+# function _wrap_sparse_matrix(X)
+# 	# issparse(X) || return X
+# 	_is_sparse(X) || return X
+# 	# if X isa Adjoint
+# 	if _is_adjoint(X)
+# 		return ThreadedSparseMatrixCSC(X')'
+# 	else
+# 		return ThreadedSparseMatrixCSC(X)
+# 	end
+# end
 
-_unwrap_sparse_matrix(X) = X isa ThreadedSparseMatrixCSC ? X.A : X
+# _unwrap_sparse_matrix(X) = X isa ThreadedSparseMatrixCSC ? X.A : X
+
+# Deprecated - we will do threading at the block level, not here
+_wrap_sparse_matrix(X) = X
+_unwrap_sparse_matrix(X) = X
 
 
 function (op::AdjointSparseOperation)(A,B)
@@ -159,7 +170,8 @@ function (op::AdjointSparseOperation)(A,B)
 
 	# @show size(U), size(V)
 	# @show typeof(U), typeof(V)
-	@assert !issparse(U) || !issparse(V) || (!(U isa Adjoint) && !(V isa Adjoint)) "Internal error, got AᵀB, ABᵀ or AᵀBᵀ where A and B are sparse."
+	# @assert !issparse(U) || !issparse(V) || (!(U isa Adjoint) && !(V isa Adjoint)) "Internal error, got AᵀB, ABᵀ or AᵀBᵀ where A and B are sparse."
+	@assert !_is_sparse(U) || !_is_sparse(V) || (!_is_adjoint(U) && !_is_adjoint(V)) "Internal error, got AᵀB, ABᵀ or AᵀBᵀ where A and B are sparse."
 
 	# X = U*V
 	X = _unwrap_sparse_matrix(_wrap_sparse_matrix(U)*_wrap_sparse_matrix(V)) # Enable threading of sparse matrices by wrapping in ThreadedSparseMatrixCSC
@@ -171,7 +183,8 @@ end
 
 
 function (op::AdjointSparseCopyOperation)(A)
-	@assert op.make_dense || (A isa Adjoint)!=op.adj_in || (A isa Diagonal)
+	# @assert op.make_dense || (A isa Adjoint)!=op.adj_in || (A isa Diagonal)
+	@assert op.make_dense || _is_adjoint(A)!=op.adj_in || (A isa Diagonal)
 
 	A isa Diagonal && !op.make_dense && return A # Symmetric, no need to make a copy
 
@@ -257,8 +270,10 @@ _result_indextype(T1::DataType,T2::DataType) = promote_type(_indextype(T1), _ind
 function _chain(::Type{TA}, ::Type{TB}, A::MatrixInfo, B::MatrixInfo) where {TA<:AdjOrDense,TB<:AdjOrDense}
 	cost = A.sz[1]*A.sz[2]*B.sz[2]
 	# small adjustment to slightly prefer non-adjointed inputs (but cheaper than materializing the transpose)
-	TA <: Adjoint && (cost += 0.25*prod(size(A)))
-	TB <: Adjoint && (cost += 0.25*prod(size(B)))
+	# TA <: Adjoint && (cost += 0.25*prod(size(A)))
+	# TB <: Adjoint && (cost += 0.25*prod(size(B)))
+	_is_adjoint_type(TA) && (cost += 0.25*prod(size(A)))
+	_is_adjoint_type(TB) && (cost += 0.25*prod(size(B)))
 	cost, MatrixInfo((A.sz[1],B.sz[2]), Matrix{_result_eltype(TA,TB)})
 end
 
@@ -268,7 +283,8 @@ function _chain(::Type{TA}, ::Type{TB}, A::MatrixInfo, B::MatrixInfo) where {TA<
 	M = size(B,2)
 	cost = P*N*M*A.pnz * SPARSE_TIME_FACTOR
 	# small adjustment to slightly prefer non-adjointed inputs (but cheaper than materializing the transpose)
-	TB <: Adjoint && (cost += 0.25*prod(size(B)))
+	# TB <: Adjoint && (cost += 0.25*prod(size(B)))
+	_is_adjoint_type(TB) && (cost += 0.25*prod(size(B)))
 	cost, MatrixInfo((A.sz[1],B.sz[2]), Matrix{_result_eltype(TA,TB)})
 end
 
@@ -278,7 +294,8 @@ function _chain(::Type{TA}, ::Type{TB}, A::MatrixInfo, B::MatrixInfo) where {TA<
 	M = size(B,2)
 	cost = P*N*M*B.pnz * SPARSE_TIME_FACTOR
 	# small adjustment to slightly prefer non-adjointed inputs (but cheaper than materializing the transpose)
-	TA <: Adjoint && (cost += 0.25*prod(size(A)))
+	# TA <: Adjoint && (cost += 0.25*prod(size(A)))
+	_is_adjoint_type(TA) && (cost += 0.25*prod(size(A)))
 	cost, MatrixInfo((A.sz[1],B.sz[2]), Matrix{_result_eltype(TA,TB)})
 end
 
