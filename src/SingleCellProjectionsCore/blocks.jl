@@ -78,6 +78,18 @@ function MatrixExpressions.addto!(dest, src::Blocks{T}) where T
 end
 
 
+function block_sizes_to_ranges(s)
+	ends = cumsum(s)
+	starts = vcat(1, ends[1:end-1].+1)
+	range.(starts, ends)
+end
+get_row_ranges(A::Blocks{T}) where T = block_sizes_to_ranges(size.(@view(A.blocks[:,1]), 1))
+get_col_ranges(A::Blocks{T}) where T = block_sizes_to_ranges(size.(@view(A.blocks[1,:]), 2))
+
+
+
+
+
 # This will be removed later when we support heterogeneous blocks
 MatrixExpressions._is_dense(A::Blocks{T}) where T = MatrixExpressions._is_dense(A.blocks[1,1])
 MatrixExpressions._is_sparse(A::Blocks{T}) where T = MatrixExpressions._is_sparse(A.blocks[1,1])
@@ -94,6 +106,15 @@ end
 MatrixExpressions.MatrixInfo(A::Blocks{T}) where T = MatrixExpressions.MatrixInfo(size(A), T, MatrixExpressions._pnz(A))
 
 
+
+
+
+function blockify(A::AbstractMatrix; row_block_size, col_block_size)
+	row_ranges = ChunkSplitters.chunks(1:size(A,1); size=row_block_size)
+	col_ranges = ChunkSplitters.chunks(1:size(A,2); size=col_block_size)
+
+	Blocks([A[rr,cr] for rr in row_ranges, cr in col_ranges])
+end
 
 # function _block_scalar_product(a::AbstractVector{T1}, b::AbstractVector{T2}) where {T1,T2}
 # 	sum(k->a[k]*b[k], 1:length(a))
@@ -200,7 +221,9 @@ function Base.:*(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
 		# TODO: implement properly
 		# blocks = [sum(k->A.blocks[i,k]*B.blocks[k,j], 1:Nk) for i in 1:Ni, j in 1:Nj]
 
-		trees = [SummationTree(Matrix{Float64}, Nk) for i in 1:Ni, j in 1:Nj]
+		T_out = Base.promote_op(*, eltype(T1), eltype(T2))
+		T_out = Base.promote_op(+, T_out, T_out)
+		trees = [SummationTree(Matrix{T_out}, Nk) for i in 1:Ni, j in 1:Nj]
 
 		# # TODO: Thread it!
 		# for j in 1:Nj
@@ -214,9 +237,28 @@ function Base.:*(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
 
 		# Basic threading
 		tforeach(CartesianIndices((Nk,Ni,Nj))) do c # TODO: Configure OhMyThreads scheduler
+		# foreach(CartesianIndices((Nk,Ni,Nj))) do c # DEBUG version without threading
 			(k,i,j) = Tuple(c)
 			# @info "$(Threads.threadid()): ($i,$j,$k)"
+
+			# @show typeof(A.blocks[i,k]), typeof(B.blocks[k,j])
+			# @show typeof(A.blocks[i,k] * B.blocks[k,j])
+			# @show typeof(trees[i,j])
+
 			add_result!(trees[i,j], k, A.blocks[i,k]*B.blocks[k,j])
+
+
+			# @info "mul"
+			# @time C = A.blocks[i,k]*B.blocks[k,j]
+
+			# # TESTING
+			# a = A.blocks[i,k]
+			# b = B.blocks[k,j]
+			# @time C = Matrix{Float64}(undef, size(a,1), size(b,2))
+			# @time mul!(C, a, b)
+
+			# @info "add_result"
+			# @time add_result!(trees[i,j], k, C)
 		end
 
 		blocks = [get_result(trees[i,j]) for i in 1:Ni, j in 1:Nj]
@@ -238,8 +280,19 @@ end
 
 
 
+
+
+
 _col_view(A::Matrix{T}, range) where T = @view(A[:, range])
 _row_view(A::Matrix{T}, range) where T = @view(A[range, :])
+
+
+# TODO: revise this solution - there must a better way to handle Diagonals
+function _row_view(D::Diagonal{E,T}, range) where {E,T}
+	d = D.diag
+	sparse(1:length(range), range, d[range], length(range), length(d))
+end
+
 
 _row_view(A::Adjoint{E,T}, range) where {E,T} = _col_view(A', range)'
 _col_view(A::Adjoint{E,T}, range) where {E,T} = _row_view(A', range)'
@@ -248,12 +301,64 @@ _col_view(A::Transpose{E,T}, range) where {E,T} = transpose(_row_view(transpose(
 
 
 function row_block_view(A::AbstractMatrix{T}, heights) where T
-	ends = cumsum(heights)
-	starts = vcat(1, ends[1:end-1].+1)
-	row_ranges = range.(starts, ends)
+	# ends = cumsum(heights)
+	# starts = vcat(1, ends[1:end-1].+1)
+	# row_ranges = range.(starts, ends)
+	row_ranges = block_sizes_to_ranges(heights)
 	blocks = [_row_view(A, r) for r in row_ranges, j in 1:1]
 	Blocks(blocks)
 end
+
+
+# function reblock(A::Blocks{T}; sparse_chunksize=400) where T<:SparseMatrixCSC
+# 	nblocks = 0
+# 	changed = false
+# 	for j in 1:size(A.blocks,2)
+# 		nb = cld(size(A.blocks[1,j],2), sparse_chunksize)
+# 		nblocks += nb
+# 		changed = changed || nb != 1
+# 	end
+# 	changed || return A
+
+# 	blocks = Matrix{T}(undef, size(A.blocks,1), nblocks) # TODO: FIX - DO ABSOLUTELY NOT CONVERT TO T
+
+# 	# @show size(A.blocks)
+
+# 	for i in 1:size(A.blocks,1)
+# 		j2 = 1
+# 		for j in 1:size(A.blocks,2)
+# 			curr = A.blocks[i,j]
+# 			# @show i,j
+# 			# @show size(curr)
+# 			nb = cld(size(curr,2), sparse_chunksize)
+# 			for k in 1:nb
+# 				# @show i,j2
+# 				blocks[i,j2] = @view curr[:,(k-1)*sparse_chunksize+1:min(k*sparse_chunksize,end)]
+# 				j2 += 1
+# 			end
+# 		end
+# 	end
+
+# 	Blocks(blocks)
+# end
+
+
+function reblock(A::Blocks{T}; sparse_chunksize=512) where T<:SparseMatrixCSC
+	block_info = Tuple{Int,UnitRange{Int}}[]
+	for j in 1:size(A.blocks,2)
+		append!(block_info, tuple.(j, ChunkSplitters.chunks(1:size(A.blocks[1,j],2); size=sparse_chunksize)))
+	end
+	first.(block_info) == 1:size(A.blocks,2) && return A
+
+	blocks = [@view(A.blocks[i,j][:,r]) for i in 1:size(A.blocks,1), (j,r) in block_info]
+	Blocks(blocks)
+end
+
+reblock(A::Blocks{<:Adjoint{<:Any,<:SparseMatrixCSC}}; kwargs...) = reblock(A'; kwargs...)' # could avoid some allocations, but probably doesn't matter in the end
+
+
+# reblock(A::AbstractMatrix; kwargs...) = reblock(Blocks(fill(A,1,1)); kwargs...)
+
 
 
 function Base.:*(A::Blocks{T1}, B::AbstractMatrix{T2}) where {T1,T2}
@@ -261,20 +366,52 @@ function Base.:*(A::Blocks{T1}, B::AbstractMatrix{T2}) where {T1,T2}
 	hB,wB = size(B)
 	wA == hB || (DimensionMismatch("incompatible dimensions for matrix multiplication: tried to multiply a matrix of size ($hA, $wA) with a matrix of size ($hB, $wB). The second dimension of the first matrix: $wA, does not match the first dimension of the second matrix: $hB."))
 
-	heights = size.(A.blocks[1,:], 2)
-	# @show heights
-	# @show typeof(B)
-	BB = row_block_view(B, heights)
-	# @show typeof(BB)
-	# @info size(BB.blocks)
-	# @show typeof(BB.blocks[1])
+	# heights = size.(A.blocks[1,:], 2)
+	# BB = row_block_view(B, heights)
+	# A*BB
 
-	A*BB
+	AA = MatrixExpressions._is_sparse_type(T1) ? reblock(A) : A
+	heights = size.(@view(AA.blocks[1,:]), 2)
+	BB = row_block_view(B, heights)
+	AA*BB
+end
+
+
+
+# TODO: Generalize these to handle Blocks as inputs
+hblock(blocks) = Blocks([block for i in 1:1, block in blocks]) # create 1xN matrix of blocks
+# vblock(blocks) = Blocks([block for block in blocks, j in 1:1]) # create Nx1 matrix of blocks
+
+
+function hblock(a::AbstractVector{<:Blocks})
+	# n_row_blocks = size(first(a), 1)
+	# n_col_blocks = sum(x->size(x,2), a)
+	# @assert all(x->size(x,1)==n_row_blocks, a)
+	Blocks(reduce(hcat, getfield.(a, :blocks)))
 end
 
 
 
 
-hblock(blocks) = Blocks([block for i in 1:1, block in blocks]) # create 1xN matrix of blocks
-vblock(blocks) = Blocks([block for block in blocks, j in 1:1]) # create Nx1 matrix of blocks
+
+
+# Since we have our own Blocks type, we need to implement the chunking to get SCTransform.jl to work
+function SCTransform.gene_chunk_producer(channel, A::Blocks{<:SparseMatrixCSC{Tv,Ti}};
+                                         feature_mask,
+                                         chunk_size=128) where {Tv,Ti}
+	row_ranges = get_row_ranges(A)
+
+	for i in 1:size(A.blocks,1)
+		hc = hcat(@view(A.blocks[i,:])...)
+		t = copy(transpose(hc))
+
+		n = size(t,2)
+		for gene_chunk in ChunkSplitters.chunks(1:n; size=chunk_size)
+			chunk = @view t[:,gene_chunk]
+			feature_offset = first(row_ranges[i])-1 + first(gene_chunk)-1
+			put!(channel, (chunk,feature_offset))
+		end
+	end
+end
+
 

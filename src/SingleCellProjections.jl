@@ -27,7 +27,7 @@ import SingleCell10x
 using DataFrames
 import StableHashTraits
 import LinearAlgebra
-using SparseArrays: sparse
+using SparseArrays: sparse, SparseMatrixCSC
 import StatsBase
 using Statistics: mean
 
@@ -58,6 +58,8 @@ ReproducibleJobs.deconstruct_type(::Type{<:Blocks}) = true
 ReproducibleJobs.type_to_tag(::Type{<:Blocks}) = TypeTag(:Blocks)
 ReproducibleJobs.tag_to_type(::Val{:Blocks}) = Blocks
 ReproducibleJobs.deconstruct(b::Blocks{T}) where T = (b.blocks,)
+
+# TODO: These should maybe ensure we don't have ReadOnlyMatrices as matrix entries either
 ReproducibleJobs.reconstruct(::Type{<:Blocks}, (blocks,)::Tuple{ROMat{T}}) where T = Blocks(parent(blocks))
 ReproducibleJobs.reconstruct(::Type{<:Blocks}, (blocks,)::Tuple{T}) where T = Blocks(blocks)
 

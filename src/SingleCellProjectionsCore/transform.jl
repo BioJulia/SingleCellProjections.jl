@@ -113,7 +113,10 @@ logtransform_matrix(X; kwargs...) = logtransform_matrix(Float64, X; kwargs...)
 
 
 
-function sctransform_matrix(::Type{T}, X, params::DataFrame, var_ind; kwargs...) where T
-	sctransformsparse2(T, X, params, var_ind; kwargs...)
-end
-sctransform_matrix(X; kwargs...) = sctransform_matrix(Float64, X; kwargs...)
+# function sctransform_matrix(::Type{T}, X, params::DataFrame, var_ind; kwargs...) where T
+# 	sctransformsparse2(T, X, params, var_ind; kwargs...)
+# end
+# function sctransform_matrix(::Type{T}, X, params::DataFrame, var_ind, log_cell_counts; kwargs...) where T
+# 	sctransformsparse2(T, X, params, var_ind, log_cell_counts; kwargs...)
+# end
+# sctransform_matrix(X; kwargs...) = sctransform_matrix(Float64, X; kwargs...)
