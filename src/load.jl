@@ -14,11 +14,12 @@ end
 load_barcodes_spec(filename; kwargs...) = create_spec(load_barcodes_impl, filename; kwargs..., __version=v"0.1.0")
 
 
-function vcat_tables(tables...; kwargs...)
-	df = vcat(tables...; kwargs...)
+function vcat_tables(tables; kwargs...)
+	# df = vcat(tables...; kwargs...) # TODO: splat here or not?
+	df = reduce(vcat, tables)
 	table_to_compound_result(df)
 end
-vcat_tables_spec(tables...; kwargs...) = create_spec(vcat_tables, tables...; kwargs..., __version=v"0.1.0")
+vcat_tables_spec(tables; kwargs...) = create_spec(vcat_tables, tables; kwargs..., __version=v"0.1.0")
 
 
 function combine_obs(::Preprocessing, filenames, sample_names)
@@ -27,7 +28,7 @@ function combine_obs(::Preprocessing, filenames, sample_names)
 	sample_obs_specs = create_table_spec.("cell_id" .=> sample_id_specs,
 	                                      "sample_name" .=> sample_names,
 	                                      "barcode" .=> sample_barcodes_specs)
-	combined = vcat_tables_spec(sample_obs_specs...)
+	combined = vcat_tables_spec(sample_obs_specs)
 
 	table_from_compound_result(combined, ["cell_id", "sample_name", "barcode"])
 end
@@ -120,6 +121,13 @@ load_sample_matrix_impl(filename::ChecksummedFilePath, var_ind; Tv=Int, Ti=Int32
 load_sample_matrix_spec(filename, var_ind) = create_spec(load_sample_matrix_impl, filename, var_ind; __version=v"0.0.1")
 
 
+function metadata_to_hblock_ranges(metadata::AbstractVector{Tuple{Int,Int,Int}})
+	Ns = getindex.(metadata, 2)
+	SCPCore.block_sizes_to_ranges(Ns)
+end
+metadata_to_hblock_ranges_spec(metadata) =
+	create_spec(metadata_to_hblock_ranges, metadata; __version=v"0.0.1")
+
 
 function load_counts2(f::Union{Mat,Var}, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
 	sample_var_specs = load_var_spec.(filename_specs)
@@ -134,7 +142,10 @@ function load_counts2(f::Union{Mat,Var}, filename_specs; sample_names, prefilter
 		if length(sample_specs)	== 1
 			return only(sample_specs)
 		else
-			return hblock_spec(sample_specs)
+			metadata_specs = load_sample_matrix_metadata_spec.(filename_specs, var_ind_specs)
+			# ranges = fetched(metadata_to_hblock_ranges_spec(vcat_spec(metadata_specs...)))
+			ranges = fetched(metadata_to_hblock_ranges_spec(vcat_spec(metadata_specs)))
+			return hblock_spec(sample_specs, ranges)
 		end
 
 		# metadata_specs = prefetched.(load_sample_matrix_metadata_spec.(filename_specs, var_ind_specs))

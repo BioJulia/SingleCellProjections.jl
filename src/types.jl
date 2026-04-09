@@ -41,6 +41,7 @@ function StableHashTraits.transformer(::Type{S}) where S<:DataMatrixFieldFunctio
 end
 
 
+# TODO: Use these for normal show as well? Or perhaps MatFunction/VarFunction/ObsFunction.
 ReproducibleJobs.styled_function_name(x::MatFunction) = ReproducibleJobs.styled_function_name(x.f) * styled" {bright_black:(get_matrix)}"
 ReproducibleJobs.styled_function_name(x::VarFunction) = ReproducibleJobs.styled_function_name(x.f) * styled" {bright_black:(get_var)}"
 ReproducibleJobs.styled_function_name(x::ObsFunction) = ReproducibleJobs.styled_function_name(x.f) * styled" {bright_black:(get_obs)}"

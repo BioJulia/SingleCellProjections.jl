@@ -378,15 +378,19 @@ end
 
 
 
-# TODO: Generalize these to handle Blocks as inputs
-hblock(blocks) = Blocks([block for i in 1:1, block in blocks]) # create 1xN matrix of blocks
+# hblock(blocks; ranges) = Blocks([block for i in 1:1, block in blocks]) # create 1xN matrix of blocks
+function hblock(blocks; ranges)
+	@assert all(size(blocks[i],2) == length(ranges[i]) for i in 1:length(blocks))
+	Blocks([block for i in 1:1, block in blocks]) # create 1xN matrix of blocks
+end
 # vblock(blocks) = Blocks([block for block in blocks, j in 1:1]) # create Nx1 matrix of blocks
 
 
-function hblock(a::AbstractVector{<:Blocks})
+function hblock(a::AbstractVector{<:Blocks}; ranges)
 	# n_row_blocks = size(first(a), 1)
 	# n_col_blocks = sum(x->size(x,2), a)
 	# @assert all(x->size(x,1)==n_row_blocks, a)
+	@assert all(size(a[i],2) == length(ranges[i]) for i in 1:length(a))
 	Blocks(reduce(hcat, getfield.(a, :blocks)))
 end
 

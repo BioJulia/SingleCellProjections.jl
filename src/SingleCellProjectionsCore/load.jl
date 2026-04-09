@@ -118,11 +118,16 @@ end
 # WIP
 # Later intended to be public function in low-level API.
 # This function mostly makes sense in a Spec workflow, where the result of this is cached.
-function load_sample_matrix_metadata(args...)
-	# This could be optimized, by not actually performing the subsetting, but probably not worth it.
-	# We could also shortcut to use read10x_metadata if variables are kept as is.
-	X = load_sample_matrix(args...)
-	(size(X,1), size(X,2), nnz(X))
+# function load_sample_matrix_metadata(args...)
+# 	# This could be optimized, by not actually performing the subsetting, but probably not worth it.
+# 	# We could also shortcut to use read10x_metadata if variables are kept as is.
+# 	X = load_sample_matrix(args...)
+# 	(size(X,1), size(X,2), nnz(X))
+# end
+function load_sample_matrix_metadata(filename, var_ind)
+	P,N,nz = read10x_matrix_metadata(filename)
+	var_ind == Colon() || (P = length(var_ind))
+	P,N,nz
 end
 
 # Probably find a nicer way?

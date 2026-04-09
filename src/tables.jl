@@ -248,6 +248,7 @@ function table_hcat(::Preprocessing{E}, args...) where E
 	end
 end
 
+# TODO: Refactor to take a vector instead? Better for the compiler if there are many arguments.
 table_hcat_spec(a, args...) = create_spec(Preprocess(table_hcat), a, args...)
 Jobs.table_hcat(a, args...) = table_hcat_spec(a, args...)
 

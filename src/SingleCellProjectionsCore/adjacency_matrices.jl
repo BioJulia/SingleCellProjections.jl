@@ -46,7 +46,7 @@ Returns a pair of `k×N` matrices (where `N` is the number of points (columns) o
 * `indices`
 * `dists`
 """
-function find_nearest_neighbors(X; k, tree_fun=KDTree)
+function find_nearest_neighbors(X; k, tree_fun=KDTree, verbose=true)
 	N = size(X,2)
 	k = min(N-1, k) # Cannot have more neighbors than points! (Excluding the point itself.)
 
@@ -83,6 +83,9 @@ function find_nearest_neighbors(X; k, tree_fun=KDTree)
 	# Workaround to get threading but still exclude the points themselves
 	nt = max(1, Threads.nthreads()-1) # TODO: What's a good choice?
 	c = chunks(1:N; n=nt)
+
+	progress = verbose ? Progress(length(c); desc="Finding nearest neighbors: ") : nothing
+
 	results = tmap(c) do chunk
 		inds,ds = knn(tree, @view(X[:,chunk]), k+1) # We need +1 to include the point itself (which will be the closest point, typically)
 		# Now remove the point itself, and sort the outputs by index
@@ -97,20 +100,26 @@ function find_nearest_neighbors(X; k, tree_fun=KDTree)
 			permute!(iv, perm)
 			permute!(dv, perm)
 		end
-		inds,ds
+		isnothing(progress) || next!(progress)
+		# inds,ds
+		inds
 	end
-	# Combine results from each chunk
-	indices = reduce(vcat, first.(results))
-	dists = reduce(vcat, last.(results))
+	isnothing(progress) || finish!(progress)
+
+	# # Combine results from each chunk
+	# indices = reduce(vcat, first.(results))
+	# dists = reduce(vcat, last.(results))
+	indices = reduce(vcat, results)
 
 	# From vectors of vectors to matrices
 	indices = reduce(hcat, indices)
-	dists = reduce(hcat, dists)
+	# dists = reduce(hcat, dists)
 
 	# @assert indices == indices_old
 	# @assert dists ≈ dists_old
 
-	indices, dists # k × size(Y,2) matrices
+	# indices, dists # k × size(X,2) matrices
+	indices # k × size(X,2) matrix
 end
 
 
@@ -123,7 +132,7 @@ Returns a pair of `k×N` matrices (where `N` is the number of points (columns) o
 * `indices`
 * `dists`
 """
-function find_nearest_neighbors(X, Y; k, tree_fun=KDTree)
+function find_nearest_neighbors(X, Y; k, tree_fun=KDTree, verbose=true)
 	N1 = size(X,2)
 	N2 = size(Y,2)
 	@assert size(X,1) == size(Y,1) # Must have the same (number of) variables
@@ -138,6 +147,9 @@ function find_nearest_neighbors(X, Y; k, tree_fun=KDTree)
 	# Threaded version
 	nt = max(1, Threads.nthreads()-1) # TODO: What's a good choice?
 	c = chunks(1:N2; n=nt)
+
+	progress = verbose ? Progress(length(c); desc="Finding nearest neighbors: ") : nothing
+
 	results = tmap(c) do chunk
 		inds,ds = knn(tree, @view(Y[:,chunk]), k)
 		# Sort by index for stability of results
@@ -146,16 +158,22 @@ function find_nearest_neighbors(X, Y; k, tree_fun=KDTree)
 			permute!(iv, perm)
 			permute!(dv, perm)
 		end
-		inds, ds
+		isnothing(progress) || next!(progress)
+		# inds, ds
+		inds
 	end
+	isnothing(progress) || finish!(progress)
+
 	# Combine results from each chunk
-	indices = reduce(vcat, first.(results))
-	dists = reduce(vcat, last.(results))
+	# indices = reduce(vcat, first.(results))
+	# dists = reduce(vcat, last.(results))
+	indices = reduce(vcat, results)
 
 	# From vectors of vectors to matrices
 	indices = reduce(hcat, indices)
-	dists = reduce(hcat, dists)
-	indices, dists # k × size(Y,2) matrices
+	# dists = reduce(hcat, dists)
+	# indices, dists # k × size(Y,2) matrices
+	indices # k × size(Y,2) matrix
 end
 
 
@@ -172,6 +190,7 @@ function adjacency_matrix(indices; make_symmetric) # TODO: support normalize_wei
 	end
 	adj
 end
+
 
 
 

@@ -59,7 +59,7 @@ function logcellcounts_impl(X, var_ind)
 	log10.(max.(1,s))
 end
 function logcellcounts_blocked(::Preprocessing, X, var_ind)
-	hblock_map(X; wrap=a->vcat_spec(a...)) do x
+	hblock_map(X; wrap=(a,_)->vcat_spec(a)) do x
 		create_spec(logcellcounts_impl, x, var_ind; __version=v"0.1.1")
 	end
 end
@@ -125,17 +125,17 @@ function sctransform_matrix_a_impl(::Preprocessing, T, matrix, params, var_ind, 
 	# TODO: simplify handling of hblocked matrix with matching log_cell_counts
 	if is_hblock(matrix)
 		n = length(matrix.args[1])
-		@assert log_cell_counts.f == vcat
-		@assert length(log_cell_counts.args) == n # These should match because we must have the same samples
+		@assert log_cell_counts.f == vcat_impl
+		@assert length(log_cell_counts.args[1]) == n # These should match because we must have the same samples
 
 		samples = Vector{Spec}(undef, n)
 		for i in 1:n
 			X = matrix.args[1][i]
-			lcc = log_cell_counts.args[i]
+			lcc = log_cell_counts.args[1][i]
 			# samples[i] = create_spec(SCPCore.sctransformsparse_a, T, X, params, var_ind, lcc; kwargs..., __version=v"0.1.0")
 			samples[i] = sctransformsparse_a_spec(T, X, params, var_ind, lcc; kwargs...)
 		end
-		hblock_spec(samples)
+		hblock_spec(samples, matrix.kwargs[:ranges])
 	else
 		# create_spec(SCPCore.sctransformsparse_a, T, matrix, params, var_ind, log_cell_counts; kwargs..., __version=v"0.1.0")
 		sctransformsparse_a_spec(T, matrix, params, var_ind, log_cell_counts; kwargs...)

@@ -1,5 +1,11 @@
-hblock_spec(a) = create_spec(SCPCore.hblock, a; __version=v"0.0.1")
-# Jobs.hblock(args...) = create_hblock_spec(args...)
+# hblock_spec(a, ranges) = create_spec(SCPCore.hblock, a; ranges, __version=v"0.0.1")
+
+# new version were we ensure ranges is fetched
+hblock_impl_spec(a, ranges) = create_spec(SCPCore.hblock, a; ranges, __version=v"0.0.1")
+hblock_pre(::Preprocessing, a; ranges) = hblock_impl_spec(a, ranges)
+hblock_spec(a, ranges) = create_spec(Preprocess(hblock_pre), a; ranges=fetched(ranges))
+
+
 
 is_hblock(x::SpecUnion) = x.f == SCPCore.hblock
 is_hblock(::Any) = false
@@ -8,11 +14,12 @@ is_hblock(::Any) = false
 # Experimental
 function hblock_map(f, spec; wrap=hblock_spec)
 	if is_hblock(spec)
-		wrap([f(x) for x in spec.args[1]]) # NB: this strips any wrapping like Prefetch
+		wrap([f(x) for x in spec.args[1]], spec.kwargs[:ranges]) # NB: this strips any wrapping like Prefetch
 	else
 		f(spec)
 	end
 end
+
 
 
 
@@ -29,4 +36,3 @@ blockify(::Mat, data; kwargs...) = blockify_matrix_spec(get_matrix_spec(data); k
 blockify(f::Union{Var,Obs}, data; kwargs...) = get_spec(f, data)
 
 blockify_spec(data; kwargs...) = create_spec(DataMatrixFunction(blockify), data; kwargs...)
-

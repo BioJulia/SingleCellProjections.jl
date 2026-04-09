@@ -58,9 +58,9 @@ function _masked_row_sum!(f, out, A::Blocks, mask, f0)
 end
 
 
-
 _counts_sum_zero(counts::SparseMatrixCSC{T}) where T = zero(T)
 _counts_sum_zero(counts::Blocks{T}) where T = zero(eltype(T))
+
 
 
 """
