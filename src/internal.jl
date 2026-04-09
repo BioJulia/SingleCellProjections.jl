@@ -339,7 +339,11 @@ function matrix_getindex_pre(::Preprocessing, matrix; var_ind, obs_ind)
 			last_ind = vcat(@view(first_ind[2:end]).-1, length(obs_ind))
 
 			new_ranges = range.(first_ind, last_ind)
-			new_blocks = [matrix_getindex_pre_spec(blocks[i]; var_ind, obs_ind=obs_ind[new_ranges[i]] .- first(ranges[i]) .+ 1) for i in 1:length(blocks)]
+			new_blocks = map(1:length(blocks)) do i
+				new_obs_ind = obs_ind[new_ranges[i]] .- first(ranges[i]) .+ 1
+				new_obs_ind = simplify_ind_spec(new_obs_ind, length(ranges[i])) # we need to simplify again, because we might get Colon() for some blocks but not others
+				matrix_getindex_pre_spec(blocks[i]; var_ind, obs_ind=new_obs_ind)
+			end
 			hblock_spec(new_blocks, new_ranges)
 		end
 	else

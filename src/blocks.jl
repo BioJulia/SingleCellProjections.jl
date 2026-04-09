@@ -2,7 +2,22 @@
 
 # new version were we ensure ranges is fetched
 hblock_impl_spec(a, ranges) = create_spec(SCPCore.hblock, a; ranges, __version=v"0.0.1")
-hblock_pre(::Preprocessing, a; ranges) = hblock_impl_spec(a, ranges)
+# hblock_pre(::Preprocessing, a; ranges) = hblock_impl_spec(a, ranges)
+
+function hblock_pre(::Preprocessing, a; ranges)
+	# Remove empty ranges here! Can happen if we have e.g. filtered away an entire sample.
+
+	non_empty = .!isempty.(ranges)
+	all(non_empty) && return hblock_impl_spec(a, ranges)
+
+	n_non_empty = count(non_empty)
+	if n_non_empty > 1
+		return hblock_impl_spec(a[n_non_empty], ranges[n_non_empty])
+	else#if n_non_empty <= 1
+		ind = @something findfirst(non_empty) 1 # If all ranges are empty, just take the first (empty) block
+		return a[ind] # remove hblock since there is only one block
+	end
+end
 hblock_spec(a, ranges) = create_spec(Preprocess(hblock_pre), a; ranges=fetched(ranges))
 
 
