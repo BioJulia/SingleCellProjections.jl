@@ -25,14 +25,15 @@ const MatFunction = DataMatrixFieldFunction{Mat}
 const VarFunction = DataMatrixFieldFunction{Var}
 const ObsFunction = DataMatrixFieldFunction{Obs}
 
-# MatFunction(f::F) where F = MatFunction{F}(f)
-# DEBUG
-function MatFunction(f::F) where F
-	# F <: DataMatrixFunction && error("hej")
-	MatFunction{F}(f)
-end
+MatFunction(f::F) where F = MatFunction{F}(f)
 VarFunction(f::F) where F = VarFunction{F}(f)
 ObsFunction(f::F) where F = ObsFunction{F}(f)
+
+
+# The alias will not print unless exported, so we do this:
+Base.show(io::IO, p::MatFunction{F}) where {F} = print(io, "MatFunction(", p.f, ')')
+Base.show(io::IO, p::VarFunction{F}) where {F} = print(io, "VarFunction(", p.f, ')')
+Base.show(io::IO, p::ObsFunction{F}) where {F} = print(io, "ObsFunction(", p.f, ')')
 
 
 function StableHashTraits.transformer(::Type{S}) where S<:DataMatrixFieldFunction{T} where {T}
