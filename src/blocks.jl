@@ -41,7 +41,7 @@ end
 # TODO: Naming etc
 function blockify_matrix(::Preprocessing, A; kwargs...)
 	hblock_map(A) do x
-		create_spec(SCPCore.blockify, x; kwargs..., __version=v"0.0.1")
+		create_spec(SCPCore.blockify, x; kwargs..., __version=v"0.1.0")
 	end
 end
 

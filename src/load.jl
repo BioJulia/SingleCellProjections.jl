@@ -116,9 +116,14 @@ end
 
 # --- Experimental Blocked version -----------------------------------------------------------------
 
-load_sample_matrix_impl(filename::ChecksummedFilePath, var_ind; Tv=Int, Ti=Int32) =
-	SCPCore.load_sample_matrix(Tv, Ti, string(filename), var_ind)
-load_sample_matrix_spec(filename, var_ind) = create_spec(load_sample_matrix_impl, filename, var_ind; __version=v"0.0.1")
+# load_sample_matrix_impl(filename::ChecksummedFilePath, var_ind; Tv=Int, Ti=Int32) =
+# 	SCPCore.load_sample_matrix(Tv, Ti, string(filename), var_ind)
+function load_sample_matrix_impl(filename::ChecksummedFilePath, var_ind; Tv=Int, Ti=Int32, row_block_size, col_block_size)
+	X = SCPCore.load_sample_matrix(Tv, Ti, string(filename), var_ind)
+	SCPCore.blockify(X; row_block_size, col_block_size)
+end
+load_sample_matrix_spec(filename, var_ind; row_block_size=1024, col_block_size=1024, kwargs...) =
+	create_spec(load_sample_matrix_impl, filename, var_ind; row_block_size, col_block_size, kwargs..., __version=v"0.1.0")
 
 
 function metadata_to_hblock_ranges(metadata::AbstractVector{Tuple{Int,Int,Int}})

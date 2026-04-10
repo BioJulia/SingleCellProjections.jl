@@ -33,6 +33,26 @@ Base.adjoint(A::Blocks) = Blocks([adjoint(A.blocks[j,i]) for i in 1:size(A.block
 Base.transpose(A::Blocks) = Blocks([transpose(A.blocks[j,i]) for i in 1:size(A.blocks,2), j in 1:size(A.blocks,1)])
 
 
+
+function _subsetmatrix(A::Blocks{T}, I::Index, J::Index) where T
+	row_ranges = get_row_ranges(A)
+	col_ranges = get_col_ranges(A)
+
+	Ib,_ = ind_to_blocked_ind(I, row_ranges)
+	Jb,_ = ind_to_blocked_ind(J, col_ranges)
+
+	# TODO: Threading?
+	# Blocks([_subsetmatrix(A.blocks[i,j], Ib[i], Jb[j]) for i in 1:size(A.blocks,1), j in 1:size(A.blocks,2)])
+
+	blocks = Matrix{T}(undef, size(A.blocks))
+	tmap!(blocks, eachindex(A.blocks)) do linear_ind
+		i,j = Tuple(CartesianIndices(A.blocks)[linear_ind])
+		_subsetmatrix(A.blocks[i,j], Ib[i], Jb[j])
+	end
+	Blocks(blocks)
+end
+
+
 # TODO: Share code between these two.
 function Base.copyto!(dest::Matrix{D}, src::Blocks{T}) where {D,T}
 	col_start = 1
@@ -87,6 +107,36 @@ get_row_ranges(A::Blocks{T}) where T = block_sizes_to_ranges(size.(@view(A.block
 get_col_ranges(A::Blocks{T}) where T = block_sizes_to_ranges(size.(@view(A.blocks[1,:]), 2))
 
 
+ind_to_blocked_ind(::Colon, ranges::AbstractVector{<:UnitRange{<:Integer}}) =
+	fill(Colon(),length(ranges)), ranges
+
+function ind_to_blocked_ind(ind::AbstractVector{Bool}, ranges::AbstractVector{<:UnitRange{<:Integer}})
+	new_ind = getindex.(Ref(ind), ranges) # Just extract each part of the mask
+
+	# But we need to count items to find the new ranges
+	new_ranges = Vector{UnitRange{Int}}(undef, length(ranges))
+	s = 1
+	for (i,r) in enumerate(ranges)
+		next = s+count(new_ind[i])
+		new_ranges[i] = s:next-1
+		s = next
+	end
+	new_ind, new_ranges
+end
+
+function ind_to_blocked_ind(ind::AbstractVector{<:Integer}, ranges::AbstractVector{<:UnitRange{<:Integer}})
+	first_ind = searchsortedfirst.(Ref(ind), first.(ranges))
+	last_ind = vcat(@view(first_ind[2:end]).-1, length(ind))
+
+	new_ranges = range.(first_ind, last_ind)
+
+	# new_ind = [ind[new_ranges[i]] .- first(ranges[i]) .+ 1 for i in 1:length(ranges)]
+	new_ind = [ind[nr] .- first(r) .+ 1 for (nr,r) in zip(new_ranges, ranges)]
+
+	new_ind, new_ranges
+end
+
+
 
 
 
@@ -112,6 +162,13 @@ MatrixExpressions.MatrixInfo(A::Blocks{T}) where T = MatrixExpressions.MatrixInf
 function blockify(A::AbstractMatrix; row_block_size, col_block_size)
 	row_ranges = ChunkSplitters.chunks(1:size(A,1); size=row_block_size)
 	col_ranges = ChunkSplitters.chunks(1:size(A,2); size=col_block_size)
+
+	# TODO: Do we want this to avoid creating 1x1 Blocks? Maybe not, it will cause heterogeneous types in some situations.
+	# if length(row_ranges)>1 || length(col_ranges)>1
+	# 	Blocks([A[rr,cr] for rr in row_ranges, cr in col_ranges])
+	# else # Do not block if 1x1 blocks
+	# 	A
+	# end
 
 	Blocks([A[rr,cr] for rr in row_ranges, cr in col_ranges])
 end
@@ -186,7 +243,6 @@ get_result(tree::SummationTree{T}) where T = tree.nodes[1]::T
 
 
 
-# TODO: Thread over blocks for sparse matrices
 function Base.:*(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
 	Ni,Nk = size(A.blocks)
 	Nk2,Nj = size(B.blocks)

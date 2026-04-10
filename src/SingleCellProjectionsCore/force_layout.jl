@@ -75,10 +75,13 @@ function charge_forces!(vel::AbstractVector, pos::AbstractVector, tree::BarnesHu
     #     charge_forces_rec!(vel, pos, i, tree, 0, 1, 1, diameter2(tree), charge, charge_min_distance2, alpha, theta2)
     # end
     # each point against tree
-    @sync for r in splitrange(1:length(pos), max(1,Threads.nthreads()-1))
-        Threads.@spawn for i in r
-            charge_forces_rec!(vel, pos, i, tree, 0, 1, 1, diameter2(tree), charge, charge_min_distance2, alpha, theta2)
-        end
+    # @sync for r in splitrange(1:length(pos), max(1,Threads.nthreads()-1))
+    #     Threads.@spawn for i in r
+    #         charge_forces_rec!(vel, pos, i, tree, 0, 1, 1, diameter2(tree), charge, charge_min_distance2, alpha, theta2)
+    #     end
+    # end
+    tforeach(1:length(pos)) do i
+        charge_forces_rec!(vel, pos, i, tree, 0, 1, 1, diameter2(tree), charge, charge_min_distance2, alpha, theta2)
     end
 end
 
