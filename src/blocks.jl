@@ -26,7 +26,7 @@ is_hblock(x::SpecUnion) = x.f == SCPCore.hblock
 is_hblock(::Any) = false
 
 
-# Experimental
+# Convenience function for applying a function to each block in a hblock spec (or to a single spec that is not wrapped in hblock)
 function hblock_map(f, spec; wrap=hblock_spec)
 	if is_hblock(spec)
 		wrap([f(x) for x in spec.args[1]], spec.kwargs[:ranges]) # NB: this strips any wrapping like Prefetch

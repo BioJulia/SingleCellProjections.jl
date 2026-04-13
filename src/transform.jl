@@ -1,17 +1,3 @@
-
-
-# TODO: Make code cleaner
-# function logtransform_matrix(::Preprocessing, T, matrix; var_ind, scale_factor)
-# 	if is_hblock(matrix)
-# 		hblock_spec([
-# 			create_spec(SCPCore.logtransform_matrix, T, m; var_ind, scale_factor, __version=v"0.1.0")
-# 			for m in matrix.args[1]
-# 		])
-# 	else
-# 		create_spec(SCPCore.logtransform_matrix, T, matrix; var_ind, scale_factor, __version=v"0.1.0")
-# 	end
-# end
-
 function logtransform_matrix(::Preprocessing, T, matrix; var_ind, scale_factor)
 	hblock_map(matrix) do x
 		create_spec(SCPCore.logtransform_matrix, T, x; var_ind, scale_factor, __version=v"0.1.0")
@@ -27,11 +13,7 @@ function logtransform(f::Union{Mat,Var}, T::DataType, data; var_filter=:, projec
 		table_getindex_spec(var_spec, var_ind)
 	else # if f isa Mat
 		matrix_spec = get_matrix_spec(data)
-
-		# New experimental version supporting blocks
 		create_spec(Preprocess{false}(logtransform_matrix), T, matrix_spec; var_ind, scale_factor)
-
-		# create_spec(SCPCore.logtransform_matrix, T, matrix_spec; var_ind, scale_factor, __version=v"0.1.0")
 	end
 end
 logtransform(::Obs, ::DataType, data; kwargs...) = get_obs_spec(data)
@@ -188,7 +170,6 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=:, min_cel
 		return var_out
 	else # if f isa Mat
 		nobs = fetched(nobs_spec(counts)) # fetch since we need the value now and the value should **not** be affected by projecion
-		# return sctransform_matrix_spec(T, matrix_spec, params_spec; var_ind, nobs, kwargs...)
 		return sctransform_matrix_spec(T, matrix_spec, params_spec, log_cell_counts; var_ind, nobs, kwargs...)
 	end
 end
