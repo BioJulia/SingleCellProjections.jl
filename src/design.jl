@@ -184,14 +184,15 @@ function build_designmatrix_dm(::Mat, data, cov_data, cov_descs, ::Any; center, 
 	cm = covariate_matrix_spec.(cov_data, cov_descs; center, kwargs...)
 	if center
 		ispec = intercept_covariate_matrix_spec(table_nrow_spec(obs))
-		hcat_spec(ispec, cm...)
+		hcat_spec(vcat(ispec, cm))
 	else
-		hcat_spec(cm...)
+		hcat_spec(cm)
 	end
 end
 function build_designmatrix_dm(::Obs, ::Any, ::Any, ::Any, cov_names; center, kwargs...)
 	center && (cov_names = vcat("Intercept", cov_names))
-	create_table_spec("covariate"=>vcat_spec(cov_names...))
+	# create_table_spec("covariate"=>vcat_spec(cov_names...))
+	create_table_spec("covariate"=>vcat_spec(cov_names))
 end
 build_designmatrix_dm(::Var, data, ::Any, ::Any, ::Any; kwargs...) = get_obs_spec(data) # Yes this is correct. (See note below regarding transposing)
 

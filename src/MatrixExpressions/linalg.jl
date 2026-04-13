@@ -35,11 +35,32 @@ function compute(A::MatrixProduct)
 end
 
 
-compute(A::MatrixSum) = sum(compute, A.terms)
+function addto!(dest, src::T) where {T<:AbstractMatrix}
+	dest .+= src
+end
+
+# compute(A::MatrixSum) = sum(compute, A.terms)
+function compute(A::MatrixSum)
+	# This will get rid of any blocking. Is that what we want?
+	dest = Matrix{Float64}(undef, size(A))
+	first = true
+	for term in A.terms
+		c = compute(term)
+
+		if first
+			copyto!(dest, c)
+			first = false
+		else
+			addto!(dest, c)
+		end
+
+	end
+
+	dest
+end
 
 
 # Should be fast in Julia 1.7+ for different matrix types - TEST!
-# But we probably want to support Julia 1.6. So maybe some additional methods are needed.
 compute_diaggram(A::AbstractMatrix) = vec(sum(abs2, A; dims=1))
 
 

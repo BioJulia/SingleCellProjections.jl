@@ -1,3 +1,10 @@
+function logtransform_matrix(::Preprocessing, T, matrix; var_ind, scale_factor)
+	hblock_map(matrix) do x
+		create_spec(SCPCore.logtransform_matrix, T, x; var_ind, scale_factor, __version=v"0.1.0")
+	end
+end
+
+
 function logtransform(f::Union{Mat,Var}, T::DataType, data; var_filter=:, project_var_ids=:intersect, scale_factor)
 	var_spec = get_var_spec(data)
 	var_ind = prefetched(create_find_matching_ind_spec(var_filter, var_spec; project_ids=project_var_ids))
@@ -6,7 +13,7 @@ function logtransform(f::Union{Mat,Var}, T::DataType, data; var_filter=:, projec
 		table_getindex_spec(var_spec, var_ind)
 	else # if f isa Mat
 		matrix_spec = get_matrix_spec(data)
-		create_spec(SCPCore.logtransform_matrix, T, matrix_spec; var_ind, scale_factor, __version=v"0.1.0")
+		create_spec(Preprocess{false}(logtransform_matrix), T, matrix_spec; var_ind, scale_factor)
 	end
 end
 logtransform(::Obs, ::DataType, data; kwargs...) = get_obs_spec(data)
@@ -22,28 +29,57 @@ Jobs.logtransform(counts; kwargs...) = Jobs.logtransform(Float64, counts; kwargs
 # ------------------------------------------------------------------------------
 
 
+# function logcellcounts_impl(X, var_ind)
+# 	feature_mask = falses(size(X,1))
+# 	feature_mask[var_ind] .= true
+# 	SCTransform.logcellcounts(X, feature_mask)
+# end
+# logcellcounts_spec(X, var_ind) = create_spec(logcellcounts_impl, X, var_ind; __version=v"0.1.0")
+
 function logcellcounts_impl(X, var_ind)
-	feature_mask = falses(size(X,1))
-	feature_mask[var_ind] .= true
-	SCTransform.logcellcounts(X, feature_mask)
+	s = SCPCore.counts_sum(identity, X, var_ind; dims=1)
+	log10.(max.(1,s))
 end
-logcellcounts_spec(X, var_ind) = create_spec(logcellcounts_impl, X, var_ind; __version=v"0.1.0")
+function logcellcounts_blocked(::Preprocessing, X, var_ind)
+	hblock_map(X; wrap=(a,_)->vcat_spec(a)) do x
+		create_spec(logcellcounts_impl, x, var_ind; __version=v"0.1.1")
+	end
+end
+logcellcounts_spec(X, var_ind) = create_spec(Preprocess{false}(logcellcounts_blocked), X, var_ind)
 
 
-function scparams_impl(matrix; var_ind, log_cell_counts::ROVec)
+
+function loggenemean_impl(X)
+	N = size(X,2)
+	obs_ind = 1:size(X,2)
+	s = SCPCore.counts_sum(log1p, X, obs_ind; dims=2) # TODO: Avoid passing ind since we want all
+	log10.(expm1.(s./N))
+end
+loggenemean_spec(X) = create_spec(loggenemean_impl, X; __version=v"0.1.0")
+
+
+function scparams_impl(::Type{Tv}, ::Type{Ti}, matrix; var_ind, log_cell_counts::ROVec, log_gene_mean::ROVec) where {Tv,Ti}
+	log_cell_counts = parent(log_cell_counts)
+	log_gene_mean = parent(log_gene_mean)
+
 	feature_mask = falses(size(matrix,1))
 	feature_mask[var_ind] .= true
-	df = DataFrame(SCTransform.compute_scparams(matrix; log_cell_counts=parent(log_cell_counts), feature_mask); copycols=false)
+
+	df = DataFrame(SCTransform.compute_scparams(Tv, Ti, matrix; log_cell_counts, log_gene_mean, feature_mask); copycols=false)
 	table_to_compound_result(df)
 end
-create_scparams_impl_spec(matrix; var_ind, log_cell_counts) =
-	create_spec(scparams_impl, matrix; var_ind=prefetched(var_ind), log_cell_counts, __version=v"0.1.1")
+scparams_impl(matrix::SparseMatrixCSC{Tv,Ti}; kwargs...) where {Tv,Ti} = scparams_impl(Tv, Ti, matrix; kwargs...)
+scparams_impl(matrix::Blocks{SparseMatrixCSC{Tv,Ti}}; kwargs...) where {Tv,Ti} = scparams_impl(Tv, Ti, matrix; kwargs...)
+
+
+create_scparams_impl_spec(matrix; var_ind, log_cell_counts, log_gene_mean) =
+	table_from_compound_result(create_spec(scparams_impl, matrix; var_ind=prefetched(var_ind), log_cell_counts, log_gene_mean, __version=v"0.1.2-a"))
 
 
 function scparams(action::Action, matrix, var, var_ind; log_cell_counts)
 	# The inference is always done for the "eval" case
-	params = create_scparams_impl_spec(matrix; var_ind, log_cell_counts) # DataFrame, but without IDs
-	params = table_from_compound_result(params)
+	log_gene_mean = loggenemean_spec(matrix)
+	params = create_scparams_impl_spec(matrix; var_ind, log_cell_counts, log_gene_mean) # DataFrame, but without IDs
 
 	if action isa Eval
 		return params
@@ -63,15 +99,51 @@ create_scparams_spec(matrix, var, var_ind; log_cell_counts) =
 
 
 
-# matrix[var_ind,:] must match params exactly
-function sctransform_matrix_pr(action::Action, T, matrix, params; var_ind, nobs=nothing, clip=nothing, rtol=1e-3, atol=0.0)
-	@assert nobs !== nothing || clip !== nothing "Must specify either nobs or clip"
-	clip = @something clip sqrt(nobs/30)
-	create_spec(SCPCore.sctransform_matrix, T, action(matrix), action(params), action(var_ind); clip, rtol, atol, __version=v"0.1.0")
+sctransformsparse_a_spec(T, matrix, params, var_ind, log_cell_counts; kwargs...) =
+	create_spec(SCPCore.sctransformsparse_a, T, matrix, params, var_ind, log_cell_counts; kwargs..., __version=v"0.1.0")
+
+
+function sctransform_matrix_a_impl(::Preprocessing, T, matrix, params, var_ind, log_cell_counts; kwargs...)
+	# TODO: simplify handling of hblocked matrix with matching log_cell_counts
+	if is_hblock(matrix)
+		n = length(matrix.args[1])
+		@assert log_cell_counts.f == vcat_impl
+		@assert length(log_cell_counts.args[1]) == n # These should match because we must have the same samples
+
+		samples = Vector{Spec}(undef, n)
+		for i in 1:n
+			X = matrix.args[1][i]
+			lcc = log_cell_counts.args[1][i]
+			# samples[i] = create_spec(SCPCore.sctransformsparse_a, T, X, params, var_ind, lcc; kwargs..., __version=v"0.1.0")
+			samples[i] = sctransformsparse_a_spec(T, X, params, var_ind, lcc; kwargs...)
+		end
+		hblock_spec(samples, matrix.kwargs[:ranges])
+	else
+		# create_spec(SCPCore.sctransformsparse_a, T, matrix, params, var_ind, log_cell_counts; kwargs..., __version=v"0.1.0")
+		sctransformsparse_a_spec(T, matrix, params, var_ind, log_cell_counts; kwargs...)
+	end
 end
 
-sctransform_matrix_spec(T, matrix, params; var_ind, kwargs...) =
-	create_spec(Projectable(sctransform_matrix_pr), T, matrix, params; var_ind, kwargs...)
+
+
+# matrix[var_ind,:] must match params exactly
+function sctransform_matrix_pr(action::Action, T, matrix, params, log_cell_counts; var_ind, nobs=nothing, clip=nothing, rtol=1e-3, atol=0.0)
+	@assert nobs !== nothing || clip !== nothing "Must specify either nobs or clip"
+	clip = @something clip sqrt(nobs/30)
+	# create_spec(SCPCore.sctransform_matrix, T, action(matrix), action(params), action(var_ind), action(log_cell_counts); clip, rtol, atol, __version=v"0.1.0")
+
+	matrix = action(matrix)
+	params = action(params)
+	var_ind = action(var_ind)
+	log_cell_counts = action(log_cell_counts)
+
+	a_spec = create_spec(Preprocess{false}(sctransform_matrix_a_impl), T, matrix, params, var_ind, log_cell_counts; clip)
+	b_spec = create_spec(SCPCore.sctransformsparse_b, params, log_cell_counts; rtol, atol, __version=v"0.1.2")
+	matrix_sum_impl_spec(:A=>a_spec, b_spec)
+end
+
+sctransform_matrix_spec(T, matrix, params, log_cell_counts; var_ind, kwargs...) =
+	create_spec(Projectable(sctransform_matrix_pr), T, matrix, params, log_cell_counts; var_ind, kwargs...)
 
 
 
@@ -98,7 +170,7 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=:, min_cel
 		return var_out
 	else # if f isa Mat
 		nobs = fetched(nobs_spec(counts)) # fetch since we need the value now and the value should **not** be affected by projecion
-		return sctransform_matrix_spec(T, matrix_spec, params_spec; var_ind, nobs, kwargs...)
+		return sctransform_matrix_spec(T, matrix_spec, params_spec, log_cell_counts; var_ind, nobs, kwargs...)
 	end
 end
 sctransform(::Obs, ::DataType, counts; kwargs...) = get_obs_spec(counts)

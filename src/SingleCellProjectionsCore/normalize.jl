@@ -34,13 +34,11 @@ variable_std(data::DataMatrix) = sqrt.(variable_var(data))
 
 
 # Normalization without model struct
-function negative_regression_matrix(matrix, dm::AbstractMatrix; rtol=sqrt(eps()))
-	A = matrix
-	X = dm
-
+function negative_regression_matrix(A, X::AbstractMatrix; rtol=sqrt(eps()))
 	# TODO: No need to run svd etc. if there just is an intercept.
 	F = svd(X)
-	negΣinv = Diagonal([σ>rtol ? -1.0/σ : 0.0 for σ in F.S]) # cutoff for numerical stability
 	AU = A*F.U
-	(AU*negΣinv)*F.Vt
+	negΣinv = Diagonal([σ>rtol ? -1.0/σ : 0.0 for σ in F.S]) # cutoff for numerical stability
+	negβT = (AU*negΣinv)*F.Vt
+	convert(Matrix, negβT) # get rid of blocking. TODO: revise
 end

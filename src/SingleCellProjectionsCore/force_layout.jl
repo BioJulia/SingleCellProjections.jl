@@ -75,10 +75,13 @@ function charge_forces!(vel::AbstractVector, pos::AbstractVector, tree::BarnesHu
     #     charge_forces_rec!(vel, pos, i, tree, 0, 1, 1, diameter2(tree), charge, charge_min_distance2, alpha, theta2)
     # end
     # each point against tree
-    @sync for r in splitrange(1:length(pos), max(1,Threads.nthreads()-1))
-        Threads.@spawn for i in r
-            charge_forces_rec!(vel, pos, i, tree, 0, 1, 1, diameter2(tree), charge, charge_min_distance2, alpha, theta2)
-        end
+    # @sync for r in splitrange(1:length(pos), max(1,Threads.nthreads()-1))
+    #     Threads.@spawn for i in r
+    #         charge_forces_rec!(vel, pos, i, tree, 0, 1, 1, diameter2(tree), charge, charge_min_distance2, alpha, theta2)
+    #     end
+    # end
+    tforeach(1:length(pos)) do i
+        charge_forces_rec!(vel, pos, i, tree, 0, 1, 1, diameter2(tree), charge, charge_min_distance2, alpha, theta2)
     end
 end
 
@@ -92,7 +95,7 @@ function link_forces!(vel::AbstractVector, pos::AbstractVector, adj; link_distan
         for k in nzrange(adj,j)
             i = adjR[k]
             i>=j && break # only upper triangular part
-            adjV[k]==false && continue # handle zeros that are not structural...
+            adjV[k]==false && continue # handle zeros that are not structural?
             u = (pos[j].+vel[j]) .- (pos[i].+vel[i])
             d = sqrt(sum(abs2,u))
             Fl = alpha*link_strength*(d-link_distance)/(2*d) * u
@@ -114,7 +117,8 @@ function force_layout(::Val{ndim}, adj::AbstractMatrix;
                       initialAlpha = 1.0, finalAlpha = 1e-3,
                       initialScale = 10,
                       seed = nothing,
-                      rng = seed !== nothing ? seed2rng(seed) : Random.default_rng()) where ndim
+                      rng = seed !== nothing ? seed2rng(seed) : Random.default_rng(),
+                      verbose = true) where ndim
     N = size(adj,1)
     @assert size(adj,2)==N
     @assert issymmetric(adj) # TODO: support upper triangular adj matrix too?
@@ -127,6 +131,8 @@ function force_layout(::Val{ndim}, adj::AbstractMatrix;
     vel = zeros(SVector{ndim,Float64},N)
 
     tree = BarnesHutTree(ndim)
+
+    progress = verbose ? Progress(niter; desc="Computing force layout: ") : nothing
 
     for iter = 1:niter
         alpha = initialAlpha*exp(-beta*iter)
@@ -150,10 +156,13 @@ function force_layout(::Val{ndim}, adj::AbstractMatrix;
         for i=1:N
             pos[i] -= center
         end
+
+        isnothing(progress) || next!(progress)
     end
+    isnothing(progress) || finish!(progress)
 
     reduce(hcat,pos)
 end
 
 force_layout(adj::AbstractMatrix; ndim::Int=3, kwargs...) =
-    force_layout(Val(ndim), adj; kwargs...)
+    @time force_layout(Val(ndim), adj; kwargs...)

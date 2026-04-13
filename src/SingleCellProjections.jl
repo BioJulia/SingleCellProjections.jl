@@ -20,14 +20,14 @@ export
 include("SingleCellProjectionsCore/SingleCellProjectionsCore.jl")
 
 import .SingleCellProjectionsCore as SCPCore
-using .SCPCore: DataMatrix, categorical_covariate, numerical_covariate, twogroup_covariate
+using .SCPCore: DataMatrix, Blocks, categorical_covariate, numerical_covariate, twogroup_covariate
 
 import SCTransform
 import SingleCell10x
 using DataFrames
 import StableHashTraits
 import LinearAlgebra
-using SparseArrays: sparse
+using SparseArrays: sparse, SparseMatrixCSC
 import StatsBase
 using Statistics: mean
 
@@ -50,6 +50,19 @@ ReproducibleJobs.tag_to_type(::Val{:DataMatrix}) = DataMatrix
 ReproducibleJobs.deconstruct(data::DataMatrix{T}) where T = (data.matrix, data.var, data.obs)
 ReproducibleJobs.reconstruct(::Type{<:DataMatrix}, (matrix,var,obs)::Tuple{T,DataFrame,DataFrame}) where T =
 	DataMatrix(matrix, var, obs; duplicate_var=:ignore, duplicate_obs=:ignore) # Avoid doing validation when reconstructing!
+
+
+# TODO: Where to put these?
+ReproducibleJobs.deduplicate_type(::Type{<:Blocks}) = true
+ReproducibleJobs.deconstruct_type(::Type{<:Blocks}) = true
+ReproducibleJobs.type_to_tag(::Type{<:Blocks}) = TypeTag(:Blocks)
+ReproducibleJobs.tag_to_type(::Val{:Blocks}) = Blocks
+ReproducibleJobs.deconstruct(b::Blocks{T}) where T = (b.blocks,)
+
+# TODO: These should maybe ensure we don't have ReadOnlyMatrices as matrix entries either
+ReproducibleJobs.reconstruct(::Type{<:Blocks}, (blocks,)::Tuple{ROMat{T}}) where T = Blocks(parent(blocks))
+ReproducibleJobs.reconstruct(::Type{<:Blocks}, (blocks,)::Tuple{T}) where T = Blocks(blocks)
+
 
 
 # TODO: Where to put these?
@@ -181,6 +194,7 @@ end
 include("types.jl")
 include("projectables.jl")
 include("datamatrixfunctions.jl")
+include("blocks.jl")
 include("internal.jl")
 include("tables.jl")
 include("matrix_arithmetic.jl")

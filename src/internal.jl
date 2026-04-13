@@ -87,8 +87,6 @@ getindex_or_missing_spec(v, ind) = create_spec(Projectable(getindex_or_missing_p
 
 
 intersect_spec(a, b, args...) = create_spec(intersect, a, b, args...; __version=v"0.1.0")
-vcat_spec(args...; kwargs...) = create_spec(vcat, args...; kwargs..., __version=v"0.1.0")
-hcat_spec(args...; kwargs...) = create_spec(hcat, args...; kwargs..., __version=v"0.1.0")
 length_spec(x) = create_spec(length, x; __version=v"0.1.0")
 unique_spec(x) = create_spec(unique, x; __version=v"0.1.0")
 join_spec(x, args...) = create_spec(join, x, args...; __version=v"0.1.0")
@@ -96,6 +94,16 @@ reshape_spec(A, args...) = create_spec(reshape, A, args...; __version=v"0.1.0")
 repeat_spec(A, args...; kwargs...) = create_spec(repeat, A, args...; kwargs..., __version=v"0.1.0")
 prod_spec(args...; kwargs...) = create_spec(prod, args...; kwargs..., __version=v"0.1.0")
 allequal_spec(x) = create_spec(allequal, x; __version=v"0.1.0")
+
+# vcat_spec(args...; kwargs...) = create_spec(vcat, args...; kwargs..., __version=v"0.1.0")
+# hcat_spec(args...; kwargs...) = create_spec(hcat, args...; kwargs..., __version=v"0.1.0")
+
+vcat_impl(v; kwargs...) = reduce(vcat, v; kwargs...)
+vcat_spec(v; kwargs...) = create_spec(vcat_impl, v; kwargs..., __version=v"0.1.0")
+
+hcat_impl(v; kwargs...) = reduce(hcat, v; kwargs...)
+hcat_spec(v; kwargs...) = create_spec(hcat_impl, v; kwargs..., __version=v"0.1.0")
+
 
 
 apply_impl(f, x) = f(x)
@@ -303,13 +311,52 @@ simplify_ind_spec(ind, n) =
 matrix_getindex_impl(matrix; kwargs...) =
 	create_spec(SCPCore.matrix_getindex, matrix; kwargs..., __version=v"0.1.0")
 
+# # TODO: split this by hblock
+# function matrix_getindex_pre(::Preprocessing, matrix; var_ind, obs_ind)
+# 	if var_ind == Colon() && obs_ind == Colon()
+# 		matrix
+# 	else
+# 		matrix_getindex_impl(matrix; var_ind, obs_ind)
+# 	end
+# end
+
+# Test implementation splitting by hblock
 function matrix_getindex_pre(::Preprocessing, matrix; var_ind, obs_ind)
-	if var_ind == Colon() && obs_ind == Colon()
+	if var_ind === Colon() && obs_ind === Colon()
 		matrix
+	elseif is_hblock(matrix)
+		if obs_ind === Colon()
+			hblock_map(matrix) do x
+				matrix_getindex_impl(x; var_ind, obs_ind)
+			end
+		else
+			# We need to update obs_ind to match each the range of each block
+			blocks = matrix.args[1]
+			ranges = matrix.kwargs[:ranges]
+			@assert length(blocks) == length(ranges)
+
+			# first_ind = searchsortedfirst.(Ref(obs_ind), first.(ranges))
+			# last_ind = vcat(@view(first_ind[2:end]).-1, length(obs_ind))
+
+			# new_ranges = range.(first_ind, last_ind)
+			# new_blocks = map(1:length(blocks)) do i
+			# 	new_obs_ind = obs_ind[new_ranges[i]] .- first(ranges[i]) .+ 1
+			# 	new_obs_ind = simplify_ind_spec(new_obs_ind, length(ranges[i])) # we need to simplify again, because we might get Colon() for some blocks but not others
+			# 	matrix_getindex_pre_spec(blocks[i]; var_ind, obs_ind=new_obs_ind)
+			# end
+
+			new_obs_ind, new_ranges = SCPCore.ind_to_blocked_ind(obs_ind, ranges)
+			new_obs_ind = simplify_ind_spec.(new_obs_ind, length.(ranges))
+			new_blocks = [matrix_getindex_pre_spec(b; var_ind, obs_ind=I) for (b,I) in zip(blocks, new_obs_ind)]
+			hblock_spec(new_blocks, new_ranges)
+		end
 	else
 		matrix_getindex_impl(matrix; var_ind, obs_ind)
 	end
 end
+
+matrix_getindex_pre_spec(matrix; var_ind, obs_ind) =
+	create_spec(Preprocess{false}(matrix_getindex_pre), matrix; var_ind, obs_ind)
 
 
 
@@ -321,6 +368,7 @@ function _matrix_ind_spec(action::Action, ind, n=nothing)
 		cond = isequal_spec(ind, ind_p)
 		ind_p = ifelse_spec(cond, ind_p, _getindex_error_spec(ind))
 	end
+	# TODO: Where to simplify_ind ?
 	n !== nothing && (ind_p = simplify_ind_spec(ind_p, n))
 	return fetched(ind_p)
 end
@@ -329,7 +377,8 @@ function matrix_getindex_pr(action::Action, matrix; var_ind=nothing, obs_ind=not
 	matrix = action(matrix)
 	var_ind = _matrix_ind_spec(action, var_ind, nvar)
 	obs_ind = _matrix_ind_spec(action, obs_ind, nobs)
-	create_spec(Preprocess(matrix_getindex_pre), matrix; var_ind, obs_ind)
+	# create_spec(Preprocess{false}(matrix_getindex_pre), matrix; var_ind, obs_ind)
+	matrix_getindex_pre_spec(matrix; var_ind, obs_ind)
 end
 
 function create_matrix_getindex_spec(matrix; kwargs...)

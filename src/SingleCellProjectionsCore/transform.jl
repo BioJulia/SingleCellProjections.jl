@@ -15,8 +15,9 @@ function _logtransform_simple(::Type{T}, X::SparseMatrixCSC{Tv,Ti}; scale_factor
 		nzval_out[irange] .= convert.(T, log2.(1 .+ (@view nzval[irange]) .* nf[j]))
 	end
 
-	A = SparseMatrixCSC(P, N, copy(X.colptr), copy(X.rowval), nzval_out)
-	MatrixRef(:A=>A)
+	# A = SparseMatrixCSC(P, N, copy(X.colptr), copy(X.rowval), nzval_out)
+	# MatrixRef(:A=>A)
+	SparseMatrixCSC(P, N, copy(X.colptr), copy(X.rowval), nzval_out)
 end
 
 # This is slightly complicated to avoid using large temporary arrays
@@ -80,16 +81,18 @@ function _logtransform_reorder(::Type{T}, X::SparseMatrixCSC{Tv,Ti}; scale_facto
 		nzval_out[rng_out] .= convert.(T, log2.(1 .+ vs.*nf[j]))
 	end
 
-	A = SparseMatrixCSC(P_out, N, colptr, rowval_out, nzval_out)
-	MatrixRef(:A=>A)
+	# A = SparseMatrixCSC(P_out, N, colptr, rowval_out, nzval_out)
+	# MatrixRef(:A=>A)
+	SparseMatrixCSC(P_out, N, colptr, rowval_out, nzval_out)
 end
 
 
 function _logtransform_simple(::Type{T}, X::Matrix; scale_factor) where T
 	s = max.(1, sum(X; dims=1))
 	nf = scale_factor ./ s
-	A = convert.(T, log2.(1 .+ X.*nf))
-	MatrixRef(:A=>A)
+	# A = convert.(T, log2.(1 .+ X.*nf))
+	# MatrixRef(:A=>A)
+	convert.(T, log2.(1 .+ X.*nf))
 end
 
 # This can be optimized to use less memory, but if using dense matrices, that might not be a priority
@@ -106,12 +109,14 @@ function logtransform_matrix(::Type{T}, X; scale_factor, var_ind=:) where T
 		_logtransform_reorder(T, X; scale_factor, var_ind)
 	end
 end
-
 logtransform_matrix(X; kwargs...) = logtransform_matrix(Float64, X; kwargs...)
 
 
 
-function sctransform_matrix(::Type{T}, X, params::DataFrame, var_ind; kwargs...) where T
-	sctransformsparse2(T, X, params, var_ind; kwargs...)
-end
-sctransform_matrix(X; kwargs...) = sctransform_matrix(Float64, X; kwargs...)
+# function sctransform_matrix(::Type{T}, X, params::DataFrame, var_ind; kwargs...) where T
+# 	sctransformsparse2(T, X, params, var_ind; kwargs...)
+# end
+# function sctransform_matrix(::Type{T}, X, params::DataFrame, var_ind, log_cell_counts; kwargs...) where T
+# 	sctransformsparse2(T, X, params, var_ind, log_cell_counts; kwargs...)
+# end
+# sctransform_matrix(X; kwargs...) = sctransform_matrix(Float64, X; kwargs...)

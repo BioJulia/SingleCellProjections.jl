@@ -22,7 +22,8 @@ function implicitsvd(::Type{T}, P, N, A, AT;
                      nsv::Integer=3, subspacedims::Integer=4nsv, niter::Integer=2,
                      stabilize_sign = true,
                      seed = nothing,
-                     rng = seed !== nothing ? seed2rng(seed) : Random.default_rng()) where T
+                     rng = seed !== nothing ? seed2rng(seed) : Random.default_rng(),
+                     verbose = true) where T
 	P*N==0 && return SVD(zeros(0,0),zeros(0),zeros(0,0))
 	nsv = min(nsv,P,N)
 	@assert subspacedims>=nsv
@@ -33,20 +34,36 @@ function implicitsvd(::Type{T}, P, N, A, AT;
 
 	if subspacedims>=min(P,N)
 		# revert to standard SVD.
-		B = convert(Matrix, A*I(N))
+		B = convert(Matrix, A*I(N)) # TODO: Add `convert(Matrix, A)` to MatrixExpressions instead and use that.
 		Q = I
 	else
+		progress = verbose ? Progress((niter+1)*4; desc="Computing SVD: ") : nothing
+
 		local Zj
 		for j=0:niter # TODO: change to 1:niter and alter at call sites? Require niter>=1.
 			if j==0
 				Ω = randn(rng, T, N, subspacedims)
+				# Ω = randn(rng, T, subspacedims, N)' # TESTING
 			else
 				Ω = Matrix(qr(Zj).Q)
+				# Ω = copy(Matrix(qr(Zj).Q)')' # TESTING
 			end
+			isnothing(progress) || next!(progress)
+
+			# @show typeof(Ω), size(Ω)
 			Yj = A*Ω
+			# @show typeof(Yj), size(Yj)
+			isnothing(progress) || next!(progress)
+
 			Q = Matrix(qr(Yj).Q)
+			# Q = copy(Matrix(qr(Yj).Q)')' # TESTING
+			isnothing(progress) || next!(progress)
+
 			Zj = AT*Q
+			# @show typeof(Zj), size(Zj)
+			isnothing(progress) || next!(progress)
 		end
+		isnothing(progress) || finish!(progress)
 		B = convert(Matrix,Zj)'
 	end
 

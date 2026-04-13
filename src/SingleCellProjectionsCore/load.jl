@@ -91,7 +91,7 @@ function subset_by_var_indices(X::SparseMatrixCSC{Tv,Ti},
 	# 2. Manipulate/remap row indices to defacto insert rows of zeros
 	# 3. Use new row indices to create a sparse matrix of the right size
 
-	var_ind_matching = something.(filter(!isnothing, var_ind)) # remove `Nothing` from eltype (and error if `nothing` is encountered)
+	var_ind_matching = something.(filter(!isnothing, var_ind)) # remove `Nothing` from eltype
 	# Duplicates not allowed - That is, the same row in sample_var is not allowed to map to multiple rows in var.
 	@assert allunique(var_ind_matching) "Each row in `sample_var` can match at most one row in `var`." # TODO: report ID of duplicates in error message
 
@@ -118,11 +118,16 @@ end
 # WIP
 # Later intended to be public function in low-level API.
 # This function mostly makes sense in a Spec workflow, where the result of this is cached.
-function load_sample_matrix_metadata(args...)
-	# This could be optimized, by not actually performing the subsetting, but probably not worth it.
-	# We could also shortcut to use read10x_metadata if variables are kept as is.
-	X = load_sample_matrix(args...)
-	(size(X,1), size(X,2), nnz(X))
+# function load_sample_matrix_metadata(args...)
+# 	# This could be optimized, by not actually performing the subsetting, but probably not worth it.
+# 	# We could also shortcut to use read10x_metadata if variables are kept as is.
+# 	X = load_sample_matrix(args...)
+# 	(size(X,1), size(X,2), nnz(X))
+# end
+function load_sample_matrix_metadata(filename, var_ind)
+	P,N,nz = read10x_matrix_metadata(filename)
+	var_ind == Colon() || (P = length(var_ind))
+	P,N,nz
 end
 
 # Probably find a nicer way?
@@ -144,6 +149,7 @@ function load_sample_matrix(f, io, var_ind::AbstractVector{<:Union{Int,Nothing}}
 end
 # load_sample_matrix(io, var_ind) = load_sample_matrix(read10x_matrix_int_int32, io, var_ind)
 load_sample_matrix(io, var_ind) = load_sample_matrix(read10x_typed_matrix(), io, var_ind)
+load_sample_matrix(Tv::DataType, Ti::DataType, io, var_ind) = load_sample_matrix(read10x_typed_matrix(Tv,Ti), io, var_ind)
 
 
 # WIP
