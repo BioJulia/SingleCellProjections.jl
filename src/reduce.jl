@@ -176,15 +176,11 @@ function force_layout(action::Action, matrix;
                       initialScale = 10,
                       seed = 1234,
                       k_projection = 10, # TODO: support _fraction here as well.
-                      # min_dist_projection = 1e-6,
                       min_dist2_projection = 1e-12,
                       nobs,
                      )
 
 	# First force layout of unprojected
-	# knn = find_nearest_neighbors_spec(matrix; k, k_fraction)
-	# indices = cached(knn, "indices") # Unwrap CompoundResult
-	# indices = cached(knn, "indices") # Unwrap CompoundResult
 	knn_indices = cached(find_nearest_neighbors_spec(matrix; k, k_fraction))
 	adj_spec = adjacency_matrix_spec(knn_indices; make_symmetric)
 
@@ -199,28 +195,13 @@ function force_layout(action::Action, matrix;
 	                             initialScale,
 	                             seed,
 	                             __version=v"0.1.0",
-	                ))
+	                            ))
 
 	if action isa Eval
 		return fl_spec
 	else#if actions isa Projection
-		# # TODO: reimplement without actually constructing dists as an intermediate representation
-		# error("WIP: Force Layout projections")
-
-		# knn_p = find_nearest_neighbors_spec(matrix, action(matrix); k=k_projection)
-		# indices_p = cached(knn_p, "indices") # Unwrap CompoundResult
-		# dists_p = cached(knn_p, "distances") # Unwrap CompoundResult
-
-		# weighted_adj_spec = weighted_adjacency_matrix_spec(InvDistSquared(min_dist_projection), indices_p, dists_p; NX=fetched(nobs))
-
-		# return create_embed_points_spec(weighted_adj_spec, fl_spec)
-
 		knn_indices_p = cached(find_nearest_neighbors_spec(matrix, action(matrix); k=k_projection))
 		return create_embed_points_spec(InvMax(min_dist2_projection), matrix, fl_spec, action(matrix), knn_indices_p)
-
-		# weighted_adj_spec = weighted_adjacency_matrix_spec(InvDistSquared(min_dist_projection), indices_p, dists_p; NX=fetched(nobs))
-		# return create_embed_points_spec(weighted_adj_spec, fl_spec)
-
 	end
 end
 

@@ -1,8 +1,5 @@
-# negative_regression_matrix_impl(::Action, data, dm; kwargs...) =
-# 	cached(create_spec(SCPCore.negative_regression_matrix, data, dm; kwargs..., __version=v"0.1.0")) # NB: No action, always use original
-# TEMP VERSION WITHOUT CACHING
 negative_regression_matrix_impl(::Action, data, dm; kwargs...) =
-	create_spec(SCPCore.negative_regression_matrix, data, dm; kwargs..., __version=v"0.1.0") # NB: No action, always use original
+	cached(create_spec(SCPCore.negative_regression_matrix, data, dm; kwargs..., __version=v"0.1.0")) # NB: No action, always use original
 negative_regression_matrix_impl_spec(data, dm; kwargs...) =
 	create_spec(Projectable(negative_regression_matrix_impl), data, dm; kwargs...)
 
