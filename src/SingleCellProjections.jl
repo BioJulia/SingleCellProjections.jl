@@ -120,7 +120,6 @@ ReproducibleJobs.reconstruct(::Type{<:SCPCore.MatrixExpressions.Diag}, (A,)::Tup
 module Jobs
 	function project end
 	function load_counts end
-	function load_counts2 end
 	function get_matrix end
 	function get_var end
 	function get_obs end

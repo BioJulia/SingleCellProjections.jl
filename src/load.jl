@@ -64,60 +64,56 @@ end
 load_sample_matrix_metadata_spec(filename, var_ind; kwargs...) =
 	cached(create_spec(load_sample_matrix_metadata_impl, filename, var_ind; kwargs..., __version=v"0.1.0"))
 
-function load_hcat_sample_matrices_impl(filenames, matrix_metadatas, var_inds; Tv=Int, Ti=Int32)
-	@assert all(x->x isa ChecksummedFilePath, filenames)
-	filenames = string.(filenames)
-	SCPCore.load_hcat_sample_matrices(Tv, Ti, filenames, matrix_metadatas, var_inds)
-end
-function load_hcat_sample_matrices_spec(filenames, matrix_metadatas, var_inds; Tv=Int, Ti=Int32)
-	kwargs = (;)
-	if Tv != Int || Ti != Int32
-		kwargs = (; Tv, Ti)
-	end
-	create_spec(load_hcat_sample_matrices_impl, filenames, matrix_metadatas, var_inds; kwargs..., __version=v"0.1.0")
-end
+
+
+# Old unblocked version
+# function load_hcat_sample_matrices_impl(filenames, matrix_metadatas, var_inds; Tv=Int, Ti=Int32)
+# 	@assert all(x->x isa ChecksummedFilePath, filenames)
+# 	filenames = string.(filenames)
+# 	SCPCore.load_hcat_sample_matrices(Tv, Ti, filenames, matrix_metadatas, var_inds)
+# end
+# function load_hcat_sample_matrices_spec(filenames, matrix_metadatas, var_inds; Tv=Int, Ti=Int32)
+# 	kwargs = (;)
+# 	if Tv != Int || Ti != Int32
+# 		kwargs = (; Tv, Ti)
+# 	end
+# 	create_spec(load_hcat_sample_matrices_impl, filenames, matrix_metadatas, var_inds; kwargs..., __version=v"0.1.0")
+# end
+
+# function load_counts(f::Union{Mat,Var}, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
+# 	sample_var_specs = load_var_spec.(filename_specs)
+# 	var_spec = combine_var_spec(sample_var_specs; prefilter, extra_id_cols)
+
+# 	if f isa Var
+# 		return var_spec
+# 	else # if f isa Mat
+# 		var_ind_specs = prefetched.(sample_var_indices_spec.(sample_var_specs, var_spec; extra_id_cols))
+# 		metadata_specs = prefetched.(load_sample_matrix_metadata_spec.(filename_specs, var_ind_specs))
+# 		return load_hcat_sample_matrices_spec(filename_specs, metadata_specs, var_ind_specs; kwargs...)
+# 	end
+# end
+# load_counts(::Obs, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...) =
+# 	combine_obs_spec(filename_specs, sample_names)
+
+# function Jobs.load_counts(filenames;
+#                           sample_names,
+#                           prefilter = "feature_type"=>isequal("Gene Expression"),
+#                           extra_id_cols = "feature_type",
+#                           kwargs...)
+# 	filenames isa AbstractArray || (filenames = [filenames])
+# 	sample_names isa AbstractArray || (sample_names = [sample_names])
+
+# 	# TODO: Support .mtx.gz, with the added complication that we need to find matching
+# 	#       feature/barcode files already here so that they can be checksummed too.
+# 	@assert all(x->lowercase(splitext(x)[2])==".h5", filenames) "Only 10x .h5 files are currently supported"
+
+# 	filename_specs = checksummedfilepath_spec.(filenames)
+# 	create_spec(DataMatrixFunction(load_counts), filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
+# end
 
 
 
-
-function load_counts(f::Union{Mat,Var}, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
-	sample_var_specs = load_var_spec.(filename_specs)
-	var_spec = combine_var_spec(sample_var_specs; prefilter, extra_id_cols)
-
-	if f isa Var
-		return var_spec
-	else # if f isa Mat
-		var_ind_specs = prefetched.(sample_var_indices_spec.(sample_var_specs, var_spec; extra_id_cols))
-		metadata_specs = prefetched.(load_sample_matrix_metadata_spec.(filename_specs, var_ind_specs))
-		return load_hcat_sample_matrices_spec(filename_specs, metadata_specs, var_ind_specs; kwargs...)
-	end
-end
-load_counts(::Obs, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...) =
-	combine_obs_spec(filename_specs, sample_names)
-
-
-function Jobs.load_counts(filenames;
-                          sample_names,
-                          prefilter = "feature_type"=>isequal("Gene Expression"),
-                          extra_id_cols = "feature_type",
-                          kwargs...)
-	filenames isa AbstractArray || (filenames = [filenames])
-	sample_names isa AbstractArray || (sample_names = [sample_names])
-
-	# TODO: Support .mtx.gz, with the added complication that we need to find matching
-	#       feature/barcode files already here so that they can be checksummed too.
-	@assert all(x->lowercase(splitext(x)[2])==".h5", filenames) "Only 10x .h5 files are currently supported"
-
-	filename_specs = checksummedfilepath_spec.(filenames)
-	create_spec(DataMatrixFunction(load_counts), filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
-end
-
-
-
-# --- Experimental Blocked version -----------------------------------------------------------------
-
-# load_sample_matrix_impl(filename::ChecksummedFilePath, var_ind; Tv=Int, Ti=Int32) =
-# 	SCPCore.load_sample_matrix(Tv, Ti, string(filename), var_ind)
+# Blocked version
 function load_sample_matrix_impl(filename::ChecksummedFilePath, var_ind; Tv=Int, Ti=Int32, row_block_size, col_block_size)
 	X = SCPCore.load_sample_matrix(Tv, Ti, string(filename), var_ind)
 	SCPCore.blockify(X; row_block_size, col_block_size)
@@ -134,7 +130,7 @@ metadata_to_hblock_ranges_spec(metadata) =
 	create_spec(metadata_to_hblock_ranges, metadata; __version=v"0.0.1")
 
 
-function load_counts2(f::Union{Mat,Var}, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
+function load_counts(f::Union{Mat,Var}, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
 	sample_var_specs = load_var_spec.(filename_specs)
 	var_spec = combine_var_spec(sample_var_specs; prefilter, extra_id_cols)
 
@@ -148,23 +144,19 @@ function load_counts2(f::Union{Mat,Var}, filename_specs; sample_names, prefilter
 			return only(sample_specs)
 		else
 			metadata_specs = load_sample_matrix_metadata_spec.(filename_specs, var_ind_specs)
-			# ranges = fetched(metadata_to_hblock_ranges_spec(vcat_spec(metadata_specs...)))
 			ranges = fetched(metadata_to_hblock_ranges_spec(vcat_spec(metadata_specs)))
 			return hblock_spec(sample_specs, ranges)
 		end
-
-		# metadata_specs = prefetched.(load_sample_matrix_metadata_spec.(filename_specs, var_ind_specs))
-		# return load_hcat_sample_matrices_spec(filename_specs, metadata_specs, var_ind_specs; kwargs...)
 	end
 end
-load_counts2(::Obs, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...) =
+load_counts(::Obs, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...) =
 	combine_obs_spec(filename_specs, sample_names)
 
-function Jobs.load_counts2(filenames;
-                           sample_names,
-                           prefilter = "feature_type"=>isequal("Gene Expression"),
-                           extra_id_cols = "feature_type",
-                           kwargs...)
+function Jobs.load_counts(filenames;
+                          sample_names,
+                          prefilter = "feature_type"=>isequal("Gene Expression"),
+                          extra_id_cols = "feature_type",
+                          kwargs...)
 	filenames isa AbstractArray || (filenames = [filenames])
 	sample_names isa AbstractArray || (sample_names = [sample_names])
 
@@ -173,5 +165,5 @@ function Jobs.load_counts2(filenames;
 	@assert all(x->lowercase(splitext(x)[2])==".h5", filenames) "Only 10x .h5 files are currently supported"
 
 	filename_specs = checksummedfilepath_spec.(filenames)
-	create_spec(DataMatrixFunction(load_counts2), filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
+	create_spec(DataMatrixFunction(load_counts), filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
 end
