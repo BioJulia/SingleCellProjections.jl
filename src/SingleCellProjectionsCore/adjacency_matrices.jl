@@ -42,9 +42,7 @@
 
 Find the `k` nearest neighbors of each point in `X`. `tree_fun` can be used to choose which spatial data structure to use.
 
-Returns a pair of `k×N` matrices (where `N` is the number of points (columns) of `X`):
-* `indices`
-* `dists`
+Returns indices of nearest neighbors as a `k×N` matrix (where `N` is the number of points (columns) of `X`).
 """
 function find_nearest_neighbors(X; k, tree_fun=KDTree, verbose=true)
 	N = size(X,2)
@@ -54,28 +52,11 @@ function find_nearest_neighbors(X; k, tree_fun=KDTree, verbose=true)
 	tree = tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
 
 	# # Single-threaded version
-	# indices,dists = allknn(tree, k) # NB: This exludes the points themselves
+	# indices,_ = allknn(tree, k) # NB: This exludes the points themselves
 
 	# # From vectors of vectors to matrices
 	# indices = reduce(hcat, indices)
-	# dists = reduce(hcat, dists)
-	# indices, dists # k × size(X,2) matrices
-
-
-
-	# # Single-threaded version to compare with threaded
-	# indices_old,dists_old = allknn(tree, k) # NB: This exludes the points themselves
-
-	# for (iv,dv) in zip(indices_old, dists_old)
-	# 	perm = sortperm(iv)
-	# 	permute!(iv, perm)
-	# 	permute!(dv, perm)
-	# end
-
-	# # From vectors of vectors to matrices
-	# indices_old = reduce(hcat, indices_old)
-	# dists_old = reduce(hcat, dists_old)
-	# indices_old, dists_old # k × size(X,2) matrices
+	# indices # k × size(X,2) matrix
 
 
 	# Threaded version - We are waiting for a resolution to https://github.com/KristofferC/NearestNeighbors.jl/issues/237
@@ -84,41 +65,27 @@ function find_nearest_neighbors(X; k, tree_fun=KDTree, verbose=true)
 	nt = max(1, Threads.nthreads()-1) # TODO: What's a good choice?
 	c = chunks(1:N; n=nt)
 
+	# output
+	indices = zeros(Int, k, N) # or Int32?
+
 	progress = verbose ? Progress(length(c); desc="Finding nearest neighbors: ") : nothing
 
-	results = tmap(c) do chunk
+	tforeach(c) do chunk
 		inds,ds = knn(tree, @view(X[:,chunk]), k+1) # We need +1 to include the point itself (which will be the closest point, typically)
 		# Now remove the point itself, and sort the outputs by index
 		for (j,iv,dv) in zip(chunk, inds, ds)
-			# order = sortperm(iv)
 			remove_ind = findfirst(==(j), iv) # index of the point itself
 			remove_ind = @something remove_ind argmax(dv) # If it didn't find the point itself (due to many colocated points maybe?), remove the point with highest dist instead
+
 			# Avoiding allocations is important due to threading
 			deleteat!(iv, remove_ind)
-			deleteat!(dv, remove_ind)
-			perm = sortperm(iv)
-			permute!(iv, perm)
-			permute!(dv, perm)
+			sort!(iv)
+			indices[:,j] .= iv
 		end
 		isnothing(progress) || next!(progress)
-		# inds,ds
-		inds
 	end
 	isnothing(progress) || finish!(progress)
 
-	# # Combine results from each chunk
-	# indices = reduce(vcat, first.(results))
-	# dists = reduce(vcat, last.(results))
-	indices = reduce(vcat, results)
-
-	# From vectors of vectors to matrices
-	indices = reduce(hcat, indices)
-	# dists = reduce(hcat, dists)
-
-	# @assert indices == indices_old
-	# @assert dists ≈ dists_old
-
-	# indices, dists # k × size(X,2) matrices
 	indices # k × size(X,2) matrix
 end
 
@@ -128,9 +95,7 @@ end
 
 Find the `k` nearest neighbors in `X` of each point in `Y`. `tree_fun` can be used to choose which spatial data structure to use.
 
-Returns a pair of `k×N` matrices (where `N` is the number of points (columns) of `Y`):
-* `indices`
-* `dists`
+Returns indices of nearest neighbors as a `k×N` matrix (where `N` is the number of points (columns) of `Y`).
 """
 function find_nearest_neighbors(X, Y; k, tree_fun=KDTree, verbose=true)
 	N1 = size(X,2)
@@ -142,7 +107,7 @@ function find_nearest_neighbors(X, Y; k, tree_fun=KDTree, verbose=true)
 	tree = tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
 
 	# # Single-threaded version
-	# indices,dists = knn(tree, Y, k)
+	# indices,_ = knn(tree, Y, k)
 
 	# Threaded version
 	nt = max(1, Threads.nthreads()-1) # TODO: What's a good choice?
@@ -150,29 +115,20 @@ function find_nearest_neighbors(X, Y; k, tree_fun=KDTree, verbose=true)
 
 	progress = verbose ? Progress(length(c); desc="Finding nearest neighbors: ") : nothing
 
-	results = tmap(c) do chunk
-		inds,ds = knn(tree, @view(Y[:,chunk]), k)
+	# output
+	indices = zeros(Int, k, N2) # or Int32?
+
+	tforeach(c) do chunk
+		inds,_ = knn(tree, @view(Y[:,chunk]), k)
 		# Sort by index for stability of results
-		for (iv,dv) in zip(inds, ds)
-			perm = sortperm(iv)
-			permute!(iv, perm)
-			permute!(dv, perm)
+		for (j,iv) in zip(chunk, inds)
+			sort!(iv)
+			indices[:,j] .= iv
 		end
 		isnothing(progress) || next!(progress)
-		# inds, ds
-		inds
 	end
 	isnothing(progress) || finish!(progress)
 
-	# Combine results from each chunk
-	# indices = reduce(vcat, first.(results))
-	# dists = reduce(vcat, last.(results))
-	indices = reduce(vcat, results)
-
-	# From vectors of vectors to matrices
-	indices = reduce(hcat, indices)
-	# dists = reduce(hcat, dists)
-	# indices, dists # k × size(Y,2) matrices
 	indices # k × size(Y,2) matrix
 end
 
