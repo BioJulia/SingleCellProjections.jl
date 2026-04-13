@@ -199,7 +199,7 @@ function force_layout(action::Action, matrix;
 	                             initialScale,
 	                             seed,
 	                             __version=v"0.1.0",
-	                     ))
+	                ))
 
 	if action isa Eval
 		return fl_spec
