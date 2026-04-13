@@ -145,40 +145,14 @@ function add_operations!(co, left, right, S::SubResult)
 end
 
 
-# function _wrap_sparse_matrix(X)
-# 	# issparse(X) || return X
-# 	_is_sparse(X) || return X
-# 	# if X isa Adjoint
-# 	if _is_adjoint(X)
-# 		return ThreadedSparseMatrixCSC(X')'
-# 	else
-# 		return ThreadedSparseMatrixCSC(X)
-# 	end
-# end
-
-# _unwrap_sparse_matrix(X) = X isa ThreadedSparseMatrixCSC ? X.A : X
-
-# Deprecated - we will do threading at the block level, not here
-_wrap_sparse_matrix(X) = X
-_unwrap_sparse_matrix(X) = X
-
 
 function (op::AdjointSparseOperation)(A,B)
-	# @show size(A), size(B)
 	U = op.child_adj[1] ? A' : A
 	V = op.child_adj[2] ? B' : B
 
-	# @show size(U), size(V)
-	# @show typeof(U), typeof(V)
-	# @assert !issparse(U) || !issparse(V) || (!(U isa Adjoint) && !(V isa Adjoint)) "Internal error, got AᵀB, ABᵀ or AᵀBᵀ where A and B are sparse."
 	@assert !_is_sparse(U) || !_is_sparse(V) || (!_is_adjoint(U) && !_is_adjoint(V)) "Internal error, got AᵀB, ABᵀ or AᵀBᵀ where A and B are sparse."
 
-	# X = U*V
-	X = _unwrap_sparse_matrix(_wrap_sparse_matrix(U)*_wrap_sparse_matrix(V)) # Enable threading of sparse matrices by wrapping in ThreadedSparseMatrixCSC
-	# @info "Mul"
-	# @info "$(typeof(U)),$(typeof(V)) -> $(typeof(X))"
-	# @info "$(size(U)),$(size(V)) -> $(size(X))"
-	X
+	U*V
 end
 
 
