@@ -55,10 +55,11 @@ blockify_spec(data; kwargs...) = create_spec(DataMatrixFunction(blockify), data;
 
 
 # Somewhat experimental solution for extracting ranges (so that we can match the blocking elsewhere)
-function combine_block_ranges(outer_ranges::Vector{T}, inner_ranges) where T
+function combine_block_ranges(outer_ranges::AbstractVector{T}, inner_ranges) where T
 	@assert length(outer_ranges) == length(inner_ranges)
 	@assert length.(outer_ranges) == last.(last.(inner_ranges))
-	map((br,ir)->first(br) .+ ir, outer_ranges, inner_ranges)
+	inner_ranges = map((br,ir)-> (.+).(first(br)-1,ir), outer_ranges, inner_ranges) # TODO: Make more readable
+	reduce(vcat, inner_ranges)
 end
 combine_block_ranges_spec(outer_ranges, inner_ranges) =
 	create_spec(combine_block_ranges, outer_ranges, inner_ranges; __version=v"0.0.1")
