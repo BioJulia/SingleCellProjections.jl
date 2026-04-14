@@ -273,7 +273,7 @@ sctransformsparse_a(X, params, feature_ind, log_cell_counts; kwargs...) =
 	sctransformsparse_a(Float64, X, params, feature_ind, log_cell_counts; kwargs...)
 
 
-function sctransformsparse_b(params, log_cell_counts; kwargs...)
+function sctransformsparse_b(params, log_cell_counts; row_ranges=nothing, col_ranges=nothing, kwargs...)
 	β0 = params.beta0
 	β1 = params.beta1
 	θ  = params.theta
@@ -284,6 +284,13 @@ function sctransformsparse_b(params, log_cell_counts; kwargs...)
 
 	# TEMP, we should somehow match the block sizes from sctransformsparse_a instead
 	# B3 = blockify(B3; row_block_size=typemax(Int), col_block_size=1024)
+
+	if row_ranges !== nothing
+		B1 = blockify(B1; row_ranges, col_block_size=typemax(Int))
+	end
+	if col_ranges !== nothing
+		B3 = blockify(B3; row_block_size=typemax(Int), col_ranges)
+	end
 
 	matrixproduct((:B₁,B1), (:B₂,B2), (:B₃,B3))
 end

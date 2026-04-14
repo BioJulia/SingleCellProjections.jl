@@ -162,9 +162,14 @@ MatrixExpressions.MatrixInfo(A::Blocks{T}) where T = MatrixExpressions.MatrixInf
 
 
 
-function blockify(A::AbstractMatrix; row_block_size, col_block_size)
-	row_ranges = ChunkSplitters.chunks(1:size(A,1); size=row_block_size)
-	col_ranges = ChunkSplitters.chunks(1:size(A,2); size=col_block_size)
+# function blockify(A::AbstractMatrix; row_block_size, col_block_size)
+function blockify(A::AbstractMatrix; row_block_size=nothing, col_block_size=nothing,
+                                     row_ranges=nothing, col_ranges=nothing)
+	(row_block_size === nothing) != (row_ranges === nothing) || throw(ArgumentError("Must specify exactly one of row_block_size and row_ranges."))
+	(col_block_size === nothing) != (col_ranges === nothing) || throw(ArgumentError("Must specify exactly one of col_block_size and col_ranges."))
+
+	row_ranges = @something row_ranges ChunkSplitters.chunks(1:size(A,1); size=row_block_size)
+	col_ranges = @something col_ranges ChunkSplitters.chunks(1:size(A,2); size=col_block_size)
 
 	# TODO: Do we want this to avoid creating 1x1 Blocks? Maybe not, it will cause heterogeneous types in some situations.
 	# if length(row_ranges)>1 || length(col_ranges)>1
@@ -255,6 +260,9 @@ end
 
 function Base.:*(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
 	_verify_matmul_sizes(A,B)
+
+	# @show size(A), size(B)
+	# @show size(A.blocks), size(B.blocks)
 
 	Ni,Nk = size(A.blocks)
 	Nk2,Nj = size(B.blocks)
@@ -381,6 +389,7 @@ end
 # end
 
 
+_block_view(A::SparseMatrixCSC, ::Colon, J::UnitRange) = @view A[:, J]
 
 _block_view(A::Matrix, I, J) = @view A[I, J]
 _block_view(A::Adjoint, I, J) = _block_view(A', J, I)'

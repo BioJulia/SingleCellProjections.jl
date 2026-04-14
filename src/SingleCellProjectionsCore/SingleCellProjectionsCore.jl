@@ -80,7 +80,7 @@ include("counts_sum.jl")
 
 include("annotation_transfer.jl")
 
-# include("local_outlier_factor.jl") # Not yet updated to use specs
+include("local_outlier_factor.jl")
 
 # include("precompile.jl")
 

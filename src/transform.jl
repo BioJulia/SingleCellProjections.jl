@@ -132,7 +132,13 @@ function sctransform_matrix_pr(action::Action, T, matrix, params, log_cell_count
 	log_cell_counts = action(log_cell_counts)
 
 	a_spec = create_spec(Preprocess{false}(sctransform_matrix_a_impl), T, matrix, params, var_ind, log_cell_counts; clip)
-	b_spec = create_spec(SCPCore.sctransformsparse_b, params, log_cell_counts; rtol, atol, __version=v"0.1.2")
+
+	# Get row and col ranges for the blocked input matrix and pass them onto b_spec so that B₁ and B₃ can be blocked in the same way.
+	row_ranges = get_row_ranges_spec(a_spec)
+	col_ranges = get_col_ranges_spec(a_spec)
+
+	# b_spec = create_spec(SCPCore.sctransformsparse_b, params, log_cell_counts; rtol, atol, __version=v"0.1.2")
+	b_spec = create_spec(SCPCore.sctransformsparse_b, params, log_cell_counts; row_ranges, col_ranges, rtol, atol, __version=v"0.1.2")
 	matrix_sum_impl_spec(:A=>a_spec, b_spec)
 end
 

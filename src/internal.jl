@@ -106,8 +106,10 @@ hcat_spec(v; kwargs...) = create_spec(hcat_impl, v; kwargs..., __version=v"0.1.0
 
 
 
-apply_impl(f, x) = f(x)
-apply_spec(f, x) = create_spec(apply_impl, f, x; __version=v"0.1.0")
+apply_impl(f, args...; kwargs...) = f(args...; kwargs...)
+apply_spec(f, args...; kwargs...) = create_spec(apply_impl, f, args...; kwargs..., __version=v"0.1.0")
+
+
 
 
 
