@@ -25,6 +25,7 @@ include("basic_chain.jl") # Will perhaps only be an example later, not actually 
 include("adjoint_sparse_chain.jl")
 include("diagmul_chain.jl")
 include("diaggram.jl")
+include("sums.jl")
 include("linalg.jl")
 
 end

@@ -60,9 +60,10 @@ function compute(A::MatrixSum)
 end
 
 
-# Should be fast in Julia 1.7+ for different matrix types - TEST!
-compute_diaggram(A::AbstractMatrix) = vec(sum(abs2, A; dims=1))
+# # Should be fast in Julia 1.7+ for different matrix types - TEST!
+# compute_diaggram(A::AbstractMatrix) = vec(sum(abs2, A; dims=1))
 
+compute_diaggram(A) = colsum(abs2, A)
 
 
 
@@ -84,10 +85,10 @@ end
 
 
 # TODO: do not assume Float64
-compute_diagmul(A,B) = Float64[dot(view(A,i,:), view(B,:,i)) for i=1:size(A,1)] # generic fallback
+compute_diagmul(A::AbstractMatrix, B::AbstractMatrix) = Float64[dot(view(A,i,:), view(B,:,i)) for i=1:size(A,1)] # generic fallback
 # compute_diagmul(A::Adjoint{<:Any,<:AbstractSparseMatrix},B::AbstractSparseMatrix) =
 # 	Float64[dot(view(A.parent,:,i), view(B,:,i)) for i=1:size(A,1)]
-compute_diagmul(A::Adjoint,B) =
+compute_diagmul(A::Adjoint, B::AbstractMatrix) =
 	Float64[dot(view(A.parent,:,i), view(B,:,i)) for i=1:size(A,1)] # TODO: thread?
 
 # TODO: Not currently used by diag_chain_mul, we might want to enable it?

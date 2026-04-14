@@ -32,6 +32,7 @@ using ProgressMeter: Progress, next!, finish! # For progress bars
 
 include("../MatrixExpressions/MatrixExpressions.jl")
 using .MatrixExpressions
+using .MatrixExpressions: colsum, colsum!, rowsum, rowsum!
 
 
 # # This symbol is only defined on Julia versions that support extensions

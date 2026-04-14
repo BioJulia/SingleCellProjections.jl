@@ -1,3 +1,5 @@
+# NB: Put these functions together with colsum/rowsum?
+
 # TODO: this could also be implemented efficiently for MatrixExpressions - but only if f==identity
 function _masked_column_sum!(f::F, out, counts::SparseMatrixCSC{T}, mask, f0) where {F,T}
 	# TODO: Can we make this a bit faster? If it wasn't for the mask, it would just be sum(f,counts;dims=1)

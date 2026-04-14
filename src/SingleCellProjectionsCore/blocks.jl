@@ -21,16 +21,19 @@ end
 Base.size(b::Blocks) = b.sz
 Base.size(b::Blocks, i::Int) = i in (1,2) ? b.sz[i] : 1
 
-function Base.convert(::Type{Matrix}, b::Blocks)
-	hvcat(size(b.blocks,2), permutedims(b.blocks)...)
-end
-function Base.convert(::Type{Matrix{T}}, b::Blocks) where T
-	hvcat(size(b.blocks,2), convert.(Matrix{T}, permutedims(b.blocks))...)
-end
+blocktype(::Type{Blocks{T}}) where T = T # Might not be needed.
+Base.eltype(::Type{Blocks{T}}) where T = eltype(T)
 
+function Base.convert(::Type{M}, b::Blocks) where M<:AbstractMatrix
+	hvcat(size(b.blocks,2), convert.(M, permutedims(b.blocks))...)
+end
 
 Base.adjoint(A::Blocks) = Blocks([adjoint(A.blocks[j,i]) for i in 1:size(A.blocks,2), j in 1:size(A.blocks,1)])
 Base.transpose(A::Blocks) = Blocks([transpose(A.blocks[j,i]) for i in 1:size(A.blocks,2), j in 1:size(A.blocks,1)])
+
+
+Base.copy(A::Blocks) = Blocks(copy.(A.blocks)) # Relevant e.g. when materializing transposes
+
 
 
 
@@ -141,9 +144,9 @@ end
 
 
 # This will be removed later when we support heterogeneous blocks
-MatrixExpressions._is_dense(A::Blocks{T}) where T = MatrixExpressions._is_dense(A.blocks[1,1])
-MatrixExpressions._is_sparse(A::Blocks{T}) where T = MatrixExpressions._is_sparse(A.blocks[1,1])
-MatrixExpressions._is_adjoint_type(A::Blocks{T}) where T = MatrixExpressions._is_adjoint_type(T)
+MatrixExpressions._is_dense_type(::Type{Blocks{T}}) where T = MatrixExpressions._is_dense_type(T)
+MatrixExpressions._is_sparse_type(::Type{Blocks{T}}) where T = MatrixExpressions._is_sparse_type(T)
+MatrixExpressions._is_adjoint_type(::Type{Blocks{T}}) where T = MatrixExpressions._is_adjoint_type(T)
 
 # TODO: Figure out where to put this code
 function MatrixExpressions._pnz(A::Blocks{T}) where T
@@ -243,7 +246,16 @@ get_result(tree::SummationTree{T}) where T = tree.nodes[1]::T
 
 
 
+function _verify_matmul_sizes(A, B)
+	hA,wA = size(A)
+	hB,wB = size(B)
+	wA == hB || throw(DimensionMismatch("incompatible dimensions for matrix multiplication: tried to multiply a matrix of size ($hA, $wA) with a matrix of size ($hB, $wB). The second dimension of the first matrix: $wA, does not match the first dimension of the second matrix: $hB."))
+end
+
+
 function Base.:*(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
+	_verify_matmul_sizes(A,B)
+
 	Ni,Nk = size(A.blocks)
 	Nk2,Nj = size(B.blocks)
 	Nk == Nk2 || throw(DimensionMismatch("Number of blocks must match for matrix multiplication. Got $((Ni,Nk)) and $((Nk2,Nj)) blocks."))
@@ -320,7 +332,7 @@ function Base.:*(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
 		blocks = [get_result(trees[i,j]) for i in 1:Ni, j in 1:Nj]
 	else
 		# Not threaded by BLAS, output is sparse(/something else?), thread over blocks combine all at once
-		# @info "Sparse × Sparse"
+		@info "Sparse × Sparse"
 
 		# TODO: implement properly
 		blocks = [sum(k->A.blocks[i,k]*B.blocks[k,j], 1:Nk) for i in 1:Ni, j in 1:Nj]
@@ -339,98 +351,163 @@ end
 
 
 
-_col_view(A::Matrix{T}, range) where T = @view(A[:, range])
-_row_view(A::Matrix{T}, range) where T = @view(A[range, :])
+# _col_view(A::Matrix{T}, range) where T = @view(A[:, range])
+# _row_view(A::Matrix{T}, range) where T = @view(A[range, :])
 
 
-# TODO: revise this solution - there must a better way to handle Diagonals
-function _row_view(D::Diagonal{E,T}, range) where {E,T}
-	d = D.diag
-	sparse(1:length(range), range, d[range], length(range), length(d))
-end
+# # TODO: revise this solution - there must a better way to handle Diagonals
+# function _row_view(D::Diagonal{E,T}, range) where {E,T}
+# 	d = D.diag
+# 	sparse(1:length(range), range, d[range], length(range), length(d))
+# end
 
 
-_row_view(A::Adjoint{E,T}, range) where {E,T} = _col_view(A', range)'
-_col_view(A::Adjoint{E,T}, range) where {E,T} = _row_view(A', range)'
-_row_view(A::Transpose{E,T}, range) where {E,T} = transpose(_col_view(transpose(A), range))
-_col_view(A::Transpose{E,T}, range) where {E,T} = transpose(_row_view(transpose(A), range))
+# _row_view(A::Adjoint{E,T}, range) where {E,T} = _col_view(A', range)'
+# _col_view(A::Adjoint{E,T}, range) where {E,T} = _row_view(A', range)'
+# _row_view(A::Transpose{E,T}, range) where {E,T} = transpose(_col_view(transpose(A), range))
+# _col_view(A::Transpose{E,T}, range) where {E,T} = transpose(_row_view(transpose(A), range))
 
 
-function row_block_view(A::AbstractMatrix{T}, heights) where T
-	# ends = cumsum(heights)
-	# starts = vcat(1, ends[1:end-1].+1)
-	# row_ranges = range.(starts, ends)
-	row_ranges = block_sizes_to_ranges(heights)
-	blocks = [_row_view(A, r) for r in row_ranges, j in 1:1]
-	Blocks(blocks)
-end
+# function row_block_view(A::AbstractMatrix, heights)
+# 	row_ranges = block_sizes_to_ranges(heights)
+# 	blocks = [_row_view(A, r) for r in row_ranges, j in 1:1]
+# 	Blocks(blocks)
+# end
 
-
-# function reblock(A::Blocks{T}; sparse_chunksize=400) where T<:SparseMatrixCSC
-# 	nblocks = 0
-# 	changed = false
-# 	for j in 1:size(A.blocks,2)
-# 		nb = cld(size(A.blocks[1,j],2), sparse_chunksize)
-# 		nblocks += nb
-# 		changed = changed || nb != 1
-# 	end
-# 	changed || return A
-
-# 	blocks = Matrix{T}(undef, size(A.blocks,1), nblocks) # TODO: FIX - DO ABSOLUTELY NOT CONVERT TO T
-
-# 	# @show size(A.blocks)
-
-# 	for i in 1:size(A.blocks,1)
-# 		j2 = 1
-# 		for j in 1:size(A.blocks,2)
-# 			curr = A.blocks[i,j]
-# 			# @show i,j
-# 			# @show size(curr)
-# 			nb = cld(size(curr,2), sparse_chunksize)
-# 			for k in 1:nb
-# 				# @show i,j2
-# 				blocks[i,j2] = @view curr[:,(k-1)*sparse_chunksize+1:min(k*sparse_chunksize,end)]
-# 				j2 += 1
-# 			end
-# 		end
-# 	end
-
+# function col_block_view(A::AbstractMatrix, widths)
+# 	col_ranges = block_sizes_to_ranges(widths)
+# 	blocks = [_col_view(A, r) for i in 1:1, r in col_ranges]
 # 	Blocks(blocks)
 # end
 
 
-function reblock(A::Blocks{T}; sparse_chunksize=512) where T<:SparseMatrixCSC
-	block_info = Tuple{Int,UnitRange{Int}}[]
-	for j in 1:size(A.blocks,2)
-		append!(block_info, tuple.(j, ChunkSplitters.chunks(1:size(A.blocks[1,j],2); size=sparse_chunksize)))
-	end
-	first.(block_info) == 1:size(A.blocks,2) && return A
 
-	blocks = [@view(A.blocks[i,j][:,r]) for i in 1:size(A.blocks,1), (j,r) in block_info]
-	Blocks(blocks)
+_block_view(A::Matrix, I, J) = @view A[I, J]
+_block_view(A::Adjoint, I, J) = _block_view(A', J, I)'
+_block_view(A::Transpose, I, J) = transpose(_block_view(transpose(A), J, I))
+
+
+function _block_view(D::Diagonal{E,T}, I, J) where {E,T}
+	d = D.diag
+	if I == J
+		Diagonal(@view(d[I]))
+	else
+		# sparse(D)[I,J] # simplest code, but allocates a couple of times
+
+		# Construct sparse off-diagonal matrix directly
+		I === Colon() && (I = 1:size(D,1))
+		J === Colon() && (J = 1:size(D,1))
+		I::UnitRange
+		J::UnitRange
+		entries = intersect(I,J)
+		if isempty(entries)
+			spzeros(E, length(I), length(J))
+		else
+			offset = first(I) - first(J)
+			spdiagm(length(I), length(J), offset=>d[entries])
+		end
+	end
 end
 
-reblock(A::Blocks{<:Adjoint{<:Any,<:SparseMatrixCSC}}; kwargs...) = reblock(A'; kwargs...)' # could avoid some allocations, but probably doesn't matter in the end
+
+# function block_view(A::AbstractMatrix, heights, widths)
+# 	row_ranges = heights !== Colon() ? block_sizes_to_ranges(heights) : (Colon(),)
+# 	col_ranges = widths !== Colon() ? block_sizes_to_ranges(widths) : (Colon(),)
+# 	Blocks([_block_view(A, rr, cr) for rr in row_ranges, cr in col_ranges])
+# end
+
+# row_block_view(A::AbstractMatrix, heights) = block_view(A, heights, :)
+# col_block_view(A::AbstractMatrix, widths) = block_view(A, :, widths)
 
 
-# reblock(A::AbstractMatrix; kwargs...) = reblock(Blocks(fill(A,1,1)); kwargs...)
+function block_view(A::AbstractMatrix, row_ranges, col_ranges)
+	row_ranges === Colon() && (row_ranges = (Colon(),))
+	col_ranges === Colon() && (col_ranges = (Colon(),))
+	Blocks([_block_view(A, rr, cr) for rr in row_ranges, cr in col_ranges])
+end
+
+row_block_view(A::AbstractMatrix, row_ranges) = block_view(A, row_ranges, :)
+col_block_view(A::AbstractMatrix, col_ranges) = block_view(A, :, col_ranges)
+
+
+
+# function reblock(A::Blocks{T}; sparse_chunksize=512) where T<:SparseMatrixCSC
+# 	block_info = Tuple{Int,UnitRange{Int}}[]
+# 	for j in 1:size(A.blocks,2)
+# 		append!(block_info, tuple.(j, ChunkSplitters.chunks(1:size(A.blocks[1,j],2); size=sparse_chunksize)))
+# 	end
+# 	first.(block_info) == 1:size(A.blocks,2) && return A
+
+# 	blocks = [@view(A.blocks[i,j][:,r]) for i in 1:size(A.blocks,1), (j,r) in block_info]
+# 	return Blocks(blocks)
+# end
+
+# reblock(A::Blocks{<:Adjoint{<:Any,<:SparseMatrixCSC}}; kwargs...) = reblock(A'; kwargs...)' # could avoid some allocations, but probably doesn't matter in the end
+
+
 
 
 
 function Base.:*(A::Blocks{T1}, B::AbstractMatrix{T2}) where {T1,T2}
+	_verify_matmul_sizes(A, B)
+
+	heights = size.(@view(A.blocks[1,:]), 2)
+	BB = row_block_view(B, block_sizes_to_ranges(heights))
+	A*BB
+
+	# Reblocking sparse matrices isn't needed anymore since we blockify sample matrices
+	# AA = MatrixExpressions._is_sparse_type(T1) ? reblock(A) : A
+	# heights = size.(@view(AA.blocks[1,:]), 2)
+	# BB = row_block_view(B, heights)
+	# AA*BB
+end
+
+
+function Base.:*(A::AbstractMatrix{T1}, B::Blocks{T2}) where {T1,T2}
+	_verify_matmul_sizes(A, B)
+
+	widths = size.(@view(B.blocks[:,1]), 1)
+	AA = col_block_view(A, block_sizes_to_ranges(widths))
+	AA*B
+end
+
+
+
+function _verify_diagmul_sizes(A, B)
 	hA,wA = size(A)
 	hB,wB = size(B)
-	wA == hB || (DimensionMismatch("incompatible dimensions for matrix multiplication: tried to multiply a matrix of size ($hA, $wA) with a matrix of size ($hB, $wB). The second dimension of the first matrix: $wA, does not match the first dimension of the second matrix: $hB."))
-
-	# heights = size.(A.blocks[1,:], 2)
-	# BB = row_block_view(B, heights)
-	# A*BB
-
-	AA = MatrixExpressions._is_sparse_type(T1) ? reblock(A) : A
-	heights = size.(@view(AA.blocks[1,:]), 2)
-	BB = row_block_view(B, heights)
-	AA*BB
+	(hA,wA) == (wB,hB) || throw(DimensionMismatch("Incompatible dimensions for Diag(A*B). Got sizes ($hA, $wA) and ($hB, $wB)."))
 end
+
+
+function MatrixExpressions.compute_diagmul(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
+	_verify_diagmul_sizes(A, B)
+
+	Ni,Nk = size(A.blocks)
+	Nk2,Nj = size(B.blocks)
+	(Ni,Nk) == (Nj,Nk2) || throw(DimensionMismatch("Incompatible blocking for for Diag(A*B). Got ($Ni, $Nk) and ($Nk2, $Nj) blocks."))
+
+	parts = [sum(k->MatrixExpressions.compute_diagmul(A.blocks[i,k], B.blocks[k,i]), 1:Nk) for i in 1:Ni]
+	reduce(vcat, parts) # TODO: Write directly to output instead?
+end
+
+
+function MatrixExpressions.compute_diagmul(A::Blocks{T}, B::AbstractMatrix) where {T}
+	_verify_diagmul_sizes(A, B)
+	row_ranges = size(A.blocks,1)==1 ? Colon() : get_row_ranges(A)
+	col_ranges = size(A.blocks,2)==1 ? Colon() : get_col_ranges(A)
+	BB = block_view(B, col_ranges, row_ranges)
+	return MatrixExpressions.compute_diagmul(A, BB)
+end
+
+function MatrixExpressions.compute_diagmul(A::AbstractMatrix, B::Blocks{T}) where {T}
+	_verify_diagmul_sizes(A, B)
+	row_ranges = size(B.blocks,1)==1 ? Colon() : get_row_ranges(B)
+	col_ranges = size(B.blocks,2)==1 ? Colon() : get_col_ranges(B)
+	AA = block_view(B, col_ranges, row_ranges)
+	return MatrixExpressions.compute_diagmul(AA, B)
+end
+
 
 
 
@@ -460,6 +537,47 @@ function hblock(a::AbstractVector{<:Blocks}; ranges::AbstractVector{<:UnitRange{
 	Blocks(reduce(hcat, getfield.(a, :blocks)))
 end
 
+
+
+function MatrixExpressions.colsum!(f, dest::AbstractVector, A::Blocks{T}) where T
+	@assert length(dest) == size(A,2)
+	col_ranges = get_col_ranges(A)
+
+	tforeach(1:size(A.blocks, 2)) do j # Configure scheduler?
+		dest_view = @view dest[col_ranges[j]]
+		for i in 1:size(A.blocks, 1)
+			colsum!(f, dest_view, A.blocks[i,j])
+		end
+	end
+	dest
+end
+function MatrixExpressions.colsum(f::F, A::T) where {F,T}
+	T_dest = Base.promote_op(f, eltype(T))
+	T_dest = Base.promote_op(+, T_dest, T_dest)
+	dest = zeros(T_dest, size(A,2))
+	colsum!(f, dest, A)
+end
+
+
+
+function MatrixExpressions.rowsum!(f, dest::AbstractVector, A::Blocks{T}) where T
+	@assert length(dest) == size(A,1)
+	row_ranges = get_row_ranges(A)
+
+	tforeach(1:size(A.blocks, 1)) do i # Configure scheduler?
+		dest_view = @view dest[row_ranges[i]]
+		for j in 1:size(A.blocks, 2)
+			rowsum!(f, dest_view, A.blocks[i,j])
+		end
+	end
+	dest
+end
+function MatrixExpressions.rowsum(f::F, A::T) where {F,T}
+	T_dest = Base.promote_op(f, eltype(T))
+	T_dest = Base.promote_op(+, T_dest, T_dest)
+	dest = zeros(T_dest, size(A,1))
+	rowsum!(f, dest, A)
+end
 
 
 
