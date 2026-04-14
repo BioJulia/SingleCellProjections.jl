@@ -129,8 +129,6 @@ function local_outlier_factor(indices, lrdX, lrdY=lrdX)
 	n_neighbors = size(indices,1)
 	NX = length(lrdX)
 	NY = length(lrdY)
-	@show size(indices,2)
-	@show NY
 	@assert size(indices,2) == NY
 	
 	lof = zeros(NY)

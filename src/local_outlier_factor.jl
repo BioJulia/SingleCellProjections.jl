@@ -1,19 +1,19 @@
-
+# TODO: Move some of these specs to other files
 
 col_sum_squared_spec(X) =
 	create_spec(SCPCore.col_sum_squared, X; __version=v"0.0.1")
 
 
-nearest_neighbor_distances_spec(indices, X, DX2) =
-	create_spec(SCPCore.nearest_neighbor_distances, indices, X, DX2; __version=v"0.0.1")
+nearest_neighbor_distances_spec(indices, X, DX2, args...) =
+	create_spec(SCPCore.nearest_neighbor_distances, indices, X, DX2, args...; __version=v"0.0.1")
 
 
 local_reachability_density_spec(indices, dists, kdists) =
 	create_spec(SCPCore.local_reachability_density, indices, dists, kdists; __version=v"0.0.1")
 
 
-local_outlier_factor_impl_spec(indices, lrd) =
-	create_spec(SCPCore.local_outlier_factor, indices, lrd; __version=v"0.0.1")
+local_outlier_factor_impl_spec(indices, lrd, args...) =
+	create_spec(SCPCore.local_outlier_factor, indices, lrd, args...; __version=v"0.0.1")
 
 
 
@@ -28,7 +28,16 @@ function local_outlier_factor(action::Action, mat, full_mat; k)
 	if action isa Eval
 		local_outlier_factor_impl_spec(knn_indices, lrd)
 	else#if actions isa Projection
-		error("Not yet implemented.")
+
+		mat2 = action(mat)
+		full_mat2 = action(full_mat)
+
+		knn_indices2 = find_nearest_neighbors_spec(mat, mat2; k)
+		sum_squared2 = col_sum_squared_spec(full_mat2)
+		full_dists2 = nearest_neighbor_distances_spec(knn_indices2, full_mat, sum_squared, full_mat2, sum_squared2)
+		lrd2 = local_reachability_density_spec(knn_indices2, full_dists2, kdists) # NB: kdists are from the base case
+
+		local_outlier_factor_impl_spec(knn_indices2, lrd, lrd2)
 	end
 end
 
