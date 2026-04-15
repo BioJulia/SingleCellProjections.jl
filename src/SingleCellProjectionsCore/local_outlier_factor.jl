@@ -60,7 +60,7 @@ col_sum_squared(X) = compute(DiagGram(X))
 row_sum_squared(X) = compute(DiagGram(X'))
 
 # TODO: Move this to nearest neighbor file?
-function nearest_neighbor_distances(indices, X, DX2, Y=X, DY2=DX2)
+function neighbor_distances(indices, X, DX2, Y=X, DY2=DX2; verbose=true)
 	k = size(indices,1)
 	NX = size(X,2)
 	NY = size(Y,2)
@@ -80,6 +80,7 @@ function nearest_neighbor_distances(indices, X, DX2, Y=X, DY2=DX2)
 	X_col_ranges = get_col_ranges(X.terms[1].matrix)
 	Y_col_ranges = get_col_ranges(Y.terms[1].matrix)
 
+	progress = verbose ? Progress(k; desc="Computing distances to neighbors: ") : nothing
 
 	dists = zeros(k, NY) # TODO: Use Float32?
 	for i in 1:k
@@ -94,7 +95,9 @@ function nearest_neighbor_distances(indices, X, DX2, Y=X, DY2=DX2)
 		DXYs = compute(Diag(matrixproduct(Xs',Y)))
 		DX2s = DX2[ind]
 		dists[i,:] .= sqrt.(max.(0.0, DX2s .+ DY2 .- 2DXYs))
+		isnothing(progress) || next!(progress)
 	end
+	isnothing(progress) || finish!(progress)
 	dists
 end
 

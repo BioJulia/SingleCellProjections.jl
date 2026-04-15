@@ -41,7 +41,6 @@ _adjoint(M::MatrixInfo) = MatrixInfo(reverse(M.sz), _adjoint_type(M.type), M.pnz
 
 
 
-# Hmmm. is_dense is only used in tests, remove?
 # _is_dense_type(::Type{T}) where T = _strip_adjoint(T) <: Matrix
 _is_dense_type(::Type{T}) where T = _strip_adjoint(T) <: StridedMatrix
 _is_dense(M::MatrixInfo) = _is_dense_type(M.type)

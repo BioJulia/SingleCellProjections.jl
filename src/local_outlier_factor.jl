@@ -4,8 +4,8 @@ col_sum_squared_spec(X) =
 	create_spec(SCPCore.col_sum_squared, X; __version=v"0.0.1")
 
 
-nearest_neighbor_distances_spec(indices, X, DX2, args...) =
-	create_spec(SCPCore.nearest_neighbor_distances, indices, X, DX2, args...; __version=v"0.0.1")
+neighbor_distances_spec(indices, X, DX2, args...) =
+	create_spec(SCPCore.neighbor_distances, indices, X, DX2, args...; __version=v"0.0.1")
 
 
 local_reachability_density_spec(indices, dists, kdists) =
@@ -20,7 +20,7 @@ local_outlier_factor_impl_spec(indices, lrd, args...) =
 function local_outlier_factor(action::Action, mat, full_mat; k)
 	knn_indices = find_nearest_neighbors_spec(mat; k)
 	sum_squared = col_sum_squared_spec(full_mat)
-	full_dists = nearest_neighbor_distances_spec(knn_indices, full_mat, sum_squared)
+	full_dists = neighbor_distances_spec(knn_indices, full_mat, sum_squared)
 
 	kdists = apply_spec(maximum, full_dists; dims=1)
 	lrd = local_reachability_density_spec(knn_indices, full_dists, kdists)
@@ -34,7 +34,7 @@ function local_outlier_factor(action::Action, mat, full_mat; k)
 
 		knn_indices2 = find_nearest_neighbors_spec(mat, mat2; k)
 		sum_squared2 = col_sum_squared_spec(full_mat2)
-		full_dists2 = nearest_neighbor_distances_spec(knn_indices2, full_mat, sum_squared, full_mat2, sum_squared2)
+		full_dists2 = neighbor_distances_spec(knn_indices2, full_mat, sum_squared, full_mat2, sum_squared2)
 		lrd2 = local_reachability_density_spec(knn_indices2, full_dists2, kdists) # NB: kdists are from the base case
 
 		local_outlier_factor_impl_spec(knn_indices2, lrd, lrd2)

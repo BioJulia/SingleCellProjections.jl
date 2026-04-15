@@ -1,4 +1,16 @@
 _subsetmatrix(X::AbstractMatrix, I::Index, J::Index) = X[I,J]
+_subsetmatrix(X::Adjoint, I::Index, J::Index) = _subsetmatrix(X', J, I)'
+_subsetmatrix(X::Transpose, I::Index, J::Index) = transpose(_subsetmatrix(transpose(X), J, I))
+
+function _subsetmatrix(X::Diagonal, I::Index, J::Index)
+	d = D.diag
+	if I == J
+		Diagonal(d[I])
+	else
+		sparse(X)[I,J] # TODO: Make more efficient for some cases?
+	end
+end
+
 
 _find_matching_ind(f, df::DataFrame) = first(parentindices(filter(f, df; view=true)))
 _find_matching_ind(f, v::AbstractVector) = findall(f, v)
@@ -41,6 +53,9 @@ find_matching_ind(::Colon, ::Any) = Colon()
 
 # The name is chosen since it is akin to getindex
 function matrix_getindex(matrix; var_ind::Union{<:AbstractVector{Int},Colon}=:, obs_ind::Union{<:AbstractVector{Int},Colon}=:)
+	var_ind isa ReadOnlyArray && (var_ind = parent(var_ind))
+	obs_ind isa ReadOnlyArray && (obs_ind = parent(obs_ind))
+
 	if index_isnoop(var_ind, size(matrix,1)) && index_isnoop(obs_ind, size(matrix,2))
 		matrix # input is considered read-only, so we don't need to copy
 	else

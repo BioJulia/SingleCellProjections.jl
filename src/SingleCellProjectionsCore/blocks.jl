@@ -294,9 +294,6 @@ function Base.:*(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
 
 		# @info "Dense × Sparse or Sparse × Dense"
 
-		# TODO: implement properly
-		# blocks = [sum(k->A.blocks[i,k]*B.blocks[k,j], 1:Nk) for i in 1:Ni, j in 1:Nj]
-
 		T_out = Base.promote_op(*, eltype(T1), eltype(T2))
 		T_out = Base.promote_op(+, T_out, T_out)
 		trees = [SummationTree(Matrix{T_out}, Nk) for i in 1:Ni, j in 1:Nj]
@@ -314,7 +311,7 @@ function Base.:*(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
 		# Basic threading
 		tforeach(CartesianIndices((Nk,Ni,Nj))) do c # TODO: Configure OhMyThreads scheduler
 		# foreach(CartesianIndices((Nk,Ni,Nj))) do c # DEBUG version without threading
-			(k,i,j) = Tuple(c)
+			k,i,j = Tuple(c)
 			# @info "$(Threads.threadid()): ($i,$j,$k)"
 
 			# @show typeof(A.blocks[i,k]), typeof(B.blocks[k,j])
@@ -340,10 +337,14 @@ function Base.:*(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
 		blocks = [get_result(trees[i,j]) for i in 1:Ni, j in 1:Nj]
 	else
 		# Not threaded by BLAS, output is sparse(/something else?), thread over blocks combine all at once
-		@info "Sparse × Sparse"
+		# @info "Sparse × Sparse"
 
-		# TODO: implement properly
-		blocks = [sum(k->A.blocks[i,k]*B.blocks[k,j], 1:Nk) for i in 1:Ni, j in 1:Nj]
+		blocks = tmap(CartesianIndices((Ni,Nj))) do c
+			i,j = Tuple(c)
+			sum(k->A.blocks[i,k]*B.blocks[k,j], 1:Nk) # TODO: What's the best way do to this sum for sparse matrices?
+		end
+		blocks = reshape(blocks, (Ni,Nj))
+		blocks = convert(Matrix, blocks) # This is a no-op in Julia 1.11+
 	end
 
 
