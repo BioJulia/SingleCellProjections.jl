@@ -288,7 +288,15 @@ function Base.:*(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
 		# @info "Dense × Dense"
 
 		# TODO: implement properly
-		blocks = [sum(k->A.blocks[i,k]*B.blocks[k,j], 1:Nk) for i in 1:Ni, j in 1:Nj]
+		# blocks = [sum(k->A.blocks[i,k]*B.blocks[k,j], 1:Nk) for i in 1:Ni, j in 1:Nj]
+
+		blocks = broadcast(1:Ni, (1:Nj)') do i,j
+			dest = A.blocks[i,1] * B.blocks[1,j]
+			for k in 2:Nk
+				mul!(dest, A.blocks[i,k], B.blocks[k,j], true, true)
+			end
+			dest
+		end
 	elseif MatrixExpressions._is_dense_type(T1) || MatrixExpressions._is_dense_type(T2)
 		# Not threaded by BLAS, output is dense, thread over blocks and combine pairwise
 
