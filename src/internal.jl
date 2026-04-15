@@ -205,7 +205,8 @@ find_matching_ind_impl_spec(f, df) = create_spec(SCPCore.find_matching_ind, f, d
 
 
 function find_matching_ind(action::Action, f, df; project_ids::Symbol)
-	@assert project_ids in (:no, :yes, :intersect)
+	# @assert project_ids in (:no, :yes, :intersect)
+	@assert project_ids in (:no, :yes, :intersect, :skip)
 	if project_ids == :no
 		f = action(f)
 		df = action(df)
@@ -247,6 +248,8 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 
 	if action isa Eval || project_ids == :no
 		return matching_ind
+	elseif project_ids == :skip # Experimental - is this a good name
+		return Colon()
 	else
 		# We need to remap the indices, going through IDs
 		ids = id_column_spec(df)

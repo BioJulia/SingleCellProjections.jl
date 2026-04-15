@@ -13,6 +13,10 @@ Base.:*(A::MatrixExpression, X::AbstractVecOrMat) = compute(matrixproduct(A, :X=
 Base.:*(X::AbstractVecOrMat, A::MatrixExpression) = compute(matrixproduct(:X=>X ,A))
 
 
+function Base.convert(::Type{T}, A::MatrixExpression) where T<:Matrix
+	convert(T, compute(A))
+end
+
 # ------------------------------------------------------------------------------
 # First implementation of computations.
 # Needs matrix chain optimization and other optimizations.
@@ -58,6 +62,9 @@ function compute(A::MatrixSum)
 
 	dest
 end
+
+
+compute(A::MatrixRef) = A.matrix
 
 
 # # Should be fast in Julia 1.7+ for different matrix types - TEST!

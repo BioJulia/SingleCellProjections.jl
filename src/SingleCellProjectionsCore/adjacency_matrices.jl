@@ -49,7 +49,8 @@ function find_nearest_neighbors(X; k, tree_fun=KDTree, verbose=true)
 	k = min(N-1, k) # Cannot have more neighbors than points! (Excluding the point itself.)
 
 	# Should we move the tree building to a separate spec? The downside is that we need to serialize/deserialize the tree...
-	tree = tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
+	@info "Building tree"
+	tree = @time tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
 
 	# # Single-threaded version
 	# indices,_ = allknn(tree, k) # NB: This exludes the points themselves
@@ -60,17 +61,20 @@ function find_nearest_neighbors(X; k, tree_fun=KDTree, verbose=true)
 
 
 	# Threaded version - We are waiting for a resolution to https://github.com/KristofferC/NearestNeighbors.jl/issues/237
-
 	# Workaround to get threading but still exclude the points themselves
-	nt = max(1, Threads.nthreads()-1) # TODO: What's a good choice?
-	c = chunks(1:N; n=nt)
+
+	# nt = max(1, Threads.nthreads()-1) # TODO: What's a good choice?
+	# c = chunks(1:N; n=nt)
+
+	c = chunks(1:N; n=10*Threads.nthreads(), minsize=128) # TODO: Revisit parameter choices
 
 	# output
 	indices = zeros(Int, k, N) # or Int32?
 
 	progress = verbose ? Progress(length(c); desc="Finding nearest neighbors: ") : nothing
 
-	tforeach(c) do chunk
+	# tforeach(c) do chunk
+	tforeach(c; scheduler=:greedy) do chunk
 		inds,ds = knn(tree, @view(X[:,chunk]), k+1) # We need +1 to include the point itself (which will be the closest point, typically)
 		# Now remove the point itself, and sort the outputs by index
 		for (j,iv,dv) in zip(chunk, inds, ds)
@@ -104,21 +108,25 @@ function find_nearest_neighbors(X, Y; k, tree_fun=KDTree, verbose=true)
 	k = min(N1,k) # Cannot have more neighbors than points!
 
 	# Should we move the tree building to a separate spec? The downside is that we need to serialize/deserialize the tree...
-	tree = tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
+	@info "Building tree"
+	tree = @time tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
 
 	# # Single-threaded version
 	# indices,_ = knn(tree, Y, k)
 
 	# Threaded version
-	nt = max(1, Threads.nthreads()-1) # TODO: What's a good choice?
-	c = chunks(1:N2; n=nt)
+	# nt = max(1, Threads.nthreads()-1) # TODO: What's a good choice?
+	# c = chunks(1:N2; n=nt)
+
+	c = chunks(1:N2; n=10*Threads.nthreads(), minsize=128) # TODO: Revisit parameter choices
+
 
 	progress = verbose ? Progress(length(c); desc="Finding nearest neighbors: ") : nothing
 
 	# output
 	indices = zeros(Int, k, N2) # or Int32?
 
-	tforeach(c) do chunk
+	tforeach(c; scheduler=:greedy) do chunk
 		inds,_ = knn(tree, @view(Y[:,chunk]), k)
 		# Sort by index for stability of results
 		for (j,iv) in zip(chunk, inds)

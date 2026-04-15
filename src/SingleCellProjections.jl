@@ -161,6 +161,8 @@ module Jobs
 	function pseudobulk end
 	function population_matrix end
 
+	function signature end
+
 	function local_outlier_factor end
 
 	function ftest end
@@ -211,6 +213,7 @@ include("reduce.jl")
 include("adjoint.jl")
 include("transform_coords.jl")
 include("pseudobulk.jl")
+include("signatures.jl")
 include("local_outlier_factor.jl")
 include("statistical_tests.jl")
 include("annotation_transfer.jl")

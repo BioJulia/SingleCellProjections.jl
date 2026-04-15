@@ -13,7 +13,8 @@ function transfer_categorical_annotation(f, base_data, base_annot::AbstractVecto
 	# found = Dict{T,Float64}()
 
 	# for j in 1:N # TODO: Thread
-	tforeach(1:N) do j # Configure scheduler?
+	# tforeach(1:N) do j # Configure scheduler?
+	tforeach(1:N; scheduler=:greedy, chunking=true, minchunksize=128) do j # TODO: Revisit parameters
 		found = scratch[]
 		empty!(found)
 

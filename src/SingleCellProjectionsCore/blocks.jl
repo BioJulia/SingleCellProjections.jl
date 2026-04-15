@@ -304,7 +304,7 @@ function Base.:*(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
 
 		T_out = Base.promote_op(*, eltype(T1), eltype(T2))
 		T_out = Base.promote_op(+, T_out, T_out)
-		trees = [SummationTree(Matrix{T_out}, Nk) for i in 1:Ni, j in 1:Nj]
+		# trees = [SummationTree(Matrix{T_out}, Nk) for i in 1:Ni, j in 1:Nj]
 
 		# # TODO: Thread it!
 		# for j in 1:Nj
@@ -317,32 +317,27 @@ function Base.:*(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
 		# end
 
 		# Basic threading
-		tforeach(CartesianIndices((Nk,Ni,Nj))) do c # TODO: Configure OhMyThreads scheduler
-		# foreach(CartesianIndices((Nk,Ni,Nj))) do c # DEBUG version without threading
-			k,i,j = Tuple(c)
-			# @info "$(Threads.threadid()): ($i,$j,$k)"
+		# tforeach(CartesianIndices((Nk,Ni,Nj))) do c # TODO: Configure OhMyThreads scheduler
+		# tforeach(CartesianIndices((Nk,Ni,Nj)); scheduler=:greedy, chunking=true, minchunksize=4) do c # TODO: Revisit parameters
+		# 	k,i,j = Tuple(c)
+		# 	add_result!(trees[i,j], k, A.blocks[i,k]*B.blocks[k,j])
+		# end
+		# blocks = [get_result(trees[i,j]) for i in 1:Ni, j in 1:Nj]
 
-			# @show typeof(A.blocks[i,k]), typeof(B.blocks[k,j])
-			# @show typeof(A.blocks[i,k] * B.blocks[k,j])
-			# @show typeof(trees[i,j])
+		# TODO: thread over Nk chunks if large enough and use summation tree for that part
+		blocks = Matrix{Matrix{T_out}}(undef, Ni, Nj)
+		let blocks = blocks # Needed due to OhMyThreads boxing guard
+			tforeach(CartesianIndices((Ni,Nj)); scheduler=:greedy, chunking=true) do c # TODO: Revisit parameters
+				i,j = Tuple(c)
 
-			add_result!(trees[i,j], k, A.blocks[i,k]*B.blocks[k,j])
-
-
-			# @info "mul"
-			# @time C = A.blocks[i,k]*B.blocks[k,j]
-
-			# # TESTING
-			# a = A.blocks[i,k]
-			# b = B.blocks[k,j]
-			# @time C = Matrix{Float64}(undef, size(a,1), size(b,2))
-			# @time mul!(C, a, b)
-
-			# @info "add_result"
-			# @time add_result!(trees[i,j], k, C)
+				dest = A.blocks[i,1] * B.blocks[1,j]
+				for k in 2:Nk
+					mul!(dest, A.blocks[i,k], B.blocks[k,j], true, true)
+				end
+				blocks[i,j] = dest
+			end
 		end
 
-		blocks = [get_result(trees[i,j]) for i in 1:Ni, j in 1:Nj]
 	else
 		# Not threaded by BLAS, output is sparse(/something else?), thread over blocks combine all at once
 		# @info "Sparse × Sparse"

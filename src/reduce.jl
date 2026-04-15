@@ -18,8 +18,7 @@ function implicitsvd_spec(matrix;
                           niter = 3,
                           stabilize_sign = true,
                           kwargs...)
-	# create_spec(implicitsvd_impl, matrix; nsv, seed, subspacedims, niter, stabilize_sign, kwargs..., __version=v"0.1.0") # must be used with cached() to handle the CompoundResult
-	create_spec(implicitsvd_impl, matrix; nsv, seed, subspacedims, niter, stabilize_sign, kwargs..., __version=v"0.0.1-a9") # TEMP
+	create_spec(implicitsvd_impl, matrix; nsv, seed, subspacedims, niter, stabilize_sign, kwargs..., __version=v"0.1.0") # must be used with cached() to handle the CompoundResult
 end
 
 svd_projected_svt_spec(U, X) =
@@ -142,7 +141,8 @@ function embed_points(f, base_data, base_reduced::AbstractMatrix{T}, data, indic
 	out = zeros(T, size(base_reduced,1), N)
 
 	# for j in 1:N # TODO: Thread
-	tforeach(1:N) do j # Configure scheduler?
+	# tforeach(1:N) do j # Configure scheduler?
+	tforeach(1:N; scheduler=:greedy, chunking=true, minchunksize=128) do j # TODO: Revisit parameters
 		total_weight = 0.0
 		for base_j in @view(indices[:,j])
 			# d2 = sum(abs2, @view(data[:,j]) .- @view(base_data[:,base_j])) # allocates
@@ -177,7 +177,6 @@ function force_layout(action::Action, matrix;
                       seed = 1234,
                       k_projection = 10, # TODO: support _fraction here as well.
                       min_dist2_projection = 1e-12,
-                      nobs,
                      )
 
 	# First force layout of unprojected
@@ -210,7 +209,7 @@ end
 
 function force_layout(::Mat, data; kwargs...)
 	matrix_spec = get_matrix_spec(data)
-	create_spec(Projectable(force_layout), matrix_spec; nobs=nobs_spec(data), kwargs...)
+	create_spec(Projectable(force_layout), matrix_spec; kwargs...)
 end
 force_layout(::Obs, data; kwargs...) = get_spec(Obs(), data)
 force_layout(::Var, data; ndim, kwargs...) = prefixed_ids_spec("id", "Force Layout Dim ", ndim)

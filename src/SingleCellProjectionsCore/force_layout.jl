@@ -80,7 +80,8 @@ function charge_forces!(vel::AbstractVector, pos::AbstractVector, tree::BarnesHu
     #         charge_forces_rec!(vel, pos, i, tree, 0, 1, 1, diameter2(tree), charge, charge_min_distance2, alpha, theta2)
     #     end
     # end
-    tforeach(1:length(pos)) do i
+    # tforeach(1:length(pos)) do i
+    tforeach(1:length(pos); scheduler=:greedy, chunking=true, minchunksize=128) do i # TODO: Revisit parameters
         charge_forces_rec!(vel, pos, i, tree, 0, 1, 1, diameter2(tree), charge, charge_min_distance2, alpha, theta2)
     end
 end
