@@ -343,6 +343,7 @@ function Base.:*(A::Blocks{T1}, B::Blocks{T2}) where {T1,T2}
 		# @info "Sparse × Sparse"
 
 		blocks = tmap(CartesianIndices((Ni,Nj))) do c
+		# blocks = map(CartesianIndices((Ni,Nj))) do c
 			i,j = Tuple(c)
 			sum(k->A.blocks[i,k]*B.blocks[k,j], 1:Nk) # TODO: What's the best way do to this sum for sparse matrices?
 		end
@@ -393,9 +394,12 @@ end
 # end
 
 
+# _block_view(A::SparseMatrixCSC, ::Colon, ::Colon) = A
 _block_view(A::SparseMatrixCSC, ::Colon, J::UnitRange) = @view A[:, J]
 
+# _block_view(A::Matrix, ::Colon, ::Colon) = A
 _block_view(A::Matrix, I, J) = @view A[I, J]
+
 _block_view(A::Adjoint, I, J) = _block_view(A', J, I)'
 _block_view(A::Transpose, I, J) = transpose(_block_view(transpose(A), J, I))
 
@@ -433,10 +437,19 @@ end
 # col_block_view(A::AbstractMatrix, widths) = block_view(A, :, widths)
 
 
+
 function block_view(A::AbstractMatrix, row_ranges, col_ranges)
-	row_ranges === Colon() && (row_ranges = (Colon(),))
-	col_ranges === Colon() && (col_ranges = (Colon(),))
-	Blocks([_block_view(A, rr, cr) for rr in row_ranges, cr in col_ranges])
+	# Check if it's actually the whole ranges
+	row_ranges !== Colon() && length(row_ranges) == 1 && row_ranges[1] == 1:size(A,1) && (row_ranges = Colon())
+	col_ranges !== Colon() && length(col_ranges) == 1 && col_ranges[1] == 1:size(A,2) && (col_ranges = Colon())
+
+	if row_ranges === Colon() && col_ranges === Colon()
+		Blocks(fill(A,1,1)) # Avoid making a view if not needed
+	else
+		row_ranges === Colon() && (row_ranges = (Colon(),))
+		col_ranges === Colon() && (col_ranges = (Colon(),))
+		Blocks([_block_view(A, rr, cr) for rr in row_ranges, cr in col_ranges])
+	end
 end
 
 row_block_view(A::AbstractMatrix, row_ranges) = block_view(A, row_ranges, :)
@@ -481,8 +494,17 @@ function Base.:*(A::AbstractMatrix{T1}, B::Blocks{T2}) where {T1,T2}
 
 	widths = size.(@view(B.blocks[:,1]), 1)
 	AA = col_block_view(A, block_sizes_to_ranges(widths))
+
 	AA*B
 end
+
+
+# TEMP: Put these somewhere else
+Base.:*(A::MatrixExpressions.MatrixRef, X::Blocks) = A.matrix*X
+Base.:*(X::Blocks, A::MatrixExpressions.MatrixRef) = X*A.matrix
+
+Base.:*(A::MatrixExpressions.MatrixExpression, X::Blocks) = compute(matrixproduct(A, :X=>X))
+Base.:*(X::Blocks, A::MatrixExpressions.MatrixExpression) = compute(matrixproduct(:X=>X ,A))
 
 
 
@@ -517,7 +539,7 @@ function MatrixExpressions.compute_diagmul(A::AbstractMatrix, B::Blocks{T}) wher
 	_verify_diagmul_sizes(A, B)
 	row_ranges = size(B.blocks,1)==1 ? Colon() : get_row_ranges(B)
 	col_ranges = size(B.blocks,2)==1 ? Colon() : get_col_ranges(B)
-	AA = block_view(B, col_ranges, row_ranges)
+	AA = block_view(A, col_ranges, row_ranges)
 	return MatrixExpressions.compute_diagmul(AA, B)
 end
 

@@ -124,11 +124,6 @@ function add_operations!(co, left, right, S::SubResult)
 	end
 
 	if S.copy_adj || S.make_dense
-		# @info "add_op"
-		# @show S.copy_adj
-		# @show S.make_dense
-		# @show S.matrixinfo.type
-
 		adj = _is_adjoint(S.matrixinfo)
 		if S.copy_adj
 			op = AdjointSparseCopyOperation(!adj, adj, S.make_dense)
@@ -161,12 +156,6 @@ function (op::AdjointSparseCopyOperation)(A)
 
 	A isa Diagonal && !op.make_dense && return A # Symmetric, no need to make a copy
 
-	# @info "copy()"
-	# @show op.adj_in
-	# @show op.adj_out
-	# @show size(A)
-	# @show typeof(A)
-
 	if op.adj_in
 		A = A'
 	end
@@ -177,8 +166,6 @@ function (op::AdjointSparseCopyOperation)(A)
 		X = X'
 	end
 
-	# @show size(X)
-	# @show typeof(X)
 	X
 end
 
@@ -364,7 +351,6 @@ function chain(A::AdjointSparseChainResult, B::AdjointSparseChainResult)
 	@assert split+1==B.res.left
 	@assert split+1==B.adj_res.left
 
-	# @info "M"
 	M1 = _chain(A, B, false, false, false, left, split, right) # AB
 	M2 = _chain(A, B, false, true,  false, left, split, right) # Aᵀ'B
 	M3 = _chain(A, B, false, false, true,  left, split, right) # ABᵀ'
@@ -375,7 +361,6 @@ function chain(A::AdjointSparseChainResult, B::AdjointSparseChainResult)
 	M3.cost < M.cost && (M = M3)
 	M4.cost < M.cost && (M = M4)
 
-	# @info "Mᵀ"
 	MT1 = _chain(B, A, true, false, false, left, split, right) # BᵀAᵀ
 	MT2 = _chain(B, A, true, true,  false, left, split, right) # B'Aᵀ
 	MT3 = _chain(B, A, true, false, true,  left, split, right) # BᵀA'

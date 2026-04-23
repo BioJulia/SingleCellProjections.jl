@@ -409,32 +409,59 @@ create_datamatrix_getindex_spec(data; kwargs...) =
 
 
 
+# These are temporary workarounds. Will be solved later when block refactoring is complete.
+function _maybe_col_blockify(S, A::SCPCore.Blocks)
+	row_ranges = SCPCore.get_row_ranges(A)
+	if length(row_ranges)>1
+		SCPCore.blockify(S; row_ranges=(Colon(),), col_ranges=row_ranges)
+	else
+		S
+	end
+end
+_maybe_col_blockify(S, A::SCPCore.MatrixExpressions.MatrixSum) = _maybe_col_blockify(S, A.terms[1].matrix) # Assuming the first term is the blocked sparse matrix as per sctransform/logtransform
+
+function _maybe_row_blockify(S, A::SCPCore.Blocks)
+	col_ranges = SCPCore.get_col_ranges(A)
+	if length(col_ranges)>1
+		SCPCore.blockify(S; row_ranges=col_ranges, col_ranges=(Colon(),))
+	else
+		S
+	end
+end
+_maybe_row_blockify(S, A::SCPCore.MatrixExpressions.MatrixSum) = _maybe_row_blockify(S, A.terms[1].matrix) # Assuming the first term is the blocked sparse matrix as per sctransform/logtransform
+
+
+
 
 function get_matrix_row(matrix, ind::Integer)
 	P,N = size(matrix)
 	@assert 1 <= ind <= P
 	if matrix isa AbstractMatrix
 		res = matrix[ind, :]
-	else # Matrix Expression
-		S = sparse([1], [ind], true, 1, P)
+	else # Matrix Expression or Blocks
+		S = sparse([1], [ind], true, 1, P) # We might need to block it to match `matrix`.
+		S = _maybe_col_blockify(S, matrix)
 		res = S*matrix
 		@assert size(res) == (1,N)
+		res = convert(Matrix, res) # needed for blocks
 		res = vec(res)
 	end
-	convert(Vector, res)
+	convert(Vector, res) # ensure it's dense
 end
 function get_matrix_col(matrix, ind::Integer)
 	P,N = size(matrix)
 	@assert 1 <= ind <= N
 	if matrix isa AbstractMatrix
 		res = matrix[:, ind]
-	else # Matrix Expression
-		S = sparse([ind], [1], true, N, 1)
+	else # Matrix Expression or Blocks
+		S = sparse([ind], [1], true, N, 1) # We might need to block it to match `matrix`.
+		S = _maybe_row_blockify(S, matrix)
 		res = matrix*S
 		@assert size(res) == (P,1)
+		res = convert(Matrix, res) # needed for blocks
 		res = vec(res)
 	end
-	convert(Vector, res)
+	convert(Vector, res) # ensure it's dense
 end
 get_matrix_row_spec(matrix, ind) =
 	create_spec(get_matrix_row, matrix, ind; __version=v"0.1.0")

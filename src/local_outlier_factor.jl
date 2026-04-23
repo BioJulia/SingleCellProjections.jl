@@ -1,19 +1,19 @@
 # TODO: Move some of these specs to other files
 
 col_sum_squared_spec(X) =
-	create_spec(SCPCore.col_sum_squared, X; __version=v"0.0.1")
+	cached(create_spec(SCPCore.col_sum_squared, X; __version=v"0.1.1"))
 
 
 neighbor_distances_spec(indices, X, DX2, args...) =
-	create_spec(SCPCore.neighbor_distances, indices, X, DX2, args...; __version=v"0.0.1")
+	cached(create_spec(SCPCore.neighbor_distances, indices, X, DX2, args...; __version=v"0.1.0"))
 
 
 local_reachability_density_spec(indices, dists, kdists) =
-	create_spec(SCPCore.local_reachability_density, indices, dists, kdists; __version=v"0.0.1")
+	cached(create_spec(SCPCore.local_reachability_density, indices, dists, kdists; __version=v"0.1.0"))
 
 
 local_outlier_factor_impl_spec(indices, lrd, args...) =
-	create_spec(SCPCore.local_outlier_factor, indices, lrd, args...; __version=v"0.0.1")
+	cached(create_spec(SCPCore.local_outlier_factor, indices, lrd, args...; __version=v"0.1.0"))
 
 
 
@@ -22,7 +22,7 @@ function local_outlier_factor(action::Action, mat, full_mat; k)
 	sum_squared = col_sum_squared_spec(full_mat)
 	full_dists = neighbor_distances_spec(knn_indices, full_mat, sum_squared)
 
-	kdists = apply_spec(maximum, full_dists; dims=1)
+	kdists = cached(apply_spec(maximum, full_dists; dims=1))
 	lrd = local_reachability_density_spec(knn_indices, full_dists, kdists)
 
 	if action isa Eval
