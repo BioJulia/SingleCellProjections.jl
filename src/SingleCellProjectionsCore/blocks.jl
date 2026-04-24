@@ -159,6 +159,10 @@ end
 MatrixExpressions.MatrixInfo(A::Blocks{T}) where T = MatrixExpressions.MatrixInfo(size(A), T, MatrixExpressions._pnz(A))
 
 
+MatrixExpressions.make_dense(A::Blocks{T}) where T =
+	Blocks(MatrixExpressions.make_dense.(A.blocks))
+
+
 
 
 

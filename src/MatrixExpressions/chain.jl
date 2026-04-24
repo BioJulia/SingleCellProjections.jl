@@ -102,7 +102,7 @@ printnode_op(io::IO, op) = print(io, op)
 
 function AbstractTrees.printnode(io::IO, (co,ind)::Tuple{ChainOrder,Int})
 	if ind<0
-		print(co.factors[-ind])
+		print(io, co.factors[-ind])
 	else
 		left,right,op,cost = co.operations[ind]
 		printnode_op(io, op)

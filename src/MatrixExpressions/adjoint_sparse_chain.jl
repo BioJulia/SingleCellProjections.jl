@@ -149,6 +149,7 @@ function (op::AdjointSparseOperation)(A,B)
 	U*V
 end
 
+make_dense(A::AbstractMatrix) = convert(Matrix,A)
 
 function (op::AdjointSparseCopyOperation)(A)
 	# @assert op.make_dense || (A isa Adjoint)!=op.adj_in || (A isa Diagonal)
@@ -160,7 +161,7 @@ function (op::AdjointSparseCopyOperation)(A)
 		A = A'
 	end
 
-	X = op.make_dense ? convert(Matrix,A) : copy(A)
+	X = op.make_dense ? make_dense(A) : copy(A)
 
 	if op.adj_out
 		X = X'
