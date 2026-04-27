@@ -22,7 +22,7 @@ hblock_spec(a, ranges) = create_spec(Preprocess(hblock_pre), a; ranges=fetched(r
 
 
 
-is_hblock(x::SpecUnion) = x.f == SCPCore.hblock
+is_hblock(x::Spec) = x.f == SCPCore.hblock
 is_hblock(::Any) = false
 
 

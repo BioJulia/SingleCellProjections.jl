@@ -11,7 +11,6 @@ function is_datamatrix_spec(spec::Spec)
 	# TODO: Are there more cases that should return true?
 	return false
 end
-is_datamatrix_spec(ws::WrappedSpec) = is_datamatrix_spec(get_sa(ws))
 
 
 
@@ -187,7 +186,7 @@ get_spec(::Obs, x) = get_obs_spec(x)
 
 
 # for dispatch
-setup_datamatrix(f::DataMatrixField, spec::SpecUnion) = setup_datamatrix(f, spec.f, spec)
+setup_datamatrix(f::DataMatrixField, spec::Spec) = setup_datamatrix(f, spec.f, spec)
 
 
 
@@ -209,7 +208,7 @@ end
 
 
 
-function _try_replace_get_spec_single(f::DataMatrixField, spec::SpecUnion, k::SpecUnion, v)
+function _try_replace_get_spec_single(f::DataMatrixField, spec::Spec, k::Spec, v)
 	# @info "_try_replace_get_spec_single"
 	if is_datamatrix_spec(k)
 		# TODO: Improve this code, avoid recreating the original spec
@@ -223,11 +222,11 @@ function _try_replace_get_spec_single(f::DataMatrixField, spec::SpecUnion, k::Sp
 end
 
 # Testing ProjectOnto
-try_replace_spec_single(spec::SpecUnion, ::MatFunction, k::SpecUnion, v) =
+try_replace_spec_single(spec::Spec, ::MatFunction, k::Spec, v) =
 	_try_replace_get_spec_single(Mat(), spec, k, v)
-try_replace_spec_single(spec::SpecUnion, ::VarFunction, k::SpecUnion, v) =
+try_replace_spec_single(spec::Spec, ::VarFunction, k::Spec, v) =
 	_try_replace_get_spec_single(Var(), spec, k, v)
-try_replace_spec_single(spec::SpecUnion, ::ObsFunction, k::SpecUnion, v) =
+try_replace_spec_single(spec::Spec, ::ObsFunction, k::Spec, v) =
 	_try_replace_get_spec_single(Obs(), spec, k, v)
 
 
