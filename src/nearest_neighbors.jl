@@ -1,9 +1,15 @@
 function find_nearest_neighbors_impl(X, args...; k=nothing, k_fraction=nothing, kwargs...)
 	k = @something k round(Int,k_fraction*size(X,2)) # In case of two data sets, k_fraction is refers to the first (base) dataset
-	@show k
+	# @show k
+
+	# ReproducibleJobs.add_info_item!(ReproducibleJobs.get_scheduler().progress_display, "⋅ find_nearest_neighbors_impl k=$k")
+
 	# @time indices, distances = SCPCore.find_nearest_neighbors(X, args...; k, kwargs...)
 	# CompoundResult(; indices, distances)
-	@time SCPCore.find_nearest_neighbors(X, args...; k, kwargs...) # returns indices only
+	# SCPCore.find_nearest_neighbors(X, args...; k, kwargs...) # returns indices only
+
+	progress = ProgressBar(styled"{blue:  ┌─}")
+	SCPCore.find_nearest_neighbors(X, args...; k, progress, kwargs...) # returns indices only
 end
 
 # It could be argued that this should be handled by projection, e.g. base case is X and projected case is X,action(X).

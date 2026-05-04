@@ -59,7 +59,9 @@ function scparams_impl(::Type{Tv}, ::Type{Ti}, matrix; var_ind, log_cell_counts:
 	feature_mask = falses(size(matrix,1))
 	feature_mask[var_ind] .= true
 
-	df = DataFrame(SCTransform.compute_scparams(Tv, Ti, matrix; log_cell_counts, log_gene_mean, feature_mask); copycols=false)
+	progress = ProgressBar(styled"{blue:  ┌─}")
+
+	df = DataFrame(SCTransform.compute_scparams(Tv, Ti, matrix; log_cell_counts, log_gene_mean, feature_mask, verbose=false, progress); copycols=false)
 	table_to_compound_result(df)
 end
 scparams_impl(matrix::SparseMatrixCSC{Tv,Ti}; kwargs...) where {Tv,Ti} = scparams_impl(Tv, Ti, matrix; kwargs...)
@@ -67,7 +69,7 @@ scparams_impl(matrix::Blocks{SparseMatrixCSC{Tv,Ti}}; kwargs...) where {Tv,Ti} =
 
 
 create_scparams_impl_spec(matrix; var_ind, log_cell_counts, log_gene_mean) =
-	table_from_compound_result(create_spec(scparams_impl, matrix; var_ind=prefetched(var_ind), log_cell_counts, log_gene_mean, __version=v"0.1.2-a"))
+	table_from_compound_result(create_spec(scparams_impl, matrix; var_ind=prefetched(var_ind), log_cell_counts, log_gene_mean, __version=v"0.1.2"))
 
 
 function scparams(action::Action, matrix, var, var_ind; log_cell_counts)
@@ -111,7 +113,7 @@ function sctransform_matrix_a_impl(::Preprocessing, T, matrix, params, var_ind, 
 			# samples[i] = create_spec(SCPCore.sctransformsparse_a, T, X, params, var_ind, lcc; kwargs..., __version=v"0.1.0")
 			samples[i] = sctransformsparse_a_spec(T, X, params, var_ind, lcc; kwargs...)
 		end
-		hblock_spec(samples, matrix.kwargs[:ranges])
+		hblock_spec(samples, _get_kwarg(matrix, :ranges))
 	else
 		# create_spec(SCPCore.sctransformsparse_a, T, matrix, params, var_ind, log_cell_counts; kwargs..., __version=v"0.1.0")
 		sctransformsparse_a_spec(T, matrix, params, var_ind, log_cell_counts; kwargs...)

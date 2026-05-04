@@ -4,8 +4,14 @@ col_sum_squared_spec(X) =
 	cached(create_spec(SCPCore.col_sum_squared, X; __version=v"0.1.1"))
 
 
+function neighbor_distances_impl(args...; kwargs...)
+	progress = ProgressBar(styled"{blue:  ┌─}")
+	SCPCore.neighbor_distances(args...; progress, kwargs...)
+end
+
+
 neighbor_distances_spec(indices, X, DX2, args...) =
-	cached(create_spec(SCPCore.neighbor_distances, indices, X, DX2, args...; __version=v"0.1.0"))
+	cached(create_spec(neighbor_distances_impl, indices, X, DX2, args...; __version=v"0.1.0"))
 
 
 local_reachability_density_spec(indices, dists, kdists) =

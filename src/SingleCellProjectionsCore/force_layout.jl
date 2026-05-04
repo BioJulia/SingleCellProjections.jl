@@ -119,7 +119,7 @@ function force_layout(::Val{ndim}, adj::AbstractMatrix;
                       initialScale = 10,
                       seed = nothing,
                       rng = seed !== nothing ? seed2rng(seed) : Random.default_rng(),
-                      verbose = true) where ndim
+                      progress = nothing) where ndim
     N = size(adj,1)
     @assert size(adj,2)==N
     @assert issymmetric(adj) # TODO: support upper triangular adj matrix too?
@@ -133,7 +133,8 @@ function force_layout(::Val{ndim}, adj::AbstractMatrix;
 
     tree = BarnesHutTree(ndim)
 
-    progress = verbose ? Progress(niter; desc="Computing force layout: ") : nothing
+    # progress = verbose ? Progress(niter; desc="Computing force layout: ") : nothing
+    isnothing(progress) || progress(niter) # initialize
 
     for iter = 1:niter
         alpha = initialAlpha*exp(-beta*iter)
@@ -158,12 +159,11 @@ function force_layout(::Val{ndim}, adj::AbstractMatrix;
             pos[i] -= center
         end
 
-        isnothing(progress) || next!(progress)
+        isnothing(progress) || progress() # step
     end
-    isnothing(progress) || finish!(progress)
 
     reduce(hcat,pos)
 end
 
 force_layout(adj::AbstractMatrix; ndim::Int=3, kwargs...) =
-    @time force_layout(Val(ndim), adj; kwargs...)
+    force_layout(Val(ndim), adj; kwargs...)

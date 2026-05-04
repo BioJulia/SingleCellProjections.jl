@@ -8,7 +8,8 @@ actual_nsv_spec(data, nsv) = create_spec(Projectable(actual_nsv_pr), data, nsv)
 
 
 function implicitsvd_impl(matrix; kwargs...)
-	@time F = SCPCore.implicitsvd(matrix; kwargs...)
+	progress = ProgressBar(styled"{blue:  ┌─}")
+	F = SCPCore.implicitsvd(matrix; progress, kwargs...)
 	CompoundResult(; F.U, F.S, F.Vt)
 end
 function implicitsvd_spec(matrix;
@@ -161,6 +162,10 @@ create_embed_points_spec(f, base_data, base_reduced, data, indices) =
 	cached(create_spec(embed_points, f, base_data, base_reduced, data, indices; __version=v"0.2.0"))
 
 
+function force_layout_impl(args...; kwargs...)
+	progress = ProgressBar(styled"{blue:  ┌─}")
+	SCPCore.force_layout(args...; progress, kwargs...)
+end
 
 function force_layout(action::Action, matrix;
                       k = nothing,
@@ -183,7 +188,7 @@ function force_layout(action::Action, matrix;
 	knn_indices = cached(find_nearest_neighbors_spec(matrix; k, k_fraction))
 	adj_spec = adjacency_matrix_spec(knn_indices; make_symmetric)
 
-	fl_spec = cached(create_spec(SCPCore.force_layout, adj_spec;
+	fl_spec = cached(create_spec(force_layout_impl, adj_spec;
 	                             ndim,
 	                             niter,
 	                             link_distance, link_strength,

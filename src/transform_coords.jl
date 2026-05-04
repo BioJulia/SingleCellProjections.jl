@@ -86,7 +86,7 @@ find_optimal_coord_transform_impl(X::ROMat, args...; kwargs...) = find_optimal_c
 function find_optimal_coord_transform(::Action, data, args...; kwargs...)
 	# NB: Do not apply action at all, the layout is based on the unprojected data set
 	ind_specs = (create_find_matching_ind_spec(arg, get_obs_spec(data); project_ids=:no) for arg in args)
-	create_spec(find_optimal_coord_transform_impl, get_matrix_spec(data), ind_specs...; kwargs..., __version=v"0.0.1-a12")
+	create_spec(find_optimal_coord_transform_impl, get_matrix_spec(data), ind_specs...; kwargs..., __version=v"0.1.0")
 end
 
 find_optimal_coord_transform_spec(args...; kwargs...) =

@@ -29,7 +29,7 @@ is_hblock(::Any) = false
 # Convenience function for applying a function to each block in a hblock spec (or to a single spec that is not wrapped in hblock)
 function hblock_map(f, spec; wrap=hblock_spec)
 	if is_hblock(spec)
-		wrap([f(x) for x in spec.args[1]], spec.kwargs[:ranges]) # NB: this strips any wrapping like Prefetch
+		wrap([f(x) for x in spec.args[1]], _get_kwarg(spec, :ranges)) # NB: this strips any wrapping like Prefetch
 	else
 		f(spec)
 	end
@@ -71,7 +71,7 @@ get_col_ranges_impl_spec(A) =
 function get_col_ranges_pre(::Preprocessing, A)
 	if is_hblock(A)
 		matrices = A.args[1]
-		outer_ranges = A.kwargs[:ranges]
+		outer_ranges = _get_kwarg(A, :ranges)
 		inner_ranges = get_col_ranges_impl_spec.(matrices)
 		combine_block_ranges_spec(outer_ranges, inner_ranges)
 	else

@@ -337,7 +337,7 @@ function matrix_getindex_pre(::Preprocessing, matrix; var_ind, obs_ind)
 		else
 			# We need to update obs_ind to match each the range of each block
 			blocks = matrix.args[1]
-			ranges = matrix.kwargs[:ranges]
+			ranges = _get_kwarg(matrix, :ranges)
 			@assert length(blocks) == length(ranges)
 
 			# first_ind = searchsortedfirst.(Ref(obs_ind), first.(ranges))

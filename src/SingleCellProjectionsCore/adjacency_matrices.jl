@@ -44,13 +44,14 @@ Find the `k` nearest neighbors of each point in `X`. `tree_fun` can be used to c
 
 Returns indices of nearest neighbors as a `k×N` matrix (where `N` is the number of points (columns) of `X`).
 """
-function find_nearest_neighbors(X; k, tree_fun=KDTree, verbose=true)
+function find_nearest_neighbors(X; k, tree_fun=KDTree, progress=nothing)
 	N = size(X,2)
 	k = min(N-1, k) # Cannot have more neighbors than points! (Excluding the point itself.)
 
 	# Should we move the tree building to a separate spec? The downside is that we need to serialize/deserialize the tree...
-	@info "Building tree"
-	tree = @time tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
+	# @info "Building tree"
+	# tree = @time tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
+	tree = tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
 
 	# # Single-threaded version
 	# indices,_ = allknn(tree, k) # NB: This exludes the points themselves
@@ -71,7 +72,8 @@ function find_nearest_neighbors(X; k, tree_fun=KDTree, verbose=true)
 	# output
 	indices = zeros(Int, k, N) # or Int32?
 
-	progress = verbose ? Progress(length(c); desc="Finding nearest neighbors: ") : nothing
+	# progress = verbose ? Progress(length(c); desc="Finding nearest neighbors: ") : nothing
+	isnothing(progress) || progress(length(c)) # initialize
 
 	# tforeach(c) do chunk
 	tforeach(c; scheduler=:greedy) do chunk
@@ -86,9 +88,8 @@ function find_nearest_neighbors(X; k, tree_fun=KDTree, verbose=true)
 			sort!(iv)
 			indices[:,j] .= iv
 		end
-		isnothing(progress) || next!(progress)
+		isnothing(progress) || progress() # step
 	end
-	isnothing(progress) || finish!(progress)
 
 	indices # k × size(X,2) matrix
 end
@@ -101,15 +102,16 @@ Find the `k` nearest neighbors in `X` of each point in `Y`. `tree_fun` can be us
 
 Returns indices of nearest neighbors as a `k×N` matrix (where `N` is the number of points (columns) of `Y`).
 """
-function find_nearest_neighbors(X, Y; k, tree_fun=KDTree, verbose=true)
+function find_nearest_neighbors(X, Y; k, tree_fun=KDTree, progress=nothing)
 	N1 = size(X,2)
 	N2 = size(Y,2)
 	@assert size(X,1) == size(Y,1) # Must have the same (number of) variables
 	k = min(N1,k) # Cannot have more neighbors than points!
 
 	# Should we move the tree building to a separate spec? The downside is that we need to serialize/deserialize the tree...
-	@info "Building tree"
-	tree = @time tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
+	# @info "Building tree"
+	# tree = @time tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
+	tree = tree_fun(X) # This is parallelized by NearestNeighbors.jl by default
 
 	# # Single-threaded version
 	# indices,_ = knn(tree, Y, k)
@@ -121,7 +123,8 @@ function find_nearest_neighbors(X, Y; k, tree_fun=KDTree, verbose=true)
 	c = chunks(1:N2; n=10*Threads.nthreads(), minsize=128) # TODO: Revisit parameter choices
 
 
-	progress = verbose ? Progress(length(c); desc="Finding nearest neighbors: ") : nothing
+	# progress = verbose ? Progress(length(c); desc="Finding nearest neighbors: ") : nothing
+	isnothing(progress) || progress(length(c)) # initialize
 
 	# output
 	indices = zeros(Int, k, N2) # or Int32?
@@ -133,9 +136,8 @@ function find_nearest_neighbors(X, Y; k, tree_fun=KDTree, verbose=true)
 			sort!(iv)
 			indices[:,j] .= iv
 		end
-		isnothing(progress) || next!(progress)
+		isnothing(progress) || progress() # step
 	end
-	isnothing(progress) || finish!(progress)
 
 	indices # k × size(Y,2) matrix
 end

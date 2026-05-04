@@ -23,7 +23,7 @@ function implicitsvd(::Type{T}, P, N, A, AT;
                      stabilize_sign = true,
                      seed = nothing,
                      rng = seed !== nothing ? seed2rng(seed) : Random.default_rng(),
-                     verbose = true) where T
+                     progress = nothing) where T
 	P*N==0 && return SVD(zeros(0,0),zeros(0),zeros(0,0))
 	nsv = min(nsv,P,N)
 	@assert subspacedims>=nsv
@@ -38,7 +38,8 @@ function implicitsvd(::Type{T}, P, N, A, AT;
 		B = convert(Matrix, A)
 		Q = I
 	else
-		progress = verbose ? Progress((niter+1)*4; desc="Computing SVD: ") : nothing
+		# progress = verbose ? Progress((niter+1)*4; desc="Computing SVD: ") : nothing
+		isnothing(progress) || progress((niter+1)*4) # initialize
 
 		local Zj
 		for j=0:niter # TODO: change to 1:niter and alter at call sites? Require niter>=1.
@@ -49,23 +50,23 @@ function implicitsvd(::Type{T}, P, N, A, AT;
 				Ω = Matrix(qr(Zj).Q)
 				# Ω = copy(Matrix(qr(Zj).Q)')' # TESTING
 			end
-			isnothing(progress) || next!(progress)
+			isnothing(progress) || progress() # step
 
 			# @show typeof(Ω), size(Ω)
 			Yj = A*Ω
 			# @show typeof(Yj), size(Yj)
-			isnothing(progress) || next!(progress)
+			isnothing(progress) || progress() # step
 
 			Q = Matrix(qr(Yj).Q)
 			# Q = copy(Matrix(qr(Yj).Q)')' # TESTING
-			isnothing(progress) || next!(progress)
+			isnothing(progress) || progress() # step
 
 			Zj = AT*Q
 			# @show typeof(Zj), size(Zj)
-			isnothing(progress) || next!(progress)
+			isnothing(progress) || progress() # step
 		end
-		isnothing(progress) || finish!(progress)
 		B = convert(Matrix,Zj)'
+		isnothing(progress) || progress() # step
 	end
 
 	F = svdbyeigen(B; nsv=nsv)
