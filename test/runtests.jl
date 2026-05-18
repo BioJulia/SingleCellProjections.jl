@@ -18,7 +18,7 @@ using CodecZlib
 
 using UMAP
 using TSne
-using PrincipalMomentAnalysis
+# using PrincipalMomentAnalysis
 
 using CSV
 

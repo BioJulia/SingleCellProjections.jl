@@ -1,5 +1,5 @@
 is_datamatrix_spec(::Any) = false
-function is_datamatrix_spec(spec::Spec)
+function is_datamatrix_spec(spec::SpecRef)
 	f = spec.f
 	f isa DataMatrixFunction && return true
 	f == SCPCore.DataMatrix && return true
@@ -186,7 +186,7 @@ get_spec(::Obs, x) = get_obs_spec(x)
 
 
 # for dispatch
-setup_datamatrix(f::DataMatrixField, spec::Spec) = setup_datamatrix(f, spec.f, spec)
+setup_datamatrix(f::DataMatrixField, spec::SpecRef) = setup_datamatrix(f, spec.f, spec)
 
 
 
@@ -208,7 +208,7 @@ end
 
 
 
-function _try_replace_get_spec_single(f::DataMatrixField, spec::Spec, k::Spec, v)
+function _try_replace_get_spec_single(f::DataMatrixField, spec::SpecRef, k::SpecRef, v)
 	# @info "_try_replace_get_spec_single"
 	if is_datamatrix_spec(k)
 		# TODO: Improve this code, avoid recreating the original spec
@@ -222,11 +222,11 @@ function _try_replace_get_spec_single(f::DataMatrixField, spec::Spec, k::Spec, v
 end
 
 # Testing ProjectOnto
-try_replace_spec_single(spec::Spec, ::MatFunction, k::Spec, v) =
+try_replace_spec_single(spec::SpecRef, ::MatFunction, k::SpecRef, v) =
 	_try_replace_get_spec_single(Mat(), spec, k, v)
-try_replace_spec_single(spec::Spec, ::VarFunction, k::Spec, v) =
+try_replace_spec_single(spec::SpecRef, ::VarFunction, k::SpecRef, v) =
 	_try_replace_get_spec_single(Var(), spec, k, v)
-try_replace_spec_single(spec::Spec, ::ObsFunction, k::Spec, v) =
+try_replace_spec_single(spec::SpecRef, ::ObsFunction, k::SpecRef, v) =
 	_try_replace_get_spec_single(Obs(), spec, k, v)
 
 

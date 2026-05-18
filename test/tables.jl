@@ -68,7 +68,7 @@
 		if name != "DataFrame" # TODO: Enable this test for DataFrames to when I make it work
 			let annot_fwd = forward!(annot)
 				@test annot_fwd.f === SingleCellProjections.create_table
-				@test first.(annot_fwd.args) == ("id", "y")
+				@test first.(annot_fwd.args) == ["id", "y"]
 			end
 		end
 

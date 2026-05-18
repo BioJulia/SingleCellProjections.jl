@@ -3,7 +3,7 @@ create_table(args::Pair{String,<:Any}...) = DataFrame(args...; copycols=false)
 create_table_spec(args...) = create_spec(create_table, args...; __version=v"0.1.0")
 Jobs.create_table(args...) = create_table_spec(args...)
 
-is_create_table(x::Spec) = x.f == create_table
+is_create_table(x::SpecRef) = x.f == create_table
 is_create_table(::Any) = false
 
 
@@ -32,7 +32,7 @@ table_from_compound_result(compound_result) =
 
 
 _get_ncol(table::DataFrame) = ncol(table)
-_get_ncol(table::Spec) = length(table.args) # NB: only valid for create_table spec
+_get_ncol(table::SpecRef) = length(table.args) # NB: only valid for create_table spec
 
 function _check_ncol(table; require_n_cols=nothing)
 	if require_n_cols !== nothing
@@ -263,7 +263,7 @@ function table_getindex_pr(action, table, ind)
 	table_p = action(table)
 	result = create_spec(Preprocess{false}(table_getindex), table_p, action(ind))
 
-	if action isa Projection && !(ind isa Spec) # TODO: Fix, this will trigger even if ind is replaced by the action, which it shouldn't - maybe hard to avoid?
+	if action isa Projection && !(ind isa SpecRef) # TODO: Fix, this will trigger even if ind is replaced by the action, which it shouldn't - maybe hard to avoid?
 		cond = isequal_spec(table, table_p)
 		result = ifelse_spec(cond, result, _getindex_error_spec(ind))
 	end

@@ -46,7 +46,7 @@ function getindex_pr(action, v, ind)
 	v_p = action(v)
 	result = getindex_impl_spec(v_p, action(ind))
 
-	if action isa Projection && !(ind isa Spec) # TODO: Fix, this will trigger even if ind is replaced by the action, which it shouldn't - maybe hard to avoid?
+	if action isa Projection && !(ind isa SpecRef) # TODO: Fix, this will trigger even if ind is replaced by the action, which it shouldn't - maybe hard to avoid?
 		cond = isequal_spec(v, v_p)
 		result = ifelse_spec(cond, result, _getindex_error_spec(ind))
 	end
@@ -75,7 +75,7 @@ function getindex_or_missing_pr(action, v, ind)
 	v_p = action(v)
 	result = getindex_or_missing_impl_spec(v_p, action(ind))
 
-	if action isa Projection && !(ind isa Spec)
+	if action isa Projection && !(ind isa SpecRef)
 		cond = isequal_spec(v, v_p)
 		result = ifelse_spec(cond, result, _getindex_or_missing_error_spec(ind)) # TODO: Fix _getindex_or_missing_error_spec isn't defined anywhere...
 	end
@@ -142,7 +142,7 @@ intersect_ind_spec(a, b) = create_spec(Preprocess(intersect_ind), a, b)
 function isequal_pre(::Preprocessing{E}, x, y) where E
 	if isequal(x, y)
 		true # early out
-	elseif !(x isa Spec) && !(y isa Spec)
+	elseif !(x isa SpecRef) && !(y isa SpecRef)
 		false # early out
 	elseif E
 		create_spec(Preprocess{false}(isequal_pre), x, y)
@@ -227,7 +227,7 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 		elseif k isa AbstractVector
 			x = get_columns_spec(df, k...)
 			matching_ind = cached(find_matching_ind_impl_spec(f, x))
-		elseif k isa Union{Spec, DataFrame}
+		elseif k isa Union{SpecRef, DataFrame}
 			# k is an "Annotation" - a DataFrame with an ID and a value column. Will be leftjoined and the function will be applied to the leftjoined vector with values.
 
 			# TODO: Share code with `_extract_data_spec`?
@@ -369,7 +369,7 @@ function _matrix_ind_spec(action::Action, ind, n=nothing)
 	ind === nothing && return Colon()
 
 	ind_p = action(ind)
-	if action isa Projection && !(ind isa Spec)
+	if action isa Projection && !(ind isa SpecRef)
 		cond = isequal_spec(ind, ind_p)
 		ind_p = ifelse_spec(cond, ind_p, _getindex_error_spec(ind))
 	end

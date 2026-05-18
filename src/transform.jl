@@ -106,7 +106,7 @@ function sctransform_matrix_a_impl(::Preprocessing, T, matrix, params, var_ind, 
 		@assert log_cell_counts.f == vcat_impl
 		@assert length(log_cell_counts.args[1]) == n # These should match because we must have the same samples
 
-		samples = Vector{Spec}(undef, n)
+		samples = Vector{SpecRef}(undef, n)
 		for i in 1:n
 			X = matrix.args[1][i]
 			lcc = log_cell_counts.args[1][i]

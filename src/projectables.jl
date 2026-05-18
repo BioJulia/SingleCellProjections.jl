@@ -8,7 +8,7 @@ end
 
 
 
-# is_projectable_spec(x) = x isa Spec && x.f isa Projectable
+# is_projectable_spec(x) = x isa SpecRef && x.f isa Projectable
 
 
 
@@ -29,9 +29,9 @@ end
 
 
 
-function try_replace_spec_single(spec::Spec, ::Any, k::Spec, v)
-	if ReproducibleJobs.get_sa(spec) === ReproducibleJobs.get_sa(k) # Because of deduplication we can use ===
-		if v isa Spec
+function try_replace_spec_single(spec::SpecRef, ::Any, k::SpecRef, v)
+	if ReproducibleJobs.get_sr(spec) === ReproducibleJobs.get_sr(k) # Because of deduplication we can use ===
+		if v isa SpecRef
 			return ReproducibleJobs.transfer_op(k, v) # Keep the op
 		else
 			return v # Replaced by a value, the op doesn't apply anymore
@@ -41,13 +41,13 @@ function try_replace_spec_single(spec::Spec, ::Any, k::Spec, v)
 	return nothing
 end
 
-function try_replace_spec(spec::Spec, f::F, args...) where F
+function try_replace_spec(spec::SpecRef, f::F, args...) where F
 	# @info "try_replace_spec"
 	# @show f
 	# f isa ProjectOnto && @show f
 
 	for (k,v) in args
-		if k isa Spec
+		if k isa SpecRef
 			r = try_replace_spec_single(spec, f, k, v)
 			r !== nothing && return r
 		end
@@ -59,7 +59,7 @@ end
 
 
 
-function do_replacement(replacements, spec::Spec)
+function do_replacement(replacements, spec::SpecRef)
 	p_spec = create_project_spec(spec, replacements...)
 	ReproducibleJobs.transfer_op(spec, p_spec) # Keep the op
 end
@@ -128,7 +128,7 @@ end
 
 
 # Wrapper that dispatches based on the type of `onto.f`
-project(::Preprocessing, onto::Spec, args...; kwargs...) = project_impl(onto.f, onto, args...; kwargs...)
+project(::Preprocessing, onto::SpecRef, args...; kwargs...) = project_impl(onto.f, onto, args...; kwargs...)
 
 function project(::Preprocessing, onto, args...; kwargs...)
 	# Due to forwarding, `onto` might be a value.
@@ -139,9 +139,9 @@ end
 # create_project_spec(onto, args...; kwargs...) =
 # 	create_spec(Preprocess(project), onto, args...; kwargs...)
 
-function create_project_spec(onto::Spec, args...; kwargs...)
+function create_project_spec(onto::SpecRef, args...; kwargs...)
 	# Transfer the op from `onto` to `project`
-	onto2 = Spec(ReproducibleJobs.get_sa(onto)) # without op
+	onto2 = SpecRef(ReproducibleJobs.get_sr(onto)) # without op
 	spec = create_spec(Preprocess(project), onto2, args...; kwargs...)
 	ReproducibleJobs.transfer_op(onto, spec)
 end
