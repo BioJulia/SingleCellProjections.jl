@@ -10,7 +10,7 @@
 	# Test result
 	let counts = fetch!(counts_job)
 		@test size(counts)==(P,N)
-		@test nnz(counts.matrix) == expected_nnz
+		@test nnz(unblockify(counts.matrix)) == expected_nnz
 
 		@test names(counts.obs) == ["cell_id", "sample_name", "barcode"]
 		@test counts.obs.cell_id == string.("a_",expected_barcodes)
@@ -23,8 +23,8 @@
 		@test counts.var.feature_type == expected_feature_types
 		@test counts.var.genome == expected_feature_genome
 
-		@test counts.matrix == expected_mat
-		@test counts.matrix isa SparseMatrixCSC{Int64,Int32}
+		@test unblockify(counts.matrix) == expected_mat
+		@test unblockify(counts.matrix) isa SparseMatrixCSC{Int64,Int32}
 	end
 
 	@testset "Projection top-level replacements" begin

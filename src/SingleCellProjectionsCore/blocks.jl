@@ -24,8 +24,10 @@ Base.size(b::Blocks, i::Int) = i in (1,2) ? b.sz[i] : 1
 blocktype(::Type{Blocks{T}}) where T = T # Might not be needed.
 Base.eltype(::Type{Blocks{T}}) where T = eltype(T)
 
+unblockify(b::Blocks) = hvcat(size(b.blocks,2), permutedims(b.blocks)...)
+
 function Base.convert(::Type{M}, b::Blocks) where M<:AbstractMatrix
-	hvcat(size(b.blocks,2), convert.(M, permutedims(b.blocks))...)
+	unblockify(Blocks(convert.(M, b.blocks)))
 end
 
 Base.adjoint(A::Blocks) = Blocks([adjoint(A.blocks[j,i]) for i in 1:size(A.blocks,2), j in 1:size(A.blocks,1)])

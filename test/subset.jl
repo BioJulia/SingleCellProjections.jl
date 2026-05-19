@@ -16,7 +16,7 @@
 		var_spec_forwarded = forward!(Jobs.get_var(data_job))
 		obs_spec_forwarded = forward!(Jobs.get_obs(data_job))
 
-		X = materialize(data)
+		X = unblockify(materialize(data))
 		P,N = size(data)
 
 		data_sub_job = Jobs.project(data_job, counts_job=>counts_sub_job)
@@ -25,19 +25,19 @@
 		var_sub_spec_forwarded = forward!(Jobs.get_var(data_sub_job))
 		obs_sub_spec_forwarded = forward!(Jobs.get_obs(data_sub_job))
 
-		X_sub = materialize(data_sub)
+		X_sub = unblockify(materialize(data_sub))
 
 		s_job = Jobs.subset_var(data_job, select(data.var,:id))
 		@test forward!(s_job) == data_spec_forwarded
 		let s = fetch!(s_job)
-			@test materialize(s) ≈ X
+			@test unblockify(materialize(s)) ≈ X
 			test_dataframe_columns_identical("s.var vs data.var", s.var, data.var)
 			test_dataframe_columns_identical("s.obs vs data.obs", s.obs, data.obs)
 		end
 		p_job = Jobs.project(s_job, counts_job=>counts_sub_job)
 		@test forward!(p_job) == data_sub_spec_forwarded
 		let p = fetch!(p_job)
-			@test materialize(p) ≈ X_sub
+			@test unblockify(materialize(p)) ≈ X_sub
 			test_dataframe_columns_identical("p.var vs data_sub.var", p.var, data_sub.var)
 			test_dataframe_columns_identical("p.obs vs data_sub.obs", p.obs, data_sub.obs)
 		end
@@ -45,7 +45,7 @@
 		s_job = Jobs.subset_obs(data_job, select(data.obs,:cell_id))
 		@test forward!(s_job) == data_spec_forwarded
 		let s = fetch!(s_job)
-			@test materialize(s) ≈ X
+			@test unblockify(materialize(s)) ≈ X
 			test_dataframe_columns_identical("s.var vs data.var", s.var, data.var)
 			test_dataframe_columns_identical("s.obs vs data.obs", s.obs, data.obs)
 		end
@@ -55,7 +55,7 @@
 		s_job = Jobs.subset_matrix(data_job, select(data.var,:id), select(data.obs,:cell_id))
 		@test forward!(s_job) == data_spec_forwarded
 		let s = fetch!(s_job)
-			@test materialize(s) ≈ X
+			@test unblockify(materialize(s)) ≈ X
 			test_dataframe_columns_identical("s.var vs data.var", s.var, data.var)
 			test_dataframe_columns_identical("s.obs vs data.obs", s.obs, data.obs)
 		end
@@ -82,7 +82,7 @@
 		@test forward!(Jobs.get_obs(s_job)) == obs_spec_forwarded
 		@test forward!(s_job) == forward!(var_ref_job)
 		let s = fetch!(s_job)
-			@test materialize(s) ≈ X[var_ind_subset, :]
+			@test unblockify(materialize(s)) ≈ X[var_ind_subset, :]
 			@test isequal(s.var, data.var[var_ind_subset, :])
 			test_dataframe_columns_identical("s.obs vs data.obs", s.obs, data.obs)
 		end
@@ -90,7 +90,7 @@
 		@test forward!(Jobs.get_obs(p_job)) == obs_sub_spec_forwarded
 		@test forward!(p_job) == forward!(var_sub_ref_job)
 		let p = fetch!(p_job)
-			@test materialize(p) ≈ X_sub[var_ind_subset, :]
+			@test unblockify(materialize(p)) ≈ X_sub[var_ind_subset, :]
 			@test isequal(p.var, data_sub.var[var_ind_subset, :])
 			test_dataframe_columns_identical("p.obs vs data_sub.obs", p.obs, data_sub.obs)
 		end
@@ -99,7 +99,7 @@
 		@test forward!(Jobs.get_var(s_job)) == var_spec_forwarded
 		@test forward!(s_job) == forward!(obs_ref_job)
 		let s = fetch!(s_job)
-			@test materialize(s) ≈ X[:, obs_ind_subset]
+			@test unblockify(materialize(s)) ≈ X[:, obs_ind_subset]
 			test_dataframe_columns_identical("s.var vs data.var", s.var, data.var)
 			@test isequal(s.obs, data.obs[obs_ind_subset, :])
 		end
@@ -109,7 +109,7 @@
 		s_job = Jobs.subset_matrix(data_job, var_ids_subset, obs_ids_subset)
 		@test forward!(s_job) == forward!(matrix_ref_job)
 		let s = fetch!(s_job)
-			@test materialize(s) ≈ X[var_ind_subset, obs_ind_subset]
+			@test unblockify(materialize(s)) ≈ X[var_ind_subset, obs_ind_subset]
 			@test isequal(s.var, data.var[var_ind_subset, :])
 			@test isequal(s.obs, data.obs[obs_ind_subset, :])
 		end
