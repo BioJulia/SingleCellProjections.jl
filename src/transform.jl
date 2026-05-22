@@ -61,7 +61,7 @@ function scparams_impl(::Type{Tv}, ::Type{Ti}, matrix; var_ind, log_cell_counts:
 
 	progress = ProgressBar(styled"{blue:  ┌─}")
 
-	df = DataFrame(SCTransform.compute_scparams(Tv, Ti, matrix; log_cell_counts, log_gene_mean, feature_mask, verbose=false, progress); copycols=false)
+	df = DataFrame(SCTransform.compute_scparams(Tv, Ti, matrix; log_cell_counts, log_gene_mean, feature_mask, verbose=false, progress, tick=throw_if_cancelled); copycols=false)
 	table_to_compound_result(df)
 end
 scparams_impl(matrix::SparseMatrixCSC{Tv,Ti}; kwargs...) where {Tv,Ti} = scparams_impl(Tv, Ti, matrix; kwargs...)

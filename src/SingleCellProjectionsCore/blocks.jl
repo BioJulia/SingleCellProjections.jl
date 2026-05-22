@@ -627,10 +627,12 @@ end
 # Since we have our own Blocks type, we need to implement the chunking to get SCTransform.jl to work
 function SCTransform.gene_chunk_producer(channel, A::Blocks{<:SparseMatrixCSC{Tv,Ti}};
                                          feature_mask,
-                                         chunk_size=128) where {Tv,Ti}
+                                         chunk_size = 128,
+                                         tick = nothing) where {Tv,Ti}
 	row_ranges = get_row_ranges(A)
 
 	for i in 1:size(A.blocks,1)
+		isnothing(tick) || tick()
 		hc = hcat(@view(A.blocks[i,:])...)
 		t = copy(transpose(hc))
 

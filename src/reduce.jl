@@ -9,7 +9,7 @@ actual_nsv_spec(data, nsv) = create_spec(Projectable(actual_nsv_pr), data, nsv)
 
 function implicitsvd_impl(matrix; kwargs...)
 	progress = ProgressBar(styled"{blue:  ┌─}")
-	F = SCPCore.implicitsvd(matrix; progress, kwargs...)
+	F = SCPCore.implicitsvd(matrix; progress, tick=throw_if_cancelled, kwargs...)
 	CompoundResult(; F.U, F.S, F.Vt)
 end
 function implicitsvd_spec(matrix;
@@ -164,7 +164,8 @@ create_embed_points_spec(f, base_data, base_reduced, data, indices) =
 
 function force_layout_impl(args...; kwargs...)
 	progress = ProgressBar(styled"{blue:  ┌─}")
-	SCPCore.force_layout(args...; progress, kwargs...)
+	# SCPCore.force_layout(args...; progress, kwargs...)
+	SCPCore.force_layout(args...; progress, tick=throw_if_cancelled, kwargs...)
 end
 
 function force_layout(action::Action, matrix;
