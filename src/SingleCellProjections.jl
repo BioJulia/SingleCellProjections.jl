@@ -221,5 +221,14 @@ include("annotation_transfer.jl")
 
 # include("precompile.jl")
 
+function register_scp_functions!(scheduler::ReproducibleJobs.Scheduler)
+	ReproducibleJobs.register_function!(scheduler, mean)
+end
+
+
+function __init__()
+	register_scp_functions!(ReproducibleJobs.get_scheduler())
+end
+
 
 end

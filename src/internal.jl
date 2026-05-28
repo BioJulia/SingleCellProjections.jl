@@ -248,7 +248,7 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 
 	if action isa Eval || project_ids == :no
 		return matching_ind
-	elseif project_ids == :skip # Experimental - is this a good name
+	elseif project_ids == :skip # Experimental - is this a good name?
 		return Colon()
 	else
 		# We need to remap the indices, going through IDs
