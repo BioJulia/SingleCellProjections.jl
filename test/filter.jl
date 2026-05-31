@@ -5,6 +5,9 @@
 	counts_job = Jobs.add_obs_column(counts_job, "group", counts_obs_group)
 	counts_job = Jobs.add_obs_column(counts_job, "value", counts_obs_value)
 
+	normalized_job = Jobs.normalize_matrix(Jobs.sctransform(counts_job))
+	reduced_job = Jobs.pca(normalized_job; nsv=10, seed=1234)
+
 
 	var_annot_df = select(fetch!(Jobs.get_var(counts_job)), ["id", "name"])[end:-4:1, :]
 	var_annot_spec = SingleCellProjections.table_getindex_spec(Jobs.annotation(Jobs.get_var(counts_job), "name"), P:-4:1)
@@ -18,8 +21,8 @@
 	# TODO: test hash stability
 
 	# TODO: Test for more data matrices
-	# @testset "filter $name" for (name,data_job) in (("counts",counts_job), ("normalized",normalized_job), ("reduced",reduced_job))
-	@testset "filter $name" for (name,data_job) in (("counts",counts_job),)
+	@testset "filter $name" for (name,data_job) in (("counts",counts_job), ("normalized",normalized_job))
+	# @testset "filter $name" for (name,data_job) in (("counts",counts_job),)
 		data = fetch!(data_job)
 		data_spec_forwarded = forward!(data_job)
 		var_spec_forwarded = forward!(Jobs.get_var(data_job))

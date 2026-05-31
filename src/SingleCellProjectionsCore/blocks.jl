@@ -25,6 +25,7 @@ blocktype(::Type{Blocks{T}}) where T = T # Might not be needed.
 Base.eltype(::Type{Blocks{T}}) where T = eltype(T)
 
 unblockify(b::Blocks) = hvcat(size(b.blocks,2), permutedims(b.blocks)...)
+unblockify(X::AbstractMatrix) = X
 
 function Base.convert(::Type{M}, b::Blocks) where M<:AbstractMatrix
 	unblockify(Blocks(convert.(M, b.blocks)))

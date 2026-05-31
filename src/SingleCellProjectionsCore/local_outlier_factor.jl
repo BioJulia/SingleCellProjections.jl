@@ -55,10 +55,6 @@
 # 	sparse(I,J,dists,N1,N2)
 # end
 
-# TODO: Move these to nearest neighbor file?
-col_sum_squared(X) = compute(DiagGram(X))
-row_sum_squared(X) = compute(DiagGram(X'))
-
 # TODO: Move this to nearest neighbor file?
 function neighbor_distances(indices, X, DX2, Y=X, DY2=DX2; progress=nothing)
 	k = size(indices,1)

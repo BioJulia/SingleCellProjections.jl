@@ -1,8 +1,4 @@
-# TODO: Move some of these specs to other files
-
-col_sum_squared_spec(X) =
-	cached(create_spec(SCPCore.col_sum_squared, X; __version=v"0.1.1"))
-
+# TODO: Move some of these specs to other files?
 
 function neighbor_distances_impl(args...; kwargs...)
 	progress = ProgressBar(styled"{blue:  ┌─}")

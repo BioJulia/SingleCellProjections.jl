@@ -31,8 +31,8 @@ include("common_data.jl")
 let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 	@testset "SingleCellProjections.jl" begin
 		# The 2nd time we run, the on-disk cache is reused. (Consider doing this kind of cache testing in ReproducibleJobs.jl only.)
-		# @testset "$cache_status" for cache_status in ("New Disk Cache", "Reused Disk Cache")
-		@testset "$cache_status" for cache_status in ("New Disk Cache",)
+		@testset "$cache_status" for cache_status in ("New Disk Cache", "Reused Disk Cache")
+		# @testset "$cache_status" for cache_status in ("New Disk Cache",)
 			with_scheduler(Scheduler(; dir=tmp)) do
 				include("projectables.jl")
 				include("tables.jl")
@@ -41,10 +41,11 @@ let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 				include("reduce.jl")
 				include("filter.jl")
 				include("subset.jl")
+				include("sum_squared.jl")
 			end
 		end
 	end
 end
 
-# include("SingleCellProjectionsCore/runtests.jl")
-# include("MatrixExpressions/runtests.jl")
+include("SingleCellProjectionsCore/runtests.jl")
+include("MatrixExpressions/runtests.jl")

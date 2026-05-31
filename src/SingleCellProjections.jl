@@ -155,6 +155,9 @@ module Jobs
 	function force_layout end
 	function transpose end
 
+	function variance end
+	function std end
+
 	function transform_coords end
 	function find_optimal_coord_transform end
 
@@ -206,6 +209,7 @@ include("load.jl")
 include("annotate.jl")
 include("filter.jl")
 include("transform.jl")
+include("sum_squared.jl")
 include("design.jl")
 include("normalize.jl")
 include("nearest_neighbors.jl")
