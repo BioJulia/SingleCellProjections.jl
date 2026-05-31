@@ -1,4 +1,4 @@
-colsum!(f, dest::AbstractVector, A::AbstractMatrix) = sum!(f, reshape(dest,1,:), A; init=false)
+colsum!(f, dest::AbstractVector, A::AbstractMatrix) = (sum!(f, reshape(dest,1,:), A; init=false); dest)
 colsum!(dest, A) = colsum(identity, dest, A)
 colsum(A) = colsum(identity, A)
 
