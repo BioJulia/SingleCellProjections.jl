@@ -11,6 +11,7 @@ using StableRNGs
 
 using LinearAlgebra
 using SparseArrays
+using Statistics
 using HypothesisTests
 using GLM: GLM, StatsModels, lm, coeftable, modelmatrix
 using DelimitedFiles

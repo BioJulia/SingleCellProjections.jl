@@ -19,6 +19,20 @@ function compute_variance(action::Action, X; col="variance", project=:no)
 end
 
 variance_spec(X; kwargs...) = create_spec(Projectable(compute_variance), X; kwargs...)
+
+
+"""
+	Jobs.variance(data; col, project)
+
+Computes the variance of each variable in `data`, and returns a table with IDs and variances.
+* `col` is the name of the annotation column, defaults to "variance".
+* `project` can be `:no` (default) or `:yes`. If `:no`, it will compute the variance of the base data set, and if `:yes`, it will compute the variance of the projected data set.
+
+!!! note
+	`data` must be mean-centered. E.g. by using `normalize_matrix` before calling `Jobs.variance`.
+
+See also: [`Jobs.std`](@ref)
+"""
 function Jobs.variance(X; kwargs...)
 	variance_spec(X; kwargs...)
 end
@@ -28,6 +42,19 @@ compute_std(::Preprocessing, X; col="std", project=:no) =
 	transform_annotation_spec(sqrt, variance_spec(X; project); new_name=col)
 
 std_spec(X; kwargs...) = create_spec(Preprocess(compute_std), X; kwargs...)
+
+"""
+	Jobs.std(data; col, project)
+
+Computes the standard deviation of each variable in `data`, and returns a table with IDs and variances.
+* `col` is the name of the annotation column, defaults to "std".
+* `project` can be `:no` (default) or `:yes`. If `:no`, it will compute the std of the base data set, and if `:yes`, it will compute the std of the projected data set.
+
+!!! note
+	`data` must be mean-centered. E.g. by using `normalize_matrix` before calling `Jobs.std`.
+
+See also: [`Jobs.variance`](@ref)
+"""
 function Jobs.std(X; kwargs...)
 	std_spec(X; kwargs...)
 end
