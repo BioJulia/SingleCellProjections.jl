@@ -10,7 +10,10 @@ sum_squared_to_var_spec(s2, n) =
 
 function compute_variance(action::Action, X; col="variance", project=:no)
 	@assert project in (:no, :yes)
-	matrix = project == :yes ? action(get_matrix_spec(X)) : get_matrix_spec(X)
+	if project == :yes
+		X = action(X)
+	end
+	matrix = get_matrix_spec(X)
 	s2 = row_sum_squared_spec(matrix)
 	n = fetched(nobs_spec(X))
 	values = cached(sum_squared_to_var_spec(s2, n))

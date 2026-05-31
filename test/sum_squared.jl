@@ -2,7 +2,9 @@
 	counts_job = Jobs.load_counts(h5_path; sample_names="a")
 	normalized_job = Jobs.normalize_matrix(Jobs.sctransform(counts_job))
 
-	# TODO: projections
+	counts_sub_job = Jobs.load_counts(h5_subset_path; sample_names="p")
+	normalized_sub_job = Jobs.project(normalized_job, counts_job => counts_sub_job)
+
 	# TODO: test forwarding
 	# TODO: test hash stability
 
@@ -14,39 +16,48 @@
 		P, N = size(data)
 		id_col = only(names(data.var,1))
 
-		expected_var = vec(var(X; dims=2))
-		expected_std = vec(std(X; dims=2))
+		@testset "$col" for (f, g, col) in (
+				(Jobs.variance, var, "variance"),
+				(Jobs.std,      std, "std"))
+			expected = vec(g(X; dims=2))
+			job = f(data_job)
+			result = fetch!(job)
+			@test result isa DataFrame
+			@test names(result) == [id_col, col]
+			@test isequal(result[!, id_col], data.var[!, id_col])
+			@test result[!, col] ≈ expected
 
-		@testset "variance" begin
-			v_job = Jobs.variance(data_job)
-			v = fetch!(v_job)
-			@test v isa DataFrame
-			@test names(v) == [id_col, "variance"]
-			@test isequal(v[!, id_col], data.var[!, id_col])
-			@test v.variance ≈ expected_var
+			job2 = f(data_job; col="my_$col")
+			result2 = fetch!(job2)
+			@test names(result2) == [id_col, "my_$col"]
+			@test result2[!, "my_$col"] ≈ expected
 		end
+	end
 
-		@testset "variance col kwarg" begin
-			v_job = Jobs.variance(data_job; col="my_var")
-			v = fetch!(v_job)
-			@test names(v) == [id_col, "my_var"]
-			@test v.my_var ≈ expected_var
-		end
+	@testset "projections" begin
+		data_base = fetch!(normalized_job)
+		data_proj = fetch!(normalized_sub_job)
+		X_proj = convert(Matrix{Float64}, unblockify(materialize(data_proj)))
+		id_col = only(names(data_base.var, 1))
 
-		@testset "std" begin
-			s_job = Jobs.std(data_job)
-			s = fetch!(s_job)
-			@test s isa DataFrame
-			@test names(s) == [id_col, "std"]
-			@test isequal(s[!, id_col], data.var[!, id_col])
-			@test s.std ≈ expected_std
-		end
+		# NB: mean=0 because centering is already done using the mean from the base data
+		@testset "$col projections" for (f, g, col) in (
+				(Jobs.variance, var, "variance"),
+				(Jobs.std,      std, "std"))
+			# project=:no (default): uses base data regardless of projection
+			base_job = f(normalized_job)
+			proj_job = Jobs.project(base_job, normalized_job => normalized_sub_job)
+			@test forward!(base_job) == forward!(proj_job)
+			base = fetch!(base_job)
+			proj = fetch!(proj_job)
+			@test names(proj) == [id_col, col]
+			@test proj[!, col] ≈ base[!, col]
 
-		@testset "std col kwarg" begin
-			s_job = Jobs.std(data_job; col="my_std")
-			s = fetch!(s_job)
-			@test names(s) == [id_col, "my_std"]
-			@test s.my_std ≈ expected_std
+			# project=:yes: uses projected data
+			proj_yes_job = Jobs.project(f(normalized_job; project=:yes), normalized_job => normalized_sub_job)
+			result_yes = fetch!(proj_yes_job)
+			@test names(result_yes) == [id_col, col]
+			@test result_yes[!, col] ≈ vec(g(X_proj; mean=zeros(size(X_proj,1),1), dims=2))
 		end
 	end
 end
