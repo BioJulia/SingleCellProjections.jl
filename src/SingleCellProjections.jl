@@ -157,6 +157,7 @@ module Jobs
 
 	function variance end
 	function std end
+	function relative_std end
 
 	function transform_coords end
 	function find_optimal_coord_transform end
@@ -227,11 +228,13 @@ include("annotation_transfer.jl")
 
 function register_scp_functions!(scheduler::ReproducibleJobs.Scheduler)
 	ReproducibleJobs.register_function!(scheduler, mean)
+	ReproducibleJobs.register_function!(scheduler, /)
 end
+register_scp_functions!() = register_scp_functions!(ReproducibleJobs.get_scheduler())
 
 
 function __init__()
-	register_scp_functions!(ReproducibleJobs.get_scheduler())
+	register_scp_functions!()
 end
 
 

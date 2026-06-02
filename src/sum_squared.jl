@@ -61,3 +61,37 @@ See also: [`Jobs.variance`](@ref)
 function Jobs.std(X; kwargs...)
 	std_spec(X; kwargs...)
 end
+
+
+function compute_relative_std(::Preprocessing, X; col="relative_std", project=:no)
+	s = std_spec(X; project)
+	values = value_column_data_spec(s)
+	max_std = prefetched(apply_spec(maximum, values))
+	transform_annotation_spec(Base.Fix2(/, max_std), s; new_name=col)
+
+	# DEBUG - this doesn't trigger the problem
+	# transform_annotation_spec(sqrt, prefetched(s); new_name=col)
+end
+
+relative_std_spec(X; kwargs...) = create_spec(Preprocess(compute_relative_std), X; kwargs...)
+
+"""
+	Jobs.relative_std(data; col, project)
+
+Computes the standard deviation of each variable in `data` relative to the maximum standard deviation,
+returning a table with IDs and values in [0,1].
+
+Useful for filtering variables: `Jobs.filter_var(Jobs.relative_std(data) => >=(f), data)` keeps
+only variables whose std is at least a fraction `f` of the highest-std variable.
+
+* `col` is the name of the annotation column, defaults to "relative_std".
+* `project` can be `:no` (default) or `:yes`. If `:no`, it will compute the std of the base data set, and if `:yes`, it will compute the std of the projected data set.
+
+!!! note
+	`data` must be mean-centered. E.g. by using `normalize_matrix` before calling `Jobs.relative_std`.
+
+See also: [`Jobs.std`](@ref)
+"""
+function Jobs.relative_std(X; kwargs...)
+	relative_std_spec(X; kwargs...)
+end

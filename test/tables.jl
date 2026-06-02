@@ -1,9 +1,15 @@
 @testset "Tables" begin
 	n = 10
+	n_p = 4
 
 	col_args = ("id"=>string.("id_",1:n),
 	            "x"=>(1:n).^2,
 	            "y"=>string.('A':'A'+n-1))
+
+	col_args_p = ("id"=>string.("id_",1:n_p),
+	                 "x"=>(1:n_p).^3,
+	                 "y"=>string.('a':'a'+n_p-1))
+
 
 	basic_table = Jobs.create_table(col_args...)
 	df = DataFrame(col_args...)
@@ -11,6 +17,14 @@
 	csv_filename = tempname(; suffix=".csv")
 	CSV.write(csv_filename, df)
 	csv_table = Jobs.load_csv(csv_filename)
+
+
+	basic_table_p = Jobs.create_table(col_args_p...)
+	df_p = DataFrame(col_args_p...)
+
+	csv_filename_p = tempname(; suffix=".csv")
+	CSV.write(csv_filename_p, df_p)
+	csv_table_p = Jobs.load_csv(csv_filename_p)
 
 
 	# For hcat
@@ -118,10 +132,50 @@
 		@test isequal(forward!(csv_table_p), forward!(csv_table_right))
 	end
 
+
+	@testset "transform_annotation $name" for (name,table,table_p) in (("DataFrame",df,df_p), ("create_table",basic_table,basic_table_p), ("CSV",csv_table,csv_table_p))
+		annot_x = Jobs.annotation(table, "x")  # id + x (numeric)
+		x_vals = Float64.(df.x)
+
+		@testset "simple transform" begin
+			ta = Jobs.transform_annotation(sqrt, annot_x)
+			@test isequal(fetch!(ta), DataFrame("id"=>df.id, "x"=>sqrt.(x_vals)))
+		end
+
+		@testset "new_name" begin
+			ta = Jobs.transform_annotation(sqrt, annot_x; new_name="sqrtx")
+			@test isequal(fetch!(ta), DataFrame("id"=>df.id, "sqrtx"=>sqrt.(x_vals)))
+		end
+
+		@testset "prefetched scalar inside Base.Fix2" begin
+			max_job = SingleCellProjections.apply_spec(maximum, Jobs.value_column_data(annot_x))
+			ta = Jobs.transform_annotation(Base.Fix2(/, prefetched(max_job)), annot_x)
+			expected = DataFrame("id"=>df.id, "x"=>x_vals ./ maximum(x_vals))
+			@test isequal(fetch!(ta), expected)
+
+			# Projectables without any replacements
+			ta_p = Jobs.project(ta)
+			@test isequal(forward!(ta), forward!(ta_p))
+
+			v = Jobs.value_column_data(ta)
+			v_p = Jobs.project(v)
+			@test isequal(forward!(v), forward!(v_p))
+			@test isequal(fetch!(ta_p), expected)
+
+
+			# TODO: Implement replacements for Tables and enable this
+			# projections
+			# ta_p = Jobs.project(ta, table=>table_p) # Hmm. This doesn't work. Because `table` isn't kept as a unit during projection.
+			# expected_p = DataFrame("id"=>df_p.id, "x"=>df_p.x ./ maximum(df_p.x))
+			# @test isequal(fetch!(ta_p), expected_p)
+		end
+	end
+
+
 	# TODO: Projections
 	# Important! Use specs that resolve at different levels
 	# * create_table spec with Projectables as column data - i.e. projection is done at the column level
-	# * create_table spec after projcetion                 - i.e. projection is done before the column level
+	# * create_table spec after projection                 - i.e. projection is done before the column level
 	# * DataFrame                                          - i.e. we hit the fallback
 
 end

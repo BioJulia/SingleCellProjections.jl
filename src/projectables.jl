@@ -32,7 +32,7 @@ end
 function try_replace_spec_single(spec::SpecRef, ::Any, k::SpecRef, v)
 	if ReproducibleJobs.get_sr(spec) === ReproducibleJobs.get_sr(k) # Because of deduplication we can use ===
 		if v isa SpecRef
-			return ReproducibleJobs.transfer_op(k, v) # Keep the op
+			return ReproducibleJobs.apply_op(k.op, v) # Transfer the op
 		else
 			return v # Replaced by a value, the op doesn't apply anymore
 		end
@@ -61,7 +61,7 @@ end
 
 function do_replacement(replacements, spec::SpecRef)
 	p_spec = create_project_spec(spec, replacements...)
-	ReproducibleJobs.transfer_op(spec, p_spec) # Keep the op
+	ReproducibleJobs.apply_op(spec.op, p_spec) # Keep the op
 end
 function do_replacement(replacements, x)
 	for (k,v) in replacements
@@ -141,9 +141,9 @@ end
 
 function create_project_spec(onto::SpecRef, args...; kwargs...)
 	# Transfer the op from `onto` to `project`
-	onto2 = SpecRef(ReproducibleJobs.get_sr(onto)) # without op
+	onto2 = SpecRef(ReproducibleJobs.get_sr(onto)) # remove op
 	spec = create_spec(Preprocess(project), onto2, args...; kwargs...)
-	ReproducibleJobs.transfer_op(onto, spec)
+	ReproducibleJobs.apply_op(onto.op, spec) # apply op again
 end
 
 function Jobs.project(onto, args...; kwargs...)

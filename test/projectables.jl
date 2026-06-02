@@ -6,6 +6,7 @@ module TestJobs
 	function my_sub end
 	function my_mul end
 	function my_div end
+	function my_apply end
 
 	function dm_rand end
 	function dm_add end
@@ -41,6 +42,13 @@ my_div_impl(a, b) = a ./ b
 my_div(action::Action, a, b) = create_spec(my_div_impl, a, action(b); __version=v"1.0.0")
 my_div_spec(a, b) = create_spec(Projectable(my_div), a, b)
 TestJobs.my_div(a, b) = my_div_spec(a, b)
+
+# Elementwise apply - Projectable with both args affected
+my_apply_impl(f, x) = f.(x)
+my_apply(action::Action, f, x) = create_spec(my_apply_impl, action(f), action(x); __version=v"1.0.0")
+my_apply_spec(f, x) = create_spec(Projectable(my_apply), f, x)
+TestJobs.my_apply(f, x) = my_apply_spec(f, x)
+
 
 
 
@@ -234,6 +242,21 @@ TestJobs.dm_div(a, b) = create_spec(DataMatrixFunction(dm_div), a, b)
 		@test fetch!(jp2d) == (A_res./B_res) + C_res
 		@test isequal(forward!(jp2d), forward!(A /ʲ B +ʲ C))
 	end
+
+	# WIP
+	@testset "prefetched" begin
+		j1 = TestJobs.my_apply(Base.Fix2(<, prefetched(B)), A)
+		jp1 = Jobs.project(j1, A=>Ap)
+
+		f1 = forward!(j1)
+		fp1 = forward!(jp1)
+		@test f1.args[1].f == <
+		@test f1.args[1].x == B_res
+		@test f1.args[1] == fp1.args[1]
+		@test isequal(f1.args[2], forward!(A))
+		@test isequal(fp1.args[2], forward!(Ap))
+	end
+
 end
 
 

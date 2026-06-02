@@ -1,11 +1,11 @@
 using Test
 using SingleCellProjections
-using SingleCellProjections: Projectable, ProjectOnto, Action, DataMatrixFunction, DataMatrixField, DataMatrixFieldFunction, Mat, Var, Obs, MatFunction, VarFunction, ObsFunction, get_matrix_spec
+using SingleCellProjections: Projectable, ProjectOnto, Action, DataMatrixFunction, DataMatrixField, DataMatrixFieldFunction, Mat, Var, Obs, MatFunction, VarFunction, ObsFunction, get_matrix_spec, register_scp_functions!
 import .SingleCellProjectionsCore as SCPCore
 using .SingleCellProjectionsCore.MatrixExpressions
 using .SCPCore: unblockify
 using SCTransform
-using ReproducibleJobs: ReproducibleJobs, Scheduler, TimestampedFilePath, get_scheduler, with_scheduler, fetch!, forward!, forward_once!, create_spec, Preprocess
+using ReproducibleJobs: ReproducibleJobs, Scheduler, TimestampedFilePath, get_scheduler, with_scheduler, fetch!, forward!, forward_once!, create_spec, Preprocess, prefetched
 
 using StableRNGs
 
@@ -35,6 +35,7 @@ let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 		@testset "$cache_status" for cache_status in ("New Disk Cache", "Reused Disk Cache")
 		# @testset "$cache_status" for cache_status in ("New Disk Cache",)
 			with_scheduler(Scheduler(; dir=tmp)) do
+				register_scp_functions!()
 				include("projectables.jl")
 				include("tables.jl")
 				include("load.jl")

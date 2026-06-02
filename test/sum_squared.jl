@@ -1,3 +1,8 @@
+function relative_std_ref(X; kwargs...)
+	s = vec(std(X; kwargs...));
+	s ./ maximum(s)
+end
+
 @testset "Sum Squared" begin
 	counts_job = Jobs.load_counts(h5_path; sample_names="a")
 	normalized_job = Jobs.normalize_matrix(Jobs.sctransform(counts_job))
@@ -17,8 +22,9 @@
 		id_col = only(names(data.var,1))
 
 		@testset "$col" for (f, g, col) in (
-				(Jobs.variance, var, "variance"),
-				(Jobs.std,      std, "std"))
+				(Jobs.variance,     var,              "variance"),
+				(Jobs.std,          std,              "std"),
+				(Jobs.relative_std, relative_std_ref, "relative_std"))
 			expected = vec(g(X; dims=2))
 			job = f(data_job)
 			result = fetch!(job)
@@ -42,12 +48,18 @@
 
 		# NB: mean=0 because centering is already done using the mean from the base data
 		@testset "$col projections" for (f, g, col) in (
-				(Jobs.variance, var, "variance"),
-				(Jobs.std,      std, "std"))
+				(Jobs.variance,     var,              "variance"),
+				(Jobs.std,          std,              "std"),
+				(Jobs.relative_std, relative_std_ref, "relative_std"))
 			# project=:no (default): uses base data regardless of projection
 			base_job = f(normalized_job)
-			proj_job = Jobs.project(base_job, normalized_job => normalized_sub_job)
-			@test forward!(base_job) == forward!(proj_job)
+			proj_job = Jobs.project(base_job), counts_job => counts_sub_job)
+			@test isequal(forward!(base_job), forward!(proj_job))
+
+			v = Jobs.value_column_data(base_job)
+			v_p = Jobs.project(v)
+			@test isequal(forward!(v), forward!(v_p))
+
 			base = fetch!(base_job)
 			proj = fetch!(proj_job)
 			@test names(proj) == [id_col, col]
