@@ -1,3 +1,9 @@
+using Test
+using SingleCellProjections
+using ReproducibleJobs: ReproducibleJobs, TimestampedFilePath, prefetched, fetch!, forward!
+using CSV
+using DataFrames
+
 function run_tables_tests()
 @testset "Tables" begin
 	n = 10

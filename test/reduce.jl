@@ -1,3 +1,9 @@
+using Test
+using SingleCellProjections
+using ReproducibleJobs: fetch!, forward!
+using LinearAlgebra
+using DataFrames
+
 function run_reduce_tests()
 @testset "Dimension Reductions" begin
 	counts_job = Jobs.load_counts(h5_path; sample_names="a")

@@ -1,3 +1,8 @@
+using Test
+using SingleCellProjections
+using ReproducibleJobs: fetch!, forward!
+using DataFrames
+
 function relative_std_ref(X; kwargs...)
 	s = vec(std(X; kwargs...));
 	s ./ maximum(s)

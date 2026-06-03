@@ -1,3 +1,8 @@
+using Test
+using SingleCellProjections
+using ReproducibleJobs: fetch!, forward!
+using SparseArrays
+
 function run_load_tests()
 @testset "load_counts" begin
 	P,N = (50,587)

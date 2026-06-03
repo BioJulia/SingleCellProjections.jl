@@ -1,3 +1,11 @@
+using Test
+using SingleCellProjections
+using SingleCellProjections: Projectable, ProjectOnto, Action, DataMatrixFunction, Mat, Var, Obs, MatFunction, get_matrix_spec
+import .SingleCellProjectionsCore as SCPCore
+using ReproducibleJobs: Preprocess, prefetched, create_spec, fetch!, forward!, forward_once!
+using StableRNGs
+using DataFrames
+
 # TODO: We might move the functions defined for these test cases somewhere else, in particular if we split across multiple files
 
 module TestJobs

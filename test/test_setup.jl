@@ -1,5 +1,22 @@
 __revise_mode__ = :evalassign
 
+using Test
+using SingleCellProjections
+using SingleCellProjections: register_scp_functions!
+import .SingleCellProjectionsCore as SCPCore
+using .SingleCellProjectionsCore.MatrixExpressions
+using .SCPCore: unblockify
+using SCTransform
+using ReproducibleJobs: Scheduler, with_scheduler
+using StableRNGs
+using LinearAlgebra
+using SparseArrays
+using Statistics
+using GLM: GLM, StatsModels, lm, coeftable, modelmatrix
+using DelimitedFiles
+using DataFrames
+using CodecZlib
+
 # --- test_utils ---
 
 isgz(fn) = lowercase(splitext(fn)[2])==".gz"

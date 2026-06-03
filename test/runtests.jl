@@ -1,29 +1,3 @@
-using Test
-using SingleCellProjections
-using SingleCellProjections: Projectable, ProjectOnto, Action, DataMatrixFunction, DataMatrixField, DataMatrixFieldFunction, Mat, Var, Obs, MatFunction, VarFunction, ObsFunction, get_matrix_spec, register_scp_functions!
-import .SingleCellProjectionsCore as SCPCore
-using .SingleCellProjectionsCore.MatrixExpressions
-using .SCPCore: unblockify
-using SCTransform
-using ReproducibleJobs: ReproducibleJobs, Scheduler, TimestampedFilePath, get_scheduler, with_scheduler, fetch!, forward!, forward_once!, create_spec, Preprocess, prefetched
-
-using StableRNGs
-
-using LinearAlgebra
-using SparseArrays
-using Statistics
-using HypothesisTests
-using GLM: GLM, StatsModels, lm, coeftable, modelmatrix
-using DelimitedFiles
-using DataFrames
-using CodecZlib
-
-using UMAP
-using TSne
-# using PrincipalMomentAnalysis
-
-using CSV
-
 # To run an individual test suite from the REPL:
 # 1. Activate the test environment
 # 2. includet("test/test_setup.jl")

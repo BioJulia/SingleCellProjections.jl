@@ -1,3 +1,8 @@
+using Test
+using SingleCellProjections
+using ReproducibleJobs: fetch!, forward!
+using DataFrames
+
 function run_filter_tests()
 @testset "Filtering" begin
 	P,N = (50,587)

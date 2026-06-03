@@ -1,3 +1,10 @@
+using Test
+using SingleCellProjections
+using ReproducibleJobs: fetch!, forward!
+using SCTransform
+using SparseArrays
+using DataFrames
+
 function run_transform_tests()
 @testset "Transforms" begin
 	counts_job = Jobs.load_counts(h5_path; sample_names="a")
