@@ -1,3 +1,4 @@
+function run_tables_tests()
 @testset "Tables" begin
 	n = 10
 	n_p = 4
@@ -178,4 +179,5 @@
 	# * create_table spec after projection                 - i.e. projection is done before the column level
 	# * DataFrame                                          - i.e. we hit the fallback
 
+end
 end

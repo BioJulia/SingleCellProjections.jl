@@ -3,6 +3,7 @@ function relative_std_ref(X; kwargs...)
 	s ./ maximum(s)
 end
 
+function run_sum_squared_tests()
 @testset "Sum Squared" begin
 	counts_job = Jobs.load_counts(h5_path; sample_names="a")
 	normalized_job = Jobs.normalize_matrix(Jobs.sctransform(counts_job))
@@ -53,7 +54,7 @@ end
 				(Jobs.relative_std, relative_std_ref, "relative_std"))
 			# project=:no (default): uses base data regardless of projection
 			base_job = f(normalized_job)
-			proj_job = Jobs.project(base_job), counts_job => counts_sub_job)
+			proj_job = Jobs.project(base_job, counts_job => counts_sub_job)
 			@test isequal(forward!(base_job), forward!(proj_job))
 
 			v = Jobs.value_column_data(base_job)
@@ -72,4 +73,5 @@ end
 			@test result_yes[!, col] ≈ vec(g(X_proj; mean=zeros(size(X_proj,1),1), dims=2))
 		end
 	end
+end
 end

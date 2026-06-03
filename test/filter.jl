@@ -1,3 +1,4 @@
+function run_filter_tests()
 @testset "Filtering" begin
 	P,N = (50,587)
 
@@ -167,4 +168,5 @@
 			end
 		end
 	end
+end
 end

@@ -93,6 +93,7 @@ TestJobs.dm_div(a, b) = create_spec(DataMatrixFunction(dm_div), a, b)
 # --- Tests ---
 # TODO: Test much more with forward_once
 
+function run_projectables_tests()
 # Is it worth merging this with the DataMatrixFunction test code below?
 # They are almost identical, but merging them will make the test code harder to read.
 @testset "Projectables" begin
@@ -453,4 +454,5 @@ end
 		@test fetch!(jp2d).matrix == (A_res./B_res) + C_res
 		@test isequal(forward!(jp2d), forward!(A /ᵈ B +ᵈ C))
 	end
+end
 end

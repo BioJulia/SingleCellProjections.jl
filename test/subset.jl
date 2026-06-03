@@ -1,3 +1,4 @@
+function run_subset_tests()
 @testset "Subsetting" begin
 	P,N = (50,587)
 
@@ -127,4 +128,5 @@
 		@test_throws "Column names didn't match" fetch!(Jobs.subset_obs(data_job, var_ids_subset))
 		@test_throws "Column names didn't match" fetch!(Jobs.subset_matrix(data_job, obs_ids_subset, var_ids_subset))
 	end
+end
 end

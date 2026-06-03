@@ -1,3 +1,4 @@
+function run_load_tests()
 @testset "load_counts" begin
 	P,N = (50,587)
 
@@ -46,4 +47,5 @@
 		p_obs_job = Jobs.project(obs_job, obs_job=>obs_sub_job)
 		@test isequal(forward!(p_obs_job), forward!(obs_sub_job))
 	end
+end
 end

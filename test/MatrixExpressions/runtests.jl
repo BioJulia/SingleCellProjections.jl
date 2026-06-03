@@ -59,6 +59,7 @@ end
 
 
 
+function run_matrix_expressions_tests()
 @testset "MatrixExpressions.jl" begin
     @testset "Basic" begin
         A = [1 6 2; 4 5 3; 9 2 4; 6 1 5]
@@ -187,4 +188,5 @@ end
             end
         end
     end
+end
 end

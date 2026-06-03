@@ -1,5 +1,4 @@
-
-
+function run_reduce_tests()
 @testset "Dimension Reductions" begin
 	counts_job = Jobs.load_counts(h5_path; sample_names="a")
 	counts = fetch!(counts_job)
@@ -47,4 +46,5 @@
 	end
 
 
+end
 end

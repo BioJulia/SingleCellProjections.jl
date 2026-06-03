@@ -7,12 +7,17 @@ using Statistics
 
 using .SingleCellProjectionsCore: BarnesHutTree, build!
 
-@testset "SingleCellProjectionsCore.jl" begin
-	# include("ranktests.jl")
-	include("datamatrix.jl")
-	# include("duplicate_var_ids.jl")
-	# include("ftest_tests.jl")
-	# include("ttest_tests.jl")
-	# include("mannwhitney_tests.jl")
-	include("test_barnes_hut.jl")
+include("datamatrix.jl")
+include("test_barnes_hut.jl")
+
+function run_core_tests()
+	@testset "SingleCellProjectionsCore.jl" begin
+		# include("ranktests.jl")
+		run_datamatrix_tests()
+		# include("duplicate_var_ids.jl")
+		# include("ftest_tests.jl")
+		# include("ttest_tests.jl")
+		# include("mannwhitney_tests.jl")
+		run_barnes_hut_tests()
+	end
 end

@@ -41,6 +41,7 @@ function validate_barnes_hut_tree(tree, points)
 	validate_barnes_hut_tree_rec(tree, points, 0, 1, tree.mins, tree.maxes, 1:length(points))
 end
 
+function run_barnes_hut_tests()
 @testset "barnes_hut" begin
 
 @testset "Basic $(d)d npoints=$N" for d=2:3, N in (4,20,80,10000)
@@ -64,4 +65,5 @@ end
 end
 
 
+end
 end

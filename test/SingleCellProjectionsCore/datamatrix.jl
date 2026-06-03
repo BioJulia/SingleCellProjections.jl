@@ -1,3 +1,4 @@
+function run_datamatrix_tests()
 @testset "DataMatrix" begin
 	@testset "Basic" begin
 		d = DataMatrix()
@@ -34,4 +35,5 @@
 		@test_throws DimensionMismatch DataMatrix([11 21; 12 22; 13 23], DataFrame(id=["A","B"]), DataFrame(id=["u","v"]))
 		@test_throws DimensionMismatch DataMatrix([11 21; 12 22; 13 23], DataFrame(id=["A","B","C"]), DataFrame(id=["u","v","w"]))
 	end
+end
 end
