@@ -102,365 +102,365 @@ TestJobs.dm_div(a, b) = create_spec(DataMatrixFunction(dm_div), a, b)
 # TODO: Test much more with forward_once
 
 function run_projectables_tests()
-# Is it worth merging this with the DataMatrixFunction test code below?
-# They are almost identical, but merging them will make the test code harder to read.
-@testset "Projectables" begin
-	P,N = 5,3
+	# Is it worth merging this with the DataMatrixFunction test code below?
+	# They are almost identical, but merging them will make the test code harder to read.
+	@testset "Projectables" begin
+		P,N = 5,3
 
-	A = TestJobs.my_rand(1:9, P, N; seed=1001)
-	A_res = rand(StableRNG(1001), 1:9, P, N)
-	Ap = TestJobs.my_rand(1:9, P, N; seed=1002)
-	Ap_res = rand(StableRNG(1002), 1:9, P, N)
+		A = TestJobs.my_rand(1:9, P, N; seed=1001)
+		A_res = rand(StableRNG(1001), 1:9, P, N)
+		Ap = TestJobs.my_rand(1:9, P, N; seed=1002)
+		Ap_res = rand(StableRNG(1002), 1:9, P, N)
 
-	B = TestJobs.my_rand(1:9, P, N; seed=1003)
-	B_res = rand(StableRNG(1003), 1:9, P, N)
-	Bp = TestJobs.my_rand(1:9, P, N; seed=1004)
-	Bp_res = rand(StableRNG(1004), 1:9, P, N)
+		B = TestJobs.my_rand(1:9, P, N; seed=1003)
+		B_res = rand(StableRNG(1003), 1:9, P, N)
+		Bp = TestJobs.my_rand(1:9, P, N; seed=1004)
+		Bp_res = rand(StableRNG(1004), 1:9, P, N)
 
-	C = TestJobs.my_rand(1:9, P, N; seed=1005)
-	C_res = rand(StableRNG(1005), 1:9, P, N)
-	Cp = TestJobs.my_rand(1:9, P, N; seed=1006)
-	Cp_res = rand(StableRNG(1006), 1:9, P, N)
+		C = TestJobs.my_rand(1:9, P, N; seed=1005)
+		C_res = rand(StableRNG(1005), 1:9, P, N)
+		Cp = TestJobs.my_rand(1:9, P, N; seed=1006)
+		Cp_res = rand(StableRNG(1006), 1:9, P, N)
 
-	@testset "Basics" begin
-		@test allunique([A_res, Ap_res, B_res, Bp_res])
-		@test fetch!(A) == A_res
-		@test fetch!(Ap) == Ap_res
-		@test fetch!(B) == B_res
-		@test fetch!(Bp) == Bp_res
-		@test fetch!(C) == C_res
-		@test fetch!(Cp) == Cp_res
-	end
+		@testset "Basics" begin
+			@test allunique([A_res, Ap_res, B_res, Bp_res])
+			@test fetch!(A) == A_res
+			@test fetch!(Ap) == Ap_res
+			@test fetch!(B) == B_res
+			@test fetch!(Bp) == Bp_res
+			@test fetch!(C) == C_res
+			@test fetch!(Cp) == Cp_res
+		end
 
-	@testset "Outer replacement" begin
-		jp1 = Jobs.project(A, A=>Ap)
-		@test fetch!(jp1) == Ap_res
-		@test isequal(forward!(jp1), forward!(Ap))
-	end
+		@testset "Outer replacement" begin
+			jp1 = Jobs.project(A, A=>Ap)
+			@test fetch!(jp1) == Ap_res
+			@test isequal(forward!(jp1), forward!(Ap))
+		end
 
-	@testset "my_add" begin
-		j1 = TestJobs.my_add(A, B)
-		@test fetch!(j1) == A_res+B_res
+		@testset "my_add" begin
+			j1 = TestJobs.my_add(A, B)
+			@test fetch!(j1) == A_res+B_res
 
-		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
-		@test fetch!(jp1) == Ap_res+Bp_res
+			jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+			@test fetch!(jp1) == Ap_res+Bp_res
 
-		@test isequal(forward!(jp1), forward!(Ap +ʲ Bp))
-		@test forward_once!(jp1).f == ProjectOnto(my_add_impl)
+			@test isequal(forward!(jp1), forward!(Ap +ʲ Bp))
+			@test forward_once!(jp1).f == ProjectOnto(my_add_impl)
 
-		replaced = Jobs.project(j1, j1=>Bp)
-		@test fetch!(replaced) == Bp_res
-	end
+			replaced = Jobs.project(j1, j1=>Bp)
+			@test fetch!(replaced) == Bp_res
+		end
 
-	@testset "my_mul" begin
-		j1 = TestJobs.my_mul(A, B)
-		@test fetch!(j1) == A_res.*B_res
+		@testset "my_mul" begin
+			j1 = TestJobs.my_mul(A, B)
+			@test fetch!(j1) == A_res.*B_res
 
-		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
-		@test fetch!(jp1) == Ap_res.*Bp_res
+			jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+			@test fetch!(jp1) == Ap_res.*Bp_res
 
-		@test isequal(forward!(jp1), forward!(Ap *ʲ Bp))
-		@test forward_once!(jp1).f == ProjectOnto(my_mul_impl)
+			@test isequal(forward!(jp1), forward!(Ap *ʲ Bp))
+			@test forward_once!(jp1).f == ProjectOnto(my_mul_impl)
 
-		replaced = Jobs.project(j1, j1=>Bp)
-		@test fetch!(replaced) == Bp_res
-	end
+			replaced = Jobs.project(j1, j1=>Bp)
+			@test fetch!(replaced) == Bp_res
+		end
 
-	 # NB: The first argument to my_sub is not affected by projections
-	@testset "my_sub" begin
-		j1 = TestJobs.my_sub(A, B)
-		@test fetch!(j1) == A_res-B_res
+		 # NB: The first argument to my_sub is not affected by projections
+		@testset "my_sub" begin
+			j1 = TestJobs.my_sub(A, B)
+			@test fetch!(j1) == A_res-B_res
 
-		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
-		@test fetch!(jp1) == A_res-Bp_res
-		@test isequal(forward!(jp1), forward!(A -ʲ Bp))
+			jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+			@test fetch!(jp1) == A_res-Bp_res
+			@test isequal(forward!(jp1), forward!(A -ʲ Bp))
 
-		jp1fwd = forward_once!(jp1)
-		@test jp1fwd.f == ProjectOnto(Projectable(my_sub))
+			jp1fwd = forward_once!(jp1)
+			@test jp1fwd.f == ProjectOnto(Projectable(my_sub))
 
-		replaced = Jobs.project(j1, j1=>Bp)
-		@test fetch!(replaced) == Bp_res
-	end
+			replaced = Jobs.project(j1, j1=>Bp)
+			@test fetch!(replaced) == Bp_res
+		end
 
-	 # NB: The first argument to my_div is not affected by projections
-	@testset "my_div" begin
-		j1 = TestJobs.my_div(A, B)
-		@test fetch!(j1) == A_res./B_res
+		 # NB: The first argument to my_div is not affected by projections
+		@testset "my_div" begin
+			j1 = TestJobs.my_div(A, B)
+			@test fetch!(j1) == A_res./B_res
 
-		jp1 = Jobs.project(j1, A=>Ap, B=>Bp) # thus, replacnig A=>Ap has now effect
-		@test fetch!(jp1) == A_res./Bp_res
-		@test isequal(forward!(jp1), forward!(A /ʲ Bp))
+			jp1 = Jobs.project(j1, A=>Ap, B=>Bp) # thus, replacnig A=>Ap has now effect
+			@test fetch!(jp1) == A_res./Bp_res
+			@test isequal(forward!(jp1), forward!(A /ʲ Bp))
 
-		@test forward_once!(jp1).f == ProjectOnto(Projectable(my_div))
+			@test forward_once!(jp1).f == ProjectOnto(Projectable(my_div))
 
-		replaced = Jobs.project(j1, j1=>Bp)
-		@test fetch!(replaced) == Bp_res
-	end
-
-
-	@testset "my_add_div" begin
-		j1 = TestJobs.my_add(A, B)
-		j2 = TestJobs.my_div(j1, C)
-
-		@test fetch!(j2) == (A_res+B_res) ./ C_res
-
-		jp2 = Jobs.project(j2, C=>Cp)
-		@test fetch!(jp2) == (A_res+B_res) ./ Cp_res
-		@test isequal(forward!(jp2), forward!((A +ʲ B)/ʲ Cp))
-		jp2fwd = forward_once!(jp2)
-		@test jp2fwd.f == ProjectOnto(Projectable(my_div))
-		jp2fwd2 = forward_once!(jp2fwd)
-		@test jp2fwd2.f == my_div_impl
-		# TODO: This will be change so that forwarding is done directly to ProjectOnto(my_add_impl)!
-		@test jp2fwd2.args[2].f == Preprocess(SingleCellProjections.project)
-
-		jp2b = Jobs.project(j2, B=>Bp) # replacing B=>Bp should have no effect
-		@test fetch!(jp2b) == (A_res+B_res) ./ C_res
-		@test isequal(forward!(jp2b), forward!((A +ʲ B)/ʲ C))
-
-		jp2c = Jobs.project(j2, j1=>Bp) # replacing j1=>Bp should have no effect
-		@test fetch!(jp2c) == (A_res+B_res) ./ C_res
-		@test isequal(forward!(jp2c), forward!((A +ʲ B)/ʲ C))
-	end
-
-	@testset "my_div_add" begin
-		j1 = TestJobs.my_div(A, B)
-		j2 = TestJobs.my_add(j1, C)
-
-		@test fetch!(j2) == (A_res./B_res) + C_res
-
-		jp2 = Jobs.project(j2, C=>Cp)
-		@test fetch!(jp2) == (A_res./B_res) + Cp_res
-		@test isequal(forward!(jp2), forward!(A /ʲ B +ʲ Cp))
-		jp2fwd = forward_once!(jp2)
-		@test jp2fwd.f == ProjectOnto(my_add_impl)
-		jp2fwd2 = forward_once!(jp2fwd)
-		@test jp2fwd2.f == my_add_impl
-		# TODO: This will be change so that forwarding is done directly to ProjectOnto(Projectable(my_div))!
-		@test jp2fwd2.args[2].f == Preprocess(SingleCellProjections.project)
-
-		jp2b = Jobs.project(j2, B=>Bp)
-		@test fetch!(jp2b) == (A_res./Bp_res) + C_res
-		@test isequal(forward!(jp2b), forward!(A /ʲ Bp +ʲ C))
-
-		jp2c = Jobs.project(j2, j1=>Bp)
-		@test fetch!(jp2c) == Bp_res + C_res
-		@test isequal(forward!(jp2c), forward!(Bp +ʲ C))
-
-		jp2d = Jobs.project(j2, A=>Ap) # replacing A=>Ap should have no effect
-		@test fetch!(jp2d) == (A_res./B_res) + C_res
-		@test isequal(forward!(jp2d), forward!(A /ʲ B +ʲ C))
-	end
-
-	# WIP
-	@testset "prefetched" begin
-		j1 = TestJobs.my_apply(Base.Fix2(<, prefetched(B)), A)
-		jp1 = Jobs.project(j1, A=>Ap)
-
-		f1 = forward!(j1)
-		fp1 = forward!(jp1)
-		@test f1.args[1].f == <
-		@test f1.args[1].x == B_res
-		@test f1.args[1] == fp1.args[1]
-		@test isequal(f1.args[2], forward!(A))
-		@test isequal(fp1.args[2], forward!(Ap))
-	end
-
-end
+			replaced = Jobs.project(j1, j1=>Bp)
+			@test fetch!(replaced) == Bp_res
+		end
 
 
-# Is it worth merging this with the Projectable test code above?
-# They are almost identical, but merging them will make the test code harder to read.
-@testset "DataMatrixFunction projections" begin
-	P,N = 5,3
+		@testset "my_add_div" begin
+			j1 = TestJobs.my_add(A, B)
+			j2 = TestJobs.my_div(j1, C)
 
-	A = TestJobs.dm_rand(1:9, P, N; seed=1001)
-	A_res = rand(StableRNG(1001), 1:9, P, N)
-	Ap = TestJobs.dm_rand(1:9, P, N; seed=1002)
-	Ap_res = rand(StableRNG(1002), 1:9, P, N)
+			@test fetch!(j2) == (A_res+B_res) ./ C_res
 
-	B = TestJobs.dm_rand(1:9, P, N; seed=1003)
-	B_res = rand(StableRNG(1003), 1:9, P, N)
-	Bp = TestJobs.dm_rand(1:9, P, N; seed=1004)
-	Bp_res = rand(StableRNG(1004), 1:9, P, N)
+			jp2 = Jobs.project(j2, C=>Cp)
+			@test fetch!(jp2) == (A_res+B_res) ./ Cp_res
+			@test isequal(forward!(jp2), forward!((A +ʲ B)/ʲ Cp))
+			jp2fwd = forward_once!(jp2)
+			@test jp2fwd.f == ProjectOnto(Projectable(my_div))
+			jp2fwd2 = forward_once!(jp2fwd)
+			@test jp2fwd2.f == my_div_impl
+			# TODO: This will be change so that forwarding is done directly to ProjectOnto(my_add_impl)!
+			@test jp2fwd2.args[2].f == Preprocess(SingleCellProjections.project)
 
-	C = TestJobs.dm_rand(1:9, P, N; seed=1005)
-	C_res = rand(StableRNG(1005), 1:9, P, N)
-	Cp = TestJobs.dm_rand(1:9, P, N; seed=1006)
-	Cp_res = rand(StableRNG(1006), 1:9, P, N)
+			jp2b = Jobs.project(j2, B=>Bp) # replacing B=>Bp should have no effect
+			@test fetch!(jp2b) == (A_res+B_res) ./ C_res
+			@test isequal(forward!(jp2b), forward!((A +ʲ B)/ʲ C))
 
-	var_res = DataFrame("var_id"=>string.("var_", 1:P))
-	obs_res = DataFrame("obs_id"=>string.("obs_", 1:N))
+			jp2c = Jobs.project(j2, j1=>Bp) # replacing j1=>Bp should have no effect
+			@test fetch!(jp2c) == (A_res+B_res) ./ C_res
+			@test isequal(forward!(jp2c), forward!((A +ʲ B)/ʲ C))
+		end
 
-	@testset "Basics" begin
-		@test allunique([A_res, Ap_res, B_res, Bp_res])
-		@test fetch!(A).matrix == A_res
-		@test fetch!(Ap).matrix == Ap_res
-		@test fetch!(B).matrix == B_res
-		@test fetch!(Bp).matrix == Bp_res
-		@test fetch!(C).matrix == C_res
-		@test fetch!(Cp).matrix == Cp_res
+		@testset "my_div_add" begin
+			j1 = TestJobs.my_div(A, B)
+			j2 = TestJobs.my_add(j1, C)
 
-		@test fetch!(A).var == var_res
-		@test fetch!(A).obs == obs_res
-	end
+			@test fetch!(j2) == (A_res./B_res) + C_res
 
-	@testset "Outer replacement" begin
-		jp1 = Jobs.project(A, A=>Ap)
-		@test fetch!(jp1).matrix == Ap_res
-		@test isequal(forward!(jp1), forward!(Ap))
-	end
+			jp2 = Jobs.project(j2, C=>Cp)
+			@test fetch!(jp2) == (A_res./B_res) + Cp_res
+			@test isequal(forward!(jp2), forward!(A /ʲ B +ʲ Cp))
+			jp2fwd = forward_once!(jp2)
+			@test jp2fwd.f == ProjectOnto(my_add_impl)
+			jp2fwd2 = forward_once!(jp2fwd)
+			@test jp2fwd2.f == my_add_impl
+			# TODO: This will be change so that forwarding is done directly to ProjectOnto(Projectable(my_div))!
+			@test jp2fwd2.args[2].f == Preprocess(SingleCellProjections.project)
 
-	@testset "my_add" begin
-		j1 = TestJobs.dm_add(A, B)
-		@test fetch!(j1).matrix == A_res+B_res
+			jp2b = Jobs.project(j2, B=>Bp)
+			@test fetch!(jp2b) == (A_res./Bp_res) + C_res
+			@test isequal(forward!(jp2b), forward!(A /ʲ Bp +ʲ C))
 
-		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
-		@test fetch!(jp1).matrix == Ap_res+Bp_res
-		@test isequal(forward!(jp1), forward!(Ap +ᵈ Bp))
+			jp2c = Jobs.project(j2, j1=>Bp)
+			@test fetch!(jp2c) == Bp_res + C_res
+			@test isequal(forward!(jp2c), forward!(Bp +ʲ C))
 
-		@test forward_once!(jp1).f == ProjectOnto(DataMatrixFunction(dm_add))
+			jp2d = Jobs.project(j2, A=>Ap) # replacing A=>Ap should have no effect
+			@test fetch!(jp2d) == (A_res./B_res) + C_res
+			@test isequal(forward!(jp2d), forward!(A /ʲ B +ʲ C))
+		end
 
-		replaced = Jobs.project(j1, j1=>Bp)
-		@test fetch!(replaced).matrix == Bp_res
-	end
+		# WIP
+		@testset "prefetched" begin
+			j1 = TestJobs.my_apply(Base.Fix2(<, prefetched(B)), A)
+			jp1 = Jobs.project(j1, A=>Ap)
 
-	@testset "dm_mul" begin
-		j1 = TestJobs.dm_mul(A, B)
-		@test fetch!(j1).matrix == A_res.*B_res
+			f1 = forward!(j1)
+			fp1 = forward!(jp1)
+			@test f1.args[1].f == <
+			@test f1.args[1].x == B_res
+			@test f1.args[1] == fp1.args[1]
+			@test isequal(f1.args[2], forward!(A))
+			@test isequal(fp1.args[2], forward!(Ap))
+		end
 
-		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
-		@test fetch!(jp1).matrix == Ap_res.*Bp_res
-		@test isequal(forward!(jp1), forward!(Ap *ᵈ Bp))
-
-		@test forward_once!(jp1).f == ProjectOnto(DataMatrixFunction(dm_mul))
-
-		replaced = Jobs.project(j1, j1=>Bp)
-		@test fetch!(replaced).matrix == Bp_res
-	end
-
-	# NB: The first argument to dm_sub is not affected by projections
-	@testset "dm_sub" begin
-		j1 = TestJobs.dm_sub(A, B)
-		@test fetch!(j1).matrix == A_res-B_res
-
-		jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
-		@test fetch!(jp1).matrix == A_res-Bp_res
-		@test isequal(forward!(jp1), forward!(A -ᵈ Bp))
-
-		@test forward_once!(jp1).f == ProjectOnto(DataMatrixFunction(dm_sub))
-
-		replaced = Jobs.project(j1, j1=>Bp)
-		@test fetch!(replaced).matrix == Bp_res
-	end
-
-	 # NB: The first argument to dm_div is not affected by projections
-	@testset "dm_div" begin
-		j1 = TestJobs.dm_div(A, B)
-		@test fetch!(j1).matrix == A_res./B_res
-
-		jp1 = Jobs.project(j1, A=>Ap, B=>Bp) # thus, replacnig A=>Ap has now effect
-		@test fetch!(jp1).matrix == A_res./Bp_res
-		@test isequal(forward!(jp1), forward!(A /ᵈ Bp))
-
-		@test forward_once!(jp1).f == ProjectOnto(DataMatrixFunction(dm_div))
-
-		replaced = Jobs.project(j1, j1=>Bp)
-		@test fetch!(replaced).matrix == Bp_res
 	end
 
 
-	@testset "dm_add_div" begin
-		j1 = TestJobs.dm_add(A, B)
-		j2 = TestJobs.dm_div(j1, C)
+	# Is it worth merging this with the Projectable test code above?
+	# They are almost identical, but merging them will make the test code harder to read.
+	@testset "DataMatrixFunction projections" begin
+		P,N = 5,3
 
-		@test fetch!(j2).matrix == (A_res+B_res) ./ C_res
+		A = TestJobs.dm_rand(1:9, P, N; seed=1001)
+		A_res = rand(StableRNG(1001), 1:9, P, N)
+		Ap = TestJobs.dm_rand(1:9, P, N; seed=1002)
+		Ap_res = rand(StableRNG(1002), 1:9, P, N)
 
-		jp2 = Jobs.project(j2, C=>Cp)
-		@test fetch!(jp2).matrix == (A_res+B_res) ./ Cp_res
-		@test isequal(forward!(jp2), forward!((A +ᵈ B)/ᵈ Cp))
-		jp2fwd = forward_once!(jp2)
-		@test jp2fwd.f == ProjectOnto(DataMatrixFunction(dm_div))
+		B = TestJobs.dm_rand(1:9, P, N; seed=1003)
+		B_res = rand(StableRNG(1003), 1:9, P, N)
+		Bp = TestJobs.dm_rand(1:9, P, N; seed=1004)
+		Bp_res = rand(StableRNG(1004), 1:9, P, N)
 
-		# NB: Here projectables and DataMatrixFunctions differ a bit
-		# NB: The forwarding below will get simpler since we are planning to get rid of the `project` steps!
-		jp2fwd2 = forward_once!(jp2fwd)
-		@test jp2fwd2.f == SCPCore.DataMatrix
-		jp2fwd3 = jp2fwd2.args[1] # the matrix arg
-		@test jp2fwd3.f == Preprocess(SingleCellProjections.project)
-		jp2fwd4 = forward_once!(jp2fwd3)
-		@test jp2fwd4.f == ProjectOnto(MatFunction(dm_div))
+		C = TestJobs.dm_rand(1:9, P, N; seed=1005)
+		C_res = rand(StableRNG(1005), 1:9, P, N)
+		Cp = TestJobs.dm_rand(1:9, P, N; seed=1006)
+		Cp_res = rand(StableRNG(1006), 1:9, P, N)
 
-		jp2fwd5 = forward_once!(jp2fwd4)
-		@test jp2fwd5.f == Preprocess(SingleCellProjections.project)
-		jp2fwd6 = forward_once!(jp2fwd5)
-		@test jp2fwd6.f == ProjectOnto(Projectable(my_div))
+		var_res = DataFrame("var_id"=>string.("var_", 1:P))
+		obs_res = DataFrame("obs_id"=>string.("obs_", 1:N))
 
-		jp2fwd7 = forward_once!(jp2fwd6)
-		@test jp2fwd7.f == my_div_impl
-		jp2fwd8 = jp2fwd7.args[1] # NB: the first arg to my_div should not be projected
-		@test jp2fwd8.f == MatFunction(dm_add) # i.e. not projection here
+		@testset "Basics" begin
+			@test allunique([A_res, Ap_res, B_res, Bp_res])
+			@test fetch!(A).matrix == A_res
+			@test fetch!(Ap).matrix == Ap_res
+			@test fetch!(B).matrix == B_res
+			@test fetch!(Bp).matrix == Bp_res
+			@test fetch!(C).matrix == C_res
+			@test fetch!(Cp).matrix == Cp_res
+
+			@test fetch!(A).var == var_res
+			@test fetch!(A).obs == obs_res
+		end
+
+		@testset "Outer replacement" begin
+			jp1 = Jobs.project(A, A=>Ap)
+			@test fetch!(jp1).matrix == Ap_res
+			@test isequal(forward!(jp1), forward!(Ap))
+		end
+
+		@testset "my_add" begin
+			j1 = TestJobs.dm_add(A, B)
+			@test fetch!(j1).matrix == A_res+B_res
+
+			jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+			@test fetch!(jp1).matrix == Ap_res+Bp_res
+			@test isequal(forward!(jp1), forward!(Ap +ᵈ Bp))
+
+			@test forward_once!(jp1).f == ProjectOnto(DataMatrixFunction(dm_add))
+
+			replaced = Jobs.project(j1, j1=>Bp)
+			@test fetch!(replaced).matrix == Bp_res
+		end
+
+		@testset "dm_mul" begin
+			j1 = TestJobs.dm_mul(A, B)
+			@test fetch!(j1).matrix == A_res.*B_res
+
+			jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+			@test fetch!(jp1).matrix == Ap_res.*Bp_res
+			@test isequal(forward!(jp1), forward!(Ap *ᵈ Bp))
+
+			@test forward_once!(jp1).f == ProjectOnto(DataMatrixFunction(dm_mul))
+
+			replaced = Jobs.project(j1, j1=>Bp)
+			@test fetch!(replaced).matrix == Bp_res
+		end
+
+		# NB: The first argument to dm_sub is not affected by projections
+		@testset "dm_sub" begin
+			j1 = TestJobs.dm_sub(A, B)
+			@test fetch!(j1).matrix == A_res-B_res
+
+			jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+			@test fetch!(jp1).matrix == A_res-Bp_res
+			@test isequal(forward!(jp1), forward!(A -ᵈ Bp))
+
+			@test forward_once!(jp1).f == ProjectOnto(DataMatrixFunction(dm_sub))
+
+			replaced = Jobs.project(j1, j1=>Bp)
+			@test fetch!(replaced).matrix == Bp_res
+		end
+
+		 # NB: The first argument to dm_div is not affected by projections
+		@testset "dm_div" begin
+			j1 = TestJobs.dm_div(A, B)
+			@test fetch!(j1).matrix == A_res./B_res
+
+			jp1 = Jobs.project(j1, A=>Ap, B=>Bp) # thus, replacnig A=>Ap has now effect
+			@test fetch!(jp1).matrix == A_res./Bp_res
+			@test isequal(forward!(jp1), forward!(A /ᵈ Bp))
+
+			@test forward_once!(jp1).f == ProjectOnto(DataMatrixFunction(dm_div))
+
+			replaced = Jobs.project(j1, j1=>Bp)
+			@test fetch!(replaced).matrix == Bp_res
+		end
 
 
-		jp2b = Jobs.project(j2, B=>Bp) # replacing B=>Bp should have no effect
-		@test fetch!(jp2b).matrix == (A_res+B_res) ./ C_res
-		@test isequal(forward!(jp2b), forward!((A +ᵈ B)/ᵈ C))
+		@testset "dm_add_div" begin
+			j1 = TestJobs.dm_add(A, B)
+			j2 = TestJobs.dm_div(j1, C)
 
-		jp2c = Jobs.project(j2, j1=>Bp) # replacing j1=>Bp should have no effect
-		@test fetch!(jp2c).matrix == (A_res+B_res) ./ C_res
-		@test isequal(forward!(jp2c), forward!((A +ᵈ B)/ᵈ C))
+			@test fetch!(j2).matrix == (A_res+B_res) ./ C_res
+
+			jp2 = Jobs.project(j2, C=>Cp)
+			@test fetch!(jp2).matrix == (A_res+B_res) ./ Cp_res
+			@test isequal(forward!(jp2), forward!((A +ᵈ B)/ᵈ Cp))
+			jp2fwd = forward_once!(jp2)
+			@test jp2fwd.f == ProjectOnto(DataMatrixFunction(dm_div))
+
+			# NB: Here projectables and DataMatrixFunctions differ a bit
+			# NB: The forwarding below will get simpler since we are planning to get rid of the `project` steps!
+			jp2fwd2 = forward_once!(jp2fwd)
+			@test jp2fwd2.f == SCPCore.DataMatrix
+			jp2fwd3 = jp2fwd2.args[1] # the matrix arg
+			@test jp2fwd3.f == Preprocess(SingleCellProjections.project)
+			jp2fwd4 = forward_once!(jp2fwd3)
+			@test jp2fwd4.f == ProjectOnto(MatFunction(dm_div))
+
+			jp2fwd5 = forward_once!(jp2fwd4)
+			@test jp2fwd5.f == Preprocess(SingleCellProjections.project)
+			jp2fwd6 = forward_once!(jp2fwd5)
+			@test jp2fwd6.f == ProjectOnto(Projectable(my_div))
+
+			jp2fwd7 = forward_once!(jp2fwd6)
+			@test jp2fwd7.f == my_div_impl
+			jp2fwd8 = jp2fwd7.args[1] # NB: the first arg to my_div should not be projected
+			@test jp2fwd8.f == MatFunction(dm_add) # i.e. not projection here
+
+
+			jp2b = Jobs.project(j2, B=>Bp) # replacing B=>Bp should have no effect
+			@test fetch!(jp2b).matrix == (A_res+B_res) ./ C_res
+			@test isequal(forward!(jp2b), forward!((A +ᵈ B)/ᵈ C))
+
+			jp2c = Jobs.project(j2, j1=>Bp) # replacing j1=>Bp should have no effect
+			@test fetch!(jp2c).matrix == (A_res+B_res) ./ C_res
+			@test isequal(forward!(jp2c), forward!((A +ᵈ B)/ᵈ C))
+		end
+
+		@testset "dm_div_add" begin
+			j1 = TestJobs.dm_div(A, B)
+			j2 = TestJobs.dm_add(j1, C)
+
+			@test fetch!(j2).matrix == (A_res./B_res) + C_res
+
+			jp2 = Jobs.project(j2, C=>Cp)
+			@test fetch!(jp2).matrix == (A_res./B_res) + Cp_res
+			@test isequal(forward!(jp2), forward!(A /ᵈ B +ᵈ Cp))
+			jp2fwd = forward_once!(jp2)
+			@test jp2fwd.f == ProjectOnto(DataMatrixFunction(dm_add))
+
+			# NB: Here projectables and DataMatrixFunctions differ a bit
+			# NB: The forwarding below will get simpler since we are planning to get rid of the `project` steps!
+			jp2fwd2 = forward_once!(jp2fwd)
+			@test jp2fwd2.f == SCPCore.DataMatrix
+			jp2fwd3 = jp2fwd2.args[1] # the matrix arg
+			@test jp2fwd3.f == Preprocess(SingleCellProjections.project)
+			jp2fwd4 = forward_once!(jp2fwd3)
+			@test jp2fwd4.f == ProjectOnto(MatFunction(dm_add))
+
+			jp2fwd5 = forward_once!(jp2fwd4)
+			@test jp2fwd5.f == Preprocess(SingleCellProjections.project)
+			jp2fwd6 = forward_once!(jp2fwd5)
+			@test jp2fwd6.f == ProjectOnto(my_add_impl)
+
+			jp2fwd7 = forward_once!(jp2fwd6)
+			@test jp2fwd7.f == my_add_impl
+			jp2fwd8 = jp2fwd7.args[1]
+			@test jp2fwd8.f == Preprocess(SingleCellProjections.project)
+
+			jp2fwd9 = forward_once!(jp2fwd8)
+			@test jp2fwd9.f == ProjectOnto(MatFunction(dm_div))
+			jp2fwd10 = forward_once!(jp2fwd9)
+			@test jp2fwd10.f == Preprocess(SingleCellProjections.project)
+			jp2fwd11 = forward_once!(jp2fwd10)
+			@test jp2fwd11.f == ProjectOnto(Projectable(my_div))
+
+
+			jp2b = Jobs.project(j2, B=>Bp)
+			@test fetch!(jp2b).matrix == (A_res./Bp_res) + C_res
+			@test isequal(forward!(jp2b), forward!(A /ᵈ Bp +ᵈ C))
+
+			jp2c = Jobs.project(j2, j1=>Bp)
+			@test fetch!(jp2c).matrix == Bp_res + C_res
+			@test isequal(forward!(jp2c), forward!(Bp +ᵈ C))
+
+			jp2d = Jobs.project(j2, A=>Ap) # replacing A=>Ap should have no effect
+			@test fetch!(jp2d).matrix == (A_res./B_res) + C_res
+			@test isequal(forward!(jp2d), forward!(A /ᵈ B +ᵈ C))
+		end
 	end
-
-	@testset "dm_div_add" begin
-		j1 = TestJobs.dm_div(A, B)
-		j2 = TestJobs.dm_add(j1, C)
-
-		@test fetch!(j2).matrix == (A_res./B_res) + C_res
-
-		jp2 = Jobs.project(j2, C=>Cp)
-		@test fetch!(jp2).matrix == (A_res./B_res) + Cp_res
-		@test isequal(forward!(jp2), forward!(A /ᵈ B +ᵈ Cp))
-		jp2fwd = forward_once!(jp2)
-		@test jp2fwd.f == ProjectOnto(DataMatrixFunction(dm_add))
-
-		# NB: Here projectables and DataMatrixFunctions differ a bit
-		# NB: The forwarding below will get simpler since we are planning to get rid of the `project` steps!
-		jp2fwd2 = forward_once!(jp2fwd)
-		@test jp2fwd2.f == SCPCore.DataMatrix
-		jp2fwd3 = jp2fwd2.args[1] # the matrix arg
-		@test jp2fwd3.f == Preprocess(SingleCellProjections.project)
-		jp2fwd4 = forward_once!(jp2fwd3)
-		@test jp2fwd4.f == ProjectOnto(MatFunction(dm_add))
-
-		jp2fwd5 = forward_once!(jp2fwd4)
-		@test jp2fwd5.f == Preprocess(SingleCellProjections.project)
-		jp2fwd6 = forward_once!(jp2fwd5)
-		@test jp2fwd6.f == ProjectOnto(my_add_impl)
-
-		jp2fwd7 = forward_once!(jp2fwd6)
-		@test jp2fwd7.f == my_add_impl
-		jp2fwd8 = jp2fwd7.args[1]
-		@test jp2fwd8.f == Preprocess(SingleCellProjections.project)
-
-		jp2fwd9 = forward_once!(jp2fwd8)
-		@test jp2fwd9.f == ProjectOnto(MatFunction(dm_div))
-		jp2fwd10 = forward_once!(jp2fwd9)
-		@test jp2fwd10.f == Preprocess(SingleCellProjections.project)
-		jp2fwd11 = forward_once!(jp2fwd10)
-		@test jp2fwd11.f == ProjectOnto(Projectable(my_div))
-
-
-		jp2b = Jobs.project(j2, B=>Bp)
-		@test fetch!(jp2b).matrix == (A_res./Bp_res) + C_res
-		@test isequal(forward!(jp2b), forward!(A /ᵈ Bp +ᵈ C))
-
-		jp2c = Jobs.project(j2, j1=>Bp)
-		@test fetch!(jp2c).matrix == Bp_res + C_res
-		@test isequal(forward!(jp2c), forward!(Bp +ᵈ C))
-
-		jp2d = Jobs.project(j2, A=>Ap) # replacing A=>Ap should have no effect
-		@test fetch!(jp2d).matrix == (A_res./B_res) + C_res
-		@test isequal(forward!(jp2d), forward!(A /ᵈ B +ᵈ C))
-	end
-end
 end

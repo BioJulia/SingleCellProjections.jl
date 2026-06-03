@@ -42,28 +42,25 @@ function validate_barnes_hut_tree(tree, points)
 end
 
 function run_barnes_hut_tests()
-@testset "barnes_hut" begin
+	@testset "barnes_hut" begin
+		@testset "Basic $(d)d npoints=$N" for d=2:3, N in (4,20,80,10000)
+			try
+				rng = StableRNG(2014)
+				points = randn(rng, SVector{d,Float64}, N)
 
-@testset "Basic $(d)d npoints=$N" for d=2:3, N in (4,20,80,10000)
-	try
-		rng = StableRNG(2014)
-		points = randn(rng, SVector{d,Float64}, N)
-
-		tree = BarnesHutTree(d)
-		build!(tree, points; leafSize=2)
-		validate_barnes_hut_tree(tree, points)
-		@test true
-	catch err
-		# A little hack to stop at the first error in the @testset
-		if err isa AssertionError
-			showerror(stdout, err, catch_backtrace())
-			@test false
-		else
-			rethrow(err)
+				tree = BarnesHutTree(d)
+				build!(tree, points; leafSize=2)
+				validate_barnes_hut_tree(tree, points)
+				@test true
+			catch err
+				# A little hack to stop at the first error in the @testset
+				if err isa AssertionError
+					showerror(stdout, err, catch_backtrace())
+					@test false
+				else
+					rethrow(err)
+				end
+			end
 		end
 	end
-end
-
-
-end
 end
