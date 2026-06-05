@@ -3,6 +3,9 @@ uuid = "03d38035-ed2f-4a36-82eb-797f1727ab2e"
 version = "0.4.4"
 authors = ["Rasmus Henningsson <rasmus.henningsson@med.lu.se>"]
 
+[workspace]
+projects = ["test"]
+
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 ChunkSplitters = "ae650224-84b6-46f8-82ea-d812ca08434e"

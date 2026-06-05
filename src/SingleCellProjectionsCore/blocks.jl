@@ -127,6 +127,7 @@ function ind_to_blocked_ind(ind::AbstractVector{Bool}, ranges::AbstractVector{<:
 		new_ranges[i] = s:next-1
 		s = next
 	end
+	new_ind = simplify_ind.(new_ind, length.(ranges))
 	new_ind, new_ranges
 end
 
@@ -138,7 +139,7 @@ function ind_to_blocked_ind(ind::AbstractVector{<:Integer}, ranges::AbstractVect
 
 	# new_ind = [ind[new_ranges[i]] .- first(ranges[i]) .+ 1 for i in 1:length(ranges)]
 	new_ind = [ind[nr] .- first(r) .+ 1 for (nr,r) in zip(new_ranges, ranges)]
-
+	new_ind = simplify_ind.(new_ind, length.(ranges))
 	new_ind, new_ranges
 end
 

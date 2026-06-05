@@ -1,7 +1,9 @@
 using Test
 using SingleCellProjections
+using SingleCellProjections: create_datamatrix_getindex_spec
 using ReproducibleJobs: fetch!, forward!
 using DataFrames
+using Random: randperm
 
 function run_filter_tests()
 	@testset "Filtering" begin
@@ -175,18 +177,72 @@ function run_filter_tests()
 		end
 
 		@testset "getindex collapsing" begin
+			f1 = "value"=>>(1.5)
+			f2 = "group"=>==("A")
+
 			# Filtering in different orders should forward! to the same spec and produce the same result
-			j_gv = Jobs.filter_obs("value"=>>(1.5), Jobs.filter_obs("group"=>==("A"), counts_job))
-			j_vg = Jobs.filter_obs("group"=>==("A"), Jobs.filter_obs("value"=>>(1.5), counts_job))
+			j21 = Jobs.filter_obs(f1, Jobs.filter_obs(f2, counts_job))
+			j12 = Jobs.filter_obs(f2, Jobs.filter_obs(f1, counts_job))
 
-			@test isequal(forward!(Jobs.get_matrix(j_gv)), forward!(Jobs.get_matrix(j_vg))) # collapsing of matrix indexing
-			@test isequal(forward!(Jobs.get_var(j_gv)), forward!(Jobs.get_var(j_vg))) # easier, vars are not filtered
-			@test isequal(forward!(Jobs.get_obs(j_gv)), forward!(Jobs.get_obs(j_vg))) # collapsing of table indexing
+			@test isequal(forward!(Jobs.get_matrix(j21)), forward!(Jobs.get_matrix(j12))) # collapsing of matrix indexing
+			@test isequal(forward!(Jobs.get_var(j21)), forward!(Jobs.get_var(j12))) # easier, vars are not filtered
+			@test isequal(forward!(Jobs.get_obs(j21)), forward!(Jobs.get_obs(j12))) # collapsing of table indexing
 
-			let r_gv = fetch!(j_gv), r_vg = fetch!(j_vg)
-				@test isequal(r_gv.obs, r_vg.obs)
-				@test unblockify(r_gv.matrix) == unblockify(r_vg.matrix)
+			let r21 = fetch!(j21), r12 = fetch!(j12)
+				# @show size(r21)
+				@test isequal(r21.obs, r12.obs)
+				@test unblockify(r21.matrix) == unblockify(r12.matrix)
 			end
+
+			f3 = "value"=><(1.8)
+			j321 = Jobs.filter_obs(f1, Jobs.filter_obs(f2, Jobs.filter_obs(f3, counts_job)))
+			j123 = Jobs.filter_obs(f3, Jobs.filter_obs(f2, Jobs.filter_obs(f1, counts_job)))
+
+			@test isequal(forward!(Jobs.get_matrix(j321)), forward!(Jobs.get_matrix(j123))) # collapsing of matrix indexing
+			@test isequal(forward!(Jobs.get_var(j321)), forward!(Jobs.get_var(j123))) # easier, vars are not filtered
+			@test isequal(forward!(Jobs.get_obs(j321)), forward!(Jobs.get_obs(j123))) # collapsing of table indexing
+
+			# @show forward!(Jobs.get_obs(j321))
+			# @show forward!(Jobs.get_obs(j123))
+
+			let r321 = fetch!(j321), r123 = fetch!(j123)
+				# @show size(r321)
+				@test isequal(r321.obs, r123.obs)
+				@test unblockify(r321.matrix) == unblockify(r123.matrix)
+			end
+		end
+
+		@testset "getindex Colon() collapsing n=$n" for n in 1:3
+			job = counts_job
+			for i in 1:n
+				job = Jobs.filter_obs(:, job)
+			end
+			@test isequal(forward!(Jobs.get_matrix(job)), forward!(Jobs.get_matrix(counts_job)))
+			@test isequal(forward!(Jobs.get_var(job)), forward!(Jobs.get_var(counts_job)))
+			@test isequal(forward!(Jobs.get_obs(job)), forward!(Jobs.get_obs(counts_job)))
+		end
+
+		@testset "getindex no-op collapsing n=$n" for n in 1:3
+			job = counts_job
+			for i in 1:n
+				job = Jobs.filter_obs(1:N, job)
+			end
+			@test isequal(forward!(Jobs.get_matrix(job)), forward!(Jobs.get_matrix(counts_job)))
+			@test isequal(forward!(Jobs.get_var(job)), forward!(Jobs.get_var(counts_job)))
+			# @test isequal(forward!(Jobs.get_obs(job)), forward!(Jobs.get_obs(counts_job))) # Do we want this to hold? Then we need to use simplify_ind for get_index/table_getindex.
+		end
+
+		@testset "getindex perm/invperm collapsing" begin
+			rng = StableRNG(8080)
+			perm = randperm(N)
+			iperm = invperm(perm)
+
+			jp = create_datamatrix_getindex_spec(counts_job; obs_ind=perm)
+			job = create_datamatrix_getindex_spec(jp; obs_ind=iperm)
+			@test fetch!(job) == fetch!(counts_job)
+
+			# The matrix and obs cannot easily be collapsed. And it's an obscure case in practice. So we accept they do not collapse.
+			@test isequal(forward!(Jobs.get_var(job)), forward!(Jobs.get_var(counts_job)))
 		end
 	end
 end

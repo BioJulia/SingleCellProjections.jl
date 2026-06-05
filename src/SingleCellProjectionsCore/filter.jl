@@ -14,13 +14,14 @@ end
 
 _find_matching_ind(f, df::DataFrame) = first(parentindices(filter(f, df; view=true)))
 _find_matching_ind(f, v::AbstractVector) = findall(f, v)
-# find_matching_ind(::Colon, df::DataFrame) = Colon()
 
+# Returns Colon() when all rows are selected (responsibility of index-producing functions).
 function find_matching_ind(f, x)
 	ind = _find_matching_ind(f, x)
-	ind == 1:size(x,1) ? Colon() : ind
+	simplify_ind(ind, size(x,1))
 end
 find_matching_ind(::Colon, ::Any) = Colon()
+find_matching_ind(f::AbstractRange, x) = simplify_ind(f, size(x,1))
 
 
 

@@ -4,6 +4,8 @@ index_isnoop(I::AbstractVector{<:Bool}, n::Int) = length(I)==n && all(I)
 index_isnoop(I::AbstractVector{<:Integer}, n::Int) = I == 1:n
 index_isnoop(::Any, ::Int) = false
 
+simplify_ind(ind::Union{Colon,AbstractVector}, n::Integer) = index_isnoop(ind, n) ? Colon() : ind
+
 
 _subsetmatrix(A::MatrixSum, I::Index, J::Index) =
 	MatrixSum(_subsetmatrix.(A.terms, Ref(I), Ref(J)))

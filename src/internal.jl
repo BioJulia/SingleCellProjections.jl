@@ -177,11 +177,7 @@ function indexin_impl(a::AbstractVector, b::AbstractVector; not_found)
 	end
 
 	ind = convert(Vector{Int}, ind)
-	if ind == 1:length(b)
-		return Colon() # simplify common case
-	else
-		return ind
-	end
+	SCPCore.simplify_ind(ind, length(b))
 end
 
 function indexin_impl(a::DataFrame, b::DataFrame; not_found)
@@ -221,8 +217,6 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 	# TODO: If `f` is a pair, we can subset the columns of df to avoid involving them in the call
 	if f === Colon()
 		matching_ind = Colon()
-	elseif f isa AbstractRange
-		matching_ind = f
 	elseif f isa Pair
 		k = first(f)
 
@@ -306,11 +300,6 @@ find_single_ind_spec(f, df; project_id) =
 
 
 
-# Do we need these, or upstream steps always return Colon() when they can?
-index_isnoop_spec(ind, n) =
-	create_spec(SCPCore.index_isnoop, ind, n; __version=v"0.0.1")
-simplify_ind_spec(ind, n) =
-	ind === Colon() ? Colon() : ifelse_spec(index_isnoop_spec(ind, n), Colon(), ind) # early out if is already known to be Colon
 
 
 
@@ -322,21 +311,14 @@ simplify_ind_spec(ind, n) =
 matrix_getindex_impl(matrix; kwargs...) =
 	create_spec(SCPCore.matrix_getindex, matrix; kwargs..., __version=v"0.1.0")
 
-# # TODO: split this by hblock
-# function matrix_getindex_pre(::Preprocessing, matrix; var_ind, obs_ind)
-# 	if var_ind == Colon() && obs_ind == Colon()
-# 		matrix
-# 	else
-# 		matrix_getindex_impl(matrix; var_ind, obs_ind)
-# 	end
-# end
 
-compose_ind(inner::Union{Colon, AbstractVector{<:Integer}}, outer::Union{Colon, AbstractVector{<:Integer}}) =
-	inner === Colon() ? outer :
-	outer === Colon() ? inner :
+function compose_ind(inner::Union{Colon, AbstractVector{<:Integer}}, outer::Union{Colon, AbstractVector{<:Integer}})
+	inner === Colon() && return outer
+	outer === Colon() && return inner
 	inner[outer]
+end
 
-function matrix_getindex_pre(::Preprocessing, matrix; var_ind, obs_ind)
+function matrix_getindex_pre(::Preprocessing{false}, matrix; var_ind, obs_ind)
 	if var_ind === Colon() && obs_ind === Colon()
 		matrix
 	elseif is_hblock(matrix)
@@ -350,18 +332,7 @@ function matrix_getindex_pre(::Preprocessing, matrix; var_ind, obs_ind)
 			ranges = _get_kwarg(matrix, :ranges)
 			@assert length(blocks) == length(ranges)
 
-			# first_ind = searchsortedfirst.(Ref(obs_ind), first.(ranges))
-			# last_ind = vcat(@view(first_ind[2:end]).-1, length(obs_ind))
-
-			# new_ranges = range.(first_ind, last_ind)
-			# new_blocks = map(1:length(blocks)) do i
-			# 	new_obs_ind = obs_ind[new_ranges[i]] .- first(ranges[i]) .+ 1
-			# 	new_obs_ind = simplify_ind_spec(new_obs_ind, length(ranges[i])) # we need to simplify again, because we might get Colon() for some blocks but not others
-			# 	matrix_getindex_pre_spec(blocks[i]; var_ind, obs_ind=new_obs_ind)
-			# end
-
 			new_obs_ind, new_ranges = SCPCore.ind_to_blocked_ind(obs_ind, ranges)
-			new_obs_ind = simplify_ind_spec.(new_obs_ind, length.(ranges))
 			new_blocks = [matrix_getindex_pre_spec(b; var_ind, obs_ind=I) for (b,I) in zip(blocks, new_obs_ind)]
 			hblock_spec(new_blocks, new_ranges)
 		end
@@ -370,9 +341,11 @@ function matrix_getindex_pre(::Preprocessing, matrix; var_ind, obs_ind)
 		inner_matrix  = matrix.args[1]
 		inner_var_ind = _get_kwarg(matrix, :var_ind)
 		inner_obs_ind = _get_kwarg(matrix, :obs_ind)
-		matrix_getindex_pre_spec(inner_matrix;
-			var_ind = compose_ind(inner_var_ind, var_ind),
-			obs_ind = compose_ind(inner_obs_ind, obs_ind))
+
+		composed_var = compose_ind(inner_var_ind, var_ind)
+		composed_obs = compose_ind(inner_obs_ind, obs_ind)
+
+		matrix_getindex_impl(inner_matrix; var_ind=composed_var, obs_ind=composed_obs)
 	else
 		matrix_getindex_impl(matrix; var_ind, obs_ind)
 	end
@@ -383,24 +356,20 @@ matrix_getindex_pre_spec(matrix; var_ind, obs_ind) =
 
 
 
-function _matrix_ind_spec(action::Action, ind, n=nothing)
+function _matrix_ind_spec(action::Action, ind)
 	ind === nothing && return Colon()
-
 	ind_p = action(ind)
 	if action isa Projection && !(ind isa SpecRef)
 		cond = isequal_spec(ind, ind_p)
 		ind_p = ifelse_spec(cond, ind_p, _getindex_error_spec(ind))
 	end
-	# TODO: Where to simplify_ind ?
-	n !== nothing && (ind_p = simplify_ind_spec(ind_p, n))
 	return fetched(ind_p)
 end
 
-function matrix_getindex_pr(action::Action, matrix; var_ind=nothing, obs_ind=nothing, nvar=nothing, nobs=nothing)
+function matrix_getindex_pr(action::Action, matrix; var_ind=nothing, obs_ind=nothing)
 	matrix = action(matrix)
-	var_ind = _matrix_ind_spec(action, var_ind, nvar)
-	obs_ind = _matrix_ind_spec(action, obs_ind, nobs)
-	# create_spec(Preprocess{false}(matrix_getindex_pre), matrix; var_ind, obs_ind)
+	var_ind = _matrix_ind_spec(action, var_ind)
+	obs_ind = _matrix_ind_spec(action, obs_ind)
 	matrix_getindex_pre_spec(matrix; var_ind, obs_ind)
 end
 
@@ -411,7 +380,7 @@ end
 
 
 datamatrix_getindex(::Mat, data; kwargs...) =
-	create_matrix_getindex_spec(get_matrix_spec(data); nvar=nvar_spec(data), nobs=nobs_spec(data), kwargs...)
+	create_matrix_getindex_spec(get_matrix_spec(data); kwargs...)
 function datamatrix_getindex(::Var, data; var_ind=nothing, kwargs...)
 	var = get_var_spec(data)
 	var_ind === nothing ? var : table_getindex_spec(var, var_ind)
