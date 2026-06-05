@@ -173,5 +173,20 @@ function run_filter_tests()
 				end
 			end
 		end
+
+		@testset "getindex collapsing" begin
+			# Filtering in different orders should forward! to the same spec and produce the same result
+			j_gv = Jobs.filter_obs("value"=>>(1.5), Jobs.filter_obs("group"=>==("A"), counts_job))
+			j_vg = Jobs.filter_obs("group"=>==("A"), Jobs.filter_obs("value"=>>(1.5), counts_job))
+
+			@test isequal(forward!(Jobs.get_matrix(j_gv)), forward!(Jobs.get_matrix(j_vg))) # collapsing of matrix indexing
+			@test isequal(forward!(Jobs.get_var(j_gv)), forward!(Jobs.get_var(j_vg))) # easier, vars are not filtered
+			@test isequal(forward!(Jobs.get_obs(j_gv)), forward!(Jobs.get_obs(j_vg))) # collapsing of table indexing
+
+			let r_gv = fetch!(j_gv), r_vg = fetch!(j_vg)
+				@test isequal(r_gv.obs, r_vg.obs)
+				@test unblockify(r_gv.matrix) == unblockify(r_vg.matrix)
+			end
+		end
 	end
 end

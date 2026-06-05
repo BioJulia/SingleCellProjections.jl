@@ -36,11 +36,14 @@ _getindex_error_spec(ind) = create_spec(_getindex_error, ind; __version=v"0.1.0"
 function getindex_impl(::Preprocessing, v, ind)
 	if ind === Colon()
 		v # Projections have been handled, so indexing by `:` is OK
+	elseif v isa SpecRef && v.f === getindex
+		# Collapse nested getindex calls which is important for getting canonical representations
+		create_spec(getindex, v.args[1], compose_ind(v.args[2], ind); __version=v"0.1.0")
 	else
 		create_spec(getindex, v, ind; __version=v"0.1.0")
 	end
 end
-getindex_impl_spec(v, ind) = create_spec(Preprocess(getindex_impl), v, fetched(ind))
+getindex_impl_spec(v, ind) = create_spec(Preprocess{false}(getindex_impl), v, fetched(ind))
 
 function getindex_pr(action, v, ind)
 	v_p = action(v)
@@ -328,7 +331,11 @@ matrix_getindex_impl(matrix; kwargs...) =
 # 	end
 # end
 
-# Test implementation splitting by hblock
+compose_ind(inner::Union{Colon, AbstractVector{<:Integer}}, outer::Union{Colon, AbstractVector{<:Integer}}) =
+	inner === Colon() ? outer :
+	outer === Colon() ? inner :
+	inner[outer]
+
 function matrix_getindex_pre(::Preprocessing, matrix; var_ind, obs_ind)
 	if var_ind === Colon() && obs_ind === Colon()
 		matrix
@@ -358,6 +365,14 @@ function matrix_getindex_pre(::Preprocessing, matrix; var_ind, obs_ind)
 			new_blocks = [matrix_getindex_pre_spec(b; var_ind, obs_ind=I) for (b,I) in zip(blocks, new_obs_ind)]
 			hblock_spec(new_blocks, new_ranges)
 		end
+	elseif matrix.f === SCPCore.matrix_getindex
+		# Collapse nested getindex calls which is important for getting canonical representations
+		inner_matrix  = matrix.args[1]
+		inner_var_ind = _get_kwarg(matrix, :var_ind)
+		inner_obs_ind = _get_kwarg(matrix, :obs_ind)
+		matrix_getindex_pre_spec(inner_matrix;
+			var_ind = compose_ind(inner_var_ind, var_ind),
+			obs_ind = compose_ind(inner_obs_ind, obs_ind))
 	else
 		matrix_getindex_impl(matrix; var_ind, obs_ind)
 	end
