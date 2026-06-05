@@ -80,8 +80,10 @@ function run_reduce_tests()
 					@test pca_sub.matrix ≈ ΣVt_ans[:, pbmc_subset_ind] rtol=rtol
 
 					loadings_sub_job = Jobs.project(loadings_job, counts_job=>counts_sub_job)
-					@test forward!(loadings_job) === forward!(loadings_job)
-					@test fetch!(loadings_job) === fetch!(loadings_job)
+					@test forward!(Jobs.get_matrix(loadings_sub_job)) === forward!(Jobs.get_matrix(loadings_job))
+					# @test forward!(Jobs.get_var(loadings_sub_job)) === forward!(Jobs.get_var(loadings_job)) # Not equal by choice, it takes the var from proj/base respectively, and they could differ in some columns, even though ID values must be the same.
+					@test forward!(Jobs.get_obs(loadings_sub_job)) === forward!(Jobs.get_obs(loadings_job))
+					@test fetch!(loadings_sub_job) === fetch!(loadings_job)
 
 					svd_sub_job = Jobs.project(svd_job, counts_job=>counts_sub_job)
 					@test forward!(Jobs.get_var(svd_sub_job)) == forward!(Jobs.get_var(data_sub_job))
