@@ -11,7 +11,7 @@ function svdbyeigen(A; nsv::Integer=3)
 end
 
 function stabilize_sign!(F::SVD)
-	flip = vec(sum(F.U; dims=1).<0)
+	flip = vec(sum(x->x*abs(x), F.U; dims=1).<0)
 	F.U[:,flip] .*= -1
 	F.Vt[flip,:] .*= -1
 	F

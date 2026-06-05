@@ -19,7 +19,7 @@ function implicitsvd_spec(matrix;
                           niter = 3,
                           stabilize_sign = true,
                           kwargs...)
-	create_spec(implicitsvd_impl, matrix; nsv, seed, subspacedims, niter, stabilize_sign, kwargs..., __version=v"0.1.0") # must be used with cached() to handle the CompoundResult
+	create_spec(implicitsvd_impl, matrix; nsv, seed, subspacedims, niter, stabilize_sign, kwargs..., __version=v"0.1.1") # must be used with cached() to handle the CompoundResult
 end
 
 svd_projected_svt_spec(U, X) =
