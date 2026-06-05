@@ -43,6 +43,14 @@ using StyledStrings
 
 
 # TODO: Where to put these?
+ReproducibleJobs.deduplicate_type(::Type{<:LinearAlgebra.SVD}) = true
+ReproducibleJobs.deconstruct_type(::Type{<:LinearAlgebra.SVD}) = true
+ReproducibleJobs.type_to_tag(::Type{<:LinearAlgebra.SVD}) = TypeTag(:SVD)
+ReproducibleJobs.tag_to_type(::Val{:SVD}) = LinearAlgebra.SVD
+ReproducibleJobs.deconstruct(F::LinearAlgebra.SVD) = (F.U, F.S, F.Vt)
+ReproducibleJobs.reconstruct(::Type{<:LinearAlgebra.SVD}, (U,S,Vt)::Tuple) = LinearAlgebra.SVD(U, S, Vt)
+
+
 ReproducibleJobs.deduplicate_type(::Type{<:DataMatrix}) = true
 ReproducibleJobs.deconstruct_type(::Type{<:DataMatrix}) = true
 ReproducibleJobs.type_to_tag(::Type{<:DataMatrix}) = TypeTag(:DataMatrix)
