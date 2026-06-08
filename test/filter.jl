@@ -212,27 +212,17 @@ function run_filter_tests()
 			end
 		end
 
-		@testset "getindex Colon() collapsing n=$n" for n in 1:3
+		@testset "getindex no-op collapsing n=$n, $f" for n in 1:3, f in (:, 1:N, "cell_id"=>Returns(true))
 			job = counts_job
 			for i in 1:n
-				job = Jobs.filter_obs(:, job)
+				job = Jobs.filter_obs(f, job)
 			end
 			@test isequal(forward!(Jobs.get_matrix(job)), forward!(Jobs.get_matrix(counts_job)))
 			@test isequal(forward!(Jobs.get_var(job)), forward!(Jobs.get_var(counts_job)))
 			@test isequal(forward!(Jobs.get_obs(job)), forward!(Jobs.get_obs(counts_job)))
 		end
 
-		@testset "getindex no-op collapsing n=$n" for n in 1:3
-			job = counts_job
-			for i in 1:n
-				job = Jobs.filter_obs(1:N, job)
-			end
-			@test isequal(forward!(Jobs.get_matrix(job)), forward!(Jobs.get_matrix(counts_job)))
-			@test isequal(forward!(Jobs.get_var(job)), forward!(Jobs.get_var(counts_job)))
-			# @test isequal(forward!(Jobs.get_obs(job)), forward!(Jobs.get_obs(counts_job))) # Do we want this to hold? Then we need to use simplify_ind for get_index/table_getindex.
-		end
-
-		@testset "getindex perm/invperm collapsing" begin
+		@testset "getindex perm/invperm" begin
 			rng = StableRNG(8080)
 			perm = randperm(N)
 			iperm = invperm(perm)
