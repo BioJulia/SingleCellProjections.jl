@@ -38,7 +38,7 @@ counts_sum_impl_spec(f, counts, ind; dims) =
 
 var_counts_fraction(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
 var_counts_fraction(::Var, counts, args...; kwargs...) = get_var_spec(counts)
-function var_counts_fraction(::Obs, counts, sub_filter, tot_filter, col; project_ids)
+function var_counts_fraction(::Obs, counts, col, sub_filter, tot_filter; project_ids)
 	var_spec = get_var_spec(counts)
 	sub_ind = prefetched(create_find_matching_ind_spec(sub_filter, var_spec; project_ids))
 	tot_ind = prefetched(create_find_matching_ind_spec(tot_filter, var_spec; project_ids))
@@ -47,24 +47,24 @@ function var_counts_fraction(::Obs, counts, sub_filter, tot_filter, col; project
 end
 
 # TODO: project_ids should it be :yes or :intersect by default???
-function Jobs.var_counts_fraction(counts, sub_filter, tot_filter, col; project_ids=:intersect)
-	create_spec(DataMatrixFunction(var_counts_fraction), counts, sub_filter, tot_filter, col; project_ids)
+function Jobs.var_counts_fraction(counts, col, sub_filter, tot_filter=Returns(true); project_ids=:intersect)
+	create_spec(DataMatrixFunction(var_counts_fraction), counts, col, sub_filter, tot_filter; project_ids)
 end
 
 
 var_counts_sum(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
 var_counts_sum(::Var, counts, args...; kwargs...) = get_var_spec(counts)
-function var_counts_sum(::Obs, counts, filter, col; project_ids, f=identity)
+function var_counts_sum(::Obs, counts, col, filter; project_ids, f=identity)
 	ind = prefetched(create_find_matching_ind_spec(filter, get_var_spec(counts); project_ids))
 	values_spec = cached(counts_sum_impl_spec(f, get_matrix_spec(counts), ind; dims=1))
 	add_column_spec(get_obs_spec(counts), col, values_spec)
 end
 
 # TODO: project_ids should it be :yes or :intersect by default???
-function Jobs.var_counts_sum(f, counts, filter, col; project_ids=:intersect)
-	create_spec(DataMatrixFunction(var_counts_sum), counts, filter, col; f, project_ids)
+function Jobs.var_counts_sum(f, counts, col::String, filter=Returns(true); project_ids=:intersect)
+	create_spec(DataMatrixFunction(var_counts_sum), counts, col, filter; f, project_ids)
 end
-Jobs.var_counts_sum(counts, filter, col; kwargs...) = Jobs.var_counts_sum(identity, counts, filter, col; kwargs...)
+Jobs.var_counts_sum(counts, col::String, args...; kwargs...) = Jobs.var_counts_sum(identity, counts, col, args...; kwargs...)
 
 
 
@@ -72,7 +72,7 @@ Jobs.var_counts_sum(counts, filter, col; kwargs...) = Jobs.var_counts_sum(identi
 
 # TODO: Can we get better code reuse with the `var` functions above?
 obs_counts_fraction(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
-function obs_counts_fraction(::Var, counts, sub_filter, tot_filter, col; project_ids)
+function obs_counts_fraction(::Var, counts, col, sub_filter, tot_filter; project_ids)
 	obs_spec = get_obs_spec(counts)
 	sub_ind = prefetched(create_find_matching_ind_spec(sub_filter, obs_spec; project_ids))
 	tot_ind = prefetched(create_find_matching_ind_spec(tot_filter, obs_spec; project_ids))
@@ -82,21 +82,21 @@ function obs_counts_fraction(::Var, counts, sub_filter, tot_filter, col; project
 end
 obs_counts_fraction(::Obs, counts, args...; kwargs...) = get_obs_spec(counts)
 
-function Jobs.obs_counts_fraction(counts, sub_filter, tot_filter, col; project_ids=:no)
-	create_spec(DataMatrixFunction(obs_counts_fraction), counts, sub_filter, tot_filter, col; project_ids)
+function Jobs.obs_counts_fraction(counts, col, sub_filter, tot_filter=Returns(true); project_ids=:no)
+	create_spec(DataMatrixFunction(obs_counts_fraction), counts, col, sub_filter, tot_filter; project_ids)
 end
 
 
 # TODO: Can we get better code reuse with the `var` functions above?
 obs_counts_sum(::Mat, counts, args...; kwargs...) = get_matrix_spec(counts)
-function obs_counts_sum(::Var, counts, filter, col; project_ids, f=identity)
+function obs_counts_sum(::Var, counts, col, filter; project_ids, f=identity)
 	ind = prefetched(create_find_matching_ind_spec(filter, get_obs_spec(counts); project_ids))
 	values_spec = cached(counts_sum_impl_spec(f, get_matrix_spec(counts), ind; dims=2))
 	add_column_spec(get_var_spec(counts), col, values_spec)
 end
 obs_counts_sum(::Obs, counts, args...; kwargs...) = get_obs_spec(counts)
 
-function Jobs.obs_counts_sum(f, counts, filter, col; project_ids=:no)
-	create_spec(DataMatrixFunction(obs_counts_sum), counts, filter, col; f, project_ids)
+function Jobs.obs_counts_sum(f, counts, col::String, filter=Returns(true); project_ids=:no)
+	create_spec(DataMatrixFunction(obs_counts_sum), counts, col, filter; f, project_ids)
 end
-Jobs.obs_counts_sum(counts, filter, col; kwargs...) = Jobs.obs_counts_sum(identity, counts, filter, col; kwargs...)
+Jobs.obs_counts_sum(counts, col::String, args...; kwargs...) = Jobs.obs_counts_sum(identity, counts, col, args...; kwargs...)
