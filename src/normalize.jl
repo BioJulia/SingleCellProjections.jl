@@ -59,6 +59,9 @@ function normalize_matrix(::Preprocessing, data, args...; center=true,
 end
 
 
+"""
+	Jobs.normalize_matrix(data, args...; kwargs...)
+"""
 function Jobs.normalize_matrix(data, args...; kwargs...)
 	create_spec(Preprocess(normalize_matrix), data, args...; kwargs...)
 end

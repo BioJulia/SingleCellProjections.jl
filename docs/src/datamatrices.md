@@ -84,7 +84,7 @@ Most of this complexity is hidden from the user, but internally SingleCellProjec
 
 !!! warning "Read-only"
     SingleCellProjections.jl will reuse matrices when possible, in order to reduce memory usage.
-    E.g. [`normalize_matrix`](@ref) will reuse and extend the Matrix Expression of the source `DataMatrix`, without creating a copy of the actual data.
+    E.g. [`Jobs.normalize_matrix`](@ref) will reuse and extend the Matrix Expression of the source `DataMatrix`, without creating a copy of the actual data.
     When matrices are reused/copied is considered an implementation detail, and can change at any time.
     Users of SingleCellProjections.jl should thus consider the matrices to be "read-only".
     This should rarely present problems in practice.

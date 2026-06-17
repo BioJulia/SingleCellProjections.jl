@@ -4,7 +4,7 @@ version = "0.4.4"
 authors = ["Rasmus Henningsson <rasmus.henningsson@med.lu.se>"]
 
 [workspace]
-projects = ["test"]
+projects = ["test", "docs"]
 
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
