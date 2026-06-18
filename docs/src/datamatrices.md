@@ -1,5 +1,8 @@
 # Data Matrices
 
+!!! warning "OLD"
+    This page is outdated
+
 
 ```@setup data
 # Mimic the dataset from the tutorial without including it in the docs building
