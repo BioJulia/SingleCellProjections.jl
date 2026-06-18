@@ -7,7 +7,7 @@ ShareDefaultModule = true # All unnamed setup/example/repl blocks share the same
 The goals of this tutorial are to:
 
 1. Show a standard workflow for analyzing single cell RNA-seq data.
-2. Provide a brief overview of how `SingleCellProjections.jl` and `ReproducibleJobs.jl` work, and outline their strenghts.
+2. Provide a brief overview of how `SingleCellProjections.jl` and `ReproducibleJobs.jl` work.
 3. Show how to easily project one data set onto another.
 
 
@@ -213,7 +213,7 @@ function scatter_3d(job)
     fig
 end
 
-function scatter_categorical_3d(job, annot_name; bg=nothing)
+function scatter_categorical_3d(job, annot_name; bg=nothing, colors=nothing)
     matrix = fetch!(Jobs.get_matrix(job))
     annot = fetch!(Jobs.value_column_data(Jobs.annotation(Jobs.get_obs(job), annot_name)))
 
@@ -225,8 +225,19 @@ function scatter_categorical_3d(job, annot_name; bg=nothing)
         scatter!(ax, bg_matrix; color=colorant"#BFCCE6", markersize=2)
     end
 
-    categories = unique(annot)
-    plots = [scatter!(ax, matrix[:,isequal.(annot, cat)]; markersize=4) for cat in categories]
+    if colors !== nothing
+        unique_annotations = unique(annot)
+        unique_annotations_set = Set(unique_annotations)
+        colors = filter(x->x[1] in unique_annotations_set, colors)
+
+        categories = first.(colors)
+        @assert isempty(setdiff(unique_annotations, categories)) # ensure all categories have colors specified
+
+        plots = [scatter!(ax, matrix[:,isequal.(annot, cat)]; markersize=5, color) for (cat,color) in colors]
+    else
+        categories = unique(annot)
+        plots = [scatter!(ax, matrix[:,isequal.(annot, cat)]; markersize=5) for cat in categories]
+    end
 
     axislegend(ax, plots .=> Ref((;markersize=16)), categories) # use a larger markersize in the legend
     fig
@@ -254,11 +265,12 @@ fl = Jobs.force_layout(reduced; ndim = 3,
 scatter_3d(fl)
 ```
 
-To make a nicer visualization, we use a celltype annotation from the downloaded data to color the plot, but also apply a utility function to rotate the plot such that the most immature cells (Hematopoietic Stem Cells, or HSCs for short) move to the top:
+To make a nicer visualization, we use a celltype annotation from the downloaded data to color the plot, but also apply a utility function to rotate the plot such that the most immature cells (Hematopoietic Stem Cells, or HSCs for short) move to the top. And we provide a color table for the cell types.
 ```@example
 transform = Jobs.find_optimal_coord_transform(fl, "celltype.aml"=>isequal("HSC"), "celltype.aml"=>isequal("T-cells"), "celltype.aml"=>isequal("B-cells"))
 fl = Jobs.transform_coords(fl, transform; keep_var=true)
-scatter_categorical_3d(fl, "celltype.aml")
+colors = ["AML Immature" => colorant"#fec44f", "HSC" => colorant"#66b266", "Monocytes" => colorant"#fa9fb5", "GMP" => colorant"#008000", "Megakaryocytic cells" => colorant"#e5687e", "LMPP" => colorant"#756bb1", "Erythroid cells" => colorant"#a7241d", "B-cells" => colorant"#a64ca6", "T-cells" => colorant"#7fb4e5", "NK-cells" => colorant"#196fbe", "Dendritic cells" => colorant"#ff4d00"]
+scatter_categorical_3d(fl, "celltype.aml"; colors)
 ```
 
 ### UMAP
@@ -282,6 +294,6 @@ proj_raw_counts = Jobs.load_counts(proj_path; sample_names=proj_name)
 And then, by a single call to `Jobs.project`, it sets up the entire analysis and projects the AML sample onto the reference map created by the NBM samples.
 ```@example
 proj_fl = Jobs.project(fl, raw_counts=>proj_raw_counts)
-scatter_categorical_3d(proj_fl, "celltype.aml"; bg=fl)
+scatter_categorical_3d(proj_fl, "celltype.aml"; bg=fl, colors)
 ```
 
