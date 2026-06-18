@@ -265,7 +265,7 @@ fl = Jobs.force_layout(reduced; ndim = 3,
 scatter_3d(fl)
 ```
 
-To make a nicer visualization, we use a celltype annotation from the downloaded data to color the plot, but also apply a utility function to rotate the plot such that the most immature cells (Hematopoietic Stem Cells, or HSCs for short) move to the top. And we provide a color table for the cell types.
+To make a nicer visualization, we use a celltype annotation from the downloaded data to color the plot, but also apply a utility function to rotate the plot such that the most immature cells (Hematopoietic Stem Cells, or HSCs for short) move to the top.
 ```@example
 transform = Jobs.find_optimal_coord_transform(fl, "celltype.aml"=>isequal("HSC"), "celltype.aml"=>isequal("T-cells"), "celltype.aml"=>isequal("B-cells"))
 fl = Jobs.transform_coords(fl, transform; keep_var=true)
