@@ -4,8 +4,8 @@ using SingleCellProjections
 using DataFrames
 isdefined(Base, :get_extension) ? (using UMAP) : (using ..UMAP)
 
-struct UMAPModel <: ProjectionModel
-	m::UMAP.UMAP_
+struct UMAPModel{T} <: ProjectionModel
+	m::T
 	var_match::DataFrame
 	obs::Symbol
 end
@@ -23,19 +23,18 @@ Usually, `data` is a DataMatrix after reduction to `10-100` dimensions by `svd`.
 
 * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
 
-The other `args...` and `kwargs...` are forwarded to `UMAP.umap`. See `UMAP` documentation for more details.
+The other `args...` and `kwargs...` are forwarded to `UMAP.fit`. See `UMAP` documentation for more details.
 
-See also: [`UMAP.umap`](https://github.com/dillondaudert/UMAP.jl)
+See also: [`UMAP.fit`](https://github.com/dillondaudert/UMAP.jl)
 """
-function UMAP.umap(data::DataMatrix, args...; obs=:copy, kwargs...)
-	model = UMAPModel(UMAP.UMAP_(obs_coordinates(data), args...; kwargs...), select(data.var,1), obs)
-	update_matrix(data, model.m.embedding, model; var="UMAP", model.obs)
+function SingleCellProjections.umap(data::DataMatrix, args...; obs=:copy, kwargs...)
+	model = UMAPModel(UMAP.fit(obs_coordinates(data), args...; kwargs...), select(data.var,1), obs)
+	update_matrix(data, Float64.(model.m.embedding), model; var="UMAP", model.obs)
 end
 
 function SingleCellProjections.project_impl(data::DataMatrix, model::UMAPModel; verbose=true, kwargs...)
 	@assert SingleCellProjections.table_cols_equal(data.var, model.var_match) "UMAP projection expects model and data variables to be identical."
-
-	matrix = UMAP.transform(model.m, obs_coordinates(data))
+	matrix = Float64.(UMAP.transform(model.m, obs_coordinates(data)).embedding)
 	update_matrix(data, matrix, model; var="UMAP", model.obs)
 end
 

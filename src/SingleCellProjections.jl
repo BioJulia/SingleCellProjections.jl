@@ -61,7 +61,8 @@ export
 	mannwhitney_table,
 	create_datamatrix,
 	create_var,
-	create_obs
+	create_obs,
+	umap # for use with the UMAP extension
 
 using LinearAlgebra
 import LinearAlgebra: svd
@@ -136,6 +137,8 @@ include("pseudobulk.jl")
 include("local_outlier_factor.jl")
 
 include("precompile.jl")
+
+function umap end # implemented in the extension
 
 @static if !isdefined(Base, :get_extension)
 	function __init__()
