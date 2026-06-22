@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-06-22
+
+### Fixed
+
+* Update UMAP compat to version 0.3.
+
+### Changed
+
+* Require at least Julia 1.10 (current LTS).
+
 ## [0.4.4] - 2024-11-08
 
 ### Fixed
