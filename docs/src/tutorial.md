@@ -20,7 +20,7 @@ You can download the data here:
 * [Cell annotations](https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/scRNA_AML.tar.gz)
 
 
-The data set contains `38` patient samples and `8` samples from healthy donors. The samples contain `~6000` cells on average, with measurements from `32738` genes.
+The data set contains 38 patient samples and 8 samples from healthy donors. The samples contain ~6000 cells on average, with measurements from 32738 genes.
 
 
 
@@ -29,7 +29,7 @@ First, we will load [SingleCellProjections.jl](https://BioJulia.github.io/Single
 
 * [ReproducibleJobs.jl](https://github.com/rasmushenningsson/ReproducibleJobs.jl) provides a framework used by `SingleCellProjections` to handle computations, caching etc.
 * [DataFrames.jl](https://github.com/JuliaData/DataFrames.jl) and [CSV.jl](https://github.com/JuliaData/CSV.jl) we use for handling and loading tabular data.
-* [SparseArrays.jl](https://github.com/JuliaSparse/SparseArrays.jl) - used under the hood by SingleCellProjections. We just load it here so we can inspect some of the raw data.
+* [SparseArrays.jl](https://github.com/JuliaSparse/SparseArrays.jl) is used under the hood by SingleCellProjections. We just load it here so we can inspect some of the raw data.
 
 ```@example
 using SingleCellProjections
@@ -60,8 +60,8 @@ Page()
 
 ## Loading Data
 
-Let's start by loading two healthy Normal Bone Marrow (NBM) samples. These samples are from the same donor, but one has enriched for immature (CD34 positive) cells.
-This was done because AML patients have more immature cells in their bone marrow than a healty person.
+Let's start by loading two healthy Normal Bone Marrow (NBM) samples. These samples are from the same donor, but one has been enriched for immature (CD34 positive) cells.
+This was done because AML patients have more immature cells in their bone marrow than a healthy person.
 Combined, the NBM samples make a good reference when looking at AML samples later.
 
 You'll need to change the paths to wherever you have downloaded your files.
@@ -80,7 +80,7 @@ Loading is done using `Jobs.load_counts`.
 ```@example
 raw_counts = Jobs.load_counts(nbm_paths; sample_names=nbm_names)
 ```
-This create a `Job`, which is a kind of specification or recipe for what to compute. `Job`s are the cornerstone of `ReproducibleJobs.jl` since it makes it possible to reason about computations without performing them. Importantly, (some) results are cached, so when we come back another day, we do not need to recompute everything again. This mostly happens under the hood, and it will not be the focus of this tutorial.
+This creates a `Job`, which is a kind of specification or recipe for what to compute. `Job`s are the cornerstone of `ReproducibleJobs.jl` since it makes it possible to reason about computations without performing them. Importantly, some results are cached, so when we come back another day, we do not need to recompute everything again. This mostly happens under the hood, and it will not be the focus of this tutorial.
 
 To actually retrieve the data, we need to use `fetch!`.
 
@@ -91,7 +91,7 @@ To actually retrieve the data, we need to use `fetch!`.
 c = fetch!(raw_counts)
 ```
 The result is a `DataMatrix` (read more about them here: [Data Matrices](@ref)).
-Here we have a `DataMatrix` where the rows (variables) are genes and the columns (observations) are cells. Inside, there is a matrix with the raw counts, and annnotation tables for the genes and the cells.
+Here we have a `DataMatrix` where the rows (variables) are genes and the columns (observations) are cells. Inside, there is a matrix with the raw counts, and annotation tables for the genes and the cells.
 
 Here are the first few cells and genes:
 ```@repl
@@ -99,7 +99,7 @@ c.obs[1:6,:]
 c.var[1:6,:]
 ```
 
-You rarely need to access raw count matrix directly. It is stored in a blocked format that's efficient for the computations that SingleCellPriojections needs. But to take a look, we can convert it to a regular sparse matrix and show a small part of it:
+You rarely need to access the raw count matrix directly. It is stored in a blocked format that's efficient for the computations that SingleCellProjections needs. But to take a look, we can convert it to a regular sparse matrix and show a small part of it:
 ```@example
 convert(SparseMatrixCSC, c.matrix)[1:100,1:100]
 ```
@@ -108,8 +108,8 @@ convert(SparseMatrixCSC, c.matrix)[1:100,1:100]
 ## Quality Filtering
 
 Some of the cells in the data set are of poor quality, and we want to get rid of them before continuing the analysis.
-Commonly used quality measures are the fraction of reads from Mitochondrial genes, the total count of all genes in a cell and the total number of genes with non-zero counts.
-A high fraction of reads from Mitochondrial genes might indicate that the cell is dying and the counts are useful to see if we have enough data for a meaningful analysis.
+Commonly used quality measures are the fraction of reads from Mitochondrial genes, the total read count per cell, and the number of genes with non-zero counts.
+A high fraction of Mitochondrial reads can indicate that a cell is dying. The total read count and number of expressed genes help determine whether there is enough data for a meaningful analysis.
 
 We set up the quality annotations like this:
 ```@example
@@ -130,7 +130,7 @@ And if we `fetch!` the result:
 ```@example
 fetch!(filtered)
 ```
-We see that filtering reduced the number of cells from `13223` to `11969`, and that the new annotations are present in the data matrix.
+We see that filtering reduced the number of cells from 13223 to 11969, and that the new annotations are present in the data matrix.
 
 
 
@@ -142,7 +142,7 @@ Here we will use [SCTransform](https://github.com/rasmushenningsson/SCTransform.
 transformed = Jobs.sctransform(filtered)
 fetch!(transformed)
 ```
-From the output, we see that the number of variables have been reduced, since the by default, `sctransform` remove variables present in very few cells.
+From the output, we see that the number of variables has been reduced, since by default, `sctransform` removes variables present in very few cells.
 
 The matrix is now shown as `A+B₁B₂B₃`.
 This is normally not very important from the user's point of view, but it is critical for explaining how `SingleCellProjections` can be fast and not use too much memory.
@@ -152,8 +152,8 @@ Instead of storing the SCTransformed matrix as a huge dense matrix, it is stored
 
 ## Normalization
 After transformation we always want to normalize the data.
-At the very least, data should be centered for PCA to work properly, this can be achieved by just running `Jobs.normalize_matrix` with the default parameters.
-Here, we also want to regress out `"fraction_mt"`. You can add more `obs` annotations (categorical and/or numerical) to regress out if you need.
+At the very least, data should be centered for PCA to work properly. This can be achieved by just running `Jobs.normalize_matrix` with the default parameters.
+Here, we also want to regress out `"fraction_mt"`. You can add more `obs` annotations (categorical and/or numerical) to regress out if needed.
 ```@example
 normalized = Jobs.normalize_matrix(transformed, "fraction_mt")
 fetch!(normalized)
@@ -166,14 +166,14 @@ Since all `ReproducibleJobs.jl` results are read-only, the first two terms can b
 Principal Component Analysis (PCA) is commonly used for single cell expression data for two major reasons:
 
 1. It accurately finds a more compact representation of the data. This is important computationally, since it greatly reduces computation time for downstream analyses.
-2. It reduces noice by keeping only the common variations in the data set.
+2. It reduces noise by keeping only the common variations in the data set.
 
 ```@example
 reduced = Jobs.pca(normalized; nsv=40)
 fetch!(reduced)
 ```
 
-Now, the data set consists of only 40 variables (the principal components), and is represented as a single dense matrix.
+Now, the data set has been reduced to 40 variables (the top 40 principal components, ranked by variance explained), and is represented as a single dense matrix.
 The cell (observation) annotations are left untouched.
 
 
@@ -190,8 +190,8 @@ nothing # hide
 
 
 ## Visualization
-Analyses should in general be performed on the data directly after normalization or dimension reduction by PCA.
-However, for visualization purposes, we want to reduce the dimension to 2 or 3.
+Analyses should generally be performed on the normalized or PCA-reduced data, not on visualization embeddings.
+However, for visualization purposes, we want to reduce to 2 or 3 dimensions.
 
 
 ```@raw html
@@ -256,7 +256,7 @@ scatter_categorical_3d(data, "celltype.aml")
 
 
 ### Force Layout
-To embed the points in 2 or 3 dimension using a Force Layout (also known as a SPRING plot), we set it up like this:
+To embed the points in 2 or 3 dimensions using a Force Layout (also known as a SPRING plot), we set it up like this:
 ```@example
 fl = Jobs.force_layout(reduced; ndim = 3,
                                 seed = 4567,
@@ -265,7 +265,7 @@ fl = Jobs.force_layout(reduced; ndim = 3,
 scatter_3d(fl)
 ```
 
-To make a nicer visualization, we use a celltype annotation from the downloaded data to color the plot, but also apply a utility function to rotate the plot such that the most immature cells (Hematopoietic Stem Cells, or HSCs for short) move to the top.
+To make a nicer visualization, we use a celltype annotation from the downloaded data to color the plot, and apply a utility function to rotate it such that the most immature cells (Hematopoietic Stem Cells, or HSCs for short) move to the top.
 ```@example
 transform = Jobs.find_optimal_coord_transform(fl, "celltype.aml"=>isequal("HSC"), "celltype.aml"=>isequal("T-cells"), "celltype.aml"=>isequal("B-cells"))
 fl = Jobs.transform_coords(fl, transform; keep_var=true)
@@ -289,7 +289,7 @@ tsne_job = Jobs.tsne(reduced; ndim=3)
 
 
 ## Projections
-`SingleCellProjections` is built to make it very easy to project one dataset onto another.
+`SingleCellProjections` is built to make it very easy to project one dataset onto another. This is useful for comparing new samples against an established reference.
 
 First, we just choose one or more samples to project:
 ```@example
@@ -300,13 +300,13 @@ proj_path = SingleCellDocUtils.get_lilljebjorn_sample_path(proj_name) # hide
 proj_raw_counts = Jobs.load_counts(proj_path; sample_names=proj_name)
 ```
 
-And then, by a single call to `Jobs.project`, it sets up the entire analysis and projects the AML sample onto the reference map created by the NBM samples.
+Then, a single call to `Jobs.project` sets up the entire analysis pipeline and projects the AML sample onto the reference map created from the NBM samples.
 ```@example
 proj_fl = Jobs.project(fl, raw_counts=>proj_raw_counts)
 scatter_categorical_3d(proj_fl, "celltype.aml"; bg=fl, colors)
 ```
 
-And here is the projection onto the NBM sample UMAP:
+And here is the projection onto the UMAP embedding of the NBM samples:
 ```@example
 proj_umapped = Jobs.project(umapped, raw_counts=>proj_raw_counts)
 scatter_categorical_3d(proj_umapped, "celltype.aml"; bg=umapped, colors)
