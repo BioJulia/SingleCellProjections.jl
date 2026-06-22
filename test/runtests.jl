@@ -37,6 +37,7 @@ let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 				run_subset_tests()
 				run_sum_squared_tests()
 				run_umap_tests()
+				run_tsne_tests()
 			end
 		end
 		run_core_tests()

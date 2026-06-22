@@ -281,7 +281,11 @@ scatter_categorical_3d(umapped, "celltype.aml"; colors)
 ```
 
 ### t-SNE
-TODO.
+t-SNE is also supported, just run:
+```julia
+using TSne
+tsne_job = Jobs.tsne(reduced; ndim=3)
+```
 
 
 ## Projections
@@ -307,4 +311,3 @@ And here is the projection onto the NBM sample UMAP:
 proj_umapped = Jobs.project(umapped, raw_counts=>proj_raw_counts)
 scatter_categorical_3d(proj_umapped, "celltype.aml"; bg=umapped, colors)
 ```
-

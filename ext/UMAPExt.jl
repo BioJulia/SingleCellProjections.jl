@@ -4,7 +4,6 @@ using ReproducibleJobs
 using ReproducibleJobs: create_spec, cached, TypeTag, Cache
 using SingleCellProjections
 using SingleCellProjections: DataMatrixFunction, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_matrix_spec, get_spec, prefixed_ids_spec
-import .SingleCellProjectionsCore as SCPCore
 
 using DataFrames
 
