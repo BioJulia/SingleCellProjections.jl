@@ -1,6 +1,6 @@
 name = "SingleCellProjections"
 uuid = "03d38035-ed2f-4a36-82eb-797f1727ab2e"
-version = "0.4.4"
+version = "0.5.0"
 authors = ["Rasmus Henningsson <rasmus.henningsson@med.lu.se>"]
 
 [workspace]
