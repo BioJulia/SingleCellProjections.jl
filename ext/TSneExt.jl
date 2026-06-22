@@ -1,4 +1,4 @@
-module SingleCellProjectionsTSneExt
+module TSneExt
 
 using SingleCellProjections
 using .SingleCellProjections.SingleCellProjectionsCore

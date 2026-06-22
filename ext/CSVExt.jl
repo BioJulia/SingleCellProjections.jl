@@ -1,4 +1,4 @@
-module SingleCellProjectionsCSVExt
+module CSVExt
 
 using ReproducibleJobs
 using ReproducibleJobs: create_spec, cached, Preprocessing

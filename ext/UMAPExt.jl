@@ -1,4 +1,4 @@
-module SingleCellProjectionsUMAPExt
+module UMAPExt
 
 using ReproducibleJobs
 using ReproducibleJobs: create_spec, cached, TypeTag, Cache

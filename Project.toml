@@ -41,11 +41,11 @@ TSne = "24678dba-d5e9-5843-a4c6-250288b04835"
 UMAP = "c4f8c510-2410-5be4-91d7-4fbaeb39457e"
 
 [extensions]
-SingleCellProjectionsCSVExt = "CSV"
-SingleCellProjectionsMuonExt = "Muon"
-SingleCellProjectionsPrincipalMomentAnalysisExt = "PrincipalMomentAnalysis"
-SingleCellProjectionsTSneExt = "TSne"
-SingleCellProjectionsUMAPExt = "UMAP"
+CSVExt = "CSV"
+MuonExt = "Muon"
+PrincipalMomentAnalysisExt = "PrincipalMomentAnalysis"
+TSneExt = "TSne"
+UMAPExt = "UMAP"
 
 [compat]
 AbstractTrees = "0.3, 0.4"

@@ -1,4 +1,4 @@
-module SingleCellProjectionsPrincipalMomentAnalysisExt
+module PrincipalMomentAnalysisExt
 
 # # TODO: Update to use specs
 

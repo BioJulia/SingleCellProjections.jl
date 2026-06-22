@@ -1,4 +1,4 @@
-module SingleCellProjectionsMuonExt
+module MuonExt
 
 using SingleCellProjections
 using .SingleCellProjections.SingleCellProjectionsCore
