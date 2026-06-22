@@ -16,6 +16,7 @@ include("reduce.jl")
 include("filter.jl")
 include("subset.jl")
 include("sum_squared.jl")
+include("umap.jl")
 include("SingleCellProjectionsCore/runtests.jl")
 include("MatrixExpressions/runtests.jl")
 
@@ -35,6 +36,7 @@ let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 				run_filter_tests()
 				run_subset_tests()
 				run_sum_squared_tests()
+				run_umap_tests()
 			end
 		end
 		run_core_tests()

@@ -274,7 +274,12 @@ scatter_categorical_3d(fl, "celltype.aml"; colors)
 ```
 
 ### UMAP
-TODO.
+```@example
+using UMAP
+umapped = Jobs.umap(reduced; ndim=3)
+scatter_categorical_3d(umapped, "celltype.aml"; colors)
+```
+
 ### t-SNE
 TODO.
 
@@ -295,5 +300,11 @@ And then, by a single call to `Jobs.project`, it sets up the entire analysis and
 ```@example
 proj_fl = Jobs.project(fl, raw_counts=>proj_raw_counts)
 scatter_categorical_3d(proj_fl, "celltype.aml"; bg=fl, colors)
+```
+
+And here is the projection onto the NBM sample UMAP:
+```@example
+proj_umapped = Jobs.project(umapped, raw_counts=>proj_raw_counts)
+scatter_categorical_3d(proj_umapped, "celltype.aml"; bg=umapped, colors)
 ```
 

@@ -1,91 +1,86 @@
 module SingleCellProjectionsUMAPExt
 
 using ReproducibleJobs
-using ReproducibleJobs: create_spec, cached
+using ReproducibleJobs: create_spec, cached, TypeTag, Cache
 using SingleCellProjections
 using SingleCellProjections: DataMatrixFunction, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_matrix_spec, get_spec, prefixed_ids_spec
 import .SingleCellProjectionsCore as SCPCore
 
 using DataFrames
 
-
 using UMAP: UMAP, UMAPResult
 
-# struct UMAPModel <: SCPCore.ProjectionModel
-# 	m::UMAP.UMAP_
-# 	var_match::DataFrame
-# 	obs::Symbol
-# end
-
-# SCPCore.projection_isequal(m1::UMAPModel, m2::UMAPModel) = m1.m == m2.m && m1.var_match == m2.var_match
-
-# SCPCore.update_model(m::UMAPModel; obs=m.obs, kwargs...) = (UMAPModel(m.m, m.var_match, obs), kwargs)
-
-
-# """
-# 	umap(data::DataMatrix, args...; obs=:copy, kwargs...)
-
-# Create a UMAP embedding of `data`.
-# Usually, `data` is a DataMatrix after reduction to `10-100` dimensions by `svd`.
-
-# * `obs` - Can be `:copy` (make a copy of source `obs`) or `:keep` (share the source `obs` object).
-
-# The other `args...` and `kwargs...` are forwarded to `UMAP.umap`. See `UMAP` documentation for more details.
-
-# See also: [`UMAP.umap`](https://github.com/dillondaudert/UMAP.jl)
-# """
-# function UMAP.umap(data::DataMatrix, args...; obs=:copy, kwargs...)
-# 	# model = UMAPModel(UMAP.UMAP_(SCPCore.obs_coordinates(data), args...; kwargs...), select(data.var,1), obs)
-# 	model = UMAPModel(UMAP.UMAP_(data.matrix, args...; kwargs...), select(data.var,1), obs)
-# 	SCPCore.update_matrix(data, model.m.embedding, model; var="UMAP", model.obs)
-# end
-
-# function SCPCore.project_impl(data::DataMatrix, model::UMAPModel; verbose=true, kwargs...)
-# 	@assert SCPCore.table_cols_equal(data.var, model.var_match) "UMAP projection expects model and data variables to be identical."
-
-# 	# matrix = UMAP.transform(model.m, SCPCore.obs_coordinates(data))
-# 	matrix = UMAP.transform(model.m, data.matrix)
-# 	SCPCore.update_matrix(data, matrix, model; var="UMAP", model.obs)
-# end
-
-# # - show -
-# function Base.show(io::IO, ::MIME"text/plain", model::UMAPModel)
-# 	print(io, "UMAPModel(n_components=", size(model.m.embedding,1), ')')
-# end
+using Random
 
 
 
-# ReproducibleJobs version
+# TODO: Can we do better than this? How do we handle breaking changes to the UMAPResult struct layout?
+ReproducibleJobs.deduplicate_type(::Type{<:UMAPResult}) = true
+ReproducibleJobs.deconstruct_type(::Type{<:UMAPResult}) = true
+ReproducibleJobs.type_to_tag(::Type{<:UMAPResult}) = TypeTag(:UMAPResult)
+ReproducibleJobs.tag_to_type(::Val{:UMAPResult}) = UMAPResult
+ReproducibleJobs.deconstruct(r::UMAPResult) = (r.data, r.embedding, r.config, r.knns_dists, r.fs_sets, r.graph)
+ReproducibleJobs.reconstruct(::Type{<:UMAPResult}, (data,embedding,config,knns_dists,fs_sets,graph)::Tuple) =
+	UMAPResult(parent(data), parent(embedding), config, parent.(knns_dists), fs_sets, graph)
 
-umap_model(matrix; ndim::Int, kwargs...) = UMAP.fit(matrix, ndim; kwargs...)
-# umap_embedding(result::UMAPResult) = result.embedding # TODO: Move back to this when UMAP 0.3 is released
-umap_embedding(result::UMAPResult) = reduce(hcat, result.embedding) # Temporary fix for UMAP 0.2
-umap_project(result::UMAPResult, matrix) = umap_embedding(UMAP.transform(result, matrix))
+
+ReproducibleJobs.deduplicate_type(::Type{<:UMAP.UMAPConfig}) = false
+ReproducibleJobs.deconstruct_weak_rec(x::UMAP.UMAPConfig) = x
+ReproducibleJobs.reconstruct_weak_rec(x::UMAP.UMAPConfig) = x
+
+function ReproducibleJobs.cache_save(::Cache, io, name, x::UMAP.UMAPConfig)
+	io[name] = x # Rely on JLD2 standard handling for saving/loading
+	nothing
+end
 
 
 
-function umap_impl(action::Action, matrix; ndim, kwargs...)
+
+
+function umap_model(matrix; ndim::Int, seed::Int, kwargs...)
+	# Brittle workaround for improving UMAP reproducibility (see https://discourse.julialang.org/t/how-could-i-save-and-restore-the-status-of-random-seed/61941/4)
+	rng_state = copy(Random.default_rng())
+	Random.seed!(seed)
+	res = UMAP.fit(matrix, ndim; kwargs...)
+	copy!(Random.default_rng(), rng_state)
+	res
+end
+umap_embedding(result::UMAPResult) = result.embedding
+
+# umap_project(result::UMAPResult, matrix) = UMAP.transform(result, parent(matrix)).embedding
+function umap_project(result::UMAPResult, matrix; seed::Int)
+	# Brittle workaround for improving UMAP reproducibility (see https://discourse.julialang.org/t/how-could-i-save-and-restore-the-status-of-random-seed/61941/4)
+	rng_state = copy(Random.default_rng())
+	Random.seed!(seed)
+	res = UMAP.transform(result, parent(matrix))
+	copy!(Random.default_rng(), rng_state)
+	res.embedding
+end
+
+
+
+function umap_impl(action::Action, matrix; ndim, seed, kwargs...)
 	# First create UMAP model
-	umap_model_spec = cached(create_spec(umap_model, matrix; ndim, kwargs..., __version=v"0.2.0"))
+	umap_model_spec = cached(create_spec(umap_model, matrix; ndim, seed, kwargs..., __version=v"0.3.0"))
 
 	if action isa Eval
-		return create_spec(umap_embedding, umap_model_spec; __version=v"0.2.1")
+		return create_spec(umap_embedding, umap_model_spec; __version=v"0.3.0")
 	else# if action isa Projection
-		return cached(create_spec(umap_project, umap_model_spec, action(matrix); __version=v"0.2.0"))
+		return cached(create_spec(umap_project, umap_model_spec, action(matrix); seed, __version=v"0.3.0"))
 	end
 end
 
 
-function umap(::Mat, data; ndim, kwargs...)
+function umap(::Mat, data; ndim, seed, kwargs...)
 	matrix_spec = get_matrix_spec(data)
-	create_spec(Projectable(umap_impl), matrix_spec; ndim, kwargs...)
+	create_spec(Projectable(umap_impl), matrix_spec; ndim, seed, kwargs...)
 end
 umap(::Obs, data; ndim, kwargs...) = get_spec(Obs(), data)
 umap(::Var, data; ndim, kwargs...) = prefixed_ids_spec("id", "UMAP ", ndim)
 
 
-function Jobs.umap(data; ndim, kwargs...)
-	create_spec(DataMatrixFunction(umap), data; ndim, kwargs...)
+function Jobs.umap(data; ndim, seed=1234, kwargs...)
+	create_spec(DataMatrixFunction(umap), data; ndim, seed, kwargs...)
 end
 
 
