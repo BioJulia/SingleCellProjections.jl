@@ -56,7 +56,6 @@ end
 svd(args...; nsv, kwargs...) = LinearAlgebra.svd(args...; nsv, subspacedims=nsv, niter=1, kwargs...)
 force_layout(args...; kwargs...) = SingleCellProjections.force_layout(reduced; niter=1, kwargs...)
 
-umap(args...; kwargs...) = UMAP.umap(args...; n_epochs=1, init=:random, n_neighbors=2, kwargs...)
 tsne(data, d; kwargs...) = TSne.tsne(data, d, 0, 1, 5; verbose=false, progress=false, kwargs...) # We might want to speed this up further by running with fewer cells, takes about half of the total doc generation time
 ```
 
