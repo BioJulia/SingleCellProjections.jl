@@ -62,7 +62,7 @@ ReproducibleJobs.deduplicate_type(::Type{InvMax}) = false
 ReproducibleJobs.deconstruct_weak_rec(x::InvMax) = x
 ReproducibleJobs.reconstruct_weak_rec(x::InvMax) = x
 
-function ReproducibleJobs.cache_save(io, name, x::InvMax)
+function ReproducibleJobs.cache_save(::ReproducibleJobs.Cache, io, name, x::InvMax)
 	io[name] = x # Rely on JLD2 standard handling for saving/loading
 	nothing
 end
