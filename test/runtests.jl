@@ -17,6 +17,7 @@ include("filter.jl")
 include("subset.jl")
 include("sum_squared.jl")
 include("umap.jl")
+include("tsne.jl")
 include("SingleCellProjectionsCore/runtests.jl")
 include("MatrixExpressions/runtests.jl")
 
