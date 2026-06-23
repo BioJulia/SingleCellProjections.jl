@@ -8,7 +8,7 @@ end
 
 
 
-# is_projectable_spec(x) = x isa SpecRef && x.f isa Projectable
+# is_projectable_job(x) = x isa SpecRef && x.f isa Projectable
 
 
 
@@ -41,8 +41,8 @@ function try_replace_spec_single(spec::SpecRef, ::Any, k::SpecRef, v)
 	return nothing
 end
 
-function try_replace_spec(spec::SpecRef, f::F, args...) where F
-	# @info "try_replace_spec"
+function try_replace_job(spec::SpecRef, f::F, args...) where F
+	# @info "try_replace_job"
 	# @show f
 	# f isa ProjectOnto && @show f
 
@@ -60,8 +60,8 @@ end
 
 
 function do_replacement(replacements, spec::SpecRef)
-	p_spec = create_project_spec(spec, replacements...)
-	ReproducibleJobs.apply_op(spec.op, p_spec) # Keep the op
+	p_job = create_project_job(spec, replacements...)
+	ReproducibleJobs.apply_op(spec.op, p_job) # Keep the op
 end
 function do_replacement(replacements, x)
 	for (k,v) in replacements
@@ -79,24 +79,24 @@ end
 
 
 # function project_impl(f::F, onto, args...) where F
-# 	replaced = try_replace_spec(onto, f, args...)
+# 	replaced = try_replace_job(onto, f, args...)
 # 	replaced !== nothing && return replaced
 
 # 	# Not found in replacements, apply the `Projection` action recursively
 # 	p = Projection(collect(args))
 # 	proj_args = p(onto.ro.value.args)
 # 	proj_kwargs = p(onto.ro.value.kwargs)
-# 	create_spec(f, proj_args...; proj_kwargs...)
+# 	create_job(f, proj_args...; proj_kwargs...)
 # end
 
 # Testing with ProjectOnto
 function project_impl(f::F, onto, args...) where F
-	replaced = try_replace_spec(onto, f, args...)
+	replaced = try_replace_job(onto, f, args...)
 	replaced !== nothing && return replaced
 
 	# Not found in replacements, setup as `ProjectOnto`
 	replacements = (args...,)
-	create_spec(ProjectOnto(f), replacements, onto.args...; onto.kwargs...)
+	create_job(ProjectOnto(f), replacements, onto.args...; onto.kwargs...)
 end
 
 function project_onto_impl(f::F, replacements, args...; kwargs...) where F
@@ -104,19 +104,19 @@ function project_onto_impl(f::F, replacements, args...; kwargs...) where F
 	p = Projection(collect(replacements))
 	proj_args = p(args)
 	proj_kwargs = p(kwargs)
-	create_spec(f, proj_args...; proj_kwargs...)
+	create_job(f, proj_args...; proj_kwargs...)
 end
 
 
 
 # Testing with ProjectOnto
 function project_impl(p::Projectable{F}, onto, args...) where F
-	replaced = try_replace_spec(onto, p, args...)
+	replaced = try_replace_job(onto, p, args...)
 	replaced !== nothing && return replaced
 
 	# Not found in replacements, setup as `ProjectOnto`
 	replacements = (args...,)
-	create_spec(ProjectOnto(p), replacements, onto.args...; onto.kwargs...)
+	create_job(ProjectOnto(p), replacements, onto.args...; onto.kwargs...)
 end
 
 function project_onto_impl(p::Projectable{F}, replacements, args...; kwargs...) where F
@@ -136,16 +136,16 @@ function project(::Preprocessing, onto, args...; kwargs...)
 	onto # Keep the value as is
 end
 
-# create_project_spec(onto, args...; kwargs...) =
-# 	create_spec(Preprocess(project), onto, args...; kwargs...)
+# create_project_job(onto, args...; kwargs...) =
+# 	create_job(Preprocess(project), onto, args...; kwargs...)
 
-function create_project_spec(onto::SpecRef, args...; kwargs...)
+function create_project_job(onto::SpecRef, args...; kwargs...)
 	# Transfer the op from `onto` to `project`
 	onto2 = SpecRef(ReproducibleJobs.get_sr(onto)) # remove op
-	spec = create_spec(Preprocess(project), onto2, args...; kwargs...)
+	spec = create_job(Preprocess(project), onto2, args...; kwargs...)
 	ReproducibleJobs.apply_op(onto.op, spec) # apply op again
 end
 
 function Jobs.project(onto, args...; kwargs...)
-	create_project_spec(onto, args...; kwargs...)
+	create_project_job(onto, args...; kwargs...)
 end

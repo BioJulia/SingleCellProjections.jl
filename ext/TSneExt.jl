@@ -1,9 +1,9 @@
 module TSneExt
 
 using ReproducibleJobs
-using ReproducibleJobs: create_spec, cached
+using ReproducibleJobs: create_job, cached
 using SingleCellProjections
-using SingleCellProjections: DataMatrixFunction, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_matrix_spec, get_spec, prefixed_ids_spec, find_nearest_neighbors_spec, create_embed_points_spec, InvMax
+using SingleCellProjections: DataMatrixFunction, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_matrix_job, get_job, prefixed_ids_job, find_nearest_neighbors_job, create_embed_points_job, InvMax
 import TSne
 
 # """
@@ -39,13 +39,13 @@ function tsne(action::Action, matrix;
               kwargs...
              )
 	# t-SNE of unprojected
-	tsne_spec = cached(create_spec(tsne_impl, matrix; ndim, max_iter, perplexity, __version=v"0.1.0"))
+	tsne_job = cached(create_job(tsne_impl, matrix; ndim, max_iter, perplexity, __version=v"0.1.0"))
 
 	if action isa Eval
-		return tsne_spec
+		return tsne_job
 	else#if actions isa Projection
-		knn_indices_p = cached(find_nearest_neighbors_spec(matrix, action(matrix); k=k_projection))
-		return create_embed_points_spec(InvMax(min_dist2_projection), matrix, tsne_spec, action(matrix), knn_indices_p)
+		knn_indices_p = cached(find_nearest_neighbors_job(matrix, action(matrix); k=k_projection))
+		return create_embed_points_job(InvMax(min_dist2_projection), matrix, tsne_job, action(matrix), knn_indices_p)
 	end
 end
 
@@ -53,14 +53,14 @@ end
 
 
 function tsne(::Mat, data; kwargs...)
-	matrix_spec = get_matrix_spec(data)
-	create_spec(Projectable(tsne), matrix_spec; kwargs...)
+	matrix_job = get_matrix_job(data)
+	create_job(Projectable(tsne), matrix_job; kwargs...)
 end
-tsne(::Obs, data; kwargs...) = get_spec(Obs(), data)
-tsne(::Var, data; ndim, kwargs...) = prefixed_ids_spec("id", "t-SNE ", ndim)
+tsne(::Obs, data; kwargs...) = get_job(Obs(), data)
+tsne(::Var, data; ndim, kwargs...) = prefixed_ids_job("id", "t-SNE ", ndim)
 
 function Jobs.tsne(args...; ndim=3, kwargs...)
-	create_spec(DataMatrixFunction(tsne), args...; ndim, kwargs...)
+	create_job(DataMatrixFunction(tsne), args...; ndim, kwargs...)
 end
 
 

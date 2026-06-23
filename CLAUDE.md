@@ -56,7 +56,7 @@ The package has three layers:
 
 ### ReproducibleJobs Integration
 
-All public-facing computations are exposed as `*_spec` functions that return `Spec`s for use with a `Scheduler`:
+All public-facing computations are exposed as `*_job` functions that return `Job`s for use with a `Scheduler`:
 
 ```julia
 with_scheduler(Scheduler(; dir="/path/to/cache")) do
@@ -66,7 +66,7 @@ end
 ```
 
 Key patterns:
-- `create_spec(f, args...; __version=v"0.1.0", kwargs...)` — create a cacheable spec
+- `create_job(f, args...; __version=v"0.1.0", kwargs...)` — create a cacheable spec
 - `cached(spec)` — activate on-disk caching for this spec
 - `cached(spec, "U")` / `cached(spec, "S")` / etc. — load sub-results from a `CompoundResult`
 - `CompoundResult(; U, S, Vt)` — returned by multi-output computations like `implicitsvd`
@@ -78,7 +78,7 @@ The package supports projecting a computation pipeline onto a different dataset 
 - **`Projectable(f)`** (`src/types.jl`): Marks a preprocessing function as projectable. The function receives an `Action` as its first argument.
 - **`Action`**: Either `Eval()` (normal evaluation) or `Projection(replacements)` (substitute specs).
 - **`ProjectOnto(f)`**: Variant that receives explicit replacement pairs.
-- `try_replace_spec` / `try_replace_spec_single`: Core replacement logic using `===` identity (deduplication ensures this works correctly).
+- `try_replace_job` / `try_replace_job_single`: Core replacement logic using `===` identity (deduplication ensures this works correctly).
 
 ### Key Source Files
 
@@ -95,7 +95,7 @@ The package supports projecting a computation pipeline onto a different dataset 
 | `src/MatrixExpressions/` | Lazy matrix expression trees |
 | `src/load.jl` | Spec-level loading (wraps Core) |
 | `src/reduce.jl` | Spec-level SVD/PCA with `CompoundResult` |
-| `src/internal.jl` | Utility specs (`combine_vectors_spec`, `getindex_spec`, etc.) |
+| `src/internal.jl` | Utility specs (`combine_vectors_job`, `getindex_job`, etc.) |
 | `src/types.jl` | `Projectable`, `ProjectOnto`, `Action`, `DataMatrixFieldFunction` |
 | `src/projectables.jl` | Projection logic |
 

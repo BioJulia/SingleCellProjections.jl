@@ -1,9 +1,9 @@
 module UMAPExt
 
 using ReproducibleJobs
-using ReproducibleJobs: create_spec, cached, TypeTag, Cache
+using ReproducibleJobs: create_job, cached, TypeTag, Cache
 using SingleCellProjections
-using SingleCellProjections: DataMatrixFunction, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_matrix_spec, get_spec, prefixed_ids_spec
+using SingleCellProjections: DataMatrixFunction, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_matrix_job, get_job, prefixed_ids_job
 
 using DataFrames
 
@@ -60,26 +60,26 @@ end
 
 function umap_impl(action::Action, matrix; ndim, seed, kwargs...)
 	# First create UMAP model
-	umap_model_spec = cached(create_spec(umap_model, matrix; ndim, seed, kwargs..., __version=v"0.3.0"))
+	umap_model_job = cached(create_job(umap_model, matrix; ndim, seed, kwargs..., __version=v"0.3.0"))
 
 	if action isa Eval
-		return create_spec(umap_embedding, umap_model_spec; __version=v"0.3.0")
+		return create_job(umap_embedding, umap_model_job; __version=v"0.3.0")
 	else# if action isa Projection
-		return cached(create_spec(umap_project, umap_model_spec, action(matrix); seed, __version=v"0.3.0"))
+		return cached(create_job(umap_project, umap_model_job, action(matrix); seed, __version=v"0.3.0"))
 	end
 end
 
 
 function umap(::Mat, data; ndim, seed, kwargs...)
-	matrix_spec = get_matrix_spec(data)
-	create_spec(Projectable(umap_impl), matrix_spec; ndim, seed, kwargs...)
+	matrix_job = get_matrix_job(data)
+	create_job(Projectable(umap_impl), matrix_job; ndim, seed, kwargs...)
 end
-umap(::Obs, data; ndim, kwargs...) = get_spec(Obs(), data)
-umap(::Var, data; ndim, kwargs...) = prefixed_ids_spec("id", "UMAP ", ndim)
+umap(::Obs, data; ndim, kwargs...) = get_job(Obs(), data)
+umap(::Var, data; ndim, kwargs...) = prefixed_ids_job("id", "UMAP ", ndim)
 
 
 function Jobs.umap(data; ndim, seed=1234, kwargs...)
-	create_spec(DataMatrixFunction(umap), data; ndim, seed, kwargs...)
+	create_job(DataMatrixFunction(umap), data; ndim, seed, kwargs...)
 end
 
 

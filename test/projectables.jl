@@ -1,8 +1,8 @@
 using Test
 using SingleCellProjections
-using SingleCellProjections: Projectable, ProjectOnto, Action, DataMatrixFunction, Mat, Var, Obs, MatFunction, get_matrix_spec
+using SingleCellProjections: Projectable, ProjectOnto, Action, DataMatrixFunction, Mat, Var, Obs, MatFunction, get_matrix_job
 import .SingleCellProjectionsCore as SCPCore
-using ReproducibleJobs: Preprocess, prefetched, create_spec, fetch!, forward!, forward_once!
+using ReproducibleJobs: Preprocess, prefetched, create_job, fetch!, forward!, forward_once!
 using StableRNGs
 using DataFrames
 
@@ -27,61 +27,61 @@ end
 # --- Test jobs ---
 
 my_rand_impl(S, nrow, ncol; seed) = rand(StableRNG(seed), S, nrow, ncol)
-my_rand_spec(S, nrow, ncol; seed) = create_spec(my_rand_impl, S, nrow, ncol; seed, __version=v"1.0.0")
-TestJobs.my_rand(S, nrow, ncol; seed) = my_rand_spec(S, nrow, ncol; seed)
+my_rand_job(S, nrow, ncol; seed) = create_job(my_rand_impl, S, nrow, ncol; seed, __version=v"1.0.0")
+TestJobs.my_rand(S, nrow, ncol; seed) = my_rand_job(S, nrow, ncol; seed)
 
 my_add_impl(a,b) = a .+ b
-my_add_spec(a, b) = create_spec(my_add_impl, a, b; __version=v"1.0.0")
-TestJobs.my_add(a, b) = my_add_spec(a, b)
+my_add_job(a, b) = create_job(my_add_impl, a, b; __version=v"1.0.0")
+TestJobs.my_add(a, b) = my_add_job(a, b)
 
 # Projectable with the first arg fixed
 my_sub_impl(a,b) = a .- b
-my_sub(action::Action, a, b) = create_spec(my_sub_impl, a, action(b); __version=v"1.0.0")
-my_sub_spec(a, b) = create_spec(Projectable(my_sub), a, b)
-TestJobs.my_sub(a, b) = my_sub_spec(a, b)
+my_sub(action::Action, a, b) = create_job(my_sub_impl, a, action(b); __version=v"1.0.0")
+my_sub_job(a, b) = create_job(Projectable(my_sub), a, b)
+TestJobs.my_sub(a, b) = my_sub_job(a, b)
 
 # Elementwise multiplication
 my_mul_impl(a, b) = a .* b
-my_mul_spec(a, b) = create_spec(my_mul_impl, a, b; __version=v"1.0.0")
-TestJobs.my_mul(a, b) = my_mul_spec(a, b)
+my_mul_job(a, b) = create_job(my_mul_impl, a, b; __version=v"1.0.0")
+TestJobs.my_mul(a, b) = my_mul_job(a, b)
 
 # Elementwise division - Projectable with the first arg fixed
 my_div_impl(a, b) = a ./ b
-my_div(action::Action, a, b) = create_spec(my_div_impl, a, action(b); __version=v"1.0.0")
-my_div_spec(a, b) = create_spec(Projectable(my_div), a, b)
-TestJobs.my_div(a, b) = my_div_spec(a, b)
+my_div(action::Action, a, b) = create_job(my_div_impl, a, action(b); __version=v"1.0.0")
+my_div_job(a, b) = create_job(Projectable(my_div), a, b)
+TestJobs.my_div(a, b) = my_div_job(a, b)
 
 # Elementwise apply - Projectable with both args affected
 my_apply_impl(f, x) = f.(x)
-my_apply(action::Action, f, x) = create_spec(my_apply_impl, action(f), action(x); __version=v"1.0.0")
-my_apply_spec(f, x) = create_spec(Projectable(my_apply), f, x)
-TestJobs.my_apply(f, x) = my_apply_spec(f, x)
+my_apply(action::Action, f, x) = create_job(my_apply_impl, action(f), action(x); __version=v"1.0.0")
+my_apply_job(f, x) = create_job(Projectable(my_apply), f, x)
+TestJobs.my_apply(f, x) = my_apply_job(f, x)
 
 
 
 
 # DataMatrix versions
 # NB: We don't do anything interesting with obs/var, that is tested elsewhere, this file is just about testing DataMatrixFunction interactions with projections.
-dm_rand(::Mat, args...; kwargs...) = my_rand_spec(args...; kwargs...)
-dm_rand(::Var, S, nrow, ncol; kwargs...) = SingleCellProjections.prefixed_ids_spec("var_id", "var_", nrow)
-dm_rand(::Obs, S, nrow, ncol; kwargs...) = SingleCellProjections.prefixed_ids_spec("obs_id", "obs_", ncol)
-TestJobs.dm_rand(args...; kwargs...) = create_spec(DataMatrixFunction(dm_rand), args...; kwargs...)
+dm_rand(::Mat, args...; kwargs...) = my_rand_job(args...; kwargs...)
+dm_rand(::Var, S, nrow, ncol; kwargs...) = SingleCellProjections.prefixed_ids_job("var_id", "var_", nrow)
+dm_rand(::Obs, S, nrow, ncol; kwargs...) = SingleCellProjections.prefixed_ids_job("obs_id", "obs_", ncol)
+TestJobs.dm_rand(args...; kwargs...) = create_job(DataMatrixFunction(dm_rand), args...; kwargs...)
 
-dm_add(::Mat, a, b) = my_add_spec(get_matrix_spec(a), get_matrix_spec(b))
-dm_add(f, a, b) = SingleCellProjections.get_spec(f, a) # Var/Obs
-TestJobs.dm_add(a, b) = create_spec(DataMatrixFunction(dm_add), a, b)
+dm_add(::Mat, a, b) = my_add_job(get_matrix_job(a), get_matrix_job(b))
+dm_add(f, a, b) = SingleCellProjections.get_job(f, a) # Var/Obs
+TestJobs.dm_add(a, b) = create_job(DataMatrixFunction(dm_add), a, b)
 
-dm_sub(::Mat, a, b) = my_sub_spec(get_matrix_spec(a), get_matrix_spec(b))
-dm_sub(f, a, b) = SingleCellProjections.get_spec(f, a) # Var/Obs
-TestJobs.dm_sub(a, b) = create_spec(DataMatrixFunction(dm_sub), a, b)
+dm_sub(::Mat, a, b) = my_sub_job(get_matrix_job(a), get_matrix_job(b))
+dm_sub(f, a, b) = SingleCellProjections.get_job(f, a) # Var/Obs
+TestJobs.dm_sub(a, b) = create_job(DataMatrixFunction(dm_sub), a, b)
 
-dm_mul(::Mat, a, b) = my_mul_spec(get_matrix_spec(a), get_matrix_spec(b))
-dm_mul(f, a, b) = SingleCellProjections.get_spec(f, a) # Var/Obs
-TestJobs.dm_mul(a, b) = create_spec(DataMatrixFunction(dm_mul), a, b)
+dm_mul(::Mat, a, b) = my_mul_job(get_matrix_job(a), get_matrix_job(b))
+dm_mul(f, a, b) = SingleCellProjections.get_job(f, a) # Var/Obs
+TestJobs.dm_mul(a, b) = create_job(DataMatrixFunction(dm_mul), a, b)
 
-dm_div(::Mat, a, b) = my_div_spec(get_matrix_spec(a), get_matrix_spec(b))
-dm_div(f, a, b) = SingleCellProjections.get_spec(f, a) # Var/Obs
-TestJobs.dm_div(a, b) = create_spec(DataMatrixFunction(dm_div), a, b)
+dm_div(::Mat, a, b) = my_div_job(get_matrix_job(a), get_matrix_job(b))
+dm_div(f, a, b) = SingleCellProjections.get_job(f, a) # Var/Obs
+TestJobs.dm_div(a, b) = create_job(DataMatrixFunction(dm_div), a, b)
 
 
 # --- Utilities ---

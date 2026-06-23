@@ -6,21 +6,21 @@ function signature_pre(::Preprocessing, data, var_filter, out_col_name; loadings
 
 	if loadings
 		reduced = Jobs.loadings(data; svd_kwargs...)
-		pc1 = get_matrix_col_spec(Jobs.get_matrix(reduced), 1)
-		annot = get_var_spec(reduced)
+		pc1 = get_matrix_col_job(Jobs.get_matrix(reduced), 1)
+		annot = get_var_job(reduced)
 	else
 		reduced = Jobs.pca(data; svd_kwargs...)
-		pc1 = get_matrix_row_spec(Jobs.get_matrix(reduced), 1)
-		annot = get_obs_spec(reduced)
+		pc1 = get_matrix_row_job(Jobs.get_matrix(reduced), 1)
+		annot = get_obs_job(reduced)
 	end
 
 	extra_cols isa Union{Symbol,<:AbstractString} && (extra_cols = (extra_cols,)) # for splatting convenience
-	table = get_columns_spec(annot, fetched(get_id_colname_spec(annot)), extra_cols...)
-	table_hcat_spec(table, create_table_spec(out_col_name=>pc1))
+	table = get_columns_job(annot, fetched(get_id_colname_job(annot)), extra_cols...)
+	table_hcat_job(table, create_table_job(out_col_name=>pc1))
 end
 
-signature_spec(data, var_filter, out_col_name; kwargs...) =
-	create_spec(Preprocess(signature_pre), data, var_filter, out_col_name; kwargs...)
+signature_job(data, var_filter, out_col_name; kwargs...) =
+	create_job(Preprocess(signature_pre), data, var_filter, out_col_name; kwargs...)
 function Jobs.signature(data, var_filter, out_col_name; kwargs...)
-	signature_spec(data, var_filter, out_col_name; kwargs...)
+	signature_job(data, var_filter, out_col_name; kwargs...)
 end

@@ -74,11 +74,11 @@ function run_subset_tests()
 
 			Ns = length(obs_ind_subset)
 
-			var_ref_job = SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=collect(var_ind_subset))
-			obs_ref_job = SingleCellProjections.create_datamatrix_getindex_spec(data_job; obs_ind=collect(obs_ind_subset))
-			matrix_ref_job = SingleCellProjections.create_datamatrix_getindex_spec(data_job; var_ind=collect(var_ind_subset), obs_ind=collect(obs_ind_subset))
+			var_ref_job = SingleCellProjections.create_datamatrix_getindex_job(data_job; var_ind=collect(var_ind_subset))
+			obs_ref_job = SingleCellProjections.create_datamatrix_getindex_job(data_job; obs_ind=collect(obs_ind_subset))
+			matrix_ref_job = SingleCellProjections.create_datamatrix_getindex_job(data_job; var_ind=collect(var_ind_subset), obs_ind=collect(obs_ind_subset))
 
-			var_sub_ref_job = SingleCellProjections.create_datamatrix_getindex_spec(data_sub_job; var_ind=collect(var_ind_subset))
+			var_sub_ref_job = SingleCellProjections.create_datamatrix_getindex_job(data_sub_job; var_ind=collect(var_ind_subset))
 
 
 			var_ids_subset = select(data.var,:id)[var_ind_subset, :]

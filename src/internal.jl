@@ -1,8 +1,8 @@
 # WIP - some of these might not be needed.
 
-# This must be used instead of ifelse_spec when `cond` should be projected. Otherwise it will be fetched **before** projections take place.
-ifelse_pr(action::Action, cond, x, y) = ifelse_spec(action(cond), action(x), action(y))
-ifelse_pr_spec(cond, x, y) = create_spec(Projectable(ifelse_pr), cond, x, y)
+# This must be used instead of ifelse_job when `cond` should be projected. Otherwise it will be fetched **before** projections take place.
+ifelse_pr(action::Action, cond, x, y) = ifelse_job(action(cond), action(x), action(y))
+ifelse_pr_job(cond, x, y) = create_job(Projectable(ifelse_pr), cond, x, y)
 
 
 # Find a better name?
@@ -13,23 +13,23 @@ function combine_vectors_impl(args...; delim=nothing)
 	end
 	string.(args...)
 end
-combine_vectors_spec(args...; kwargs...) = create_spec(combine_vectors_impl, args...; kwargs..., __version=v"0.1.0")
+combine_vectors_job(args...; kwargs...) = create_job(combine_vectors_impl, args...; kwargs..., __version=v"0.1.0")
 
 
 
 
 
 _getindex_error(ind) = throw(ArgumentError("Raw indices not allowed when projecting (unless containers are identical). Got indices: $ind."))
-_getindex_error_spec(ind) = create_spec(_getindex_error, ind; __version=v"0.1.0")
+_getindex_error_job(ind) = create_job(_getindex_error, ind; __version=v"0.1.0")
 
-# getindex_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_spec(getindex, v, ind; __version=v"0.1.0")
+# getindex_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_job(getindex, v, ind; __version=v"0.1.0")
 # function getindex_impl(::Preprocessing{E}, v, ind) where E
 # 	if ind === Colon()
 # 		v
 # 	elseif E
-# 		create_spec(Preprocess{false}(getindex_impl), v, fetched(ind)) # NB: This way we fetch after projections are handled!
+# 		create_job(Preprocess{false}(getindex_impl), v, fetched(ind)) # NB: This way we fetch after projections are handled!
 # 	else
-# 		create_spec(getindex, v, ind; __version=v"0.1.0")
+# 		create_job(getindex, v, ind; __version=v"0.1.0")
 # 	end
 # end
 
@@ -38,25 +38,25 @@ function getindex_impl(::Preprocessing, v, ind)
 		v # Projections have been handled, so indexing by `:` is OK
 	elseif v isa SpecRef && v.f === getindex
 		# Collapse nested getindex calls which is important for getting canonical representations
-		create_spec(getindex, v.args[1], compose_ind(v.args[2], ind); __version=v"0.1.0")
+		create_job(getindex, v.args[1], compose_ind(v.args[2], ind); __version=v"0.1.0")
 	else
-		create_spec(getindex, v, ind; __version=v"0.1.0")
+		create_job(getindex, v, ind; __version=v"0.1.0")
 	end
 end
-getindex_impl_spec(v, ind) = create_spec(Preprocess{false}(getindex_impl), v, fetched(ind))
+getindex_impl_job(v, ind) = create_job(Preprocess{false}(getindex_impl), v, fetched(ind))
 
 function getindex_pr(action, v, ind)
 	v_p = action(v)
-	result = getindex_impl_spec(v_p, action(ind))
+	result = getindex_impl_job(v_p, action(ind))
 
 	if action isa Projection && !(ind isa SpecRef) # TODO: Fix, this will trigger even if ind is replaced by the action, which it shouldn't - maybe hard to avoid?
-		cond = isequal_spec(v, v_p)
-		result = ifelse_spec(cond, result, _getindex_error_spec(ind))
+		cond = isequal_job(v, v_p)
+		result = ifelse_job(cond, result, _getindex_error_job(ind))
 	end
 
 	result
 end
-getindex_spec(v, ind) = create_spec(Projectable(getindex_pr), v, ind)
+getindex_job(v, ind) = create_job(Projectable(getindex_pr), v, ind)
 
 
 
@@ -71,49 +71,49 @@ function getindex_or_missing(v::AbstractVector{Tv}, ind::AbstractVector{Ti}) whe
 	end
 end
 
-getindex_or_missing_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_spec(getindex_or_missing, v, ind; __version=v"0.1.1")
-getindex_or_missing_impl_spec(v, ind) = create_spec(Preprocess(getindex_or_missing_impl), v, fetched(ind))
+getindex_or_missing_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_job(getindex_or_missing, v, ind; __version=v"0.1.1")
+getindex_or_missing_impl_job(v, ind) = create_job(Preprocess(getindex_or_missing_impl), v, fetched(ind))
 
 function getindex_or_missing_pr(action, v, ind)
 	v_p = action(v)
-	result = getindex_or_missing_impl_spec(v_p, action(ind))
+	result = getindex_or_missing_impl_job(v_p, action(ind))
 
 	if action isa Projection && !(ind isa SpecRef)
-		cond = isequal_spec(v, v_p)
-		result = ifelse_spec(cond, result, _getindex_or_missing_error_spec(ind)) # TODO: Fix _getindex_or_missing_error_spec isn't defined anywhere...
+		cond = isequal_job(v, v_p)
+		result = ifelse_job(cond, result, _getindex_or_missing_error_job(ind)) # TODO: Fix _getindex_or_missing_error_job isn't defined anywhere...
 	end
 
 	result
 end
-getindex_or_missing_spec(v, ind) = create_spec(Projectable(getindex_or_missing_pr), v, ind)
+getindex_or_missing_job(v, ind) = create_job(Projectable(getindex_or_missing_pr), v, ind)
 
 
 
-intersect_spec(a, b, args...) = create_spec(intersect, a, b, args...; __version=v"0.1.0")
-length_spec(x) = create_spec(length, x; __version=v"0.1.0")
-unique_spec(x) = create_spec(unique, x; __version=v"0.1.0")
-join_spec(x, args...) = create_spec(join, x, args...; __version=v"0.1.0")
-reshape_spec(A, args...) = create_spec(reshape, A, args...; __version=v"0.1.0")
-repeat_spec(A, args...; kwargs...) = create_spec(repeat, A, args...; kwargs..., __version=v"0.1.0")
-prod_spec(args...; kwargs...) = create_spec(prod, args...; kwargs..., __version=v"0.1.0")
-allequal_spec(x) = create_spec(allequal, x; __version=v"0.1.0")
+intersect_job(a, b, args...) = create_job(intersect, a, b, args...; __version=v"0.1.0")
+length_job(x) = create_job(length, x; __version=v"0.1.0")
+unique_job(x) = create_job(unique, x; __version=v"0.1.0")
+join_job(x, args...) = create_job(join, x, args...; __version=v"0.1.0")
+reshape_job(A, args...) = create_job(reshape, A, args...; __version=v"0.1.0")
+repeat_job(A, args...; kwargs...) = create_job(repeat, A, args...; kwargs..., __version=v"0.1.0")
+prod_job(args...; kwargs...) = create_job(prod, args...; kwargs..., __version=v"0.1.0")
+allequal_job(x) = create_job(allequal, x; __version=v"0.1.0")
 
-# vcat_spec(args...; kwargs...) = create_spec(vcat, args...; kwargs..., __version=v"0.1.0")
-# hcat_spec(args...; kwargs...) = create_spec(hcat, args...; kwargs..., __version=v"0.1.0")
+# vcat_job(args...; kwargs...) = create_job(vcat, args...; kwargs..., __version=v"0.1.0")
+# hcat_job(args...; kwargs...) = create_job(hcat, args...; kwargs..., __version=v"0.1.0")
 
 vcat_impl(v; kwargs...) = reduce(vcat, v; kwargs...)
-vcat_spec(v; kwargs...) = create_spec(vcat_impl, v; kwargs..., __version=v"0.1.0")
+vcat_job(v; kwargs...) = create_job(vcat_impl, v; kwargs..., __version=v"0.1.0")
 
 hcat_impl(v; kwargs...) = reduce(hcat, v; kwargs...)
-hcat_spec(v; kwargs...) = create_spec(hcat_impl, v; kwargs..., __version=v"0.1.0")
+hcat_job(v; kwargs...) = create_job(hcat_impl, v; kwargs..., __version=v"0.1.0")
 
 
 
 apply_impl(f, args...; kwargs...) = f(args...; kwargs...)
-apply_spec(f, args...; kwargs...) = create_spec(apply_impl, f, args...; kwargs..., __version=v"0.1.0")
+apply_job(f, args...; kwargs...) = create_job(apply_impl, f, args...; kwargs..., __version=v"0.1.0")
 
 apply_broadcasted(f, args...; kwargs...) = f.(args...; kwargs...)
-apply_broadcasted_spec(f, args...; kwargs...) = create_spec(apply_broadcasted, f, args...; kwargs..., __version=v"0.1.0")
+apply_broadcasted_job(f, args...; kwargs...) = create_job(apply_broadcasted, f, args...; kwargs..., __version=v"0.1.0")
 
 
 
@@ -127,17 +127,17 @@ end
 function intersect_ind(::Preprocessing{E}, a, b) where E
 	a == Colon() && return b
 	b == Colon() && return a
-	E && return create_spec(Preprocess{false}(intersect_ind), a, b)
-	return create_spec(intersect_ind_impl, a, b; __version=v"0.1.0")
+	E && return create_job(Preprocess{false}(intersect_ind), a, b)
+	return create_job(intersect_ind_impl, a, b; __version=v"0.1.0")
 end
 
 """
-	intersect_ind_spec(a, b)
+	intersect_ind_job(a, b)
 
 Create a spec to compute the intersection of `Vector`s `a` and `b` with indexes.
 Just like `intersect`, but allows `a` and/or `b` to be `:`.
 """
-intersect_ind_spec(a, b) = create_spec(Preprocess(intersect_ind), a, b)
+intersect_ind_job(a, b) = create_job(Preprocess(intersect_ind), a, b)
 
 
 
@@ -151,12 +151,12 @@ function isequal_pre(::Preprocessing{E}, x, y) where E
 	elseif !(x isa SpecRef) && !(y isa SpecRef)
 		false # early out
 	elseif E
-		create_spec(Preprocess{false}(isequal_pre), x, y)
+		create_job(Preprocess{false}(isequal_pre), x, y)
 	else
-		create_spec(isequal, x, y; __version=v"0.1.0")
+		create_job(isequal, x, y; __version=v"0.1.0")
 	end
 end
-isequal_spec(x, y) = create_spec(Preprocess(isequal_pre), x, y)
+isequal_job(x, y) = create_job(Preprocess(isequal_pre), x, y)
 
 
 function indexin_impl(a::AbstractVector, b::AbstractVector; not_found)
@@ -189,21 +189,21 @@ function indexin_impl(a::DataFrame, b::DataFrame; not_found)
 	indexin_impl(a[!,1], b[!,1]; not_found)
 end
 
-indexin_spec(a, b; not_found=:error) = create_spec(indexin_impl, a, b; not_found, __version=v"0.1.2")
+indexin_job(a, b; not_found=:error) = create_job(indexin_impl, a, b; not_found, __version=v"0.1.2")
 
 
 
 
 
 
-nvar_spec(data) = table_nrow_spec(get_var_spec(data))
-Jobs.nvar(data) = nvar_spec(data)
+nvar_job(data) = table_nrow_job(get_var_job(data))
+Jobs.nvar(data) = nvar_job(data)
 
-nobs_spec(data) = table_nrow_spec(get_obs_spec(data))
-Jobs.nobs(data) = nobs_spec(data)
+nobs_job(data) = table_nrow_job(get_obs_job(data))
+Jobs.nobs(data) = nobs_job(data)
 
 
-find_matching_ind_impl_spec(f, df) = create_spec(SCPCore.find_matching_ind, f, df; __version=v"0.1.4")
+find_matching_ind_impl_job(f, df) = create_job(SCPCore.find_matching_ind, f, df; __version=v"0.1.4")
 
 
 function find_matching_ind(action::Action, f, df; project_ids::Symbol)
@@ -222,28 +222,28 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 
 		# subset the columns to only depend on those that are used
 		if k isa AbstractString
-			x = get_columns_spec(df, k)
-			matching_ind = cached(find_matching_ind_impl_spec(f, x))
+			x = get_columns_job(df, k)
+			matching_ind = cached(find_matching_ind_impl_job(f, x))
 		elseif k isa AbstractVector
-			x = get_columns_spec(df, k...)
-			matching_ind = cached(find_matching_ind_impl_spec(f, x))
+			x = get_columns_job(df, k...)
+			matching_ind = cached(find_matching_ind_impl_job(f, x))
 		elseif k isa Union{SpecRef, DataFrame}
 			# k is an "Annotation" - a DataFrame with an ID and a value column. Will be leftjoined and the function will be applied to the leftjoined vector with values.
 
-			# TODO: Share code with `_extract_data_spec`?
-			ids_a = id_column_spec(df)
-			ids_b = id_column_spec(k)
-			ind_spec = indexin_spec(ids_a, ids_b; not_found=:nothing)
-			v = value_column_data_spec(k)
-			x = getindex_or_missing_spec(v, ind_spec) # The values of the annotation `k`, reordered to match the order in df.
+			# TODO: Share code with `_extract_data_job`?
+			ids_a = id_column_job(df)
+			ids_b = id_column_job(k)
+			ind_job = indexin_job(ids_a, ids_b; not_found=:nothing)
+			v = value_column_data_job(k)
+			x = getindex_or_missing_job(v, ind_job) # The values of the annotation `k`, reordered to match the order in df.
 
-			matching_ind = cached(find_matching_ind_impl_spec(last(f), x))
+			matching_ind = cached(find_matching_ind_impl_job(last(f), x))
 		else
 			throw(ArgumentError("Unknown column selector $k of type $(typeof(k))."))
 		end
 	else
 		# This is used when `f` is a function taking a DataFrameRow
-		matching_ind = cached(find_matching_ind_impl_spec(f, df))
+		matching_ind = cached(find_matching_ind_impl_job(f, df))
 	end
 
 	if action isa Eval || project_ids == :no
@@ -252,27 +252,27 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 		return Colon()
 	else
 		# We need to remap the indices, going through IDs
-		ids = id_column_spec(df)
+		ids = id_column_job(df)
 		ids2 = action(ids) # IDs from projected dataset
 
-		cond = isequal_spec(ids, ids2)
+		cond = isequal_job(ids, ids2)
 
-		# matching_ids = table_getindex_impl_spec(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())
-		matching_ids = table_getindex_spec(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())
+		# matching_ids = table_getindex_impl_job(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())
+		matching_ids = table_getindex_job(ids, matching_ind) # unprojected IDs (NB: this will simplify if matching_ind==Colon())
 		if project_ids == :yes
-			proj_ind = indexin_spec(matching_ids, ids2; not_found=:error) # Use order from unprojected
+			proj_ind = indexin_job(matching_ids, ids2; not_found=:error) # Use order from unprojected
 		else#if project_ids == :intersect
-			proj_ind = indexin_spec(matching_ids, ids2; not_found=:skip) # Use order from unprojected
+			proj_ind = indexin_job(matching_ids, ids2; not_found=:skip) # Use order from unprojected
 		end
 
 		# This gives us an early out when ids==ids2, since we can just return matching_ind in that case (no need to bother with getting matching ids and doing indexin)
-		ifelse_spec(cond, matching_ind, proj_ind)
+		ifelse_job(cond, matching_ind, proj_ind)
 	end
 end
-create_find_matching_ind_spec(f, df; project_ids) =
-	create_spec(Projectable(find_matching_ind), f, df; project_ids)
+create_find_matching_ind_job(f, df; project_ids) =
+	create_job(Projectable(find_matching_ind), f, df; project_ids)
 # Jobs.find_matching_ind(args...; kwargs...) =
-# 	create_find_matching_ind_spec(args...; kwargs...)
+# 	create_find_matching_ind_job(args...; kwargs...)
 
 
 
@@ -283,19 +283,19 @@ function _colon_to_single_ind(x)
 	n = _nrow(x)
 	n==1 ? 1 : error("Expected a single element, got $n.")
 end
-_colon_to_single_ind_spec(x) = create_spec(_colon_to_single_ind, x; __version=v"0.1.0")
+_colon_to_single_ind_job(x) = create_job(_colon_to_single_ind, x; __version=v"0.1.0")
 
 function find_single_ind(::Preprocessing, f, df; project_id::Symbol)
-	ind = create_find_matching_ind_spec(f, df; project_ids=project_id)
+	ind = create_find_matching_ind_job(f, df; project_ids=project_id)
 
-	cond = isequal_spec(ind, Colon())
-	a = _colon_to_single_ind_spec(df) # This is an obscure edge case, because `:` is allowed iff there is only one element in the container. We could handle it nicer with more preprocessing, but it's probably not worth it.
-	b = apply_spec(only, ind)
-	ifelse_pr_spec(cond, a, b)
+	cond = isequal_job(ind, Colon())
+	a = _colon_to_single_ind_job(df) # This is an obscure edge case, because `:` is allowed iff there is only one element in the container. We could handle it nicer with more preprocessing, but it's probably not worth it.
+	b = apply_job(only, ind)
+	ifelse_pr_job(cond, a, b)
 end
 
-find_single_ind_spec(f, df; project_id) =
-	create_spec(Preprocess(find_single_ind), f, df; project_id)
+find_single_ind_job(f, df; project_id) =
+	create_job(Preprocess(find_single_ind), f, df; project_id)
 
 
 
@@ -309,7 +309,7 @@ find_single_ind_spec(f, df; project_id) =
 
 
 matrix_getindex_impl(matrix; kwargs...) =
-	create_spec(SCPCore.matrix_getindex, matrix; kwargs..., __version=v"0.1.0")
+	create_job(SCPCore.matrix_getindex, matrix; kwargs..., __version=v"0.1.0")
 
 
 function compose_ind(inner::Union{Colon, AbstractVector{<:Integer}}, outer::Union{Colon, AbstractVector{<:Integer}})
@@ -333,8 +333,8 @@ function matrix_getindex_pre(::Preprocessing{false}, matrix; var_ind, obs_ind)
 			@assert length(blocks) == length(ranges)
 
 			new_obs_ind, new_ranges = SCPCore.ind_to_blocked_ind(obs_ind, ranges)
-			new_blocks = [matrix_getindex_pre_spec(b; var_ind, obs_ind=I) for (b,I) in zip(blocks, new_obs_ind)]
-			hblock_spec(new_blocks, new_ranges)
+			new_blocks = [matrix_getindex_pre_job(b; var_ind, obs_ind=I) for (b,I) in zip(blocks, new_obs_ind)]
+			hblock_job(new_blocks, new_ranges)
 		end
 	elseif matrix.f === SCPCore.matrix_getindex
 		# Collapse nested getindex calls which is important for getting canonical representations
@@ -351,48 +351,48 @@ function matrix_getindex_pre(::Preprocessing{false}, matrix; var_ind, obs_ind)
 	end
 end
 
-matrix_getindex_pre_spec(matrix; var_ind, obs_ind) =
-	create_spec(Preprocess{false}(matrix_getindex_pre), matrix; var_ind, obs_ind)
+matrix_getindex_pre_job(matrix; var_ind, obs_ind) =
+	create_job(Preprocess{false}(matrix_getindex_pre), matrix; var_ind, obs_ind)
 
 
 
-function _matrix_ind_spec(action::Action, ind)
+function _matrix_ind_job(action::Action, ind)
 	ind === nothing && return Colon()
 	ind_p = action(ind)
 	if action isa Projection && !(ind isa SpecRef)
-		cond = isequal_spec(ind, ind_p)
-		ind_p = ifelse_spec(cond, ind_p, _getindex_error_spec(ind))
+		cond = isequal_job(ind, ind_p)
+		ind_p = ifelse_job(cond, ind_p, _getindex_error_job(ind))
 	end
 	return fetched(ind_p)
 end
 
 function matrix_getindex_pr(action::Action, matrix; var_ind=nothing, obs_ind=nothing)
 	matrix = action(matrix)
-	var_ind = _matrix_ind_spec(action, var_ind)
-	obs_ind = _matrix_ind_spec(action, obs_ind)
-	matrix_getindex_pre_spec(matrix; var_ind, obs_ind)
+	var_ind = _matrix_ind_job(action, var_ind)
+	obs_ind = _matrix_ind_job(action, obs_ind)
+	matrix_getindex_pre_job(matrix; var_ind, obs_ind)
 end
 
-function create_matrix_getindex_spec(matrix; kwargs...)
-	create_spec(Projectable(matrix_getindex_pr), matrix; kwargs...)
+function create_matrix_getindex_job(matrix; kwargs...)
+	create_job(Projectable(matrix_getindex_pr), matrix; kwargs...)
 end
 
 
 
 datamatrix_getindex(::Mat, data; kwargs...) =
-	create_matrix_getindex_spec(get_matrix_spec(data); kwargs...)
+	create_matrix_getindex_job(get_matrix_job(data); kwargs...)
 function datamatrix_getindex(::Var, data; var_ind=nothing, kwargs...)
-	var = get_var_spec(data)
-	var_ind === nothing ? var : table_getindex_spec(var, var_ind)
+	var = get_var_job(data)
+	var_ind === nothing ? var : table_getindex_job(var, var_ind)
 end
 function datamatrix_getindex(::Obs, data; obs_ind=nothing, kwargs...)
-	obs = get_obs_spec(data)
-	obs_ind === nothing ? obs : table_getindex_spec(obs, obs_ind)
+	obs = get_obs_job(data)
+	obs_ind === nothing ? obs : table_getindex_job(obs, obs_ind)
 end
 
 
-create_datamatrix_getindex_spec(data; kwargs...) =
-	create_spec(DataMatrixFunction(datamatrix_getindex), data; kwargs...)
+create_datamatrix_getindex_job(data; kwargs...) =
+	create_job(DataMatrixFunction(datamatrix_getindex), data; kwargs...)
 
 
 
@@ -450,10 +450,10 @@ function get_matrix_col(matrix, ind::Integer)
 	end
 	convert(Vector, res) # ensure it's dense
 end
-get_matrix_row_spec(matrix, ind) =
-	create_spec(get_matrix_row, matrix, ind; __version=v"0.1.0")
-get_matrix_col_spec(matrix, ind) =
-	create_spec(get_matrix_col, matrix, ind; __version=v"0.1.0")
+get_matrix_row_job(matrix, ind) =
+	create_job(get_matrix_row, matrix, ind; __version=v"0.1.0")
+get_matrix_col_job(matrix, ind) =
+	create_job(get_matrix_col, matrix, ind; __version=v"0.1.0")
 
 
 
@@ -461,8 +461,8 @@ get_matrix_col_spec(matrix, ind) =
 
 prefixed_id_values(prefix::String, n) = string.(prefix, 1:n)
 function prefixed_ids(::Preprocessing, col::String, prefix, n)
-	col_data = create_spec(prefixed_id_values, prefix, n; __version=v"0.1.0")
-	create_table_spec(col=>col_data)
+	col_data = create_job(prefixed_id_values, prefix, n; __version=v"0.1.0")
+	create_table_job(col=>col_data)
 end
-prefixed_ids_spec(col, prefix, n) =
-	create_spec(Preprocess(prefixed_ids), col, prefix, n)
+prefixed_ids_job(col, prefix, n) =
+	create_job(Preprocess(prefixed_ids), col, prefix, n)

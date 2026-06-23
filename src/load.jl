@@ -4,14 +4,14 @@ function load_var_impl(filename)
 	filename = string(filename)
 	SingleCell10x.read10x_features(filename, DataFrame)
 end
-load_var_spec(filename) = create_spec(load_var_impl, filename; __version=v"0.1.0")
+load_var_job(filename) = create_job(load_var_impl, filename; __version=v"0.1.0")
 
 function load_barcodes_impl(filename)
 	@assert filename isa ChecksummedFilePath
 	filename = string(filename)
 	SingleCell10x.read10x_barcodes(filename)
 end
-load_barcodes_spec(filename; kwargs...) = create_spec(load_barcodes_impl, filename; kwargs..., __version=v"0.1.0")
+load_barcodes_job(filename; kwargs...) = create_job(load_barcodes_impl, filename; kwargs..., __version=v"0.1.0")
 
 
 function vcat_tables(tables; kwargs...)
@@ -19,22 +19,22 @@ function vcat_tables(tables; kwargs...)
 	df = reduce(vcat, tables)
 	table_to_compound_result(df)
 end
-vcat_tables_spec(tables; kwargs...) = create_spec(vcat_tables, tables; kwargs..., __version=v"0.1.0")
+vcat_tables_job(tables; kwargs...) = create_job(vcat_tables, tables; kwargs..., __version=v"0.1.0")
 
 
 function combine_obs(::Preprocessing, filenames, sample_names)
-	sample_barcodes_specs = load_barcodes_spec.(filenames)
-	sample_id_specs = combine_vectors_spec.(sample_names, '_', sample_barcodes_specs)
-	sample_obs_specs = create_table_spec.("cell_id" .=> sample_id_specs,
+	sample_barcodes_specs = load_barcodes_job.(filenames)
+	sample_id_specs = combine_vectors_job.(sample_names, '_', sample_barcodes_specs)
+	sample_obs_specs = create_table_job.("cell_id" .=> sample_id_specs,
 	                                      "sample_name" .=> sample_names,
 	                                      "barcode" .=> sample_barcodes_specs)
-	combined = vcat_tables_spec(sample_obs_specs)
+	combined = vcat_tables_job(sample_obs_specs)
 
 	table_from_compound_result(combined, ["cell_id", "sample_name", "barcode"])
 end
 
-combine_obs_spec(filenames, sample_names) =
-	create_spec(Preprocess(combine_obs), filenames, sample_names)
+combine_obs_job(filenames, sample_names) =
+	create_job(Preprocess(combine_obs), filenames, sample_names)
 
 
 function combine_var_impl(vars; kwargs...)
@@ -44,25 +44,25 @@ end
 
 
 function combine_var(::Preprocessing, vars; kwargs...)
-	combined = create_spec(combine_var_impl, vars; kwargs..., __version=v"0.1.1")
+	combined = create_job(combine_var_impl, vars; kwargs..., __version=v"0.1.1")
 	table_from_compound_result(combined)
 end
 
 
-combine_var_spec(vars; kwargs...) =
-	create_spec(Preprocess(combine_var), vars; kwargs...)
+combine_var_job(vars; kwargs...) =
+	create_job(Preprocess(combine_var), vars; kwargs...)
 
 
-sample_var_indices_spec(sample_var, var; kwargs...) =
-	cached(create_spec(SCPCore.sample_var_indices, sample_var, var; kwargs..., __version=v"0.1.0"))
+sample_var_indices_job(sample_var, var; kwargs...) =
+	cached(create_job(SCPCore.sample_var_indices, sample_var, var; kwargs..., __version=v"0.1.0"))
 
 function load_sample_matrix_metadata_impl(filename, var_ind)
 	@assert filename isa ChecksummedFilePath
 	filename = string(filename)
 	SCPCore.load_sample_matrix_metadata(filename, var_ind)
 end
-load_sample_matrix_metadata_spec(filename, var_ind; kwargs...) =
-	cached(create_spec(load_sample_matrix_metadata_impl, filename, var_ind; kwargs..., __version=v"0.1.0"))
+load_sample_matrix_metadata_job(filename, var_ind; kwargs...) =
+	cached(create_job(load_sample_matrix_metadata_impl, filename, var_ind; kwargs..., __version=v"0.1.0"))
 
 
 
@@ -72,28 +72,28 @@ load_sample_matrix_metadata_spec(filename, var_ind; kwargs...) =
 # 	filenames = string.(filenames)
 # 	SCPCore.load_hcat_sample_matrices(Tv, Ti, filenames, matrix_metadatas, var_inds)
 # end
-# function load_hcat_sample_matrices_spec(filenames, matrix_metadatas, var_inds; Tv=Int, Ti=Int32)
+# function load_hcat_sample_matrices_job(filenames, matrix_metadatas, var_inds; Tv=Int, Ti=Int32)
 # 	kwargs = (;)
 # 	if Tv != Int || Ti != Int32
 # 		kwargs = (; Tv, Ti)
 # 	end
-# 	create_spec(load_hcat_sample_matrices_impl, filenames, matrix_metadatas, var_inds; kwargs..., __version=v"0.1.0")
+# 	create_job(load_hcat_sample_matrices_impl, filenames, matrix_metadatas, var_inds; kwargs..., __version=v"0.1.0")
 # end
 
 # function load_counts(f::Union{Mat,Var}, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
-# 	sample_var_specs = load_var_spec.(filename_specs)
-# 	var_spec = combine_var_spec(sample_var_specs; prefilter, extra_id_cols)
+# 	sample_var_specs = load_var_job.(filename_specs)
+# 	var_job = combine_var_job(sample_var_specs; prefilter, extra_id_cols)
 
 # 	if f isa Var
-# 		return var_spec
+# 		return var_job
 # 	else # if f isa Mat
-# 		var_ind_specs = prefetched.(sample_var_indices_spec.(sample_var_specs, var_spec; extra_id_cols))
-# 		metadata_specs = prefetched.(load_sample_matrix_metadata_spec.(filename_specs, var_ind_specs))
-# 		return load_hcat_sample_matrices_spec(filename_specs, metadata_specs, var_ind_specs; kwargs...)
+# 		var_ind_specs = prefetched.(sample_var_indices_job.(sample_var_specs, var_job; extra_id_cols))
+# 		metadata_specs = prefetched.(load_sample_matrix_metadata_job.(filename_specs, var_ind_specs))
+# 		return load_hcat_sample_matrices_job(filename_specs, metadata_specs, var_ind_specs; kwargs...)
 # 	end
 # end
 # load_counts(::Obs, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...) =
-# 	combine_obs_spec(filename_specs, sample_names)
+# 	combine_obs_job(filename_specs, sample_names)
 
 # function Jobs.load_counts(filenames;
 #                           sample_names,
@@ -107,8 +107,8 @@ load_sample_matrix_metadata_spec(filename, var_ind; kwargs...) =
 # 	#       feature/barcode files already here so that they can be checksummed too.
 # 	@assert all(x->lowercase(splitext(x)[2])==".h5", filenames) "Only 10x .h5 files are currently supported"
 
-# 	filename_specs = checksummedfilepath_spec.(filenames)
-# 	create_spec(DataMatrixFunction(load_counts), filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
+# 	filename_specs = checksummedfilepath_job.(filenames)
+# 	create_job(DataMatrixFunction(load_counts), filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
 # end
 
 
@@ -118,39 +118,39 @@ function load_sample_matrix_impl(filename::ChecksummedFilePath, var_ind; Tv=Int,
 	X = SCPCore.load_sample_matrix(Tv, Ti, string(filename), var_ind)
 	SCPCore.blockify(X; row_block_size, col_block_size)
 end
-load_sample_matrix_spec(filename, var_ind; row_block_size=1024, col_block_size=1024, kwargs...) =
-	create_spec(load_sample_matrix_impl, filename, var_ind; row_block_size, col_block_size, kwargs..., __version=v"0.1.0")
+load_sample_matrix_job(filename, var_ind; row_block_size=1024, col_block_size=1024, kwargs...) =
+	create_job(load_sample_matrix_impl, filename, var_ind; row_block_size, col_block_size, kwargs..., __version=v"0.1.0")
 
 
 function metadata_to_hblock_ranges(metadata::AbstractVector{Tuple{Int,Int,Int}})
 	Ns = getindex.(metadata, 2)
 	SCPCore.block_sizes_to_ranges(Ns)
 end
-metadata_to_hblock_ranges_spec(metadata) =
-	create_spec(metadata_to_hblock_ranges, metadata; __version=v"0.0.1")
+metadata_to_hblock_ranges_job(metadata) =
+	create_job(metadata_to_hblock_ranges, metadata; __version=v"0.0.1")
 
 
 function load_counts(f::Union{Mat,Var}, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
-	sample_var_specs = load_var_spec.(filename_specs)
-	var_spec = combine_var_spec(sample_var_specs; prefilter, extra_id_cols)
+	sample_var_specs = load_var_job.(filename_specs)
+	var_job = combine_var_job(sample_var_specs; prefilter, extra_id_cols)
 
 	if f isa Var
-		return var_spec
+		return var_job
 	else # if f isa Mat
-		var_ind_specs = prefetched.(sample_var_indices_spec.(sample_var_specs, var_spec; extra_id_cols))
-		sample_specs = load_sample_matrix_spec.(filename_specs, var_ind_specs)
+		var_ind_specs = prefetched.(sample_var_indices_job.(sample_var_specs, var_job; extra_id_cols))
+		sample_specs = load_sample_matrix_job.(filename_specs, var_ind_specs)
 
 		if length(sample_specs)	== 1
 			return only(sample_specs)
 		else
-			metadata_specs = load_sample_matrix_metadata_spec.(filename_specs, var_ind_specs)
-			ranges = fetched(metadata_to_hblock_ranges_spec(vcat_spec(metadata_specs)))
-			return hblock_spec(sample_specs, ranges)
+			metadata_specs = load_sample_matrix_metadata_job.(filename_specs, var_ind_specs)
+			ranges = fetched(metadata_to_hblock_ranges_job(vcat_job(metadata_specs)))
+			return hblock_job(sample_specs, ranges)
 		end
 	end
 end
 load_counts(::Obs, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...) =
-	combine_obs_spec(filename_specs, sample_names)
+	combine_obs_job(filename_specs, sample_names)
 
 function Jobs.load_counts(filenames;
                           sample_names,
@@ -164,6 +164,6 @@ function Jobs.load_counts(filenames;
 	#       feature/barcode files already here so that they can be checksummed too.
 	@assert all(x->lowercase(splitext(x)[2])==".h5", filenames) "Only 10x .h5 files are currently supported"
 
-	filename_specs = checksummedfilepath_spec.(filenames)
-	create_spec(DataMatrixFunction(load_counts), filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
+	filename_specs = checksummedfilepath_job.(filenames)
+	create_job(DataMatrixFunction(load_counts), filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
 end

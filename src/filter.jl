@@ -1,16 +1,16 @@
 function subset_matrix(::Preprocessing, data; var_ids=nothing, obs_ids=nothing)
-	var_ind_args = var_ids === nothing ? (;) : (; var_ind=indexin_spec(var_ids, id_column_spec(get_var_spec(data)); not_found=:error))
-	obs_ind_args = obs_ids === nothing ? (;) : (; obs_ind=indexin_spec(obs_ids, id_column_spec(get_obs_spec(data)); not_found=:error))
-	create_datamatrix_getindex_spec(data; var_ind_args..., obs_ind_args...)
+	var_ind_args = var_ids === nothing ? (;) : (; var_ind=indexin_job(var_ids, id_column_job(get_var_job(data)); not_found=:error))
+	obs_ind_args = obs_ids === nothing ? (;) : (; obs_ind=indexin_job(obs_ids, id_column_job(get_obs_job(data)); not_found=:error))
+	create_datamatrix_getindex_job(data; var_ind_args..., obs_ind_args...)
 end
 
 
 Jobs.subset_matrix(data, var_ids, obs_ids) =
-	create_spec(Preprocess(subset_matrix), data; var_ids, obs_ids)
+	create_job(Preprocess(subset_matrix), data; var_ids, obs_ids)
 Jobs.subset_var(data, var_ids) =
-	create_spec(Preprocess(subset_matrix), data; var_ids)
+	create_job(Preprocess(subset_matrix), data; var_ids)
 Jobs.subset_obs(data, obs_ids) =
-	create_spec(Preprocess(subset_matrix), data; obs_ids)
+	create_job(Preprocess(subset_matrix), data; obs_ids)
 
 
 
@@ -28,16 +28,16 @@ function filter_matrix(::Preprocessing, data; fvar=nothing, fobs=nothing, projec
 	project_var_ids = @something(project_var_ids, :intersect)
 	project_obs_ids = @something(project_obs_ids, :no)
 
-	var_ind = create_find_matching_ind_spec(fvar, get_var_spec(data); project_ids=project_var_ids)
-	obs_ind = create_find_matching_ind_spec(fobs, get_obs_spec(data); project_ids=project_obs_ids)
+	var_ind = create_find_matching_ind_job(fvar, get_var_job(data); project_ids=project_var_ids)
+	obs_ind = create_find_matching_ind_job(fobs, get_obs_job(data); project_ids=project_obs_ids)
 
-	create_datamatrix_getindex_spec(data; var_ind, obs_ind)
+	create_datamatrix_getindex_job(data; var_ind, obs_ind)
 end
 
 
 Jobs.filter_matrix(fvar, fobs, data; kwargs...) =
-	create_spec(Preprocess(filter_matrix), data; kwargs..., fvar, fobs)
+	create_job(Preprocess(filter_matrix), data; kwargs..., fvar, fobs)
 Jobs.filter_var(fvar, data; kwargs...) =
-	create_spec(Preprocess(filter_matrix), data; kwargs..., fvar)
+	create_job(Preprocess(filter_matrix), data; kwargs..., fvar)
 Jobs.filter_obs(fobs, data; kwargs...) =
-	create_spec(Preprocess(filter_matrix), data; kwargs..., fobs)
+	create_job(Preprocess(filter_matrix), data; kwargs..., fobs)

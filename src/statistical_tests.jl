@@ -26,8 +26,8 @@ function nonmissing_ind(column_data...)
 	all(mask) && return Colon()
 	findall(mask)
 end
-nonmissing_ind_spec(column_data...) =
-	create_spec(nonmissing_ind, column_data...; __version=v"0.1.0")
+nonmissing_ind_job(column_data...) =
+	create_job(nonmissing_ind, column_data...; __version=v"0.1.0")
 
 
 
@@ -36,18 +36,18 @@ function _filter_missing_obs(data, h::Tuple)
 
 	# Handle missing values
 	skip_missing_cols = []
-	obs = get_obs_spec(data)
+	obs = get_obs_job(data)
 
 	for a in h
 		if a isa Pair
 			a = a.first
 		end
-		push!(skip_missing_cols, _extract_data_spec(obs, a))
+		push!(skip_missing_cols, _extract_data_job(obs, a))
 	end
 
-	skip_missing_cols = (_extract_data_spec(obs, a isa Pair ? a.first : a) for a in h)
-	obs_ind = nonmissing_ind_spec(skip_missing_cols...)
-	create_datamatrix_getindex_spec(data; obs_ind)
+	skip_missing_cols = (_extract_data_job(obs, a isa Pair ? a.first : a) for a in h)
+	obs_ind = nonmissing_ind_job(skip_missing_cols...)
+	create_datamatrix_getindex_job(data; obs_ind)
 end
 
 function _filter_missing_obs(data; h1::Union{Tuple,AbstractVector}, h1_missing,
@@ -64,14 +64,14 @@ end
 
 
 function ftest_table_pr(action::Action, matrix, var, h1_design, h0_design; do_sort)
-	cached(create_spec(SCPCore.ftest_table2,
+	cached(create_job(SCPCore.ftest_table2,
 	                   action(matrix), action(var), action(h1_design), action(h0_design);
 	                   do_sort,
 	                   __version=v"0.0.1"))
 end
 
-ftest_table_spec(matrix, var, h1_design, h0_design; kwargs...) =
-	create_spec(Projectable(ftest_table_pr), matrix, var, h1_design, h0_design; kwargs...)
+ftest_table_job(matrix, var, h1_design, h0_design; kwargs...) =
+	create_job(Projectable(ftest_table_pr), matrix, var, h1_design, h0_design; kwargs...)
 
 
 function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=nothing, h1_missing=:skip, h0_missing=:error, var_cols=nothing, do_sort=true)
@@ -88,26 +88,26 @@ function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	extra_kwargs = max_categories === nothing ? (;) : (; max_categories)
 
 	# Hmm. We want h1 to be mean-zero (if center=true), but we don't want the intercept column.
-	h1_design = designmatrix_spec(data, h1...; center=false, extra_kwargs...)
-	h0_design = designmatrix_spec(data, h0...; center, extra_kwargs...)
+	h1_design = designmatrix_job(data, h1...; center=false, extra_kwargs...)
+	h0_design = designmatrix_job(data, h0...; center, extra_kwargs...)
 
-	matrix = get_matrix_spec(data)
+	matrix = get_matrix_job(data)
 
-	var = get_var_spec(data)
-	table_var = id_column_spec(var)
+	var = get_var_job(data)
+	table_var = id_column_job(var)
 	if var_cols !== nothing
 		var_cols = _splattable(var_cols)
-		table_var = table_hcat_spec(table_var, get_columns_spec(var, var_cols...))
+		table_var = table_hcat_job(table_var, get_columns_job(var, var_cols...))
 	end
 
-	ftest_table_spec(matrix, table_var, get_matrix_spec(h1_design), get_matrix_spec(h0_design); do_sort)
+	ftest_table_job(matrix, table_var, get_matrix_job(h1_design), get_matrix_job(h0_design); do_sort)
 end
 
 
-ftest_spec(data, h1; kwargs...) =
-	create_spec(Preprocess(ftest), data, h1; kwargs...)
+ftest_job(data, h1; kwargs...) =
+	create_job(Preprocess(ftest), data, h1; kwargs...)
 function Jobs.ftest(data, h1; kwargs...)
-	ftest_spec(data, h1; kwargs...)
+	ftest_job(data, h1; kwargs...)
 end
 
 
@@ -115,7 +115,7 @@ end
 
 
 function ttest_table_pr(action::Action, matrix, var, h1_design, h1_scale, h0_design; do_sort)
-	cached(create_spec(SCPCore.ttest_table2,
+	cached(create_job(SCPCore.ttest_table2,
 	                   action(matrix), action(var),
 	                   action(h1_design), prefetched(action(h1_scale)),
 	                   action(h0_design);
@@ -123,8 +123,8 @@ function ttest_table_pr(action::Action, matrix, var, h1_design, h1_scale, h0_des
 	                   __version=v"0.0.1"))
 end
 
-ttest_table_spec(matrix, var, h1_design, h1_scale, h0_design; kwargs...) =
-	create_spec(Projectable(ttest_table_pr), matrix, var, h1_design, h1_scale, h0_design; kwargs...)
+ttest_table_job(matrix, var, h1_design, h1_scale, h0_design; kwargs...) =
+	create_job(Projectable(ttest_table_pr), matrix, var, h1_design, h1_scale, h0_design; kwargs...)
 
 
 
@@ -149,7 +149,7 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	# Handle missing values
 	data = _filter_missing_obs(data; h1=_splattable(h1), h0, h1_missing, h0_missing)
 
-	obs = get_obs_spec(data)
+	obs = get_obs_job(data)
 
 
 	extra_kwargs = max_categories === nothing ? (;) : (; max_categories)
@@ -161,33 +161,33 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	center = center || (h1_cov_desc isa TwoGroupCovariateDesc) # Center if h1 requires it
 	if !center # Figure out if h0 requires centering
 		_, h0_cov_descs = setup_covariate_descriptions(obs, h0...)
-		center = fetched(has_centering_spec(h0_cov_descs))
+		center = fetched(has_centering_job(h0_cov_descs))
 	end
 
 
-	h0_design = designmatrix_spec(data, h0...; center, extra_kwargs...)
+	h0_design = designmatrix_job(data, h0...; center, extra_kwargs...)
 
-	h1_cov_data = _extract_data_spec(obs, h1_cov_annot)
-	ms = mean_and_scale_spec(h1_cov_data, h1_cov_desc; center)
-	h1_scale = fetched(getindex_spec(ms, 2))
-	h1_design_mat = covariate_matrix_spec(h1_cov_data, h1_cov_desc; center) # center affects this column, but we don't get an intercept
+	h1_cov_data = _extract_data_job(obs, h1_cov_annot)
+	ms = mean_and_scale_job(h1_cov_data, h1_cov_desc; center)
+	h1_scale = fetched(getindex_job(ms, 2))
+	h1_design_mat = covariate_matrix_job(h1_cov_data, h1_cov_desc; center) # center affects this column, but we don't get an intercept
 
-	matrix = get_matrix_spec(data)
+	matrix = get_matrix_job(data)
 
-	var = get_var_spec(data)
-	table_var = id_column_spec(var)
+	var = get_var_job(data)
+	table_var = id_column_job(var)
 	if var_cols !== nothing
 		var_cols = _splattable(var_cols)
-		table_var = table_hcat_spec(table_var, get_columns_spec(var, var_cols...))
+		table_var = table_hcat_job(table_var, get_columns_job(var, var_cols...))
 	end
 
-	ttest_table_spec(matrix, table_var, h1_design_mat, h1_scale, get_matrix_spec(h0_design); do_sort)
+	ttest_table_job(matrix, table_var, h1_design_mat, h1_scale, get_matrix_job(h0_design); do_sort)
 end
 
 
 
-ttest_spec(data, h1; kwargs...) =
-	create_spec(Preprocess(ttest), data, h1; kwargs...)
+ttest_job(data, h1; kwargs...) =
+	create_job(Preprocess(ttest), data, h1; kwargs...)
 function Jobs.ttest(data, h1; kwargs...)
-	ttest_spec(data, h1; kwargs...)
+	ttest_job(data, h1; kwargs...)
 end

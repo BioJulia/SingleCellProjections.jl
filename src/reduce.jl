@@ -1,10 +1,10 @@
 function actual_nsv_pr(::Action, data, nsv)
 	# NB: nsv is determined completely by the base case, so we do not project
-	P = nvar_spec(data)
-	N = nobs_spec(data)
-	create_spec(min, nsv, P, N; __version=v"0.1.0")
+	P = nvar_job(data)
+	N = nobs_job(data)
+	create_job(min, nsv, P, N; __version=v"0.1.0")
 end
-actual_nsv_spec(data, nsv) = create_spec(Projectable(actual_nsv_pr), data, nsv)
+actual_nsv_job(data, nsv) = create_job(Projectable(actual_nsv_pr), data, nsv)
 
 
 function implicitsvd_impl(matrix; kwargs...)
@@ -12,53 +12,53 @@ function implicitsvd_impl(matrix; kwargs...)
 	F = SCPCore.implicitsvd(matrix; progress, tick=throw_if_cancelled, kwargs...)
 	CompoundResult(; F.U, F.S, F.Vt)
 end
-function implicitsvd_spec(matrix;
+function implicitsvd_job(matrix;
                           nsv,
                           seed,
                           subspacedims = 4nsv,
                           niter = 3,
                           stabilize_sign = true,
                           kwargs...)
-	create_spec(implicitsvd_impl, matrix; nsv, seed, subspacedims, niter, stabilize_sign, kwargs..., __version=v"0.1.1") # must be used with cached() to handle the CompoundResult
+	create_job(implicitsvd_impl, matrix; nsv, seed, subspacedims, niter, stabilize_sign, kwargs..., __version=v"0.1.1") # must be used with cached() to handle the CompoundResult
 end
 
-svd_projected_svt_spec(U, X) =
-	cached(create_spec(SCPCore.svd_projected_svt, U, X; __version=v"0.1.0"))
+svd_projected_svt_job(U, X) =
+	cached(create_job(SCPCore.svd_projected_svt, U, X; __version=v"0.1.0"))
 
-svd_project_mul_sinv_spec(ΣVt, S) =
-	cached(create_spec(SCPCore.svd_project_mul_sinv, ΣVt, S; __version=v"0.1.0"))
+svd_project_mul_sinv_job(ΣVt, S) =
+	cached(create_job(SCPCore.svd_project_mul_sinv, ΣVt, S; __version=v"0.1.0"))
 
-assemble_svd(U, S, Vt) = create_spec(LinearAlgebra.SVD, U, S, Vt; __version=v"0.1.0")
+assemble_svd(U, S, Vt) = create_job(LinearAlgebra.SVD, U, S, Vt; __version=v"0.1.0")
 
 
 # helpers
-_svd_U_spec(svd_spec) = cached(svd_spec, "U")
-_svd_S_spec(svd_spec) = cached(svd_spec, "S")
-_svd_Vt_spec(svd_spec) = cached(svd_spec, "Vt")
+_svd_U_job(svd_job) = cached(svd_job, "U")
+_svd_S_job(svd_job) = cached(svd_job, "S")
+_svd_Vt_job(svd_job) = cached(svd_job, "Vt")
 
 function svd_pr(action::Action, matrix; kwargs...)
 	# First SVD of unprojected
-	svd_spec = implicitsvd_spec(matrix; kwargs...)
-	U = _svd_U_spec(svd_spec) # unaffected by projection
-	S = _svd_S_spec(svd_spec) # unaffected by projection
+	svd_job = implicitsvd_job(matrix; kwargs...)
+	U = _svd_U_job(svd_job) # unaffected by projection
+	S = _svd_S_job(svd_job) # unaffected by projection
 	if action isa Eval
-		Vt = _svd_Vt_spec(svd_spec)
+		Vt = _svd_Vt_job(svd_job)
 	else#if action isa Projection
-		ΣVt = svd_projected_svt_spec(U, action(matrix))
-		Vt = svd_project_mul_sinv_spec(ΣVt, S)
+		ΣVt = svd_projected_svt_job(U, action(matrix))
+		Vt = svd_project_mul_sinv_job(ΣVt, S)
 	end
 	assemble_svd(U, S, Vt)
 end
 
 function svd(::Mat, data; nsv, kwargs...)
-	nsv = fetched(actual_nsv_spec(data, nsv))
-	create_spec(Projectable(svd_pr), get_matrix_spec(data); nsv, kwargs...)
+	nsv = fetched(actual_nsv_job(data, nsv))
+	create_job(Projectable(svd_pr), get_matrix_job(data); nsv, kwargs...)
 end
-svd(f::Union{Var,Obs}, data; kwargs...) = get_spec(f, data)
+svd(f::Union{Var,Obs}, data; kwargs...) = get_job(f, data)
 
 
 function Jobs.svd(matrix; nsv, seed=1234, kwargs...)
-	create_spec(DataMatrixFunction(svd), matrix; nsv, seed, kwargs...)
+	create_job(DataMatrixFunction(svd), matrix; nsv, seed, kwargs...)
 end
 
 
@@ -67,37 +67,37 @@ end
 
 
 compute_components(S, Vt) = LinearAlgebra.Diagonal(S)*Vt
-compute_components_spec(S, Vt) = create_spec(compute_components, S, Vt; __version=v"0.1.0")
+compute_components_job(S, Vt) = create_job(compute_components, S, Vt; __version=v"0.1.0")
 
 function pca_pr(action::Action, matrix; kwargs...)
 	# First SVD of unprojected
-	svd_spec = implicitsvd_spec(matrix; kwargs...)
-	S = _svd_S_spec(svd_spec) # unaffected by projection
+	svd_job = implicitsvd_job(matrix; kwargs...)
+	S = _svd_S_job(svd_job) # unaffected by projection
 	if action isa Eval
-		Vt = _svd_Vt_spec(svd_spec)
-		compute_components_spec(S, Vt)
+		Vt = _svd_Vt_job(svd_job)
+		compute_components_job(S, Vt)
 	else#if action isa Projection
-		U = _svd_U_spec(svd_spec) # unaffected by projection
-		svd_projected_svt_spec(U, action(matrix))
+		U = _svd_U_job(svd_job) # unaffected by projection
+		svd_projected_svt_job(U, action(matrix))
 	end
 end
 
 # This is needed to ensure nsv is fetched - also in the projection case.
 pca_pre(::Preprocessing, matrix; kwargs...) =
-	create_spec(Projectable(pca_pr), matrix; kwargs...)
+	create_job(Projectable(pca_pr), matrix; kwargs...)
 
 function pca(::Mat, data; nsv, kwargs...)
-	nsv = fetched(actual_nsv_spec(data, nsv))
-	create_spec(Preprocess(pca_pre), get_matrix_spec(data); nsv, kwargs...)
+	nsv = fetched(actual_nsv_job(data, nsv))
+	create_job(Preprocess(pca_pre), get_matrix_job(data); nsv, kwargs...)
 end
 function pca(::Var, data; nsv, kwargs...)
-	nsv = fetched(actual_nsv_spec(data, nsv))
-	prefixed_ids_spec("PC_id", "PC", nsv)
+	nsv = fetched(actual_nsv_job(data, nsv))
+	prefixed_ids_job("PC_id", "PC", nsv)
 end
-pca(::Obs, data; kwargs...) = get_spec(Obs(), data)
+pca(::Obs, data; kwargs...) = get_job(Obs(), data)
 
 function Jobs.pca(data; nsv, seed=1234, kwargs...)
-	create_spec(DataMatrixFunction(pca), data; nsv, seed, kwargs...)
+	create_job(DataMatrixFunction(pca), data; nsv, seed, kwargs...)
 end
 
 
@@ -105,22 +105,22 @@ end
 
 function loadings_pr(::Action, matrix; kwargs...)
 	# Loadings are not affected by projection
-	svd_spec = implicitsvd_spec(matrix; kwargs...)
-	_svd_U_spec(svd_spec)
+	svd_job = implicitsvd_job(matrix; kwargs...)
+	_svd_U_job(svd_job)
 end
 
 function loadings(::Mat, data; nsv, kwargs...)
-	nsv = fetched(actual_nsv_spec(data, nsv))
-	create_spec(Projectable(loadings_pr), get_matrix_spec(data); nsv, kwargs...)
+	nsv = fetched(actual_nsv_job(data, nsv))
+	create_job(Projectable(loadings_pr), get_matrix_job(data); nsv, kwargs...)
 end
-loadings(::Var, data; kwargs...) = get_spec(Var(), data)
+loadings(::Var, data; kwargs...) = get_job(Var(), data)
 function loadings(::Obs, data; nsv, kwargs...)
-	nsv = fetched(actual_nsv_spec(data, nsv))
-	prefixed_ids_spec("loadings_id", "loadings", nsv)
+	nsv = fetched(actual_nsv_job(data, nsv))
+	prefixed_ids_job("loadings_id", "loadings", nsv)
 end
 
 function Jobs.loadings(args...; nsv, seed=1234, kwargs...)
-	create_spec(DataMatrixFunction(loadings), args...; nsv, seed, kwargs...)
+	create_job(DataMatrixFunction(loadings), args...; nsv, seed, kwargs...)
 end
 
 
@@ -129,8 +129,8 @@ end
 
 
 # embed_points(weighted_adj, matrix) = matrix*weighted_adj
-# create_embed_points_spec(weighted_adj, matrix) =
-# 	cached(create_spec(embed_points, weighted_adj, matrix; __version=v"0.1.0"))
+# create_embed_points_job(weighted_adj, matrix) =
+# 	cached(create_job(embed_points, weighted_adj, matrix; __version=v"0.1.0"))
 
 function embed_points(f, base_data, base_reduced::AbstractMatrix{T}, data, indices) where T
 	base_N = size(base_data,2)
@@ -158,8 +158,8 @@ function embed_points(f, base_data, base_reduced::AbstractMatrix{T}, data, indic
 
 	out
 end
-create_embed_points_spec(f, base_data, base_reduced, data, indices) =
-	cached(create_spec(embed_points, f, base_data, base_reduced, data, indices; __version=v"0.2.0"))
+create_embed_points_job(f, base_data, base_reduced, data, indices) =
+	cached(create_job(embed_points, f, base_data, base_reduced, data, indices; __version=v"0.2.0"))
 
 
 function force_layout_impl(args...; kwargs...)
@@ -189,10 +189,10 @@ function force_layout(action::Action, matrix;
                      )
 
 	# First force layout of unprojected
-	knn_indices = cached(find_nearest_neighbors_spec(matrix; k, k_fraction))
-	adj_spec = adjacency_matrix_spec(knn_indices; make_symmetric)
+	knn_indices = cached(find_nearest_neighbors_job(matrix; k, k_fraction))
+	adj_job = adjacency_matrix_job(knn_indices; make_symmetric)
 
-	fl_spec = cached(create_spec(force_layout_impl, adj_spec;
+	fl_job = cached(create_job(force_layout_impl, adj_job;
 	                             ndim,
 	                             niter,
 	                             link_distance, link_strength,
@@ -206,10 +206,10 @@ function force_layout(action::Action, matrix;
 	                            ))
 
 	if action isa Eval
-		return fl_spec
+		return fl_job
 	else#if actions isa Projection
-		knn_indices_p = cached(find_nearest_neighbors_spec(matrix, action(matrix); k=k_projection))
-		return create_embed_points_spec(InvMax(min_dist2_projection), matrix, fl_spec, action(matrix), knn_indices_p)
+		knn_indices_p = cached(find_nearest_neighbors_job(matrix, action(matrix); k=k_projection))
+		return create_embed_points_job(InvMax(min_dist2_projection), matrix, fl_job, action(matrix), knn_indices_p)
 	end
 end
 
@@ -217,12 +217,12 @@ end
 
 
 function force_layout(::Mat, data; kwargs...)
-	matrix_spec = get_matrix_spec(data)
-	create_spec(Projectable(force_layout), matrix_spec; kwargs...)
+	matrix_job = get_matrix_job(data)
+	create_job(Projectable(force_layout), matrix_job; kwargs...)
 end
-force_layout(::Obs, data; kwargs...) = get_spec(Obs(), data)
-force_layout(::Var, data; ndim, kwargs...) = prefixed_ids_spec("id", "Force Layout Dim ", ndim)
+force_layout(::Obs, data; kwargs...) = get_job(Obs(), data)
+force_layout(::Var, data; ndim, kwargs...) = prefixed_ids_job("id", "Force Layout Dim ", ndim)
 
 function Jobs.force_layout(args...; ndim=3, kwargs...)
-	create_spec(DataMatrixFunction(force_layout), args...; ndim, kwargs...)
+	create_job(DataMatrixFunction(force_layout), args...; ndim, kwargs...)
 end

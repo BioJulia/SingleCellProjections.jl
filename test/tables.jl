@@ -116,7 +116,7 @@ function run_tables_tests()
 			end
 
 			let ind = collect(n:-2:1)
-				table2 = SingleCellProjections.table_getindex_spec(table, ind)
+				table2 = SingleCellProjections.table_getindex_job(table, ind)
 				@test isequal(fetch!(table2), df[ind,:])
 			end
 
@@ -155,7 +155,7 @@ function run_tables_tests()
 			end
 
 			@testset "prefetched scalar inside Base.Fix2" begin
-				max_job = SingleCellProjections.apply_spec(maximum, Jobs.value_column_data(annot_x))
+				max_job = SingleCellProjections.apply_job(maximum, Jobs.value_column_data(annot_x))
 				ta = Jobs.transform_annotation(Base.Fix2(/, prefetched(max_job)), annot_x)
 				expected = DataFrame("id"=>df.id, "x"=>x_vals ./ maximum(x_vals))
 				@test isequal(fetch!(ta), expected)

@@ -33,22 +33,22 @@ function transform_coords_impl(X::TM, transform::TT) where {TM,TT}
 end
 
 transform_coords(::Mat, data, transform; kwargs...) =
-	create_spec(transform_coords_impl, get_matrix_spec(data), transform; __version=v"0.0.1")
+	create_job(transform_coords_impl, get_matrix_job(data), transform; __version=v"0.0.1")
 function transform_coords(::Var, data, transform; keep_var=false)
 	if keep_var
-		get_var_spec(data)
+		get_var_job(data)
 	else
-		prefixed_ids_spec("dim_id", "dim", size(transform,1))
+		prefixed_ids_job("dim_id", "dim", size(transform,1))
 	end
 end
 
-transform_coords(::Obs, data, transform; kwargs...) = get_obs_spec(data)
+transform_coords(::Obs, data, transform; kwargs...) = get_obs_job(data)
 
 
-transform_coords_spec(data, transform; kwargs...) =
-	create_spec(DataMatrixFunction(transform_coords), data, transform; kwargs...)
+transform_coords_job(data, transform; kwargs...) =
+	create_job(DataMatrixFunction(transform_coords), data, transform; kwargs...)
 Jobs.transform_coords(data, transform; kwargs...) =
-	transform_coords_spec(data, transform; kwargs...)
+	transform_coords_job(data, transform; kwargs...)
 
 
 
@@ -85,14 +85,14 @@ find_optimal_coord_transform_impl(X::ROMat, args...; kwargs...) = find_optimal_c
 
 function find_optimal_coord_transform(::Action, data, args...; kwargs...)
 	# NB: Do not apply action at all, the layout is based on the unprojected data set
-	ind_specs = (create_find_matching_ind_spec(arg, get_obs_spec(data); project_ids=:no) for arg in args)
-	create_spec(find_optimal_coord_transform_impl, get_matrix_spec(data), ind_specs...; kwargs..., __version=v"0.1.0")
+	ind_specs = (create_find_matching_ind_job(arg, get_obs_job(data); project_ids=:no) for arg in args)
+	create_job(find_optimal_coord_transform_impl, get_matrix_job(data), ind_specs...; kwargs..., __version=v"0.1.0")
 end
 
-find_optimal_coord_transform_spec(args...; kwargs...) =
-	create_spec(Projectable(find_optimal_coord_transform), args...; kwargs...)
+find_optimal_coord_transform_job(args...; kwargs...) =
+	create_job(Projectable(find_optimal_coord_transform), args...; kwargs...)
 
 # Find a better name?
 function Jobs.find_optimal_coord_transform(args...; kwargs...)
-	find_optimal_coord_transform_spec(args...)
+	find_optimal_coord_transform_job(args...)
 end

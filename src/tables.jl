@@ -1,7 +1,7 @@
 # NB: Column names here are fixed and expected to be strings.
 create_table(args::Pair{String,<:Any}...) = DataFrame(args...; copycols=false)
-create_table_spec(args...) = create_spec(create_table, args...; __version=v"0.1.0")
-Jobs.create_table(args...) = create_table_spec(args...)
+create_table_job(args...) = create_job(create_table, args...; __version=v"0.1.0")
+Jobs.create_table(args...) = create_table_job(args...)
 
 is_create_table(x::SpecRef) = x.f == create_table
 is_create_table(::Any) = false
@@ -13,7 +13,7 @@ table_to_compound_result(table) = CompoundResult(; pairs(eachcol(table))...)
 # With known colnames
 function table_from_compound_result(compound_result, colnames)
 	cols = (name=>cached(compound_result, name) for name in colnames)
-	create_table_spec(cols...)
+	create_table_job(cols...)
 end
 
 table_from_compound_result_pre(::Preprocessing, compound_result, colnames) =
@@ -21,12 +21,12 @@ table_from_compound_result_pre(::Preprocessing, compound_result, colnames) =
 function table_from_compound_result_pr(action::Action, compound_result)
 	compound_result = action(compound_result)
 	colnames = fetched(cached(compound_result; return_keys=true))
-	create_spec(Preprocess(table_from_compound_result_pre), compound_result, colnames) # we must preprocess so that colnames are fetched
+	create_job(Preprocess(table_from_compound_result_pre), compound_result, colnames) # we must preprocess so that colnames are fetched
 end
 
 # To handle when colnames differ due to projection
 table_from_compound_result(compound_result) =
-	create_spec(Projectable(table_from_compound_result_pr), compound_result)
+	create_job(Projectable(table_from_compound_result_pr), compound_result)
 
 
 
@@ -59,26 +59,26 @@ function get_colnames(::Preprocessing{E}, table, args...; kwargs...) where E
 		_check_ncol(table; kwargs...)
 		_get_colnames(table, args...)
 	elseif E
-		create_spec(Preprocess{false}(get_colnames), table, args...; kwargs...)
+		create_job(Preprocess{false}(get_colnames), table, args...; kwargs...)
 	else
-		create_spec(get_colnames_fallback, table, args...; kwargs..., __version=v"0.1.0")
+		create_job(get_colnames_fallback, table, args...; kwargs..., __version=v"0.1.0")
 	end
 end
 
-get_colnames_spec(table; kwargs...) = create_spec(Preprocess(get_colnames), table; kwargs...)
-get_colnames_spec(table, ind::Int; kwargs...) = create_spec(Preprocess(get_colnames), table, ind; kwargs...)
-Jobs.get_colnames(table, args...; kwargs...) = get_colnames_spec(table, args...; kwargs...)
+get_colnames_job(table; kwargs...) = create_job(Preprocess(get_colnames), table; kwargs...)
+get_colnames_job(table, ind::Int; kwargs...) = create_job(Preprocess(get_colnames), table, ind; kwargs...)
+Jobs.get_colnames(table, args...; kwargs...) = get_colnames_job(table, args...; kwargs...)
 
 
 
 
 # Should add another layer of Preprocessing so that we see `get_id_colname` when forwarding Specs one step at a time?
-get_id_colname_spec(table) = create_spec(Preprocess(get_colnames), table, 1)
-Jobs.get_id_colname(table) = get_id_colname_spec(table)
+get_id_colname_job(table) = create_job(Preprocess(get_colnames), table, 1)
+Jobs.get_id_colname(table) = get_id_colname_job(table)
 
 # Should add another layer of Preprocessing so that we see `get_value_colname` when forwarding Specs one step at a time?
-get_value_colname_spec(table) = create_spec(Preprocess(get_colnames), table, 2; require_n_cols=2)
-Jobs.get_value_colname(table) = get_value_colname_spec(table)
+get_value_colname_job(table) = create_job(Preprocess(get_colnames), table, 2; require_n_cols=2)
+Jobs.get_value_colname(table) = get_value_colname_job(table)
 
 
 
@@ -100,29 +100,29 @@ function get_columns(::Preprocessing{E}, table, colnames...; kwargs...) where E
 	if is_create_table(table)
 		_check_ncol(table; kwargs...)
 		ind = _colnames_to_colind(table, colnames...)
-		create_table_spec(table.args[ind]...)
+		create_table_job(table.args[ind]...)
 	elseif E
-		create_spec(Preprocess{false}(get_columns), table, colnames...; kwargs...)
+		create_job(Preprocess{false}(get_columns), table, colnames...; kwargs...)
 	else
-		create_spec(get_columns_fallback, table, colnames...; kwargs..., __version=v"0.1.0")
+		create_job(get_columns_fallback, table, colnames...; kwargs..., __version=v"0.1.0")
 	end
 end
-get_columns_spec(table, colname1, colnames...; kwargs...) = create_spec(Preprocess(get_columns), table, colname1, colnames...; kwargs...)
-Jobs.get_columns(table, colname1, colnames...; kwargs...) = get_columns_spec(table, colname1, colnames...; kwargs...)
+get_columns_job(table, colname1, colnames...; kwargs...) = create_job(Preprocess(get_columns), table, colname1, colnames...; kwargs...)
+Jobs.get_columns(table, colname1, colnames...; kwargs...) = get_columns_job(table, colname1, colnames...; kwargs...)
 
 
 
-id_column(::Preprocessing, table) = get_columns_spec(table, 1)
-id_column_spec(table) = create_spec(Preprocess(id_column), table)
-Jobs.id_column(table) = id_column_spec(table)
+id_column(::Preprocessing, table) = get_columns_job(table, 1)
+id_column_job(table) = create_job(Preprocess(id_column), table)
+Jobs.id_column(table) = id_column_job(table)
 
-value_column(::Preprocessing, table) = get_columns_spec(table, 2; require_n_cols=2)
-value_column_spec(table) = create_spec(Preprocess(value_column), table)
-Jobs.value_column(table) = value_column_spec(table)
+value_column(::Preprocessing, table) = get_columns_job(table, 2; require_n_cols=2)
+value_column_job(table) = create_job(Preprocess(value_column), table)
+Jobs.value_column(table) = value_column_job(table)
 
-annotation(::Preprocessing, table, colname) = get_columns_spec(table, fetched(get_id_colname_spec(table)), colname) # If we add support for mixed column indexing, this could be (1, colname)
-annotation_spec(table, colname) = create_spec(Preprocess(annotation), table, colname)
-Jobs.annotation(table, colname) = annotation_spec(table, colname)
+annotation(::Preprocessing, table, colname) = get_columns_job(table, fetched(get_id_colname_job(table)), colname) # If we add support for mixed column indexing, this could be (1, colname)
+annotation_job(table, colname) = create_job(Preprocess(annotation), table, colname)
+Jobs.annotation(table, colname) = annotation_job(table, colname)
 
 
 
@@ -143,32 +143,32 @@ function column_data(::Preprocessing{E}, table, col; kwargs...) where E
 		i = _col_ind(table, col)
 		table.args[i][2]
 	elseif E
-		create_spec(Preprocess{false}(column_data), table, col; kwargs...)
+		create_job(Preprocess{false}(column_data), table, col; kwargs...)
 	else
-		create_spec(column_data_fallback, table, col; kwargs..., __version=v"0.1.0")
+		create_job(column_data_fallback, table, col; kwargs..., __version=v"0.1.0")
 	end
 end
-column_data_spec(table, col; kwargs...) = create_spec(Preprocess(column_data), table, col; kwargs...)
-Jobs.column_data(table, col; kwargs...) = column_data_spec(table, col; kwargs...)
+column_data_job(table, col; kwargs...) = create_job(Preprocess(column_data), table, col; kwargs...)
+Jobs.column_data(table, col; kwargs...) = column_data_job(table, col; kwargs...)
 
 
 
 
-id_column_data(::Preprocessing, table) = column_data_spec(table, 1)
-id_column_data_spec(table) = create_spec(Preprocess(id_column_data), table)
-Jobs.id_column_data(table) = id_column_data_spec(table)
+id_column_data(::Preprocessing, table) = column_data_job(table, 1)
+id_column_data_job(table) = create_job(Preprocess(id_column_data), table)
+Jobs.id_column_data(table) = id_column_data_job(table)
 
-value_column_data(::Preprocessing, table) = column_data_spec(table, 2; require_n_cols=2)
-value_column_data_spec(table) = create_spec(Preprocess(value_column_data), table)
-Jobs.value_column_data(table) = value_column_data_spec(table)
-
-
+value_column_data(::Preprocessing, table) = column_data_job(table, 2; require_n_cols=2)
+value_column_data_job(table) = create_job(Preprocess(value_column_data), table)
+Jobs.value_column_data(table) = value_column_data_job(table)
 
 
 
-table_nrow(::Preprocessing, table) = length_spec(column_data_spec(table,1))
-table_nrow_spec(table) = create_spec(Preprocess(table_nrow), table)
-Jobs.table_nrow(table) = table_nrow_spec(table)
+
+
+table_nrow(::Preprocessing, table) = length_job(column_data_job(table,1))
+table_nrow_job(table) = create_job(Preprocess(table_nrow), table)
+Jobs.table_nrow(table) = table_nrow_job(table)
 
 
 
@@ -177,18 +177,18 @@ function table_ncol(::Preprocessing{E}, table) where E
 	if is_create_table(table)
 		length(table.args)
 	elseif E
-		create_spec(Preprocess{false}(table_ncol), table)
+		create_job(Preprocess{false}(table_ncol), table)
 	else
-		create_spec(table_ncol_fallback, table; __version=v"0.1.0")
+		create_job(table_ncol_fallback, table; __version=v"0.1.0")
 	end
 end
-table_ncol_spec(table) = create_spec(Preprocess(table_ncol), table)
-Jobs.table_ncol(table) = table_ncol_spec(table)
+table_ncol_job(table) = create_job(Preprocess(table_ncol), table)
+Jobs.table_ncol(table) = table_ncol_job(table)
 
 
 
 _add_column_length_error(n1, n2, name) = throw(ArgumentError("Expected column \"$name\" to have length $n1, but got $n2."))
-_add_column_length_error_spec(n1, n2, name) = create_spec(_add_column_length_error, n1, n2, name)
+_add_column_length_error_job(n1, n2, name) = create_job(_add_column_length_error, n1, n2, name)
 
 function _add_column_validated(table, name, column)
 	# Check that there is no column with that name
@@ -196,13 +196,13 @@ function _add_column_validated(table, name, column)
 		throw(ArgumentError("A column with the name \"$name\" already exists."))
 	end
 
-	result = create_table_spec(table.args..., name=>column)
+	result = create_table_job(table.args..., name=>column)
 
 	# Check that the length of the new column matches the old
-	n1 = table_nrow_spec(table)
-	n2 = length_spec(column)
-	cond = isequal_spec(n1, n2)
-	ifelse_pr_spec(cond, result, _add_column_length_error_spec(n1,n2,name))
+	n1 = table_nrow_job(table)
+	n2 = length_job(column)
+	cond = isequal_job(n1, n2)
+	ifelse_pr_job(cond, result, _add_column_length_error_job(n1,n2,name))
 end
 
 add_column_fallback(table, name, column) = insertcols(table, name=>column; copycols=false)
@@ -210,30 +210,30 @@ function add_column(::Preprocessing{E}, table, name, column) where E
 	if is_create_table(table)
 		_add_column_validated(table, name, column)
 	elseif E
-		create_spec(Preprocess{false}(add_column), table, name, column)
+		create_job(Preprocess{false}(add_column), table, name, column)
 	else
-		create_spec(add_column_fallback, table, name, column; __version=v"0.1.0")
+		create_job(add_column_fallback, table, name, column; __version=v"0.1.0")
 	end
 end
-add_column_spec(table, name, column) = create_spec(Preprocess(add_column), table, name, column)
-Jobs.add_column(table, name, column) = add_column_spec(table, name, column)
+add_column_job(table, name, column) = create_job(Preprocess(add_column), table, name, column)
+Jobs.add_column(table, name, column) = add_column_job(table, name, column)
 
 
 
 _table_hcat_nrow_error(n) = throw(ArgumentError("Expected number of tables rows to match, but got $(join(n, ", ", " and "))."))
-_table_hcat_nrow_error_spec(n) = create_spec(_table_hcat_nrow_error, n)
+_table_hcat_nrow_error_job(n) = create_job(_table_hcat_nrow_error, n)
 
 function _table_hcat_validated(args...)
 	names = vcat((first.(a.args) for a in args)...)
 	common_names = [name for (name,count) in StatsBase.countmap(names) if count>1]
 	isempty(common_names) || throw(ArgumentError("Table column names must be different, found these common names: $common_names"))
 
-	result = create_table_spec(Iterators.flatten(getproperty.(args,:args))...)
+	result = create_table_job(Iterators.flatten(getproperty.(args,:args))...)
 
 	# Check that the number of rows in all tables match
-	n = table_nrow_spec.(args)
-	cond = allequal_spec(n)
-	ifelse_pr_spec(cond, result, _table_hcat_nrow_error_spec(n))
+	n = table_nrow_job.(args)
+	cond = allequal_job(n)
+	ifelse_pr_job(cond, result, _table_hcat_nrow_error_job(n))
 end
 
 
@@ -242,15 +242,15 @@ function table_hcat(::Preprocessing{E}, args...) where E
 	if all(is_create_table, args)
 		_table_hcat_validated(args...)
 	elseif E
-		create_spec(Preprocess{false}(table_hcat), args...) # try again with late preprocessing (i.e. after projectables has been hanlded)
+		create_job(Preprocess{false}(table_hcat), args...) # try again with late preprocessing (i.e. after projectables has been hanlded)
 	else
-		create_spec(table_hcat_fallback, args...; __version=v"0.1.0")
+		create_job(table_hcat_fallback, args...; __version=v"0.1.0")
 	end
 end
 
 # TODO: Refactor to take a vector instead? Better for the compiler if there are many arguments.
-table_hcat_spec(a, args...) = create_spec(Preprocess(table_hcat), a, args...)
-Jobs.table_hcat(a, args...) = table_hcat_spec(a, args...)
+table_hcat_job(a, args...) = create_job(Preprocess(table_hcat), a, args...)
+Jobs.table_hcat(a, args...) = table_hcat_job(a, args...)
 
 
 
@@ -261,42 +261,42 @@ table_getindex_fallback(table, ind) = table[ind,:]
 
 function table_getindex_pr(action, table, ind)
 	table_p = action(table)
-	result = create_spec(Preprocess{false}(table_getindex), table_p, action(ind))
+	result = create_job(Preprocess{false}(table_getindex), table_p, action(ind))
 
 	if action isa Projection && !(ind isa SpecRef) # TODO: Fix, this will trigger even if ind is replaced by the action, which it shouldn't - maybe hard to avoid?
-		cond = isequal_spec(table, table_p)
-		result = ifelse_spec(cond, result, _getindex_error_spec(ind))
+		cond = isequal_job(table, table_p)
+		result = ifelse_job(cond, result, _getindex_error_job(ind))
 	end
 
 	result
 end
-table_getindex_pr_spec(table, ind) = create_spec(Projectable(table_getindex_pr), table, ind)
+table_getindex_pr_job(table, ind) = create_job(Projectable(table_getindex_pr), table, ind)
 
 function table_getindex(::Preprocessing{E}, table, ind) where E
 	if !E && ind == Colon()
 		table # Projections have been handled, so indexing by `:` is OK
 	elseif is_create_table(table) # Move the operation to the columns if we can
-		cols = (k=>getindex_spec(v, ind) for (k,v) in table.args)
-		create_table_spec(cols...)
+		cols = (k=>getindex_job(v, ind) for (k,v) in table.args)
+		create_table_job(cols...)
 	elseif E # early is before projection, so we need to handle the projection
-		table_getindex_pr_spec(table, ind)
+		table_getindex_pr_job(table, ind)
 	else
-		create_spec(table_getindex_fallback, table, ind; __version=v"0.1.0")
+		create_job(table_getindex_fallback, table, ind; __version=v"0.1.0")
 	end
 
 
 	# if is_create_table(table) # Move the operation to the columns if we can
-	# 	cols = (k=>getindex_spec(v, ind) for (k,v) in table.args)
-	# 	create_table_spec(cols...)
+	# 	cols = (k=>getindex_job(v, ind) for (k,v) in table.args)
+	# 	create_table_job(cols...)
 	# elseif E # early is before projection, so we need to handle the projection
-	# 	table_getindex_pr_spec(table, ind)
+	# 	table_getindex_pr_job(table, ind)
 	# elseif ind == Colon() # Projections have been handled, so indexing by `:` will not be transformed to something else
 	# 	table
 	# else
-	# 	create_spec(table_getindex_fallback, table, ind; __version=v"0.1.0")
+	# 	create_job(table_getindex_fallback, table, ind; __version=v"0.1.0")
 	# end
 end
-table_getindex_spec(table, ind) = create_spec(Preprocess(table_getindex), table, ind)
+table_getindex_job(table, ind) = create_job(Preprocess(table_getindex), table, ind)
 
 
 
@@ -312,9 +312,9 @@ function _table_leftjoin(a, b)
 	common_names = intersect(names_a[2:end], names_b[2:end])
 	isempty(common_names) || throw(ArgumentError("Table columns must be different (except ID column), found these common columns: $common_names"))
 
-	ind_spec = indexin_spec(ids_a, ids_b; not_found=:nothing)
-	joined_cols = [k=>getindex_or_missing_spec(v,ind_spec) for (k,v) in b.args[2:end]]
-	create_table_spec(a.args..., joined_cols...)
+	ind_job = indexin_job(ids_a, ids_b; not_found=:nothing)
+	joined_cols = [k=>getindex_or_missing_job(v,ind_job) for (k,v) in b.args[2:end]]
+	create_table_job(a.args..., joined_cols...)
 end
 
 function table_leftjoin_fallback(a::DataFrame, b::DataFrame)
@@ -330,14 +330,14 @@ function table_leftjoin(::Preprocessing{E}, a, b) where E
 	if is_create_table(a) && is_create_table(b)
 		_table_leftjoin(a, b)
 	elseif E
-		create_spec(Preprocess{false}(table_leftjoin), a, b) # try again with late preprocessing (i.e. after projectables has been hanlded)
+		create_job(Preprocess{false}(table_leftjoin), a, b) # try again with late preprocessing (i.e. after projectables has been hanlded)
 	else
-		create_spec(table_leftjoin_fallback, a, b; __version=v"0.1.0")
+		create_job(table_leftjoin_fallback, a, b; __version=v"0.1.0")
 	end
 end
 
-table_leftjoin_spec(a, b) = create_spec(Preprocess(table_leftjoin), a, b)
-Jobs.table_leftjoin(a, b) = table_leftjoin_spec(a, b)
+table_leftjoin_job(a, b) = create_job(Preprocess(table_leftjoin), a, b)
+Jobs.table_leftjoin(a, b) = table_leftjoin_job(a, b)
 
 
 
@@ -346,31 +346,31 @@ combine_column_values_fallback(table::DataFrame; kwargs...) = combine_vectors_im
 function combine_column_values(::Preprocessing{E}, table; kwargs...) where E
 	if is_create_table(table)
 		values = (v for (_,v) in table.args)
-		combine_vectors_spec(values...; kwargs...)
+		combine_vectors_job(values...; kwargs...)
 	elseif E
-		create_spec(Preprocess{false}(combine_column_values), table; kwargs...)
+		create_job(Preprocess{false}(combine_column_values), table; kwargs...)
 	else
-		create_spec(combine_column_values_fallback, table; kwargs..., __version=v"0.1.0")
+		create_job(combine_column_values_fallback, table; kwargs..., __version=v"0.1.0")
 	end
 end
 
-combine_column_values_spec(table; kwargs...) = create_spec(Preprocess(combine_column_values), table; kwargs...)
+combine_column_values_job(table; kwargs...) = create_job(Preprocess(combine_column_values), table; kwargs...)
 
 
 
 repeat_columns_fallback(table::DataFrame; kwargs...) = mapcols(v->repeat(v; kwargs...), table)
 function repeat_columns(::Preprocessing{E}, table; kwargs...) where E
 	if is_create_table(table)
-		cols = (k=>repeat_spec(v; kwargs...) for (k,v) in table.args)
-		create_table_spec(cols...)
+		cols = (k=>repeat_job(v; kwargs...) for (k,v) in table.args)
+		create_table_job(cols...)
 	elseif E
-		create_spec(Preprocess{false}(repeat_columns), table; kwargs...)
+		create_job(Preprocess{false}(repeat_columns), table; kwargs...)
 	else
-		create_spec(repeat_columns_fallback, table; kwargs..., __version=v"0.1.0")
+		create_job(repeat_columns_fallback, table; kwargs..., __version=v"0.1.0")
 	end
 end
 
-repeat_columns_spec(table; kwargs...) = create_spec(Preprocess(repeat_columns), table; kwargs...)
+repeat_columns_job(table; kwargs...) = create_job(Preprocess(repeat_columns), table; kwargs...)
 
 
 
@@ -384,8 +384,8 @@ function _intersect_ids(a, b)
 	b_name,b_values = b.args[1]
 	a_name != b_name && throw(ArgumentError("ID column names \"$a_name\" and \"$b_name\" do not match."))
 
-	values = intersect_spec(a_values, b_values)
-	create_table_spec(a_name=>values)
+	values = intersect_job(a_values, b_values)
+	create_table_job(a_name=>values)
 end
 
 function intersect_ids_fallback(a, b)
@@ -400,12 +400,12 @@ function intersect_ids(::Preprocessing{E}, a, b) where E
 	if is_create_table(a) && is_create_table(b)
 		_intersect_ids(a, b)
 	elseif E
-		create_spec(Preprocess{false}(intersect_ids), a, b)
+		create_job(Preprocess{false}(intersect_ids), a, b)
 	else
-		create_spec(intersect_ids_fallback, a, b; __version=v"0.1.0")
+		create_job(intersect_ids_fallback, a, b; __version=v"0.1.0")
 	end
 end
-intersect_ids_spec(a, b) = create_spec(Preprocess(intersect_ids), a, b)
+intersect_ids_job(a, b) = create_job(Preprocess(intersect_ids), a, b)
 
 
 
@@ -419,12 +419,12 @@ function transform_annotation(::Preprocessing{E}, f, table; kwargs...) where E
 	if is_create_table(table)
 		_check_ncol(table; require_n_cols=2)
 		name = @something get(kwargs, :new_name, nothing) table.args[2].first
-		create_table_spec(table.args[1], name => apply_broadcasted_spec(f, table.args[2].second))
+		create_table_job(table.args[1], name => apply_broadcasted_job(f, table.args[2].second))
 	elseif E
-		create_spec(Preprocess{false}(transform_annotation), f, table; kwargs...)
+		create_job(Preprocess{false}(transform_annotation), f, table; kwargs...)
 	else
-		create_spec(transform_annotation_fallback, f, table; kwargs..., __version=v"0.1.0")
+		create_job(transform_annotation_fallback, f, table; kwargs..., __version=v"0.1.0")
 	end
 end
-transform_annotation_spec(f, table; kwargs...) = create_spec(Preprocess(transform_annotation), f, table; kwargs...)
-Jobs.transform_annotation(f, table; kwargs...) = transform_annotation_spec(f, table; kwargs...)
+transform_annotation_job(f, table; kwargs...) = create_job(Preprocess(transform_annotation), f, table; kwargs...)
+Jobs.transform_annotation(f, table; kwargs...) = transform_annotation_job(f, table; kwargs...)
