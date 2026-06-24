@@ -257,7 +257,7 @@ load_h5ad(::Mat, filepath; kwargs...) = load_h5ad_matrix_job(filepath; kwargs...
 
 function load_h5ad(::Var, filepath; obsm=nothing, obsp=nothing, kwargs...)
 	if obsm !== nothing
-		mat_job = load_h5ad_matrix_job(filepath; obsm, kwargs...)
+		mat_job = load_h5ad(Mat(), filepath; obsm, kwargs...)
 		prefixed_ids_job("id", "Dim", prefetched(compute_size_job(mat_job, 1)))
 	elseif obsp !== nothing
 		table_from_compound_result(cached(load_h5ad_obs_job(filepath)))
@@ -268,7 +268,7 @@ end
 
 function load_h5ad(::Obs, filepath; varm=nothing, varp=nothing, kwargs...)
 	if varm !== nothing
-		mat_job = load_h5ad_matrix_job(filepath; varm, kwargs...)
+		mat_job = load_h5ad(Mat(), filepath; varm, kwargs...)
 		prefixed_ids_job("id", "Dim", prefetched(compute_size_job(mat_job, 2)))
 	elseif varp !== nothing
 		table_from_compound_result(cached(load_h5ad_var_job(filepath)))
@@ -281,6 +281,7 @@ function Jobs.load_h5ad(filepath; kwargs...)
 	if count(key->haskey(kwargs,key), (:layer, :obsm, :obsp, :varm, :varp)) > 1
 		throw(ArgumentError("At most one of layer, obsm, obsp, varm, varp can be specified."))
 	end
+
 	filepath_job = checksummedfilepath_job(filepath)
 	create_job(DataMatrixFunction(load_h5ad), filepath_job; kwargs...)
 end
