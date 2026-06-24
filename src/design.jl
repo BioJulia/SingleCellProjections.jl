@@ -229,7 +229,7 @@ Construct a design matrix from observation covariates. Covariates can be column 
 (strings) or `Pair`s of column name and covariate description. Used internally by
 `Jobs.normalize_matrix`.
 
-See also `Jobs.normalize_matrix`, `Jobs.negative_regression_matrix`.
+See also [`Jobs.normalize_matrix`](@ref), [`Jobs.negative_regression_matrix`](@ref).
 """
 function Jobs.designmatrix(data, args...; kwargs...)
 	designmatrix_job(data, args...; kwargs...)

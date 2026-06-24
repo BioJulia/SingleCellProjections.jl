@@ -174,7 +174,7 @@ get_matrix_job(x) = create_job(Preprocess(get_matrix), x)
 
 Extract the matrix component from a `DataMatrix` `Job`.
 
-See also `Jobs.get_var`, `Jobs.get_obs`.
+See also [`Jobs.get_var`](@ref), [`Jobs.get_obs`](@ref).
 """
 Jobs.get_matrix(x) = get_matrix_job(x)
 
@@ -184,7 +184,7 @@ get_var_job(x) = create_job(Preprocess(get_var), x)
 
 Extract the variable annotation table from a `DataMatrix` `Job`.
 
-See also `Jobs.get_matrix`, `Jobs.get_obs`.
+See also [`Jobs.get_matrix`](@ref), [`Jobs.get_obs`](@ref).
 """
 Jobs.get_var(x) = get_var_job(x)
 
@@ -194,7 +194,7 @@ get_obs_job(x) = create_job(Preprocess(get_obs), x)
 
 Extract the observation annotation table from a `DataMatrix` `Job`.
 
-See also `Jobs.get_matrix`, `Jobs.get_var`.
+See also [`Jobs.get_matrix`](@ref), [`Jobs.get_var`](@ref).
 """
 Jobs.get_obs(x) = get_obs_job(x)
 

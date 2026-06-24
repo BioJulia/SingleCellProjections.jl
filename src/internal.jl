@@ -202,7 +202,7 @@ nvar_job(data) = table_nrow_job(get_var_job(data))
 
 Return a `Job` for the number of variables (rows) in `data`.
 
-See also `Jobs.nobs`.
+See also [`Jobs.nobs`](@ref).
 """
 Jobs.nvar(data) = nvar_job(data)
 
@@ -212,7 +212,7 @@ nobs_job(data) = table_nrow_job(get_obs_job(data))
 
 Return a `Job` for the number of observations (columns) in `data`.
 
-See also `Jobs.nvar`.
+See also [`Jobs.nvar`](@ref).
 """
 Jobs.nobs(data) = nobs_job(data)
 

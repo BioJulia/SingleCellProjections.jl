@@ -236,7 +236,7 @@ specified covariates. Returns a `DataMatrix` where each column is a pseudobulk s
 
 (TODO: Add example.)
 
-See also `Jobs.population_matrix`.
+See also [`Jobs.population_matrix`](@ref).
 """
 function Jobs.pseudobulk(data, obs_covariate1, obs_covariates...; kwargs...)
 	pseudobulk_job(data, obs_covariate1, obs_covariates...; kwargs...)
@@ -354,7 +354,7 @@ covariates define the columns (samples/groups) and `new_var_covariates` define t
 
 (TODO: Add an example.)
 
-See also `Jobs.pseudobulk`.
+See also [`Jobs.pseudobulk`](@ref).
 """
 function Jobs.population_matrix(obs, obs_covariate1, obs_covariates...; new_var_covariates, kwargs...)
 	population_matrix_job(obs, obs_covariate1, obs_covariates...; new_var_covariates, kwargs...)

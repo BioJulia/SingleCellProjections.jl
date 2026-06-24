@@ -10,7 +10,7 @@ end
 
 Subset `data` to keep only variables and observations with IDs present in `var_ids` and `obs_ids`.
 
-See also `Jobs.subset_var`, `Jobs.subset_obs`.
+See also [`Jobs.subset_var`](@ref), [`Jobs.subset_obs`](@ref).
 """
 Jobs.subset_matrix(data, var_ids, obs_ids) =
 	create_job(Preprocess(subset_matrix), data; var_ids, obs_ids)
@@ -19,7 +19,7 @@ Jobs.subset_matrix(data, var_ids, obs_ids) =
 
 Subset `data` to keep only variables with IDs present in `var_ids`.
 
-See also `Jobs.subset_obs`, `Jobs.subset_matrix`, `Jobs.filter_var`.
+See also [`Jobs.subset_obs`](@ref), [`Jobs.subset_matrix`](@ref), [`Jobs.filter_var`](@ref).
 """
 Jobs.subset_var(data, var_ids) =
 	create_job(Preprocess(subset_matrix), data; var_ids)
@@ -28,7 +28,7 @@ Jobs.subset_var(data, var_ids) =
 
 Subset `data` to keep only observations with IDs present in `obs_ids`.
 
-See also `Jobs.subset_var`, `Jobs.subset_matrix`, `Jobs.filter_obs`.
+See also [`Jobs.subset_var`](@ref), [`Jobs.subset_matrix`](@ref), [`Jobs.filter_obs`](@ref).
 """
 Jobs.subset_obs(data, obs_ids) =
 	create_job(Preprocess(subset_matrix), data; obs_ids)
@@ -61,7 +61,7 @@ end
 
 Filter both variables and observations simultaneously.
 
-See also `Jobs.filter_var`, `Jobs.filter_obs`.
+See also [`Jobs.filter_var`](@ref), [`Jobs.filter_obs`](@ref).
 """
 Jobs.filter_matrix(fvar, fobs, data; kwargs...) =
 	create_job(Preprocess(filter_matrix), data; kwargs..., fvar, fobs)
@@ -73,7 +73,7 @@ Filter variables by the predicate `fvar`. `fvar` can be:
 - A `Pair` of column name and predicate (e.g. `"name" => >("D")`).
 - An annotation table `Job` with a predicate (e.g. `Jobs.relative_std(data) => >=(0.1)`).
 
-See also `Jobs.filter_obs`, `Jobs.filter_matrix`, `Jobs.subset_var`.
+See also [`Jobs.filter_obs`](@ref), [`Jobs.filter_matrix`](@ref), [`Jobs.subset_var`](@ref).
 """
 Jobs.filter_var(fvar, data; kwargs...) =
 	create_job(Preprocess(filter_matrix), data; kwargs..., fvar)
@@ -87,7 +87,7 @@ Filter observations by the predicate `fobs`. `fobs` can be:
 
 (TODO: Add an example with predicate. Cannot use the relative_std one.)
 
-See also `Jobs.filter_var`, `Jobs.filter_matrix`, `Jobs.subset_obs`.
+See also [`Jobs.filter_var`](@ref), [`Jobs.filter_matrix`](@ref), [`Jobs.subset_obs`](@ref).
 """
 Jobs.filter_obs(fobs, data; kwargs...) =
 	create_job(Preprocess(filter_matrix), data; kwargs..., fobs)

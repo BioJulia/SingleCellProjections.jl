@@ -22,7 +22,7 @@ end
 Compute the negative regression coefficient matrix for normalization. Used internally
 by `Jobs.normalize_matrix`.
 
-See also `Jobs.normalize_matrix`, `Jobs.designmatrix`.
+See also [`Jobs.normalize_matrix`](@ref), [`Jobs.designmatrix`](@ref).
 """
 function Jobs.negative_regression_matrix(args...; kwargs...)
 	negative_regression_matrix_job(args...; kwargs...)
@@ -104,7 +104,7 @@ julia> Jobs.normalize_matrix(transformed; variance_col="my_variance_column")
 ```
 
 
-See also `Jobs.sctransform`, `Jobs.logtransform`, `Jobs.designmatrix`.
+See also [`Jobs.sctransform`](@ref), [`Jobs.logtransform`](@ref), [`Jobs.designmatrix`](@ref).
 """
 function Jobs.normalize_matrix(data, args...; kwargs...)
 	create_job(Preprocess(normalize_matrix), data, args...; kwargs...)

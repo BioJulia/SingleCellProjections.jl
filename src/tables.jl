@@ -77,7 +77,7 @@ get_colnames_job(table, ind::Int; kwargs...) = create_job(Preprocess(get_colname
 
 Return the column names of `table`.
 
-See also `Jobs.get_id_colname`, `Jobs.get_value_colname`.
+See also [`Jobs.get_id_colname`](@ref), [`Jobs.get_value_colname`](@ref).
 """
 Jobs.get_colnames(table, args...; kwargs...) = get_colnames_job(table, args...; kwargs...)
 
@@ -91,7 +91,7 @@ get_id_colname_job(table) = create_job(Preprocess(get_colnames), table, 1)
 
 Return the name of the first (ID) column of `table`.
 
-See also `Jobs.get_colnames`, `Jobs.get_value_colname`.
+See also [`Jobs.get_colnames`](@ref), [`Jobs.get_value_colname`](@ref).
 """
 Jobs.get_id_colname(table) = get_id_colname_job(table)
 
@@ -103,7 +103,7 @@ get_value_colname_job(table) = create_job(Preprocess(get_colnames), table, 2; re
 Return the name of the second (value) column of `table`. Requires the table to have
 exactly two columns.
 
-See also `Jobs.get_colnames`, `Jobs.get_id_colname`.
+See also [`Jobs.get_colnames`](@ref), [`Jobs.get_id_colname`](@ref).
 """
 Jobs.get_value_colname(table) = get_value_colname_job(table)
 
@@ -140,7 +140,7 @@ get_columns_job(table, colname1, colnames...; kwargs...) = create_job(Preprocess
 
 Select specific columns from `table` by name or index.
 
-See also `Jobs.id_column`, `Jobs.value_column`.
+See also [`Jobs.id_column`](@ref), [`Jobs.value_column`](@ref).
 """
 Jobs.get_columns(table, colname1, colnames...; kwargs...) = get_columns_job(table, colname1, colnames...; kwargs...)
 
@@ -153,7 +153,7 @@ id_column_job(table) = create_job(Preprocess(id_column), table)
 
 Extract the first (ID) column of `table` as a single-column table.
 
-See also `Jobs.value_column`, `Jobs.id_column_data`.
+See also [`Jobs.value_column`](@ref), [`Jobs.id_column_data`](@ref).
 """
 Jobs.id_column(table) = id_column_job(table)
 
@@ -164,7 +164,7 @@ value_column_job(table) = create_job(Preprocess(value_column), table)
 
 Extract the second (value) column of `table` as a single-column table.
 
-See also `Jobs.id_column`, `Jobs.value_column_data`.
+See also [`Jobs.id_column`](@ref), [`Jobs.value_column_data`](@ref).
 """
 Jobs.value_column(table) = value_column_job(table)
 
@@ -208,7 +208,7 @@ column_data_job(table, col; kwargs...) = create_job(Preprocess(column_data), tab
 
 Return the values of column `col` from `table` as a vector.
 
-See also `Jobs.id_column_data`, `Jobs.value_column_data`.
+See also [`Jobs.id_column_data`](@ref), [`Jobs.value_column_data`](@ref).
 """
 Jobs.column_data(table, col; kwargs...) = column_data_job(table, col; kwargs...)
 
@@ -222,7 +222,7 @@ id_column_data_job(table) = create_job(Preprocess(id_column_data), table)
 
 Return the vector of IDs (first column) from `table`.
 
-See also `Jobs.column_data`, `Jobs.value_column_data`.
+See also [`Jobs.column_data`](@ref), [`Jobs.value_column_data`](@ref).
 """
 Jobs.id_column_data(table) = id_column_data_job(table)
 
@@ -234,7 +234,7 @@ value_column_data_job(table) = create_job(Preprocess(value_column_data), table)
 Return the values (second column) from `table` as a vector. Requires the table to have
 exactly two columns.
 
-See also `Jobs.column_data`, `Jobs.id_column_data`.
+See also [`Jobs.column_data`](@ref), [`Jobs.id_column_data`](@ref).
 """
 Jobs.value_column_data(table) = value_column_data_job(table)
 
@@ -249,7 +249,7 @@ table_nrow_job(table) = create_job(Preprocess(table_nrow), table)
 
 Return the number of rows in `table`.
 
-See also `Jobs.table_ncol`.
+See also [`Jobs.table_ncol`](@ref).
 """
 Jobs.table_nrow(table) = table_nrow_job(table)
 
@@ -271,7 +271,7 @@ table_ncol_job(table) = create_job(Preprocess(table_ncol), table)
 
 Return the number of columns in `table`.
 
-See also `Jobs.table_nrow`.
+See also [`Jobs.table_nrow`](@ref).
 """
 Jobs.table_ncol(table) = table_ncol_job(table)
 
@@ -312,7 +312,7 @@ add_column_job(table, name, column) = create_job(Preprocess(add_column), table, 
 Add a column named `name` with values `column` to `table`.
 The length of `column` must match the number of rows in `table`.
 
-See also `Jobs.table_hcat`, `Jobs.add_var_column`, `Jobs.add_obs_column`.
+See also [`Jobs.table_hcat`](@ref), [`Jobs.add_var_column`](@ref), [`Jobs.add_obs_column`](@ref).
 """
 Jobs.add_column(table, name, column) = add_column_job(table, name, column)
 
@@ -354,7 +354,7 @@ table_hcat_job(a, args...) = create_job(Preprocess(table_hcat), a, args...)
 Horizontally concatenate tables. All tables must have the same number of rows and
 matching row order.
 
-See also `Jobs.table_leftjoin`, `Jobs.add_column`.
+See also [`Jobs.table_leftjoin`](@ref), [`Jobs.add_column`](@ref).
 """
 Jobs.table_hcat(a, args...) = table_hcat_job(a, args...)
 
@@ -448,7 +448,7 @@ table_leftjoin_job(a, b) = create_job(Preprocess(table_leftjoin), a, b)
 
 Left-join table `b` onto table `a` by their ID columns.
 
-See also `Jobs.table_hcat`, `Jobs.annotate_var`, `Jobs.annotate_obs`.
+See also [`Jobs.table_hcat`](@ref), [`Jobs.annotate_var`](@ref), [`Jobs.annotate_obs`](@ref).
 """
 Jobs.table_leftjoin(a, b) = table_leftjoin_job(a, b)
 

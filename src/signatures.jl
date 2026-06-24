@@ -30,7 +30,7 @@ with IDs and the signature scores in a column named `out_col_name`.
 
 (TODO: Example.)
 
-See also `Jobs.pca`, `Jobs.loadings`.
+See also [`Jobs.pca`](@ref), [`Jobs.loadings`](@ref).
 """
 function Jobs.signature(data, var_filter, out_col_name; kwargs...)
 	signature_job(data, var_filter, out_col_name; kwargs...)

@@ -33,7 +33,7 @@ load_csv(::Preprocessing, filepath; kwargs...) =
 Load a CSV or TSV file as a table `Job`. The file path is automatically checksummed for
 cache invalidation. Requires the `CSV` package to be loaded.
 
-See also `Jobs.load_counts`.
+See also [`Jobs.load_counts`](@ref).
 """
 function Jobs.load_csv(filepath::Union{String,TimestampedFilePath}; kwargs...)
 	filepath_job = checksummedfilepath_job(filepath)

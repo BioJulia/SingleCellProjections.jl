@@ -89,7 +89,7 @@ across runs due to threading differences in the UMAP nearest neighbor search.
 
 Additional keyword arguments are forwarded to `UMAP.fit`.
 
-See also `Jobs.force_layout`, `Jobs.tsne`.
+See also [`Jobs.force_layout`](@ref), [`Jobs.tsne`](@ref).
 """
 function Jobs.umap(data; ndim, seed=1234, kwargs...)
 	create_job(DataMatrixFunction(umap), data; ndim, seed, kwargs...)

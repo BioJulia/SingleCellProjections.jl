@@ -67,7 +67,7 @@ t-SNE dimensions as variables. Requires the `TSne` package to be loaded.
 
 Additional keyword arguments (`max_iter`, `perplexity`, etc.) are forwarded to `TSne.tsne`.
 
-See also `Jobs.force_layout`, `Jobs.umap`.
+See also [`Jobs.force_layout`](@ref), [`Jobs.umap`](@ref).
 """
 function Jobs.tsne(args...; ndim=3, kwargs...)
 	create_job(DataMatrixFunction(tsne), args...; ndim, kwargs...)

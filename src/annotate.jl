@@ -13,7 +13,7 @@ Add variable annotations by left-joining `df` onto `data.var`.
 The first column of `df` should contain IDs matching the first column in `data.var`.
 The IDs are used as the key when joining the tables.
 
-See also `Jobs.annotate_obs`, `Jobs.annotate`, `Jobs.add_var_column`.
+See also [`Jobs.annotate_obs`](@ref), [`Jobs.add_var_column`](@ref).
 """
 Jobs.annotate_var(data, df; kwargs...) =
 	create_job(DataMatrixFunction(annotate), data; kwargs..., var=df)
@@ -25,7 +25,7 @@ Add observation annotations by left-joining `df` onto `data.obs`.
 The first column of `df` should contain IDs matching the first column in `data.obs`.
 The IDs are used as the key when joining the tables.
 
-See also `Jobs.annotate_var`, `Jobs.annotate`, `Jobs.add_obs_column`.
+See also [`Jobs.annotate_var`](@ref), [`Jobs.add_obs_column`](@ref).
 """
 Jobs.annotate_obs(data, df; kwargs...) =
 	create_job(DataMatrixFunction(annotate), data; kwargs..., obs=df)
@@ -40,7 +40,7 @@ add_var_column(::Var, data, name, column) = add_column_job(get_var_job(data), na
 Add a single column named `name` with values `column` to the variable annotations.
 The length and order of `column` must match the rows of `data.var`.
 
-See also `Jobs.add_obs_column`, `Jobs.annotate_var`.
+See also [`Jobs.add_obs_column`](@ref), [`Jobs.annotate_var`](@ref).
 """
 Jobs.add_var_column(data, name, column) =
 	create_job(DataMatrixFunction(add_var_column), data, name, column)
@@ -53,7 +53,7 @@ add_obs_column(::Obs, data, name, column) = add_column_job(get_obs_job(data), na
 Add a single column named `name` with values `column` to the observation annotations.
 The length and order of `column` must match the rows of `data.obs`.
 
-See also `Jobs.add_var_column`, `Jobs.annotate_obs`.
+See also [`Jobs.add_var_column`](@ref), [`Jobs.annotate_obs`](@ref).
 """
 Jobs.add_obs_column(data, name, column) =
 	create_job(DataMatrixFunction(add_obs_column), data, name, column)
@@ -93,10 +93,10 @@ the subset and total gene sets respectively.
 
 Count the fraction of reads that come from Mitochondrial genes.
 ```julia
-julia> var_counts_fraction(counts, "fraction_mt", "name"=>startswith("MT-"))
+julia> Jobs.var_counts_fraction(counts, "fraction_mt", "name"=>startswith("MT-"))
 ```
 
-See also `Jobs.var_counts_sum`, `Jobs.obs_counts_fraction`.
+See also [`Jobs.var_counts_sum`](@ref), [`Jobs.obs_counts_fraction`](@ref).
 """
 function Jobs.var_counts_fraction(counts, col, sub_filter, tot_filter=Returns(true); project_ids=:intersect)
 	create_job(DataMatrixFunction(var_counts_fraction), counts, col, sub_filter, tot_filter; project_ids)
@@ -132,7 +132,7 @@ To count the number of genes that have a non-zero value:
 julia> Jobs.var_counts_sum(!iszero, counts, "nonzero_RNA_count")
 ```
 
-See also `Jobs.var_counts_fraction`, `Jobs.obs_counts_sum`, [`Jobs.load_counts`](@ref).
+See also [`Jobs.var_counts_fraction`](@ref), [`Jobs.obs_counts_sum`](@ref), [`Jobs.load_counts`](@ref).
 """
 function Jobs.var_counts_sum(f, counts, col::String, filter=Returns(true); project_ids=:intersect)
 	create_job(DataMatrixFunction(var_counts_sum), counts, col, filter; f, project_ids)
@@ -193,7 +193,7 @@ For each variable, count the number of cells with a non-zero value.
 julia> Jobs.obs_counts_sum(!iszero, counts, "nonzero_cell_count")
 ```
 
-See also `Jobs.obs_counts_fraction`, `Jobs.var_counts_sum`.
+See also [`Jobs.obs_counts_fraction`](@ref), [`Jobs.var_counts_sum`](@ref).
 """
 function Jobs.obs_counts_sum(f, counts, col::String, filter=Returns(true); project_ids=:no)
 	create_job(DataMatrixFunction(obs_counts_sum), counts, col, filter; f, project_ids)

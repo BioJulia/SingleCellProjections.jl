@@ -21,7 +21,7 @@ Apply log transformation: `log(1 + x * scale_factor / total_counts)`. Returns a
 
 (TODO: Add example.)
 
-See also `Jobs.sctransform`, `Jobs.normalize_matrix`.
+See also [`Jobs.sctransform`](@ref), [`Jobs.normalize_matrix`](@ref).
 """
 function Jobs.logtransform(T::DataType, counts; scale_factor=10_000, kwargs...)
 	create_job(DataMatrixFunction(logtransform), T, counts; scale_factor, kwargs...)
@@ -207,7 +207,7 @@ SCTransform a `counts` data matrix.
 julia> Jobs.sctransform(counts)
 ```
 
-See also `Jobs.logtransform`, `Jobs.normalize_matrix`.
+See also [`Jobs.logtransform`](@ref), [`Jobs.normalize_matrix`](@ref).
 """
 function Jobs.sctransform(T::DataType, counts; kwargs...)
 	create_job(DataMatrixFunction(sctransform), T, counts; kwargs...)

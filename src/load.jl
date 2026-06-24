@@ -164,14 +164,18 @@ result is a `DataMatrix` with genes as variables and cells as observations.
 
 # Examples
 
+Load a single sample:
 ```julia
 julia> Jobs.load_counts("SampleA.h5"; sample_names="SampleA")
+```
 
+Load multiple samples:
+```julia
 julia> Jobs.load_counts(["SampleA.h5", "SampleB.h5"]; sample_names=["SampleA","SampleB"])
 ```
 
 
-See also `Jobs.load_csv`.
+See also [`Jobs.load_csv`](@ref).
 """
 function Jobs.load_counts(filenames;
                           sample_names,

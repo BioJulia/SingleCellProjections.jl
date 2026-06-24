@@ -69,7 +69,7 @@ Keyword arguments controlling the iterative procedure:
 - `subspacedims` — dimension of the random subspace (default `4nsv`).
 - `niter` — number of power iterations (default `3`).
 
-See also `Jobs.pca`, `Jobs.loadings`.
+See also [`Jobs.pca`](@ref), [`Jobs.loadings`](@ref).
 """
 function Jobs.svd(matrix; nsv, seed=1234, kwargs...)
 	create_job(DataMatrixFunction(svd), matrix; nsv, seed, kwargs...)
@@ -132,7 +132,7 @@ Compute a 100-dimensional PCA of `normalized`.
 julia> Jobs.pca(normalized; nsv=100)
 ```
 
-See also `Jobs.svd`, `Jobs.loadings`, `Jobs.normalize_matrix`.
+See also [`Jobs.svd`](@ref), [`Jobs.loadings`](@ref), [`Jobs.normalize_matrix`](@ref).
 """
 function Jobs.pca(data; nsv, seed=1234, kwargs...)
 	create_job(DataMatrixFunction(pca), data; nsv, seed, kwargs...)
@@ -172,7 +172,7 @@ Useful in combination with a call to `Jobs.pca` (with the same parameters).
 julia> Jobs.loadings(normalized; nsv=100)
 ```
 
-See also `Jobs.pca`, `Jobs.svd`.
+See also [`Jobs.pca`](@ref), [`Jobs.svd`](@ref).
 """
 function Jobs.loadings(args...; nsv, seed=1234, kwargs...)
 	create_job(DataMatrixFunction(loadings), args...; nsv, seed, kwargs...)
@@ -303,7 +303,7 @@ Keyword arguments:
 julia> Jobs.force_layout(reduced; ndim=3, seed=4567, k=100, k_projection=25)
 ```
 
-See also `Jobs.transform_coords`, `Jobs.find_optimal_coord_transform`, `Jobs.umap`, `Jobs.tsne`.
+See also [`Jobs.transform_coords`](@ref), [`Jobs.find_optimal_coord_transform`](@ref), [`Jobs.umap`](@ref), [`Jobs.tsne`](@ref).
 """
 function Jobs.force_layout(args...; ndim=3, kwargs...)
 	create_job(DataMatrixFunction(force_layout), args...; ndim, kwargs...)

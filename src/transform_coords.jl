@@ -52,7 +52,7 @@ transform_coords_job(data, transform; kwargs...) =
 
 Apply a coordinate transformation matrix `transform` to the matrix of `data`.
 
-See also `Jobs.find_optimal_coord_transform`, `Jobs.force_layout`.
+See also [`Jobs.find_optimal_coord_transform`](@ref), [`Jobs.force_layout`](@ref).
 """
 Jobs.transform_coords(data, transform; kwargs...) =
 	transform_coords_job(data, transform; kwargs...)
@@ -129,7 +129,7 @@ julia> transform = Jobs.find_optimal_coord_transform(fl_2d,
 julia> fl_rotated = Jobs.transform_coords(fl_2d, transform; keep_var=true)
 ```
 
-See also `Jobs.transform_coords`, `Jobs.force_layout`.
+See also [`Jobs.transform_coords`](@ref), [`Jobs.force_layout`](@ref).
 """
 function Jobs.find_optimal_coord_transform(args...; kwargs...)
 	find_optimal_coord_transform_job(args...)

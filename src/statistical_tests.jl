@@ -118,7 +118,7 @@ a single categorical covariate, this is equivalent to a one-way ANOVA.
 
 (TODO: Examples.)
 
-See also `Jobs.ttest`, `Jobs.normalize_matrix`.
+See also [`Jobs.ttest`](@ref), [`Jobs.normalize_matrix`](@ref).
 """
 function Jobs.ftest(data, h1; kwargs...)
 	ftest_job(data, h1; kwargs...)
@@ -211,7 +211,7 @@ two-group covariate.
 
 (TODO: Examples.)
 
-See also `Jobs.ftest`, `Jobs.normalize_matrix`.
+See also [`Jobs.ftest`](@ref), [`Jobs.normalize_matrix`](@ref).
 """
 function Jobs.ttest(data, h1; kwargs...)
 	ttest_job(data, h1; kwargs...)
