@@ -29,7 +29,7 @@ The display shows the matrix size (number of variables and observations), a brie
 
 
 ## Variables
-Variables, or `var` for short, are typically genes or features.
+Variables, or `var` for short, are typically genes, features (such as CITE-seq features), or variables after dimension reduction (e.g. "UMAP1").
 The variables are stored as a [`DataFrame`](https://dataframes.juliadata.org/stable/) and can be accessed by:
 ```@example
 c.var[1:6, :]
@@ -37,7 +37,7 @@ c.var[1:6, :]
 
 
 ## Observations
-Observations, or `obs` for short, are typically cells.
+Observations, or `obs` for short, are typically cells, but can also be [`pseudobulk`](@ref Jobs.pseudobulk) samples, for example.
 The observations are stored as a [`DataFrame`](https://dataframes.juliadata.org/stable/) and can be accessed by:
 ```@example
 c.obs[1:6, :]
