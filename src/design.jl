@@ -1,8 +1,43 @@
-# Yet another new attempt at a better interface
-# Making it easier to handle with Specs
+"""
+    categorical_covariate()
 
-detect_covariate_desc(::AbstractVector{<:Union{Missing,Number}}) = SCPCore.numerical_covariate()
-detect_covariate_desc(::AbstractVector) = SCPCore.categorical_covariate()
+Create a categorical covariate description. Used in `Pair`s to specify that a column
+should be treated as categorical, e.g. `"celltype" => categorical_covariate()`.
+
+This is the default for string columns, so explicit use is rarely needed.
+
+See also [`numerical_covariate`](@ref), [`twogroup_covariate`](@ref).
+"""
+categorical_covariate() = SCPCore.CategoricalCovariateDesc()
+
+"""
+    numerical_covariate()
+
+Create a numerical covariate description. Used in `Pair`s to specify that a column
+should be treated as numerical, e.g. `"age" => numerical_covariate()`.
+
+This is the default for numeric columns, so explicit use is rarely needed.
+
+See also [`categorical_covariate`](@ref), [`twogroup_covariate`](@ref).
+"""
+numerical_covariate() = SCPCore.NumericalCovariateDesc()
+
+"""
+    twogroup_covariate(group_a, group_b=nothing)
+
+Create a two-group covariate description for comparing two specific groups within a
+categorical column. `group_a` and `group_b` specify the two group values to compare.
+If `group_b` is `nothing`, all observations not in `group_a` are treated as the other group.
+
+See also [`categorical_covariate`](@ref), [`numerical_covariate`](@ref).
+"""
+twogroup_covariate(group_a, group_b=nothing) = SCPCore.TwoGroupCovariateDesc(group_a, group_b)
+
+
+
+
+detect_covariate_desc(::AbstractVector{<:Union{Missing,Number}}) = numerical_covariate()
+detect_covariate_desc(::AbstractVector) = categorical_covariate()
 
 detect_covariate_desc_job(values) = create_job(detect_covariate_desc, values; __version=v"0.1.0")
 
