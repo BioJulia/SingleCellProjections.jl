@@ -1,9 +1,9 @@
 module MuonExt
 
 using ReproducibleJobs
-using ReproducibleJobs: create_job, cached, ChecksummedFilePath
+using ReproducibleJobs: create_job, cached, prefetched, ChecksummedFilePath
 using SingleCellProjections
-using SingleCellProjections: DataMatrixFunction, Mat, Var, Obs, table_to_compound_result, table_from_compound_result, checksummedfilepath_job
+using SingleCellProjections: DataMatrixFunction, Mat, Var, Obs, table_to_compound_result, table_from_compound_result, checksummedfilepath_job, prefixed_ids_job, compute_size_job
 using .SingleCellProjections.SingleCellProjectionsCore
 using DataFrames
 using SparseArrays: SparseMatrixCSC
@@ -224,14 +224,26 @@ function load_h5ad_obs_impl(filepath)
 end
 load_h5ad_obs_job(filepath) = create_job(load_h5ad_obs_impl, filepath; __version=v"0.1.0")
 
-function load_h5ad_matrix_impl(filepath; T, layer=nothing, row_block_size=1024, col_block_size=1024)
+function load_h5ad_matrix_impl(filepath; T, layer=nothing, obsm=nothing, obsp=nothing, varm=nothing, varp=nothing, row_block_size=1024, col_block_size=1024)
 	_read_h5ad(filepath) do ann
-		X = if layer === nothing
-			read(ann.X)
-		else
+		# X and layers are lazy (backed) and need read(), obsm/obsp/varm/varp are eagerly loaded
+		X = if layer !== nothing
 			read(ann.layers[layer])
+		elseif obsm !== nothing
+			ann.obsm[obsm]
+		elseif obsp !== nothing
+			ann.obsp[obsp]
+		elseif varm !== nothing
+			ann.varm[varm]
+		elseif varp !== nothing
+			ann.varp[varp]
+		else
+			read(ann.X)
 		end
-		X = convert_matrix(T, _transpose(X))
+		if varm === nothing && varp === nothing
+			X = _transpose(X)
+		end
+		X = convert_matrix(T, X)
 		if X isa SparseMatrixCSC
 			X = SingleCellProjectionsCore.blockify(X; row_block_size, col_block_size)
 		end
@@ -242,10 +254,33 @@ load_h5ad_matrix_job(filepath; kwargs...) = create_job(load_h5ad_matrix_impl, fi
 
 
 load_h5ad(::Mat, filepath; kwargs...) = load_h5ad_matrix_job(filepath; kwargs...)
-load_h5ad(::Var, filepath; kwargs...) = table_from_compound_result(cached(load_h5ad_var_job(filepath)))
-load_h5ad(::Obs, filepath; kwargs...) = table_from_compound_result(cached(load_h5ad_obs_job(filepath)))
+
+function load_h5ad(::Var, filepath; obsm=nothing, obsp=nothing, kwargs...)
+	if obsm !== nothing
+		mat_job = load_h5ad_matrix_job(filepath; obsm, kwargs...)
+		prefixed_ids_job("id", "Dim", prefetched(compute_size_job(mat_job, 1)))
+	elseif obsp !== nothing
+		table_from_compound_result(cached(load_h5ad_obs_job(filepath)))
+	else
+		table_from_compound_result(cached(load_h5ad_var_job(filepath)))
+	end
+end
+
+function load_h5ad(::Obs, filepath; varm=nothing, varp=nothing, kwargs...)
+	if varm !== nothing
+		mat_job = load_h5ad_matrix_job(filepath; varm, kwargs...)
+		prefixed_ids_job("id", "Dim", prefetched(compute_size_job(mat_job, 2)))
+	elseif varp !== nothing
+		table_from_compound_result(cached(load_h5ad_var_job(filepath)))
+	else
+		table_from_compound_result(cached(load_h5ad_obs_job(filepath)))
+	end
+end
 
 function Jobs.load_h5ad(filepath; kwargs...)
+	if count(key->haskey(kwargs,key), (:layer, :obsm, :obsp, :varm, :varp)) > 1
+		throw(ArgumentError("At most one of layer, obsm, obsp, varm, varp can be specified."))
+	end
 	filepath_job = checksummedfilepath_job(filepath)
 	create_job(DataMatrixFunction(load_h5ad), filepath_job; kwargs...)
 end

@@ -217,6 +217,13 @@ See also [`Jobs.nvar`](@ref).
 Jobs.nobs(data) = nobs_job(data)
 
 
+# These are for situations were we cannot avoid using size on the materialized matrix.
+# Prefer nvar_job/nobs_job or other smart ways to get size when possible.
+compute_size(X, dim) = size(X, dim)
+compute_size_job(X, dim) = create_job(compute_size, X, dim; __version=v"0.1.0")
+
+
+
 find_matching_ind_impl_job(f, df) = create_job(SCPCore.find_matching_ind, f, df; __version=v"0.1.4")
 
 
@@ -480,3 +487,4 @@ function prefixed_ids(::Preprocessing, col::String, prefix, n)
 end
 prefixed_ids_job(col, prefix, n) =
 	create_job(Preprocess(prefixed_ids), col, prefix, n)
+
