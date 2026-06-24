@@ -228,6 +228,14 @@ end
 
 pseudobulk_job(data, obs_covariate1, obs_covariates...; kwargs...) =
 	create_job(Preprocess(pseudobulk), data, obs_covariate1, obs_covariates...; kwargs...)
+"""
+    Jobs.pseudobulk(data, obs_covariate1, obs_covariates...; kwargs...) -> Job
+
+Aggregate single-cell data into pseudobulk by grouping observations according to the
+specified covariates. Returns a `DataMatrix` where each column is a pseudobulk sample.
+
+See also `Jobs.population_matrix`.
+"""
 function Jobs.pseudobulk(data, obs_covariate1, obs_covariates...; kwargs...)
 	pseudobulk_job(data, obs_covariate1, obs_covariates...; kwargs...)
 end
@@ -334,6 +342,13 @@ end
 
 population_matrix_job(obs, obs_covariate1, obs_covariates...; kwargs...) =
 	create_job(Preprocess(population_matrix), obs, obs_covariate1, obs_covariates...; kwargs...)
+"""
+    Jobs.population_matrix(obs, obs_covariate1, obs_covariates...; new_var_covariates, kwargs...) -> Job
+
+Create a population-level expression matrix from observation annotations and covariates.
+
+See also `Jobs.pseudobulk`.
+"""
 function Jobs.population_matrix(obs, obs_covariate1, obs_covariates...; new_var_covariates, kwargs...)
 	population_matrix_job(obs, obs_covariate1, obs_covariates...; new_var_covariates, kwargs...)
 end

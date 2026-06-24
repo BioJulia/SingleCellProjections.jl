@@ -169,12 +169,33 @@ end
 
 
 get_matrix_job(x) = create_job(Preprocess(get_matrix), x)
+"""
+    Jobs.get_matrix(data) -> Job
+
+Extract the matrix component from a `DataMatrix` `Job`.
+
+See also `Jobs.get_var`, `Jobs.get_obs`.
+"""
 Jobs.get_matrix(x) = get_matrix_job(x)
 
 get_var_job(x) = create_job(Preprocess(get_var), x)
+"""
+    Jobs.get_var(data) -> Job
+
+Extract the variable (gene) annotation table from a `DataMatrix` `Job`.
+
+See also `Jobs.get_matrix`, `Jobs.get_obs`.
+"""
 Jobs.get_var(x) = get_var_job(x)
 
 get_obs_job(x) = create_job(Preprocess(get_obs), x)
+"""
+    Jobs.get_obs(data) -> Job
+
+Extract the observation (cell) annotation table from a `DataMatrix` `Job`.
+
+See also `Jobs.get_matrix`, `Jobs.get_var`.
+"""
 Jobs.get_obs(x) = get_obs_job(x)
 
 get_job(::Mat, x) = get_matrix_job(x)

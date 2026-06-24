@@ -124,7 +124,6 @@ ReproducibleJobs.reconstruct(::Type{<:SCPCore.MatrixExpressions.Diag}, (A,)::Tup
 
 
 
-# TODO: This is a temporary solution when refactoring, remove
 module Jobs
 	function project end
 	function load_counts end
@@ -153,7 +152,6 @@ module Jobs
 	function sctransform end
 	function logtransform end
 	function tf_idf_transform end
-	# function center_matrix end # TEMP
 	function designmatrix end
 	function negative_regression_matrix end
 	function normalize_matrix end
@@ -162,26 +160,18 @@ module Jobs
 	function loadings end
 	function force_layout end
 	function transpose end
-
 	function variance end
 	function std end
 	function relative_std end
-
 	function transform_coords end
 	function find_optimal_coord_transform end
-
 	function pseudobulk end
 	function population_matrix end
-
 	function signature end
-
 	function local_outlier_factor end
-
 	function ftest end
 	function ttest end
-
 	function transfer_annotation end
-
 	function create_table end
 	function get_colnames end
 	function get_id_colname end
@@ -199,7 +189,6 @@ module Jobs
 	function table_leftjoin end
 	function table_hcat end
 	function transform_annotation end
-
 	function load_csv end
 	function umap end
 	function tsne end

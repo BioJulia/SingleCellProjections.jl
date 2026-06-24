@@ -197,9 +197,23 @@ indexin_job(a, b; not_found=:error) = create_job(indexin_impl, a, b; not_found, 
 
 
 nvar_job(data) = table_nrow_job(get_var_job(data))
+"""
+    Jobs.nvar(data) -> Job
+
+Return a `Job` for the number of variables (rows) in `data`.
+
+See also `Jobs.nobs`.
+"""
 Jobs.nvar(data) = nvar_job(data)
 
 nobs_job(data) = table_nrow_job(get_obs_job(data))
+"""
+    Jobs.nobs(data) -> Job
+
+Return a `Job` for the number of observations (columns) in `data`.
+
+See also `Jobs.nvar`.
+"""
 Jobs.nobs(data) = nobs_job(data)
 
 

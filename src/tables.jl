@@ -1,6 +1,11 @@
 # NB: Column names here are fixed and expected to be strings.
 create_table(args::Pair{String,<:Any}...) = DataFrame(args...; copycols=false)
 create_table_job(args...) = create_job(create_table, args...; __version=v"0.1.0")
+"""
+    Jobs.create_table(col1 => values1, col2 => values2, ...) -> Job
+
+Create a new table `Job` from column name/value pairs.
+"""
 Jobs.create_table(args...) = create_table_job(args...)
 
 is_create_table(x::SpecRef) = x.f == create_table
@@ -67,6 +72,13 @@ end
 
 get_colnames_job(table; kwargs...) = create_job(Preprocess(get_colnames), table; kwargs...)
 get_colnames_job(table, ind::Int; kwargs...) = create_job(Preprocess(get_colnames), table, ind; kwargs...)
+"""
+    Jobs.get_colnames(table; kwargs...) -> Job
+
+Return the column names of `table`.
+
+See also `Jobs.get_id_colname`, `Jobs.get_value_colname`.
+"""
 Jobs.get_colnames(table, args...; kwargs...) = get_colnames_job(table, args...; kwargs...)
 
 
@@ -74,10 +86,25 @@ Jobs.get_colnames(table, args...; kwargs...) = get_colnames_job(table, args...; 
 
 # Should add another layer of Preprocessing so that we see `get_id_colname` when forwarding Specs one step at a time?
 get_id_colname_job(table) = create_job(Preprocess(get_colnames), table, 1)
+"""
+    Jobs.get_id_colname(table) -> Job
+
+Return the name of the first (ID) column of `table`.
+
+See also `Jobs.get_colnames`, `Jobs.get_value_colname`.
+"""
 Jobs.get_id_colname(table) = get_id_colname_job(table)
 
 # Should add another layer of Preprocessing so that we see `get_value_colname` when forwarding Specs one step at a time?
 get_value_colname_job(table) = create_job(Preprocess(get_colnames), table, 2; require_n_cols=2)
+"""
+    Jobs.get_value_colname(table) -> Job
+
+Return the name of the second (value) column of `table`. Requires the table to have
+at least two columns.
+
+See also `Jobs.get_colnames`, `Jobs.get_id_colname`.
+"""
 Jobs.get_value_colname(table) = get_value_colname_job(table)
 
 
@@ -108,20 +135,46 @@ function get_columns(::Preprocessing{E}, table, colnames...; kwargs...) where E
 	end
 end
 get_columns_job(table, colname1, colnames...; kwargs...) = create_job(Preprocess(get_columns), table, colname1, colnames...; kwargs...)
+"""
+    Jobs.get_columns(table, colnames...) -> Job
+
+Select specific columns from `table` by name or index.
+
+See also `Jobs.id_column`, `Jobs.value_column`.
+"""
 Jobs.get_columns(table, colname1, colnames...; kwargs...) = get_columns_job(table, colname1, colnames...; kwargs...)
 
 
 
 id_column(::Preprocessing, table) = get_columns_job(table, 1)
 id_column_job(table) = create_job(Preprocess(id_column), table)
+"""
+    Jobs.id_column(table) -> Job
+
+Extract the first (ID) column of `table` as a single-column table.
+
+See also `Jobs.value_column`, `Jobs.id_column_data`.
+"""
 Jobs.id_column(table) = id_column_job(table)
 
 value_column(::Preprocessing, table) = get_columns_job(table, 2; require_n_cols=2)
 value_column_job(table) = create_job(Preprocess(value_column), table)
+"""
+    Jobs.value_column(table) -> Job
+
+Extract the second (value) column of `table` as a single-column table.
+
+See also `Jobs.id_column`, `Jobs.value_column_data`.
+"""
 Jobs.value_column(table) = value_column_job(table)
 
 annotation(::Preprocessing, table, colname) = get_columns_job(table, fetched(get_id_colname_job(table)), colname) # If we add support for mixed column indexing, this could be (1, colname)
 annotation_job(table, colname) = create_job(Preprocess(annotation), table, colname)
+"""
+    Jobs.annotation(table, colname) -> Job
+
+Extract the ID column and the column named `colname` from `table`.
+"""
 Jobs.annotation(table, colname) = annotation_job(table, colname)
 
 
@@ -149,6 +202,13 @@ function column_data(::Preprocessing{E}, table, col; kwargs...) where E
 	end
 end
 column_data_job(table, col; kwargs...) = create_job(Preprocess(column_data), table, col; kwargs...)
+"""
+    Jobs.column_data(table, col; kwargs...) -> Job
+
+Extract the raw data (vector) from column `col` of `table`.
+
+See also `Jobs.id_column_data`, `Jobs.value_column_data`.
+"""
 Jobs.column_data(table, col; kwargs...) = column_data_job(table, col; kwargs...)
 
 
@@ -156,10 +216,24 @@ Jobs.column_data(table, col; kwargs...) = column_data_job(table, col; kwargs...)
 
 id_column_data(::Preprocessing, table) = column_data_job(table, 1)
 id_column_data_job(table) = create_job(Preprocess(id_column_data), table)
+"""
+    Jobs.id_column_data(table) -> Job
+
+Extract the raw data (vector) from the first (ID) column of `table`.
+
+See also `Jobs.column_data`, `Jobs.value_column_data`.
+"""
 Jobs.id_column_data(table) = id_column_data_job(table)
 
 value_column_data(::Preprocessing, table) = column_data_job(table, 2; require_n_cols=2)
 value_column_data_job(table) = create_job(Preprocess(value_column_data), table)
+"""
+    Jobs.value_column_data(table) -> Job
+
+Extract the raw data (vector) from the second (value) column of `table`.
+
+See also `Jobs.column_data`, `Jobs.id_column_data`.
+"""
 Jobs.value_column_data(table) = value_column_data_job(table)
 
 
@@ -168,6 +242,13 @@ Jobs.value_column_data(table) = value_column_data_job(table)
 
 table_nrow(::Preprocessing, table) = length_job(column_data_job(table,1))
 table_nrow_job(table) = create_job(Preprocess(table_nrow), table)
+"""
+    Jobs.table_nrow(table) -> Job
+
+Return the number of rows in `table`.
+
+See also `Jobs.table_ncol`.
+"""
 Jobs.table_nrow(table) = table_nrow_job(table)
 
 
@@ -183,6 +264,13 @@ function table_ncol(::Preprocessing{E}, table) where E
 	end
 end
 table_ncol_job(table) = create_job(Preprocess(table_ncol), table)
+"""
+    Jobs.table_ncol(table) -> Job
+
+Return the number of columns in `table`.
+
+See also `Jobs.table_nrow`.
+"""
 Jobs.table_ncol(table) = table_ncol_job(table)
 
 
@@ -216,6 +304,13 @@ function add_column(::Preprocessing{E}, table, name, column) where E
 	end
 end
 add_column_job(table, name, column) = create_job(Preprocess(add_column), table, name, column)
+"""
+    Jobs.add_column(table, name, column) -> Job
+
+Add a column named `name` with values `column` to `table`.
+
+See also `Jobs.table_hcat`, `Jobs.add_var_column`, `Jobs.add_obs_column`.
+"""
 Jobs.add_column(table, name, column) = add_column_job(table, name, column)
 
 
@@ -250,6 +345,13 @@ end
 
 # TODO: Refactor to take a vector instead? Better for the compiler if there are many arguments.
 table_hcat_job(a, args...) = create_job(Preprocess(table_hcat), a, args...)
+"""
+    Jobs.table_hcat(a, tables...) -> Job
+
+Horizontally concatenate tables.
+
+See also `Jobs.table_leftjoin`, `Jobs.add_column`.
+"""
 Jobs.table_hcat(a, args...) = table_hcat_job(a, args...)
 
 
@@ -337,6 +439,13 @@ function table_leftjoin(::Preprocessing{E}, a, b) where E
 end
 
 table_leftjoin_job(a, b) = create_job(Preprocess(table_leftjoin), a, b)
+"""
+    Jobs.table_leftjoin(a, b) -> Job
+
+Left-join table `b` onto table `a` by their ID columns.
+
+See also `Jobs.table_hcat`, `Jobs.annotate_var`, `Jobs.annotate_obs`.
+"""
 Jobs.table_leftjoin(a, b) = table_leftjoin_job(a, b)
 
 
@@ -427,4 +536,10 @@ function transform_annotation(::Preprocessing{E}, f, table; kwargs...) where E
 	end
 end
 transform_annotation_job(f, table; kwargs...) = create_job(Preprocess(transform_annotation), f, table; kwargs...)
+"""
+    Jobs.transform_annotation(f, table; kwargs...) -> Job
+
+Apply function `f` to the value column of `table`, returning a new table with
+transformed values.
+"""
 Jobs.transform_annotation(f, table; kwargs...) = transform_annotation_job(f, table; kwargs...)

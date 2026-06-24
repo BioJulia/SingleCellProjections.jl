@@ -59,6 +59,12 @@ end
 
 local_outlier_factor_job(data, full; k=10, col="LOF") =
 	create_job(Preprocess(local_outlier_factor_pre), data, full; k, col)
+"""
+    Jobs.local_outlier_factor(data, full; k=10, col="LOF") -> Job
+
+Compute the Local Outlier Factor for each observation in `data` relative to the full
+dataset `full`. Returns a table with IDs and LOF scores in a column named `col`.
+"""
 function Jobs.local_outlier_factor(data, full; kwargs...)
 	local_outlier_factor_job(data, full; kwargs...)
 end

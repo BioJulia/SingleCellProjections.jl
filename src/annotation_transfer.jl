@@ -66,5 +66,14 @@ end
 transfer_annotation_job(base, new, covariate; k, kwargs...) =
 	create_job(Preprocess(transfer_annotation), base, new, covariate; k, kwargs...)
 
+"""
+    Jobs.transfer_annotation(base, new, covariate; k, kwargs...) -> Job
+
+Transfer cell annotations from `base` to `new` using kNN-based label transfer. The
+`covariate` specifies which annotation column to transfer. `k` is the number of nearest
+neighbors used for voting.
+
+Returns a table with the transferred labels and confidence scores.
+"""
 Jobs.transfer_annotation(base, new, covariate; k, kwargs...) =
 	transfer_annotation_job(base, new, covariate; k, kwargs...)

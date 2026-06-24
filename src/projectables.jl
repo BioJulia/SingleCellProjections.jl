@@ -146,6 +146,14 @@ function create_project_job(onto::SpecRef, args...; kwargs...)
 	ReproducibleJobs.apply_op(onto.op, spec) # apply op again
 end
 
+"""
+    Jobs.project(onto, base => projected; kwargs...)
+
+Project a computation pipeline onto a different dataset. Sets up the entire analysis
+pipeline of `onto` using the `projected` data in place of `base`.
+
+See also `Jobs.load_counts`.
+"""
 function Jobs.project(onto, args...; kwargs...)
 	create_project_job(onto, args...; kwargs...)
 end

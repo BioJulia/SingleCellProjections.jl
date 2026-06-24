@@ -1,6 +1,6 @@
-# TODO: Should we do unwrapping of adjoint(adjoint(X)) here as well? It's probably a better place.
 adjoint_matrix_job(X) = create_job(LinearAlgebra.adjoint, X; __version=v"0.1.0")
 
+# TODO: Should we do unwrapping of adjoint(adjoint(X)) should probably be done as a late preprocessing step.
 function adjoint_impl(::Mat, data)
 	if data.f == DataMatrixFunction(adjoint_impl)
 		get_matrix_job(data.args[1]) # adjoint(adjoint(X)) == X
@@ -15,6 +15,11 @@ adjoint_job(data) = create_job(DataMatrixFunction(adjoint_impl), data)
 
 # NB: We call it transpose even though we use adjoint internally.
 #     Because a user is more likely to use data' than transpose(data) even when they mean transposing.
+"""
+    Jobs.transpose(data) -> Job
+
+Transpose a `DataMatrix`, swapping variables and observations.
+"""
 function Jobs.transpose(data)
 	adjoint_job(data)
 end

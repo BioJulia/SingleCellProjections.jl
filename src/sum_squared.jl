@@ -25,14 +25,14 @@ variance_job(X; kwargs...) = create_job(Projectable(compute_variance), X; kwargs
 
 
 """
-	Jobs.variance(data; assume_centered, col, project)
+    Jobs.variance(data; assume_centered, col="variance", project=:no) -> Job
 
-Computes the variance of each variable in `data`, and returns a table with IDs and variances.
+Compute the variance of each variable in `data`, returning a table with IDs and variances.
 * `assume_centered` (required) must be set to `true` to confirm that `data` is mean-centered; the variance is computed assuming a mean of zero.
-* `col` is the name of the annotation column, defaults to "variance".
+* `col` is the name of the annotation column, defaults to `"variance"`.
 * `project` can be `:no` (default) or `:yes`. If `:no`, it will compute the variance of the base data set, and if `:yes`, it will compute the variance of the projected data set.
 
-See also: [`Jobs.normalize_matrix`](@ref), [`Jobs.std`](@ref), [`Jobs.relative_std`](@ref)
+See also [`Jobs.std`](@ref), [`Jobs.relative_std`](@ref), [`Jobs.normalize_matrix`](@ref).
 """
 function Jobs.variance(X; kwargs...)
 	variance_job(X; kwargs...)
@@ -46,14 +46,14 @@ end
 std_job(X; kwargs...) = create_job(Preprocess(compute_std), X; kwargs...)
 
 """
-	Jobs.std(data; assume_centered, col, project)
+    Jobs.std(data; assume_centered, col="std", project=:no) -> Job
 
-Computes the standard deviation of each variable in `data`, and returns a table with IDs and variances.
+Compute the standard deviation of each variable in `data`, returning a table with IDs and values.
 * `assume_centered` (required) must be set to `true` to confirm that `data` is mean-centered; the std is computed assuming a mean of zero.
-* `col` is the name of the annotation column, defaults to "std".
+* `col` is the name of the annotation column, defaults to `"std"`.
 * `project` can be `:no` (default) or `:yes`. If `:no`, it will compute the std of the base data set, and if `:yes`, it will compute the std of the projected data set.
 
-See also: [`Jobs.normalize_matrix`](@ref), [`Jobs.variance`](@ref), [`Jobs.relative_std`](@ref)
+See also [`Jobs.variance`](@ref), [`Jobs.relative_std`](@ref), [`Jobs.normalize_matrix`](@ref).
 """
 function Jobs.std(X; kwargs...)
 	std_job(X; kwargs...)
@@ -69,19 +69,19 @@ end
 relative_std_job(X; kwargs...) = create_job(Preprocess(compute_relative_std), X; kwargs...)
 
 """
-	Jobs.relative_std(data; assume_centered, col, project)
+    Jobs.relative_std(data; assume_centered, col="relative_std", project=:no) -> Job
 
-Computes the standard deviation of each variable in `data` relative to the maximum standard deviation,
+Compute the standard deviation of each variable in `data` relative to the maximum standard deviation,
 returning a table with IDs and values in [0,1].
 
 Useful for filtering variables: `Jobs.filter_var(Jobs.relative_std(data) => >=(f), data)` keeps
 only variables whose std is at least a fraction `f` of the highest-std variable.
 
 * `assume_centered` (required) must be set to `true` to confirm that `data` is mean-centered; the std is computed assuming a mean of zero.
-* `col` is the name of the annotation column, defaults to "relative_std".
+* `col` is the name of the annotation column, defaults to `"relative_std"`.
 * `project` can be `:no` (default) or `:yes`. If `:no`, it will compute the std of the base data set, and if `:yes`, it will compute the std of the projected data set.
 
-See also: [`Jobs.normalize_matrix`](@ref), [`Jobs.variance`](@ref), [`Jobs.std`](@ref)
+See also [`Jobs.variance`](@ref), [`Jobs.std`](@ref), [`Jobs.normalize_matrix`](@ref).
 """
 function Jobs.relative_std(X; kwargs...)
 	relative_std_job(X; kwargs...)

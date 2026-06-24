@@ -59,6 +59,14 @@ end
 tsne(::Obs, data; kwargs...) = get_job(Obs(), data)
 tsne(::Var, data; ndim, kwargs...) = prefixed_ids_job("id", "t-SNE ", ndim)
 
+"""
+    Jobs.tsne(data; ndim=3, kwargs...) -> Job
+
+Compute a t-SNE embedding of `data` with `ndim` dimensions. Returns a `DataMatrix` with
+t-SNE dimensions as variables. Requires the `TSne` package to be loaded.
+
+See also `Jobs.force_layout`, `Jobs.umap`.
+"""
 function Jobs.tsne(args...; ndim=3, kwargs...)
 	create_job(DataMatrixFunction(tsne), args...; ndim, kwargs...)
 end

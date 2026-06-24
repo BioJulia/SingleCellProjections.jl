@@ -13,6 +13,14 @@ logtransform(::Var, ::DataType, data; kwargs...) = get_var_job(data)
 logtransform(::Obs, ::DataType, data; kwargs...) = get_obs_job(data)
 
 
+"""
+    Jobs.logtransform([T=Float64,] counts; scale_factor=10_000, kwargs...) -> Job
+
+Apply log transformation: `log(1 + x * scale_factor / total_counts)`. Returns a
+`DataMatrix` with the transformed matrix. The element type of the resulting matrix is `T`.
+
+See also `Jobs.sctransform`, `Jobs.normalize_matrix`.
+"""
 function Jobs.logtransform(T::DataType, counts; scale_factor=10_000, kwargs...)
 	create_job(DataMatrixFunction(logtransform), T, counts; scale_factor, kwargs...)
 end
@@ -179,6 +187,14 @@ sctransform(::Obs, ::DataType, counts; kwargs...) = get_obs_job(counts)
 
 
 
+"""
+    Jobs.sctransform([T=Float64,] counts; kwargs...) -> Job
+
+Apply SCTransform (variance-stabilizing transformation) to raw count data. Returns a
+`DataMatrix` with the transformed matrix. The element type of the resulting matrix is `T`.
+
+See also `Jobs.logtransform`, `Jobs.normalize_matrix`.
+"""
 function Jobs.sctransform(T::DataType, counts; kwargs...)
 	create_job(DataMatrixFunction(sctransform), T, counts; kwargs...)
 end

@@ -16,6 +16,14 @@ function negative_regression_matrix_job(data, dm; rtol=nothing)
 	rtol = @something rtol sqrt(eps())
 	create_job(DataMatrixFunction(negative_regression_matrix), data, dm; rtol)
 end
+"""
+    Jobs.negative_regression_matrix(data, design_matrix; kwargs...) -> Job
+
+Compute the negative regression coefficient matrix for normalization. Used internally
+by `Jobs.normalize_matrix`.
+
+See also `Jobs.normalize_matrix`, `Jobs.designmatrix`.
+"""
 function Jobs.negative_regression_matrix(args...; kwargs...)
 	negative_regression_matrix_job(args...; kwargs...)
 end
@@ -60,7 +68,17 @@ end
 
 
 """
-	Jobs.normalize_matrix(data, args...; kwargs...)
+    Jobs.normalize_matrix(data, covariates...; center=true, kwargs...) -> Job
+
+Normalize `data` by centering and regressing out covariates. Covariates can be column names
+(strings) or `Pair`s of column name and covariate description.
+
+Optional keyword arguments for annotating per-variable statistics:
+- `variance_col`: add a column with per-variable variance.
+- `std_col`: add a column with per-variable standard deviation.
+- `relative_std_col`: add a column with per-variable relative standard deviation.
+
+See also `Jobs.sctransform`, `Jobs.logtransform`, `Jobs.designmatrix`.
 """
 function Jobs.normalize_matrix(data, args...; kwargs...)
 	create_job(Preprocess(normalize_matrix), data, args...; kwargs...)

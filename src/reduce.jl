@@ -57,6 +57,14 @@ end
 svd(f::Union{Var,Obs}, data; kwargs...) = get_job(f, data)
 
 
+"""
+    Jobs.svd(data; nsv, seed=1234, kwargs...) -> Job
+
+Compute a truncated SVD of `data`, keeping `nsv` singular values. Returns a `DataMatrix`
+containing the SVD result.
+
+See also `Jobs.pca`, `Jobs.loadings`.
+"""
 function Jobs.svd(matrix; nsv, seed=1234, kwargs...)
 	create_job(DataMatrixFunction(svd), matrix; nsv, seed, kwargs...)
 end
@@ -96,6 +104,14 @@ function pca(::Var, data; nsv, kwargs...)
 end
 pca(::Obs, data; kwargs...) = get_job(Obs(), data)
 
+"""
+    Jobs.pca(data; nsv, seed=1234, kwargs...) -> Job
+
+Compute PCA of `data`, keeping `nsv` principal components. Returns a `DataMatrix` where
+the variables are the principal components and the observations are unchanged.
+
+See also `Jobs.svd`, `Jobs.loadings`, `Jobs.normalize_matrix`.
+"""
 function Jobs.pca(data; nsv, seed=1234, kwargs...)
 	create_job(DataMatrixFunction(pca), data; nsv, seed, kwargs...)
 end
@@ -119,6 +135,14 @@ function loadings(::Obs, data; nsv, kwargs...)
 	prefixed_ids_job("loadings_id", "loadings", nsv)
 end
 
+"""
+    Jobs.loadings(data; nsv, seed=1234, kwargs...) -> Job
+
+Extract PCA loadings from `data`. Returns a `DataMatrix` where each column is a loading
+vector. The loadings are not affected by projection.
+
+See also `Jobs.pca`, `Jobs.svd`.
+"""
 function Jobs.loadings(args...; nsv, seed=1234, kwargs...)
 	create_job(DataMatrixFunction(loadings), args...; nsv, seed, kwargs...)
 end
@@ -223,6 +247,17 @@ end
 force_layout(::Obs, data; kwargs...) = get_job(Obs(), data)
 force_layout(::Var, data; ndim, kwargs...) = prefixed_ids_job("id", "Force Layout Dim ", ndim)
 
+"""
+    Jobs.force_layout(data; ndim=3, kwargs...) -> Job
+
+Compute a force-directed layout embedding of `data`. Returns a `DataMatrix` with `ndim`
+layout dimensions as variables.
+
+Key keyword arguments include `k` (number of nearest neighbors), `niter` (iterations),
+and `k_projection` (neighbors for projection).
+
+See also `Jobs.transform_coords`, `Jobs.find_optimal_coord_transform`, `Jobs.umap`, `Jobs.tsne`.
+"""
 function Jobs.force_layout(args...; ndim=3, kwargs...)
 	create_job(DataMatrixFunction(force_layout), args...; ndim, kwargs...)
 end

@@ -106,6 +106,16 @@ end
 
 ftest_job(data, h1; kwargs...) =
 	create_job(Preprocess(ftest), data, h1; kwargs...)
+"""
+    Jobs.ftest(data, h1; h0=(), center=true, kwargs...) -> Job
+
+Perform an F-test for each variable comparing the full model `h1` against the null
+model `h0`. Returns a table with test statistics and p-values.
+
+`h1` and `h0` are covariates specified as column names or `Pair`s.
+
+See also `Jobs.ttest`, `Jobs.normalize_matrix`.
+"""
 function Jobs.ftest(data, h1; kwargs...)
 	ftest_job(data, h1; kwargs...)
 end
@@ -188,6 +198,15 @@ end
 
 ttest_job(data, h1; kwargs...) =
 	create_job(Preprocess(ttest), data, h1; kwargs...)
+"""
+    Jobs.ttest(data, h1; h0=(), center=true, kwargs...) -> Job
+
+Perform a t-test for each variable testing the effect of `h1` while controlling for `h0`.
+Returns a table with test statistics and p-values. `h1` must be a numerical or two-group
+covariate.
+
+See also `Jobs.ftest`, `Jobs.normalize_matrix`.
+"""
 function Jobs.ttest(data, h1; kwargs...)
 	ttest_job(data, h1; kwargs...)
 end

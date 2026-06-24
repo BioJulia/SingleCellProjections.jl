@@ -47,6 +47,13 @@ transform_coords(::Obs, data, transform; kwargs...) = get_obs_job(data)
 
 transform_coords_job(data, transform; kwargs...) =
 	create_job(DataMatrixFunction(transform_coords), data, transform; kwargs...)
+"""
+    Jobs.transform_coords(data, transform; kwargs...) -> Job
+
+Apply a coordinate transformation matrix `transform` to the matrix of `data`.
+
+See also `Jobs.find_optimal_coord_transform`, `Jobs.force_layout`.
+"""
 Jobs.transform_coords(data, transform; kwargs...) =
 	transform_coords_job(data, transform; kwargs...)
 
@@ -93,6 +100,15 @@ find_optimal_coord_transform_job(args...; kwargs...) =
 	create_job(Projectable(find_optimal_coord_transform), args...; kwargs...)
 
 # Find a better name?
+"""
+    Jobs.find_optimal_coord_transform(data, group_filters...; kwargs...) -> Job
+
+Find an optimal rotation matrix that aligns `data` coordinates so that specified cell
+groups are separated along the principal axes. Each `group_filter` is a `Pair` of column
+name and predicate (e.g. `"celltype" => isequal("HSC")`).
+
+See also `Jobs.transform_coords`, `Jobs.force_layout`.
+"""
 function Jobs.find_optimal_coord_transform(args...; kwargs...)
 	find_optimal_coord_transform_job(args...)
 end

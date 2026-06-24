@@ -222,6 +222,15 @@ end
 # data::DataMatrix, args are covariates (names, two-column DataFrames with IDs+Values, optionally in pairs with covariate descriptions), center::Bool
 designmatrix_job(data, args...; center=true, kwargs...) =
 	create_job(Preprocess(designmatrix), data, args...; center, kwargs...)
+"""
+    Jobs.designmatrix(data, covariates...; center=true, kwargs...) -> Job
+
+Construct a design matrix from observation covariates. Covariates can be column names
+(strings) or `Pair`s of column name and covariate description. Used internally by
+`Jobs.normalize_matrix`.
+
+See also `Jobs.normalize_matrix`, `Jobs.negative_regression_matrix`.
+"""
 function Jobs.designmatrix(data, args...; kwargs...)
 	designmatrix_job(data, args...; kwargs...)
 end
