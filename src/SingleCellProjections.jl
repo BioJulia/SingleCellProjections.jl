@@ -132,7 +132,6 @@ module Jobs
 	function get_obs end
 	function nvar end
 	function nobs end
-	function annotate end
 	function annotate_var end
 	function annotate_obs end
 	function add_var_column end
@@ -153,7 +152,7 @@ module Jobs
 	function logtransform end
 	function tf_idf_transform end
 	function designmatrix end
-	function negative_regression_matrix end
+	function negative_regression_matrix end # should this be public?
 	function normalize_matrix end
 	function svd end
 	function pca end

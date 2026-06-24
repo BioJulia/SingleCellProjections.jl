@@ -158,16 +158,16 @@ load_counts(::Obs, filename_specs; sample_names, prefilter, extra_id_cols, kwarg
 Load raw count matrices from one or more 10x HDF5 (.h5) files. Returns a `Job` whose
 result is a `DataMatrix` with genes as variables and cells as observations.
 
-`sample_names` is required and assigns a name to each sample. `prefilter` selects which
-features to keep (defaults to Gene Expression only). `extra_id_cols` specifies additional
-columns to include in the variable IDs.
+* `sample_names` is required and assigns a name to each sample.
+* `prefilter` selects which features to keep (defaults to Gene Expression only).
+* `extra_id_cols` specifies additional columns used (together with the first column) to uniquely identify variables when merging samples. Variables with matching ID columns are combined.
 
 See also `Jobs.load_csv`.
 """
 function Jobs.load_counts(filenames;
                           sample_names,
                           prefilter = "feature_type"=>isequal("Gene Expression"),
-                          extra_id_cols = "feature_type",
+                          extra_id_cols = "feature_type", # TODO: Remove this default value?
                           kwargs...)
 	filenames isa AbstractArray || (filenames = [filenames])
 	sample_names isa AbstractArray || (sample_names = [sample_names])

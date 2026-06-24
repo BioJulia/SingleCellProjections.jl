@@ -101,7 +101,7 @@ get_value_colname_job(table) = create_job(Preprocess(get_colnames), table, 2; re
     Jobs.get_value_colname(table) -> Job
 
 Return the name of the second (value) column of `table`. Requires the table to have
-at least two columns.
+exactly two columns.
 
 See also `Jobs.get_colnames`, `Jobs.get_id_colname`.
 """
@@ -173,7 +173,8 @@ annotation_job(table, colname) = create_job(Preprocess(annotation), table, colna
 """
     Jobs.annotation(table, colname) -> Job
 
-Extract the ID column and the column named `colname` from `table`.
+Extract the ID column and the column named `colname` from `table`, returning a two-column
+table. Useful for passing annotations to filtering or covariate specification.
 """
 Jobs.annotation(table, colname) = annotation_job(table, colname)
 
@@ -205,7 +206,7 @@ column_data_job(table, col; kwargs...) = create_job(Preprocess(column_data), tab
 """
     Jobs.column_data(table, col; kwargs...) -> Job
 
-Extract the raw data (vector) from column `col` of `table`.
+Return the values of column `col` from `table` as a vector.
 
 See also `Jobs.id_column_data`, `Jobs.value_column_data`.
 """
@@ -219,7 +220,7 @@ id_column_data_job(table) = create_job(Preprocess(id_column_data), table)
 """
     Jobs.id_column_data(table) -> Job
 
-Extract the raw data (vector) from the first (ID) column of `table`.
+Return the vector of IDs (first column) from `table`.
 
 See also `Jobs.column_data`, `Jobs.value_column_data`.
 """
@@ -230,7 +231,8 @@ value_column_data_job(table) = create_job(Preprocess(value_column_data), table)
 """
     Jobs.value_column_data(table) -> Job
 
-Extract the raw data (vector) from the second (value) column of `table`.
+Return the values (second column) from `table` as a vector. Requires the table to have
+exactly two columns.
 
 See also `Jobs.column_data`, `Jobs.id_column_data`.
 """
@@ -308,6 +310,7 @@ add_column_job(table, name, column) = create_job(Preprocess(add_column), table, 
     Jobs.add_column(table, name, column) -> Job
 
 Add a column named `name` with values `column` to `table`.
+The length of `column` must match the number of rows in `table`.
 
 See also `Jobs.table_hcat`, `Jobs.add_var_column`, `Jobs.add_obs_column`.
 """
@@ -348,7 +351,8 @@ table_hcat_job(a, args...) = create_job(Preprocess(table_hcat), a, args...)
 """
     Jobs.table_hcat(a, tables...) -> Job
 
-Horizontally concatenate tables.
+Horizontally concatenate tables. All tables must have the same number of rows and
+matching row order.
 
 See also `Jobs.table_leftjoin`, `Jobs.add_column`.
 """
@@ -539,7 +543,10 @@ transform_annotation_job(f, table; kwargs...) = create_job(Preprocess(transform_
 """
     Jobs.transform_annotation(f, table; kwargs...) -> Job
 
-Apply function `f` to the value column of `table`, returning a new table with
-transformed values.
+Apply function `f` element-wise to the value column of `table`, returning a new table
+with transformed values. The table must have exactly two columns (ID and value).
+Use `new_name` to rename the value column.
+
+(TODO: Example.)
 """
 Jobs.transform_annotation(f, table; kwargs...) = transform_annotation_job(f, table; kwargs...)

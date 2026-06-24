@@ -104,8 +104,13 @@ find_optimal_coord_transform_job(args...; kwargs...) =
     Jobs.find_optimal_coord_transform(data, group_filters...; kwargs...) -> Job
 
 Find an optimal rotation matrix that aligns `data` coordinates so that specified cell
-groups are separated along the principal axes. Each `group_filter` is a `Pair` of column
-name and predicate (e.g. `"celltype" => isequal("HSC")`).
+groups are separated along the principal axes. The first group filter defines the direction
+of the first axis, the second group the second axis, and so on — each is made orthogonal
+to the preceding axes.
+
+Each `group_filter` is a `Pair` of column name and predicate (e.g. `"celltype" => isequal("HSC")`).
+
+(TODO: Add example - see tutorial.md.)
 
 See also `Jobs.transform_coords`, `Jobs.force_layout`.
 """

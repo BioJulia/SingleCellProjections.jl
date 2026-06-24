@@ -147,12 +147,12 @@ function create_project_job(onto::SpecRef, args...; kwargs...)
 end
 
 """
-    Jobs.project(onto, base => projected; kwargs...)
+    Jobs.project(onto, old => new, ...; kwargs...) -> Job
 
-Project a computation pipeline onto a different dataset. Sets up the entire analysis
-pipeline of `onto` using the `projected` data in place of `base`.
+Projects a dataset onto another, while replacing old=>new. Multiple replacement pairs can be specified.
+(TODO: Describe projection properly.)
 
-See also `Jobs.load_counts`.
+(TODO: Add an example - see tutorial.md.)
 """
 function Jobs.project(onto, args...; kwargs...)
 	create_project_job(onto, args...; kwargs...)

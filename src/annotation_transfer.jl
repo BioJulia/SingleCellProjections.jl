@@ -74,6 +74,8 @@ Transfer cell annotations from `base` to `new` using kNN-based label transfer. T
 neighbors used for voting.
 
 Returns a table with the transferred labels and confidence scores.
+
+(TODO: Add example - maybe I need to construct one? It should be about celltype transfer.)
 """
 Jobs.transfer_annotation(base, new, covariate; k, kwargs...) =
 	transfer_annotation_job(base, new, covariate; k, kwargs...)

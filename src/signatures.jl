@@ -28,6 +28,8 @@ Compute a gene signature score for each observation by filtering to genes matchi
 `var_filter`, normalizing, and extracting the first principal component. Returns a table
 with IDs and the signature scores in a column named `out_col_name`.
 
+(TODO: Example.)
+
 See also `Jobs.pca`, `Jobs.loadings`.
 """
 function Jobs.signature(data, var_filter, out_col_name; kwargs...)

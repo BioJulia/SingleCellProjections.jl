@@ -61,7 +61,13 @@ svd(f::Union{Var,Obs}, data; kwargs...) = get_job(f, data)
     Jobs.svd(data; nsv, seed=1234, kwargs...) -> Job
 
 Compute a truncated SVD of `data`, keeping `nsv` singular values. Returns a `DataMatrix`
-containing the SVD result.
+containing the SVD result. Uses a randomized algorithm based on
+Halko, Martinsson, and Tropp (2011).
+
+Keyword arguments controlling the iterative procedure:
+- `seed` — random seed for reproducibility.
+- `subspacedims` — dimension of the random subspace (default `4nsv`).
+- `niter` — number of power iterations (default `3`).
 
 See also `Jobs.pca`, `Jobs.loadings`.
 """
@@ -108,7 +114,15 @@ pca(::Obs, data; kwargs...) = get_job(Obs(), data)
     Jobs.pca(data; nsv, seed=1234, kwargs...) -> Job
 
 Compute PCA of `data`, keeping `nsv` principal components. Returns a `DataMatrix` where
-the variables are the principal components and the observations are unchanged.
+the variables are the principal components and the observations are unchanged. Uses a
+randomized SVD algorithm based on Halko, Martinsson, and Tropp (2011).
+
+Keyword arguments controlling the iterative procedure:
+- `seed` — random seed for reproducibility.
+- `subspacedims` — dimension of the random subspace (default `4nsv`).
+- `niter` — number of power iterations (default `3`).
+
+(TODO: Add an example - see tutorial.md.)
 
 See also `Jobs.svd`, `Jobs.loadings`, `Jobs.normalize_matrix`.
 """
@@ -139,7 +153,10 @@ end
     Jobs.loadings(data; nsv, seed=1234, kwargs...) -> Job
 
 Extract PCA loadings from `data`. Returns a `DataMatrix` where each column is a loading
-vector. The loadings are not affected by projection.
+vector. The loadings are not affected by projection. Uses the same randomized SVD algorithm
+as `Jobs.pca` and accepts the same keyword arguments (`nsv`, `seed`, `subspacedims`, `niter`).
+
+(TODO: Add an example - see tutorial.md.)
 
 See also `Jobs.pca`, `Jobs.svd`.
 """
@@ -253,8 +270,20 @@ force_layout(::Var, data; ndim, kwargs...) = prefixed_ids_job("id", "Force Layou
 Compute a force-directed layout embedding of `data`. Returns a `DataMatrix` with `ndim`
 layout dimensions as variables.
 
-Key keyword arguments include `k` (number of nearest neighbors), `niter` (iterations),
-and `k_projection` (neighbors for projection).
+Keyword arguments:
+- `k` — number of nearest neighbors for the graph.
+- `k_fraction` — alternative to `k`, specify neighbors as a fraction of observations.
+- `niter` — number of force simulation iterations (default `100`).
+- `link_distance`, `link_strength` — link force parameters (defaults `40`, `0.05`).
+- `charge`, `charge_min_distance`, `theta` — repulsion parameters (defaults `40`, `1`, `0.9`).
+- `center_strength` — centering force (default `0.05`).
+- `velocity_decay` — velocity damping (default `0.9`).
+- `initialAlpha`, `finalAlpha` — simulation temperature schedule (defaults `1.0`, `1e-3`).
+- `initialScale` — initial coordinate scale (default `10`).
+- `seed` — random seed (default `1234`).
+- `k_projection` — neighbors used when projecting onto this layout (default `10`).
+
+(TODO: Example - see tutorial.md.)
 
 See also `Jobs.transform_coords`, `Jobs.find_optimal_coord_transform`, `Jobs.umap`, `Jobs.tsne`.
 """

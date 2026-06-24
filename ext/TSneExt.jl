@@ -65,6 +65,8 @@ tsne(::Var, data; ndim, kwargs...) = prefixed_ids_job("id", "t-SNE ", ndim)
 Compute a t-SNE embedding of `data` with `ndim` dimensions. Returns a `DataMatrix` with
 t-SNE dimensions as variables. Requires the `TSne` package to be loaded.
 
+Additional keyword arguments (`max_iter`, `perplexity`, etc.) are forwarded to `TSne.tsne`.
+
 See also `Jobs.force_layout`, `Jobs.umap`.
 """
 function Jobs.tsne(args...; ndim=3, kwargs...)

@@ -8,7 +8,7 @@ end
 """
     Jobs.subset_matrix(data, var_ids, obs_ids) -> Job
 
-Subset `data` to keep only variables matching `var_ids` and observations matching `obs_ids`.
+Subset `data` to keep only variables and observations with IDs present in `var_ids` and `obs_ids`.
 
 See also `Jobs.subset_var`, `Jobs.subset_obs`.
 """
@@ -17,7 +17,7 @@ Jobs.subset_matrix(data, var_ids, obs_ids) =
 """
     Jobs.subset_var(data, var_ids) -> Job
 
-Subset `data` to keep only variables matching `var_ids` (by ID).
+Subset `data` to keep only variables with IDs present in `var_ids`.
 
 See also `Jobs.subset_obs`, `Jobs.subset_matrix`, `Jobs.filter_var`.
 """
@@ -26,7 +26,7 @@ Jobs.subset_var(data, var_ids) =
 """
     Jobs.subset_obs(data, obs_ids) -> Job
 
-Subset `data` to keep only observations matching `obs_ids` (by ID).
+Subset `data` to keep only observations with IDs present in `obs_ids`.
 
 See also `Jobs.subset_var`, `Jobs.subset_matrix`, `Jobs.filter_obs`.
 """
@@ -82,7 +82,10 @@ Jobs.filter_var(fvar, data; kwargs...) =
 
 Filter observations by the predicate `fobs`. `fobs` can be:
 - An integer range or vector of indices.
-- A `Pair` of column name and predicate (e.g. `"group" => ==("A")`).
+- A `Pair` of column name and predicate (e.g. `"celltype" => isequal("Monocyte")`).
+- An annotation table `Job` with a predicate.
+
+(TODO: Add an example with predicate. Cannot use the relative_std one.)
 
 See also `Jobs.filter_var`, `Jobs.filter_matrix`, `Jobs.subset_obs`.
 """

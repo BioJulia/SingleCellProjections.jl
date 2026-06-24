@@ -78,6 +78,8 @@ Optional keyword arguments for annotating per-variable statistics:
 - `std_col`: add a column with per-variable standard deviation.
 - `relative_std_col`: add a column with per-variable relative standard deviation.
 
+(TODO: Add example - see tutorial.md.)
+
 See also `Jobs.sctransform`, `Jobs.logtransform`, `Jobs.designmatrix`.
 """
 function Jobs.normalize_matrix(data, args...; kwargs...)
