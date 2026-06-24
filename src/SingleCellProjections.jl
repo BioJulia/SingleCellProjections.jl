@@ -209,6 +209,29 @@ module Jobs
 	function load_csv end
 
 	"""
+	    Jobs.load_h5ad([T], filepath; layer=nothing, kwargs...) -> Job
+
+	Load a .h5ad (AnnData) file as a `DataMatrix` `Job`. Requires the `Muon` package to be loaded.
+
+	The optional type parameter `T` determines the `eltype` of the matrix. If specified, the
+	matrix will be converted (e.g. `Int` for count matrices stored as floats).
+
+	By default, the main matrix `X` is loaded. Use `layer` to load a named layer instead
+	(e.g. `layer="raw_counts"`). Var and obs annotations are always loaded.
+
+	# Examples
+
+	```julia
+	julia> Jobs.load_h5ad("data.h5ad")
+
+	julia> Jobs.load_h5ad(Int, "data.h5ad"; layer="raw_counts")
+	```
+
+	See also [`Jobs.load_counts`](@ref), [`Jobs.load_csv`](@ref).
+	"""
+	function load_h5ad end
+
+	"""
 	    Jobs.umap(data; ndim, seed=1234, kwargs...) -> Job
 
 	Compute a UMAP embedding of `data` with `ndim` dimensions. Returns a `DataMatrix` with
