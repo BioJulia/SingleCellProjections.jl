@@ -200,7 +200,12 @@ Keyword arguments:
 - `min_cells` — minimum number of cells with nonzero counts for a variable to be included (default `5`).
 - `annotate` — if `true`, add SCTransform parameters to `var` annotations.
 
-(TODO: Add example - see tutorial.md.)
+# Examples
+
+SCTransform a `counts` data matrix.
+```julia
+julia> Jobs.sctransform(counts)
+```
 
 See also `Jobs.logtransform`, `Jobs.normalize_matrix`.
 """

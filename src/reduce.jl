@@ -117,12 +117,20 @@ Compute PCA of `data`, keeping `nsv` principal components. Returns a `DataMatrix
 the variables are the principal components and the observations are unchanged. Uses a
 randomized SVD algorithm based on Halko, Martinsson, and Tropp (2011).
 
+The returned principal components are scaled by the singular values, to make this an accurate
+`nsv`-dimensional approximation of the original data.
+
 Keyword arguments controlling the iterative procedure:
 - `seed` — random seed for reproducibility.
 - `subspacedims` — dimension of the random subspace (default `4nsv`).
 - `niter` — number of power iterations (default `3`).
 
-(TODO: Add an example - see tutorial.md.)
+# Examples
+
+Compute a 100-dimensional PCA of `normalized`.
+```julia
+julia> Jobs.pca(normalized; nsv=100)
+```
 
 See also `Jobs.svd`, `Jobs.loadings`, `Jobs.normalize_matrix`.
 """
@@ -156,7 +164,13 @@ Extract PCA loadings from `data`. Returns a `DataMatrix` where each column is a 
 vector. The loadings are not affected by projection. Uses the same randomized SVD algorithm
 as `Jobs.pca` and accepts the same keyword arguments (`nsv`, `seed`, `subspacedims`, `niter`).
 
-(TODO: Add an example - see tutorial.md.)
+# Examples
+
+Compute the loadings of `normalized` for the 100 first principal components.
+Useful in combination with a call to `Jobs.pca` (with the same parameters).
+```julia
+julia> Jobs.loadings(normalized; nsv=100)
+```
 
 See also `Jobs.pca`, `Jobs.svd`.
 """
@@ -283,7 +297,11 @@ Keyword arguments:
 - `seed` — random seed (default `1234`).
 - `k_projection` — neighbors used when projecting onto this layout (default `10`).
 
-(TODO: Example - see tutorial.md.)
+# Examples
+
+```julia
+julia> Jobs.force_layout(reduced; ndim=3, seed=4567, k=100, k_projection=25)
+```
 
 See also `Jobs.transform_coords`, `Jobs.find_optimal_coord_transform`, `Jobs.umap`, `Jobs.tsne`.
 """

@@ -89,7 +89,12 @@ and add it as a new observation annotation column named `col`.
 `sub_filter` and `tot_filter` are predicates applied to the variable annotations to select
 the subset and total gene sets respectively.
 
-(TODO: Add examples of most common usage - see tutorial.md.)
+# Examples
+
+Count the fraction of reads that come from Mitochondrial genes.
+```julia
+julia> var_counts_fraction(counts, "fraction_mt", "name"=>startswith("MT-"))
+```
 
 See also `Jobs.var_counts_sum`, `Jobs.obs_counts_fraction`.
 """
@@ -113,9 +118,21 @@ end
 Compute the sum of counts (optionally transformed by `f`) from a filtered subset of
 variables for each observation, and add it as a new observation annotation column named `col`.
 
-(TODO: Add examples of most common usage - see tutorial.md.)
+# Examples
 
-See also `Jobs.var_counts_fraction`, `Jobs.obs_counts_sum`.
+Let `counts` be the raw counts.
+
+To count the total number of reads in each cell:
+```julia
+julia> Jobs.var_counts_sum(counts, "total_RNA_count")
+```
+
+To count the number of genes that have a non-zero value:
+```julia
+julia> Jobs.var_counts_sum(!iszero, counts, "nonzero_RNA_count")
+```
+
+See also `Jobs.var_counts_fraction`, `Jobs.obs_counts_sum`, [`Jobs.load_counts`](@ref).
 """
 function Jobs.var_counts_sum(f, counts, col::String, filter=Returns(true); project_ids=:intersect)
 	create_job(DataMatrixFunction(var_counts_sum), counts, col, filter; f, project_ids)
@@ -147,7 +164,7 @@ and add it as a new variable annotation column named `col`.
 `sub_filter` and `tot_filter` are predicates applied to the variable annotations to select
 the subset and total gene sets respectively.
 
-See also `Jobs.obs_counts_sum`, `Jobs.var_counts_fraction`.
+See also [`Jobs.obs_counts_sum`](@ref), [`Jobs.var_counts_fraction`](@ref).
 """
 function Jobs.obs_counts_fraction(counts, col, sub_filter, tot_filter=Returns(true); project_ids=:no)
 	create_job(DataMatrixFunction(obs_counts_fraction), counts, col, sub_filter, tot_filter; project_ids)
@@ -168,6 +185,13 @@ obs_counts_sum(::Obs, counts, args...; kwargs...) = get_obs_job(counts)
 
 Compute the sum of counts (optionally transformed by `f`) from a filtered subset of
 observations for each variable, and add it as a new variable annotation column named `col`.
+
+# Examples
+
+For each variable, count the number of cells with a non-zero value.
+```julia
+julia> Jobs.obs_counts_sum(!iszero, counts, "nonzero_cell_count")
+```
 
 See also `Jobs.obs_counts_fraction`, `Jobs.var_counts_sum`.
 """

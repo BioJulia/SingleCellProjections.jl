@@ -162,6 +162,15 @@ result is a `DataMatrix` with genes as variables and cells as observations.
 * `prefilter` selects which features to keep (defaults to Gene Expression only).
 * `extra_id_cols` specifies additional columns used (together with the first column) to uniquely identify variables when merging samples. Variables with matching ID columns are combined.
 
+# Examples
+
+```julia
+julia> Jobs.load_counts("SampleA.h5"; sample_names="SampleA")
+
+julia> Jobs.load_counts(["SampleA.h5", "SampleB.h5"]; sample_names=["SampleA","SampleB"])
+```
+
+
 See also `Jobs.load_csv`.
 """
 function Jobs.load_counts(filenames;

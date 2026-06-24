@@ -105,12 +105,29 @@ find_optimal_coord_transform_job(args...; kwargs...) =
 
 Find an optimal rotation matrix that aligns `data` coordinates so that specified cell
 groups are separated along the principal axes. The first group filter defines the direction
-of the first axis, the second group the second axis, and so on — each is made orthogonal
+of the first axis (up), the second group the second axis, and so on — each is made orthogonal
 to the preceding axes.
 
 Each `group_filter` is a `Pair` of column name and predicate (e.g. `"celltype" => isequal("HSC")`).
 
-(TODO: Add example - see tutorial.md.)
+# Examples
+
+Rotation of 3D plot:
+```julia
+julia> transform = Jobs.find_optimal_coord_transform(fl,
+           "celltype"=>isequal("HSC"),
+           "celltype"=>isequal("T-cells"),
+           "celltype"=>isequal("B-cells"))
+julia> fl_rotated = Jobs.transform_coords(fl, transform; keep_var=true)
+```
+
+Rotation of 2D plot:
+```julia
+julia> transform = Jobs.find_optimal_coord_transform(fl_2d,
+           "celltype"=>isequal("HSC"),
+           "celltype"=>isequal("T-cells"))
+julia> fl_rotated = Jobs.transform_coords(fl_2d, transform; keep_var=true)
+```
 
 See also `Jobs.transform_coords`, `Jobs.force_layout`.
 """

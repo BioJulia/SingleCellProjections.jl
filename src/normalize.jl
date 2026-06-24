@@ -74,11 +74,35 @@ Normalize `data` by centering and regressing out covariates. Covariates can be c
 (strings) or `Pair`s of column name and covariate description.
 
 Optional keyword arguments for annotating per-variable statistics:
-- `variance_col`: add a column with per-variable variance.
-- `std_col`: add a column with per-variable standard deviation.
-- `relative_std_col`: add a column with per-variable relative standard deviation.
+- `annotate_variance`: Set to true to add a column with per-variable variance.
+- `annotate_std`: Set to true to add a column with per-variable standard deviation.
+- `annotate_relative_std`: Set to true to add a column with per-variable relative standard deviation.
+- `variance_col`: Custom name for the variance column.
+- `std_col`: Custom name for the std column.
+- `relative_std_col`: Custom name for the relative standard deviation.
 
-(TODO: Add example - see tutorial.md.)
+# Examples
+
+Center transformed data:
+```julia
+julia> Jobs.normalize_matrix(transformed)
+```
+
+Center transformed data and regress out the `fraction_mt` covariate.
+```julia
+julia> Jobs.normalize_matrix(transformed, "fraction_mt")
+```
+
+Annotate by relative std:
+```julia
+julia> Jobs.normalize_matrix(transformed; annotate_relative_std=true)
+```
+
+Annotate by variance, using a custom name:
+```julia
+julia> Jobs.normalize_matrix(transformed; variance_col="my_variance_column")
+```
+
 
 See also `Jobs.sctransform`, `Jobs.logtransform`, `Jobs.designmatrix`.
 """
