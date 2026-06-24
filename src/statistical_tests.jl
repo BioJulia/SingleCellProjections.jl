@@ -211,7 +211,7 @@ two-group covariate.
 
 (TODO: Examples.)
 
-See also [`Jobs.ftest`](@ref), [`Jobs.normalize_matrix`](@ref), [`two_group_covariate`](@ref).
+See also [`Jobs.ftest`](@ref), [`Jobs.normalize_matrix`](@ref), [`twogroup_covariate`](@ref).
 """
 function Jobs.ttest(data, h1; kwargs...)
 	ttest_job(data, h1; kwargs...)

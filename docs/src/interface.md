@@ -4,5 +4,5 @@
 ```
 
 ```@autodocs
-Modules = [SingleCellProjections]
+Modules = [SingleCellProjections, SingleCellProjections.Jobs]
 ```

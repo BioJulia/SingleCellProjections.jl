@@ -197,8 +197,42 @@ module Jobs
 	function table_leftjoin end
 	function table_hcat end
 	function transform_annotation end
+
+	"""
+	    Jobs.load_csv(filepath; kwargs...) -> Job
+
+	Load a CSV or TSV file as a table `Job`. The file path is automatically checksummed for
+	cache invalidation. Requires the `CSV` package to be loaded.
+
+	See also [`Jobs.load_counts`](@ref).
+	"""
 	function load_csv end
+
+	"""
+	    Jobs.umap(data; ndim, seed=1234, kwargs...) -> Job
+
+	Compute a UMAP embedding of `data` with `ndim` dimensions. Returns a `DataMatrix` with
+	UMAP dimensions as variables. Requires the `UMAP` package to be loaded.
+
+	`seed` is used to reset the global RNG for reproducibility, but results may still vary
+	across runs due to threading differences in the UMAP nearest neighbor search.
+
+	Additional keyword arguments are forwarded to `UMAP.fit`.
+
+	See also [`Jobs.force_layout`](@ref), [`Jobs.tsne`](@ref).
+	"""
 	function umap end
+
+	"""
+	    Jobs.tsne(data; ndim=3, kwargs...) -> Job
+
+	Compute a t-SNE embedding of `data` with `ndim` dimensions. Returns a `DataMatrix` with
+	t-SNE dimensions as variables. Requires the `TSne` package to be loaded.
+
+	Additional keyword arguments (`max_iter`, `perplexity`, etc.) are forwarded to `TSne.tsne`.
+
+	See also [`Jobs.force_layout`](@ref), [`Jobs.umap`](@ref).
+	"""
 	function tsne end
 end
 

@@ -78,19 +78,6 @@ umap(::Obs, data; ndim, kwargs...) = get_job(Obs(), data)
 umap(::Var, data; ndim, kwargs...) = prefixed_ids_job("id", "UMAP ", ndim)
 
 
-"""
-    Jobs.umap(data; ndim, seed=1234, kwargs...) -> Job
-
-Compute a UMAP embedding of `data` with `ndim` dimensions. Returns a `DataMatrix` with
-UMAP dimensions as variables. Requires the `UMAP` package to be loaded.
-
-`seed` is used to reset the global RNG for reproducibility, but results may still vary
-across runs due to threading differences in the UMAP nearest neighbor search.
-
-Additional keyword arguments are forwarded to `UMAP.fit`.
-
-See also [`Jobs.force_layout`](@ref), [`Jobs.tsne`](@ref).
-"""
 function Jobs.umap(data; ndim, seed=1234, kwargs...)
 	create_job(DataMatrixFunction(umap), data; ndim, seed, kwargs...)
 end
