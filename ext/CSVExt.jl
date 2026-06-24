@@ -1,7 +1,7 @@
 module CSVExt
 
 using ReproducibleJobs
-using ReproducibleJobs: create_job, cached, Preprocessing
+using ReproducibleJobs: create_job, cached, Preprocess, Preprocessing
 using SingleCellProjections
 using SingleCellProjections: table_to_compound_result, table_from_compound_result
 

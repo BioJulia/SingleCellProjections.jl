@@ -2,7 +2,7 @@ __revise_mode__ = :evalassign
 
 using Test
 using SingleCellProjections
-using SingleCellProjections: register_scp_functions!
+using SingleCellProjections: SingleCellProjectionsCore, register_scp_functions!
 import .SingleCellProjectionsCore as SCPCore
 using .SingleCellProjectionsCore.MatrixExpressions
 using .SCPCore: unblockify
