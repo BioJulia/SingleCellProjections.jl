@@ -226,11 +226,18 @@ module Jobs
 
 	# Examples
 
+	Load the main matrix `X`.
 	```julia
 	julia> Jobs.load_h5ad("data.h5ad")
+	```
 
+	Load raw counts. Note that we want to specify the eltype `Int`, because h5ad typically stores counts as Float32.
+	```julia
 	julia> Jobs.load_h5ad(Int, "data.h5ad"; layer="raw_counts")
+	```
 
+	Load a UMAP embedding.
+	```julia
 	julia> Jobs.load_h5ad("data.h5ad"; obsm="X_umap")
 	```
 
