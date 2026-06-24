@@ -1,25 +1,77 @@
+"""
+    rot2d(α)
+
+Return a 2×2 rotation matrix for angle `α` (in radians). For use with [`Jobs.transform_coords`](@ref).
+"""
 function rot2d(α)
 	s,c = sincos(α)
 	[c -s; s c]
 end
+
+"""
+    flipx2d()
+
+Return a 2×2 matrix that flips the x-axis. For use with [`Jobs.transform_coords`](@ref).
+"""
 flipx2d() = [-1 0; 0  1]
+
+"""
+    flipy2d()
+
+Return a 2×2 matrix that flips the y-axis. For use with [`Jobs.transform_coords`](@ref).
+"""
 flipy2d() = [ 1 0; 0 -1]
 
 
+"""
+    rotx(α)
+
+Return a 3×3 rotation matrix around the x-axis by angle `α` (in radians). For use with [`Jobs.transform_coords`](@ref).
+"""
 function rotx(α)
 	s,c = sincos(α)
 	[1 0 0; 0 c -s; 0 s c]
 end
+
+"""
+    roty(α)
+
+Return a 3×3 rotation matrix around the y-axis by angle `α` (in radians). For use with [`Jobs.transform_coords`](@ref).
+"""
 function roty(α)
 	s,c = sincos(α)
 	[c 0 s; 0 1 0; -s 0 c]
 end
+
+"""
+    rotz(α)
+
+Return a 3×3 rotation matrix around the z-axis by angle `α` (in radians). For use with [`Jobs.transform_coords`](@ref).
+"""
 function rotz(α)
 	s,c = sincos(α)
 	[c -s 0; s c 0; 0 0 1]
 end
+
+"""
+    flipx3d()
+
+Return a 3×3 matrix that flips the x-axis. For use with [`Jobs.transform_coords`](@ref).
+"""
 flipx3d() = [-1 0 0; 0  1 0; 0 0  1]
+
+"""
+    flipy3d()
+
+Return a 3×3 matrix that flips the y-axis. For use with [`Jobs.transform_coords`](@ref).
+"""
 flipy3d() = [ 1 0 0; 0 -1 0; 0 0  1]
+
+"""
+    flipz3d()
+
+Return a 3×3 matrix that flips the z-axis. For use with [`Jobs.transform_coords`](@ref).
+"""
 flipz3d() = [ 1 0 0; 0  1 0; 0 0 -1]
 
 
