@@ -1,83 +1,56 @@
+```@meta
+CurrentModule = SingleCellProjections
+ShareDefaultModule = true
+```
+
 # Data Matrices
 
-!!! warning "OLD"
-    This page is outdated
+`DataMatrix` objects — annotated matrices where rows are variables and columns are observations — are central in SingleCellProjections.jl.
 
+Let's load a sample to see what a `DataMatrix` looks like:
 
-```@setup data
-# Mimic the dataset from the tutorial without including it in the docs building
+```@example
+using SingleCellProjections
+using ReproducibleJobs
+using SparseArrays
 
-
-# Useful function to extract a little data from a DataMatrix to use here for show
-# function f(col, n; h=10, t=10, filler="")
-# 	@assert h+t <= n
-# 	pre = string(col[1:h])
-# 	mid = string("fill(\"", filler, "\", ", n-h-t, ")")
-# 	post = string(col[end-t+1:end])
-# 	string("vcat(", pre, ", ", mid, ", ", post, ')')
-# end
-
-
-
-using SingleCellProjections, SparseArrays, DataFrames
-P,N = 33766,35340
-X = sparse(Int32[], Int32[], Int[], P, N)
-
-v_id = vcat(["MIR1302-2HG", "FAM138A", "OR4F5", "AL627309.1", "AL627309.3", "AL627309.2", "AL627309.4", "AL732372.1", "OR4F29", "AC114498.1"], string.("dummy_", 1:33746), ["CD169", "CD28", "CD161", "CD163", "CD138-1", "CD164", "CD138-2", "CD144", "CD202b", "CD11c"])
-v_feature_type = vcat(fill("Gene Expression",33538), fill("Antibody Capture", P-33538))
-
-o_id = vcat(["P1_L1_AAACCCAAGACATACA", "P1_L1_AAACCCACATCGGTTA", "P1_L1_AAACCCAGTGGAACAC", "P1_L1_AAACCCATCTGCGGAC", "P1_L1_AAACGAAAGTTACTCG", "P1_L1_AAACGAACAATGAGCG", "P1_L1_AAACGAACACTCCTTG", "P1_L1_AAACGAACAGCATCTA", "P1_L1_AAACGAATCCTCACCA", "P1_L1_AAACGAATCTCACTCG"], string.("dummy_", 1:35320), ["P2_L5_TTTGGTTGTCCGAAAG", "P2_L5_TTTGGTTTCCTCTAGC", "P2_L5_TTTGGTTTCGTAGGGA", "P2_L5_TTTGGTTTCTTTGATC", "P2_L5_TTTGTTGAGTGTACCT", "P2_L5_TTTGTTGGTACGATCT", "P2_L5_TTTGTTGGTCCTTAAG", "P2_L5_TTTGTTGTCAACACCA", "P2_L5_TTTGTTGTCATGCATG", "P2_L5_TTTGTTGTCCGTGCGA"])
-o_sampleName = vcat(fill("P1",18135), fill("P2", N-18135))
-o_barcode = vcat(["L1_AAACCCAAGACATACA", "L1_AAACCCACATCGGTTA", "L1_AAACCCAGTGGAACAC", "L1_AAACCCATCTGCGGAC", "L1_AAACGAAAGTTACTCG", "L1_AAACGAACAATGAGCG", "L1_AAACGAACACTCCTTG", "L1_AAACGAACAGCATCTA", "L1_AAACGAATCCTCACCA", "L1_AAACGAATCTCACTCG"], string.("dummy_", 1:35320), ["L5_TTTGGTTGTCCGAAAG", "L5_TTTGGTTTCCTCTAGC", "L5_TTTGGTTTCGTAGGGA", "L5_TTTGGTTTCTTTGATC", "L5_TTTGTTGAGTGTACCT", "L5_TTTGTTGGTACGATCT", "L5_TTTGTTGGTCCTTAAG", "L5_TTTGTTGTCAACACCA", "L5_TTTGTTGTCATGCATG", "L5_TTTGTTGTCCGTGCGA"])
-
-v = DataFrame(id=v_id, feature_type=v_feature_type, name=v_id, genome="hg19", read="", pattern="", sequence="")
-o = DataFrame(id=o_id, sampleName=o_sampleName, barcode=o_barcode)
-data = DataMatrix(X, v, o)
+sample_path = joinpath("samples", "AML28.h5")
+```
+```@setup
+using ..SingleCellDocUtils
+sample_path = SingleCellDocUtils.get_lilljebjorn_sample_path("AML28")
+```
+```@example
+counts = Jobs.load_counts(sample_path; sample_names="AML28")
+c = fetch!(counts)
 ```
 
-
-`DataMatrix` objects -- annotated matrices where rows are variables and columns are observations -- are central in SingleCellProjections.jl.
-A `DataMatrix` is also sometimes called an "Assay", in other software packages.
-
-An overview of a `DataMatrix` is shown when the object is displayed:
-```@repl data
-data
-```
-Here we see the matrix size (number of variables and observations), a brief description of the matrix contents, and an overview of available variable and observation annotations. The underlined annotation names are the ID columns (see [IDs](@ref) below for more details).
-
+The display shows the matrix size (number of variables and observations), a brief description of the matrix contents, and an overview of available variable and observation annotations.
 
 
 ## Variables
-Variables, or `var` for short, are typically genes, features (such as CITE-seq features) or variables after dimension reduction (e.g. "UMAP1").
+Variables, or `var` for short, are typically genes or features.
 The variables are stored as a [`DataFrame`](https://dataframes.juliadata.org/stable/) and can be accessed by:
-```@repl data
-data.var
+```@example
+c.var[1:6, :]
 ```
 
 
 ## Observations
-Observations, or `obs` for short, are typically cells, but can in theory be any kind of observation.
+Observations, or `obs` for short, are typically cells.
 The observations are stored as a [`DataFrame`](https://dataframes.juliadata.org/stable/) and can be accessed by:
-```@repl data
-data.obs
+```@example
+c.obs[1:6, :]
 ```
 
 
 ## IDs
-Each variable and each observation must have a unique ID, that is, each row in the `DataFrame` should be unique if we consider the ID columns only.
-As seen above, the ID columns are underlined when displaying a DataMatrix.
-We can also access them directly:
-```@repl data
-data.var_id_cols
-```
-```@repl data
-data.obs_id_cols
-```
+Each variable and each observation must have a unique ID.
+The first column of the `var` and `obs` DataFrames is always the ID column.
 
 Most of the time, IDs are handled automatically by SingleCellProjections.jl.
 Sometimes, you need to make sure IDs are unique when loading or merging data matrices.
-In particular, when loading a `DataMatrix` that should be projected onto another `DataMatrix`, the user must ensure that relevant IDs are matching.
-
+In particular, when loading a `DataMatrix` that should be projected onto another `DataMatrix`, the user must ensure that variable IDs match.
 
 
 ## Matrix
@@ -92,12 +65,36 @@ Most of this complexity is hidden from the user, but internally SingleCellProjec
     Users of SingleCellProjections.jl should thus consider the matrices to be "read-only".
     This should rarely present problems in practice.
 
-
 Roughly, the matrix types used at different stages are:
 
-1. Counts - [`SparseMatrixCSC`](https://docs.julialang.org/en/v1/stdlib/SparseArrays/)
-2. Transformed and normalized data - [Matrix Expressions](@ref)
-3. SVD (PCA) result - [`SVD`](https://docs.julialang.org/en/v1/stdlib/LinearAlgebra/#LinearAlgebra.SVD)
-4. ForceLayout/UMAP/t-SNE result - `Matrix{Float64}`
+1. Counts — [`SparseMatrixCSC`](https://docs.julialang.org/en/v1/stdlib/SparseArrays/) (often in a blocked format)
+2. Transformed and normalized data — [Matrix Expressions](@ref)
+3. PCA result — `Matrix{Float64}`
+4. ForceLayout/UMAP/t-SNE result — `Matrix{Float64}`
 
 
+## Jobs and DataMatrices
+
+A `DataMatrix` `Job` is internally split into three component Jobs: one for the matrix, one for `var`, and one for `obs`. You can access these with:
+- `Jobs.get_matrix(job)` — the matrix component
+- `Jobs.get_var(job)` — the variable annotations
+- `Jobs.get_obs(job)` — the observation annotations
+
+Operations that only affect one component leave the others unchanged. For example, `Jobs.logtransform` only transforms the matrix — it passes `var` and `obs` through without modification. This means the var and obs Jobs are literally the same object (identical by `===`) before and after the transformation:
+
+```@example
+transformed = Jobs.logtransform(counts)
+
+# var is unchanged by logtransform — same Job object
+forward!(Jobs.get_var(transformed)) === forward!(Jobs.get_var(counts))
+```
+
+```@example
+# matrix is different — logtransform created a new matrix Job
+forward!(Jobs.get_matrix(transformed)) === forward!(Jobs.get_matrix(counts))
+```
+
+This splitting is what makes the caching and projection system efficient — unchanged components are never recomputed or stored redundantly.
+
+!!! warning "Do not mutate results"
+    Since components are shared across Jobs, mutating a fetched result (e.g., modifying a column in `data.obs`) would corrupt other Jobs that reference the same underlying object. Always treat results from `fetch!` as read-only.
