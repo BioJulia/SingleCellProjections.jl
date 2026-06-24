@@ -1,21 +1,30 @@
 module SingleCellProjections
 
 export
-	SingleCellProjectionsCore, # TODO: make public instead
 	DataMatrix,
 	Jobs, # TODO: remove probably
 	categorical_covariate,
 	numerical_covariate,
 	twogroup_covariate,
-	rot2d, # experimental
-	flipx2d, # experimental
-	flipy2d, # experimental
-	rotx, # experimental
-	roty, # experimental
-	rotz, # experimental
-	flipx3d, # experimental
-	flipy3d, # experimental
-	flipz3d # experimental
+	rot2d,
+	flipx2d,
+	flipy2d,
+	rotx,
+	roty,
+	rotz,
+	flipx3d,
+	flipy3d,
+	flipz3d
+
+# Use public keyword in Julia versions where it is available
+if VERSION >= v"1.11.0-DEV.469"
+	let str = """
+		public
+			SingleCellProjectionsCore
+		"""
+		eval(Meta.parse(str))
+	end
+end
 
 include("SingleCellProjectionsCore/SingleCellProjectionsCore.jl")
 
