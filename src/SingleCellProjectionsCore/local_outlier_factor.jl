@@ -76,7 +76,6 @@ function neighbor_distances(indices, X, DX2, Y=X, DY2=DX2; progress=nothing)
 	X_col_ranges = get_col_ranges(X.terms[1].matrix)
 	Y_col_ranges = get_col_ranges(Y.terms[1].matrix)
 
-	# progress = verbose ? Progress(k; desc="Computing distances to neighbors: ") : nothing
 	isnothing(progress) || progress(k) # initialize
 
 	dists = zeros(k, NY) # TODO: Use Float32?

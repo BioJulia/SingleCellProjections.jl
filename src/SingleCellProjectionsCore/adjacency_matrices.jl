@@ -72,7 +72,6 @@ function find_nearest_neighbors(X; k, tree_fun=KDTree, progress=nothing)
 	# output
 	indices = zeros(Int, k, N) # or Int32?
 
-	# progress = verbose ? Progress(length(c); desc="Finding nearest neighbors: ") : nothing
 	isnothing(progress) || progress(length(c)) # initialize
 
 	# tforeach(c) do chunk
@@ -123,7 +122,6 @@ function find_nearest_neighbors(X, Y; k, tree_fun=KDTree, progress=nothing)
 	c = chunks(1:N2; n=10*Threads.nthreads(), minsize=128) # TODO: Revisit parameter choices
 
 
-	# progress = verbose ? Progress(length(c); desc="Finding nearest neighbors: ") : nothing
 	isnothing(progress) || progress(length(c)) # initialize
 
 	# output

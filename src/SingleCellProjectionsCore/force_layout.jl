@@ -134,7 +134,6 @@ function force_layout(::Val{ndim}, adj::AbstractMatrix;
 
     tree = BarnesHutTree(ndim)
 
-    # progress = verbose ? Progress(niter; desc="Computing force layout: ") : nothing
     isnothing(tick) || tick()
     isnothing(progress) || progress(niter) # initialize
 

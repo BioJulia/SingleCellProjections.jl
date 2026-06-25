@@ -39,7 +39,6 @@ function implicitsvd(::Type{T}, P, N, A, AT;
 		B = convert(Matrix, A)
 		Q = I
 	else
-		# progress = verbose ? Progress((niter+1)*4; desc="Computing SVD: ") : nothing
 		isnothing(progress) || progress((niter+1)*4) # initialize
 
 		local Zj

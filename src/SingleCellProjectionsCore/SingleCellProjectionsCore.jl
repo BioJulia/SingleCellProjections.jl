@@ -27,8 +27,6 @@ using ChunkSplitters
 using OhMyThreads
 using TaskLocalValues
 
-using ProgressMeter: Progress, next!, finish! # For progress bars
-
 
 include("../MatrixExpressions/MatrixExpressions.jl")
 using .MatrixExpressions
