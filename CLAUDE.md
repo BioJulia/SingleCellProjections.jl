@@ -12,103 +12,79 @@ jp -e 'using Pkg; Pkg.test("SingleCellProjections")'
 
 Tests run twice automatically — once with a fresh disk cache ("New Disk Cache") and once reusing it ("Reused Disk Cache") — to verify caching correctness.
 
-**Run a single test suite interactively (julia-mcp / REPL):**
+**Run a single test suite via julia-mcp** (preferred — persistent session, no restart needed):
 
 Each test file defines a `run_X_tests()` function. To run one suite in isolation:
 
 ```julia
-# 1. Load test setup (defines helpers and common data; only needed once per session)
-includet("test/test_setup.jl")
-includet("test/sum_squared.jl")   # or whichever suite
+includet("dev/SingleCellProjections/test/test_setup.jl")
+includet("dev/SingleCellProjections/test/sum_squared.jl")
 
-# 2. Run it (requires an active scheduler)
 with_scheduler(Scheduler(; dir=mktempdir())) do
     register_scp_functions!()
     run_sum_squared_tests()
 end
 ```
 
-Available run functions: `run_projectables_tests`, `run_tables_tests`, `run_load_tests`,
+Available: `run_projectables_tests`, `run_tables_tests`, `run_load_tests`,
 `run_transform_tests`, `run_reduce_tests`, `run_filter_tests`, `run_subset_tests`,
-`run_sum_squared_tests`, `run_core_tests`, `run_matrix_expressions_tests`.
+`run_sum_squared_tests`, `run_umap_tests`, `run_tsne_tests`, `run_muon_tests`,
+`run_core_tests`, `run_matrix_expressions_tests`.
 
 `test/test_setup.jl` uses `__revise_mode__ = :evalassign` so Revise picks up changes
 to both helper functions and global variables in that file.
 
 ## Architecture
 
+See `docs/src/` for detailed documentation: `tutorial.md` (workflow walkthrough), `datamatrices.md` (DataMatrix usage), `matrixexpressions.md` (lazy expressions).
+
 ### Module Structure
 
-The package has three layers:
+- **`SingleCellProjections`** (top-level): `ReproducibleJobs` integration — spec construction, caching, preprocessing (`Projectable`/`ProjectOnto`), and the `Jobs` module with the public API.
+- **`SingleCellProjectionsCore`** (`src/SingleCellProjectionsCore/`): Pure algorithms — no dependency on `ReproducibleJobs`.
+- **`MatrixExpressions`** (`src/SingleCellProjectionsCore/MatrixExpressions/`): Lazy matrix expression trees (`MatrixRef`, `MatrixProduct`, `MatrixSum`, `DiagGram`, `Diag`).
 
-- **`SingleCellProjections`** (top-level, `src/SingleCellProjections.jl`): Wraps `SingleCellProjectionsCore` and adds `ReproducibleJobs` integration — spec construction, caching, and `Projectable`/`ProjectOnto` preprocessing.
-- **`SingleCellProjectionsCore`** (`src/SingleCellProjectionsCore/`): Pure algorithms — loading, normalization, dimensionality reduction, statistical tests, force layout, etc. No dependency on `ReproducibleJobs`.
-- **`MatrixExpressions`** (`src/MatrixExpressions/`): Lazy matrix expression trees for efficient computation chains (`MatrixRef`, `MatrixProduct`, `MatrixSum`, `DiagGram`, `Diag`).
+### DataMatrix
 
-### Core Data Structure
+`DataMatrix{T}` (`src/SingleCellProjectionsCore/datamatrix.jl`): matrix of type `T` + `var::DataFrame` (variables/genes, rows) + `obs::DataFrame` (observations/cells, columns). First column of var/obs is a unique ID.
 
-**`DataMatrix{T}`** (`src/SingleCellProjectionsCore/datamatrix.jl`): The central data structure — a matrix of type `T` plus two `DataFrame`s:
-- `matrix::T` — the data matrix (sparse, dense, or a `MatrixExpression`)
-- `var::DataFrame` — variable (gene/feature) annotations; first column is a unique ID
-- `obs::DataFrame` — observation (cell/sample) annotations; first column is a unique ID
+### DataMatrixFunction Pattern
 
-`ReproducibleJobs` integration: `DataMatrix` is registered as deconstructable via `deconstruct`/`reconstruct` (into `(matrix, var, obs)`) and supports on-disk caching.
+`DataMatrixFunction(f)` wraps a function `f` that is called three times with `Mat()`, `Var()`, `Obs()` dispatchers to separately produce the matrix, var table, and obs table. This is the standard pattern for functions that return a `DataMatrix` Job (see `src/datamatrixfunctions.jl`).
 
-### ReproducibleJobs Integration
+`DataMatrixFieldFunction` subtypes (`MatFunction`, `VarFunction`, `ObsFunction`) are created during preprocessing to extract individual fields.
 
-All public-facing computations are exposed as `*_job` functions that return `Job`s for use with a `Scheduler`:
+### Projection System
 
-```julia
-with_scheduler(Scheduler(; dir="/path/to/cache")) do
-    job = load_counts(filenames, sample_names)  # returns a Job
-    fetch!(job)                                  # computes and caches
-end
-```
+Projecting a computation pipeline onto a different dataset (e.g., PCA trained on one dataset applied to new cells):
 
-Key patterns:
-- `create_job(f, args...; __version=v"0.1.0", kwargs...)` — create a cacheable spec
-- `cached(spec)` — activate on-disk caching for this spec
-- `cached(spec, "U")` / `cached(spec, "S")` / etc. — load sub-results from a `CompoundResult`
-- `CompoundResult(; U, S, Vt)` — returned by multi-output computations like `implicitsvd`
-
-### Projectable / Projection System
-
-The package supports projecting a computation pipeline onto a different dataset (e.g., projecting a PCA trained on one dataset onto new cells):
-
-- **`Projectable(f)`** (`src/types.jl`): Marks a preprocessing function as projectable. The function receives an `Action` as its first argument.
-- **`Action`**: Either `Eval()` (normal evaluation) or `Projection(replacements)` (substitute specs).
-- **`ProjectOnto(f)`**: Variant that receives explicit replacement pairs.
-- `try_replace_job` / `try_replace_job_single`: Core replacement logic using `===` identity (deduplication ensures this works correctly).
+- `Projectable(f)` — marks a preprocessing function as projectable. `f` receives an `Action` (`Eval()` or `Projection(replacements)`) as its first argument.
+- `ProjectOnto(f)` — variant that receives explicit replacement pairs.
+- `try_replace_job` / `try_replace_spec_single` — replacement logic using `===` identity (deduplication ensures this works).
 
 ### Key Source Files
 
 | File | Contents |
 |------|----------|
-| `src/SingleCellProjectionsCore/datamatrix.jl` | `DataMatrix` type and basic operations |
-| `src/SingleCellProjectionsCore/load.jl` | Loading from 10x HDF5/h5ad files |
-| `src/SingleCellProjectionsCore/transform.jl` | SCTransform, log-transform, TF-IDF |
-| `src/SingleCellProjectionsCore/normalize.jl` | Regression normalization |
-| `src/SingleCellProjectionsCore/reduce.jl` | PCA/SVD, implicit SVD |
-| `src/SingleCellProjectionsCore/statistical_tests.jl` | F-test, t-test wrappers |
-| `src/SingleCellProjectionsCore/force_layout.jl` | Force-directed layout (Barnes-Hut) |
-| `src/SingleCellProjectionsCore/annotation_transfer.jl` | kNN-based label transfer |
-| `src/MatrixExpressions/` | Lazy matrix expression trees |
+| `src/SingleCellProjections.jl` | `Jobs` module (public API functions), type registrations |
+| `src/types.jl` | `Projectable`, `ProjectOnto`, `DataMatrixFunction`, `Mat`/`Var`/`Obs` |
+| `src/datamatrixfunctions.jl` | `DataMatrixFunction` evaluation, `get_matrix`/`get_var`/`get_obs` preprocessing |
+| `src/projectables.jl` | `Action`, `Eval`, `Projection`, replacement logic |
+| `src/internal.jl` | Utility specs (`getindex_job`, `indexin_job`, `prefixed_ids_job`, `compute_size_job`, etc.) |
+| `src/tables.jl` | Table/DataFrame spec utilities |
 | `src/load.jl` | Spec-level loading (wraps Core) |
+| `src/transform.jl` | Spec-level SCTransform, log-transform, TF-IDF |
+| `src/normalize.jl` | Spec-level regression normalization |
 | `src/reduce.jl` | Spec-level SVD/PCA with `CompoundResult` |
-| `src/internal.jl` | Utility specs (`combine_vectors_job`, `getindex_job`, etc.) |
-| `src/types.jl` | `Projectable`, `ProjectOnto`, `Action`, `DataMatrixFieldFunction` |
-| `src/projectables.jl` | Projection logic |
+| `src/filter.jl` | Spec-level var/obs filtering |
+| `src/SingleCellProjectionsCore/` | Pure algorithm implementations (load, transform, normalize, reduce, force_layout, statistical_tests, etc.) |
+| `src/MatrixExpression/` | Lazy sums/products etc of matrices. Core functionality in SingleCellProjections.jl for making computations efficient in terms of speed and memory. |
 
 ### Extensions
 
-Optional dependencies loaded as Julia extensions:
-- `CSV` — CSV loading
-- `Muon` — h5ad/AnnData support
-- `PrincipalMomentAnalysis` — PMA dimensionality reduction
-- `TSne` — t-SNE embedding
-- `UMAP` — UMAP embedding
-
-### Notes
-
-- The `Jobs` module in `src/SingleCellProjections.jl` contains the public functions for creating specs.
-- `DataMatrixFieldFunction` subtypes (`MatFunction`, `VarFunction`, `ObsFunction`) wrap a function to extract only the matrix, var, or obs field from the result for use as a spec argument.
+Optional dependencies loaded as Julia package extensions (`ext/`):
+- **CSVExt** (`CSV`) — CSV/TSV loading via `Jobs.load_csv`
+- **MuonExt** (`Muon`, `HDF5`) — h5ad/AnnData support via `Jobs.load_h5ad`
+- **UMAPExt** (`UMAP`) — UMAP embedding via `Jobs.umap`
+- **TSneExt** (`TSne`) — t-SNE embedding via `Jobs.tsne`
+- **PrincipalMomentAnalysisExt** (`PrincipalMomentAnalysis`) — PMA dimensionality reduction
