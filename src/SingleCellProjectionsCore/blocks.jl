@@ -194,68 +194,69 @@ end
 # end
 
 
+# NB: We keep this code around. We might want some version of it later if the summation turns out to be a bottleneck.
+# We should probably not use a binary tree though, more children per node would be better.
+# struct SummationTree{T}
+# 	nodes::Vector{Union{Nothing,T}} # nodes[1] is the root. Children of node i are (2i,2i+1)
+# 	# remaining::Vector{Threads.Atomic{Int}}
 
-struct SummationTree{T}
-	nodes::Vector{Union{Nothing,T}} # nodes[1] is the root. Children of node i are (2i,2i+1)
-	# remaining::Vector{Threads.Atomic{Int}}
-
-	n_children::Vector{Int} # The number of children for each node. We might not need this later, but it makes the algorithm easier to write.
-	n_remaining::AtomicMemory{Int}
-end
-function SummationTree(::Type{T}, n_leaves::Int) where T
-	n_leaves_full = nextpow(2,n_leaves) # The number of leaves if the we have a full tree (i.e. the number of leaves is 2^n)
-	n_internal = n_leaves_full-1
-	n_nodes  = n_internal + n_leaves
-	nodes = Vector{Union{Nothing,T}}(nothing, n_nodes)
-	n_remaining = AtomicMemory{Int}(undef, n_internal)
+# 	n_children::Vector{Int} # The number of children for each node. We might not need this later, but it makes the algorithm easier to write.
+# 	n_remaining::AtomicMemory{Int}
+# end
+# function SummationTree(::Type{T}, n_leaves::Int) where T
+# 	n_leaves_full = nextpow(2,n_leaves) # The number of leaves if the we have a full tree (i.e. the number of leaves is 2^n)
+# 	n_internal = n_leaves_full-1
+# 	n_nodes  = n_internal + n_leaves
+# 	nodes = Vector{Union{Nothing,T}}(nothing, n_nodes)
+# 	n_remaining = AtomicMemory{Int}(undef, n_internal)
 
 
-	n_children = zeros(Int, n_internal)
-	for i in n_internal:-1:1
-		has_left = get(n_children, 2i, 2i<=n_nodes) > 0
-		has_right = get(n_children, 2i+1, 2i+1<=n_nodes) > 0
-		nc = has_left + has_right
-		n_children[i] = nc
-		@atomic n_remaining[i] = nc
-	end
-	SummationTree(nodes, n_children, n_remaining)
-end
+# 	n_children = zeros(Int, n_internal)
+# 	for i in n_internal:-1:1
+# 		has_left = get(n_children, 2i, 2i<=n_nodes) > 0
+# 		has_right = get(n_children, 2i+1, 2i+1<=n_nodes) > 0
+# 		nc = has_left + has_right
+# 		n_children[i] = nc
+# 		@atomic n_remaining[i] = nc
+# 	end
+# 	SummationTree(nodes, n_children, n_remaining)
+# end
 
-# must be called exactly once per leaf
-function add_result!(tree::SummationTree{T}, leaf_i::Int, result::T) where T
-	n_nodes = length(tree.nodes)
-	n_internal = length(tree.n_remaining)
-	n_leaves = n_nodes - n_internal
+# # must be called exactly once per leaf
+# function add_result!(tree::SummationTree{T}, leaf_i::Int, result::T) where T
+# 	n_nodes = length(tree.nodes)
+# 	n_internal = length(tree.n_remaining)
+# 	n_leaves = n_nodes - n_internal
 
-	@assert 1 <= leaf_i <= n_leaves
-	i = leaf_i + n_internal
-	tree.nodes[i] = result
+# 	@assert 1 <= leaf_i <= n_leaves
+# 	i = leaf_i + n_internal
+# 	tree.nodes[i] = result
 
-	i == 1 && return # degenerate case with exactly one result
+# 	i == 1 && return # degenerate case with exactly one result
 
-	parent_i = div(i,2)
-	nr = @atomic tree.n_remaining[parent_i] -= 1
-	while nr == 0 # we can propagate the result upward
-		if tree.n_children[parent_i] == 1 # no summation needed, just move the result upward (happens due to unbalanced tree)
-			tree.nodes[parent_i] = tree.nodes[i]
-			tree.nodes[i] = nothing
-		else
-			tree.nodes[parent_i] = tree.nodes[2parent_i] # init with left child
-			MatrixExpressions.addto!(tree.nodes[parent_i], tree.nodes[2parent_i+1]) # add right child
-			tree.nodes[2parent_i] = nothing
-			tree.nodes[2parent_i+1] = nothing
-		end
+# 	parent_i = div(i,2)
+# 	nr = @atomic tree.n_remaining[parent_i] -= 1
+# 	while nr == 0 # we can propagate the result upward
+# 		if tree.n_children[parent_i] == 1 # no summation needed, just move the result upward (happens due to unbalanced tree)
+# 			tree.nodes[parent_i] = tree.nodes[i]
+# 			tree.nodes[i] = nothing
+# 		else
+# 			tree.nodes[parent_i] = tree.nodes[2parent_i] # init with left child
+# 			MatrixExpressions.addto!(tree.nodes[parent_i], tree.nodes[2parent_i+1]) # add right child
+# 			tree.nodes[2parent_i] = nothing
+# 			tree.nodes[2parent_i+1] = nothing
+# 		end
 
-		parent_i == 1 && break # the full tree has been summed
+# 		parent_i == 1 && break # the full tree has been summed
 
-		i = parent_i
-		parent_i = div(i,2)
-		nr = @atomic tree.n_remaining[parent_i] -= 1
-	end
-end
+# 		i = parent_i
+# 		parent_i = div(i,2)
+# 		nr = @atomic tree.n_remaining[parent_i] -= 1
+# 	end
+# end
 
-# Can only be called after add_result! has been called for each leaf
-get_result(tree::SummationTree{T}) where T = tree.nodes[1]::T
+# # Can only be called after add_result! has been called for each leaf
+# get_result(tree::SummationTree{T}) where T = tree.nodes[1]::T
 
 
 

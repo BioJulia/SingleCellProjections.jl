@@ -21,7 +21,7 @@ function run_tables_tests()
 		basic_table = Jobs.create_table(col_args...)
 		df = DataFrame(col_args...)
 
-		csv_filename = tempname(; suffix=".csv")
+		csv_filename = tempname()*".csv"
 		CSV.write(csv_filename, df)
 		csv_table = Jobs.load_csv(csv_filename)
 
@@ -29,7 +29,7 @@ function run_tables_tests()
 		basic_table_p = Jobs.create_table(col_args_p...)
 		df_p = DataFrame(col_args_p...)
 
-		csv_filename_p = tempname(; suffix=".csv")
+		csv_filename_p = tempname()*".csv"
 		CSV.write(csv_filename_p, df_p)
 		csv_table_p = Jobs.load_csv(csv_filename_p)
 
@@ -41,7 +41,7 @@ function run_tables_tests()
 		basic_table_hc = Jobs.create_table(col_args_hc...)
 		df_hc = DataFrame(col_args_hc...)
 
-		csv_filename_hc = tempname(; suffix=".csv")
+		csv_filename_hc = tempname()*".csv"
 		CSV.write(csv_filename_hc, df_hc)
 		csv_table_hc = Jobs.load_csv(csv_filename_hc)
 
@@ -54,7 +54,7 @@ function run_tables_tests()
 		basic_table_right = Jobs.create_table(col_args_right...)
 		df_right = DataFrame(col_args_right...)
 
-		csv_filename_right = tempname(; suffix=".csv")
+		csv_filename_right = tempname()*".csv"
 		CSV.write(csv_filename_right, df_right)
 		csv_table_right = Jobs.load_csv(csv_filename_right)
 
