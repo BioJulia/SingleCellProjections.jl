@@ -1,6 +1,6 @@
 using Test
 using SingleCellProjections
-using SingleCellProjections.Impl: create_datamatrix_getindex_job
+using SingleCellProjections.Impl: create_datamatrix_getindex_job, table_getindex_job
 using ReproducibleJobs: fetch!, forward!
 using DataFrames
 using Random: randperm
@@ -18,10 +18,10 @@ function run_filter_tests()
 
 
 		var_annot_df = select(fetch!(SCP.get_var(counts_job)), ["id", "name"])[end:-4:1, :]
-		var_annot_job = SingleCellProjections.Impl.table_getindex_job(SCP.annotation(SCP.get_var(counts_job), "name"), P:-4:1)
+		var_annot_job = table_getindex_job(SCP.annotation(SCP.get_var(counts_job), "name"), P:-4:1)
 
 		obs_annot_df = select(fetch!(SCP.get_obs(counts_job)), ["cell_id", "barcode"])[end:-5:1, :]
-		obs_annot_job = SingleCellProjections.Impl.table_getindex_job(SCP.annotation(SCP.get_obs(counts_job), "barcode"), N:-5:1)
+		obs_annot_job = table_getindex_job(SCP.annotation(SCP.get_obs(counts_job), "barcode"), N:-5:1)
 
 
 		# TODO: projections
@@ -54,7 +54,7 @@ function run_filter_tests()
 				test_dataframe_columns_identical("f.obs vs data.obs", f.obs, data.obs)
 			end
 			@test forward!(SCP.get_obs(f_job)) == obs_spec_forwarded
-			ref_job = SingleCellProjections.Impl.create_datamatrix_getindex_job(data_job; var_ind=1:2:P)
+			ref_job = create_datamatrix_getindex_job(data_job; var_ind=1:2:P)
 			@test forward!(f_job) == forward!(ref_job)
 			# NB: Projection should fail unless the var IDs are identical!
 
@@ -65,7 +65,7 @@ function run_filter_tests()
 				@test isequal(f.obs, data.obs[1:2:N,:])
 			end
 			@test forward!(SCP.get_var(f_job)) == var_spec_forwarded
-			ref_job = SingleCellProjections.Impl.create_datamatrix_getindex_job(data_job; obs_ind=1:2:N)
+			ref_job = create_datamatrix_getindex_job(data_job; obs_ind=1:2:N)
 			@test forward!(f_job) == forward!(ref_job)
 			# NB: Projection should fail unless the obs IDs are identical!
 
@@ -75,7 +75,7 @@ function run_filter_tests()
 				@test isequal(f.var, data.var[1:3:P,:])
 				@test isequal(f.obs, data.obs[1:10:N,:])
 			end
-			ref_job = SingleCellProjections.Impl.create_datamatrix_getindex_job(data_job; var_ind=1:3:P, obs_ind=1:10:N)
+			ref_job = create_datamatrix_getindex_job(data_job; var_ind=1:3:P, obs_ind=1:10:N)
 			@test forward!(f_job) == forward!(ref_job)
 			# NB: Projection should fail unless the var and obs IDs are identical!
 
@@ -87,7 +87,7 @@ function run_filter_tests()
 				@test isequal(f.obs, filter("group"=>==("A"), data.obs))
 			end
 			ref_obs_ind = findall(==("A"), data.obs.group)
-			ref_job = SingleCellProjections.Impl.create_datamatrix_getindex_job(data_job; obs_ind=ref_obs_ind)
+			ref_job = create_datamatrix_getindex_job(data_job; obs_ind=ref_obs_ind)
 			@test forward!(f_job) == forward!(ref_job)
 
 			# Hmm. How do we support this? The problem is the anonymous function that cannot be hashed currently. Implement HashableFunctions?
@@ -106,7 +106,7 @@ function run_filter_tests()
 				@test isequal(f.obs, data.obs[data.obs.group.=="A",:])
 			end
 			ref_obs_ind = findall(==("A"), data.obs.group)
-			ref_job = SingleCellProjections.Impl.create_datamatrix_getindex_job(data_job; var_ind=1:3:P, obs_ind=ref_obs_ind)
+			ref_job = create_datamatrix_getindex_job(data_job; var_ind=1:3:P, obs_ind=ref_obs_ind)
 			@test forward!(f_job) == forward!(ref_job)
 			# NB: Projection should fail unless the var IDs are identical!
 
@@ -119,7 +119,7 @@ function run_filter_tests()
 			end
 			@test forward!(SCP.get_obs(f_job)) == obs_spec_forwarded
 			ref_var_ind = findall(>=("D"), data.var.name)
-			ref_job = SingleCellProjections.Impl.create_datamatrix_getindex_job(data_job; var_ind=ref_var_ind)
+			ref_job = create_datamatrix_getindex_job(data_job; var_ind=ref_var_ind)
 			@test forward!(f_job) == forward!(ref_job)
 
 			f_job = SCP.filter_matrix("name"=>>("D"), 1:10:N, data_job)
@@ -129,7 +129,7 @@ function run_filter_tests()
 				@test isequal(f.obs, data.obs[1:10:N,:])
 			end
 			ref_var_ind = findall(>=("D"), data.var.name)
-			ref_job = SingleCellProjections.Impl.create_datamatrix_getindex_job(data_job; var_ind=ref_var_ind, obs_ind=1:10:N)
+			ref_job = create_datamatrix_getindex_job(data_job; var_ind=ref_var_ind, obs_ind=1:10:N)
 			@test forward!(f_job) == forward!(ref_job)
 			# NB: Projection should fail unless the obs IDs are identical!
 
@@ -141,13 +141,13 @@ function run_filter_tests()
 			end
 			ref_var_ind = findall(>=("D"), data.var.name)
 			ref_obs_ind = findall(==("A"), data.obs.group)
-			ref_job = SingleCellProjections.Impl.create_datamatrix_getindex_job(data_job; var_ind=ref_var_ind, obs_ind=ref_obs_ind)
+			ref_job = create_datamatrix_getindex_job(data_job; var_ind=ref_var_ind, obs_ind=ref_obs_ind)
 			@test forward!(f_job) == forward!(ref_job)
 
 
 			# annotations
 			let var_mask = var_mask = in(var_annot_df.name).(data.var.name)
-				f1_job = SingleCellProjections.Impl.create_datamatrix_getindex_job(data_job; var_ind=findall(var_mask))
+				f1_job = create_datamatrix_getindex_job(data_job; var_ind=findall(var_mask))
 				f2_job = SCP.filter_var(var_annot_df=>!ismissing, data_job)
 				f3_job = SCP.filter_var(var_annot_job=>!ismissing, data_job)
 
@@ -161,7 +161,7 @@ function run_filter_tests()
 				end
 			end
 			let obs_mask = obs_mask = in(obs_annot_df.barcode).(data.obs.barcode)
-				f1_job = SingleCellProjections.Impl.create_datamatrix_getindex_job(data_job; obs_ind=findall(obs_mask))
+				f1_job = create_datamatrix_getindex_job(data_job; obs_ind=findall(obs_mask))
 				f2_job = SCP.filter_obs(obs_annot_df=>!ismissing, data_job)
 				f3_job = SCP.filter_obs(obs_annot_job=>!ismissing, data_job)
 
