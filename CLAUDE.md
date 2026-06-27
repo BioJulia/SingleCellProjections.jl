@@ -40,9 +40,17 @@ See `docs/src/` for detailed documentation: `tutorial.md` (workflow walkthrough)
 
 ### Module Structure
 
-- **`SingleCellProjections`** (top-level): `ReproducibleJobs` integration — spec construction, caching, preprocessing (`Projectable`/`ProjectOnto`), and the `Jobs` module with the public API.
+- **`SingleCellProjections`** (top-level): The **public API**. The `src/*.jl` files here hold only thin
+  public wrapper functions (`svd`, `pca`, `load_counts`, …), declared `public`. Recommended usage is
+  `import SingleCellProjections as SCP; SCP.svd(...)`. Each wrapper delegates to `Impl`.
+- **`Impl`** (`src/Impl/`): Internal submodule with all non-public code — the `ReproducibleJobs`
+  integration (spec construction, caching, preprocessing `Projectable`/`ProjectOnto`), internal
+  dispatchers, `*_job` helpers, and type registrations. Mirrors the `SingleCellProjectionsCore` layout.
+  `const SCP = parentmodule(@__MODULE__)` lets internal code call back into the public API.
 - **`SingleCellProjectionsCore`** (`src/SingleCellProjectionsCore/`): Pure algorithms — no dependency on `ReproducibleJobs`.
 - **`MatrixExpressions`** (`src/SingleCellProjectionsCore/MatrixExpressions/`): Lazy matrix expression trees (`MatrixRef`, `MatrixProduct`, `MatrixSum`, `DiagGram`, `Diag`).
+
+There is **no longer a `Jobs` submodule** — what used to be `Jobs.svd` is now the public `SingleCellProjections.svd` (i.e. `SCP.svd`). For a spec file `src/X.jl`, the internal half lives in `src/Impl/X.jl` (included into `Impl`) and the public wrappers remain in `src/X.jl` (included into the top-level module, calling `Impl.…`).
 
 ### DataMatrix
 
@@ -50,7 +58,7 @@ See `docs/src/` for detailed documentation: `tutorial.md` (workflow walkthrough)
 
 ### DataMatrixFunction Pattern
 
-`DataMatrixFunction(f)` wraps a function `f` that is called three times with `Mat()`, `Var()`, `Obs()` dispatchers to separately produce the matrix, var table, and obs table. This is the standard pattern for functions that return a `DataMatrix` Job (see `src/datamatrixfunctions.jl`).
+`DataMatrixFunction(f)` wraps a function `f` that is called three times with `Mat()`, `Var()`, `Obs()` dispatchers to separately produce the matrix, var table, and obs table. This is the standard pattern for functions that return a `DataMatrix` Job (see `src/Impl/datamatrixfunctions.jl`).
 
 `DataMatrixFieldFunction` subtypes (`MatFunction`, `VarFunction`, `ObsFunction`) are created during preprocessing to extract individual fields.
 
@@ -64,27 +72,28 @@ Projecting a computation pipeline onto a different dataset (e.g., PCA trained on
 
 ### Key Source Files
 
+Public wrappers live in `src/X.jl`; their internal implementations live in `src/Impl/X.jl`.
+
 | File | Contents |
 |------|----------|
-| `src/SingleCellProjections.jl` | `Jobs` module (public API functions), type registrations |
-| `src/types.jl` | `Projectable`, `ProjectOnto`, `DataMatrixFunction`, `Mat`/`Var`/`Obs` |
-| `src/datamatrixfunctions.jl` | `DataMatrixFunction` evaluation, `get_matrix`/`get_var`/`get_obs` preprocessing |
-| `src/projectables.jl` | `Action`, `Eval`, `Projection`, replacement logic |
-| `src/internal.jl` | Utility specs (`getindex_job`, `indexin_job`, `prefixed_ids_job`, `compute_size_job`, etc.) |
-| `src/tables.jl` | Table/DataFrame spec utilities |
-| `src/load.jl` | Spec-level loading (wraps Core) |
-| `src/transform.jl` | Spec-level SCTransform, log-transform, TF-IDF |
-| `src/normalize.jl` | Spec-level regression normalization |
-| `src/reduce.jl` | Spec-level SVD/PCA with `CompoundResult` |
-| `src/filter.jl` | Spec-level var/obs filtering |
+| `src/SingleCellProjections.jl` | Top-level module: exports, public-API forward declarations + `public`, includes `Impl` and the public wrapper files, `register_scp_functions!`/`__init__` |
+| `src/Impl/Impl.jl` | The `Impl` submodule: external imports, `SCPCore` import, type registrations, includes all internal source files |
+| `src/Impl/types.jl` | `Projectable`, `ProjectOnto`, `DataMatrixFunction`, `Mat`/`Var`/`Obs` (internal-only) |
+| `src/Impl/datamatrixfunctions.jl` | `DataMatrixFunction` evaluation, `get_matrix`/`get_var`/`get_obs` preprocessing |
+| `src/Impl/projectables.jl` | `Action`, `Eval`, `Projection`, replacement logic |
+| `src/Impl/internal.jl` | Utility specs (`getindex_job`, `indexin_job`, `prefixed_ids_job`, `compute_size_job`, etc.) |
+| `src/{X.jl, Impl/X.jl}` | Public wrappers / internal impl for `tables`, `load`, `transform`, `normalize`, `reduce`, `filter`, etc. |
+| `src/{design.jl, transform_coords.jl}` | Also hold the exported covariate (`categorical_covariate`, …) and rotation (`rot2d`, …) helpers |
 | `src/SingleCellProjectionsCore/` | Pure algorithm implementations (load, transform, normalize, reduce, force_layout, statistical_tests, etc.) |
 | `src/MatrixExpression/` | Lazy sums/products etc of matrices. Core functionality in SingleCellProjections.jl for making computations efficient in terms of speed and memory. |
 
 ### Extensions
 
 Optional dependencies loaded as Julia package extensions (`ext/`):
-- **CSVExt** (`CSV`) — CSV/TSV loading via `Jobs.load_csv`
-- **MuonExt** (`Muon`, `HDF5`) — h5ad/AnnData support via `Jobs.load_h5ad`
-- **UMAPExt** (`UMAP`) — UMAP embedding via `Jobs.umap`
-- **TSneExt** (`TSne`) — t-SNE embedding via `Jobs.tsne`
+- **CSVExt** (`CSV`) — CSV/TSV loading via `SCP.load_csv`
+- **MuonExt** (`Muon`, `HDF5`) — h5ad/AnnData support via `SCP.load_h5ad`
+- **UMAPExt** (`UMAP`) — UMAP embedding via `SCP.umap`
+- **TSneExt** (`TSne`) — t-SNE embedding via `SCP.tsne`
+
+  Extensions extend the public function (e.g. `function SingleCellProjections.load_csv …`) and import the internal machinery they need from `SingleCellProjections.Impl`.
 - **PrincipalMomentAnalysisExt** (`PrincipalMomentAnalysis`) — PMA dimensionality reduction

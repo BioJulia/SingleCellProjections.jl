@@ -33,6 +33,7 @@ First, we will load [SingleCellProjections.jl](https://BioJulia.github.io/Single
 
 ```@example
 using SingleCellProjections
+import SingleCellProjections as SCP
 using ReproducibleJobs
 using CSV
 using DataFrames
@@ -76,9 +77,9 @@ nbm_paths = SingleCellDocUtils.get_lilljebjorn_sample_path.(nbm_names)
 ```
 
 
-Loading is done using `Jobs.load_counts`.
+Loading is done using `SCP.load_counts`.
 ```@example
-raw_counts = Jobs.load_counts(nbm_paths; sample_names=nbm_names)
+raw_counts = SCP.load_counts(nbm_paths; sample_names=nbm_names)
 ```
 This creates a `Job`, which is a kind of specification or recipe for what to compute. `Job`s are the cornerstone of `ReproducibleJobs.jl` since it makes it possible to reason about computations without performing them. Importantly, some results are cached, so when we come back another day, we do not need to recompute everything again. This mostly happens under the hood, and it will not be the focus of this tutorial.
 
@@ -113,17 +114,17 @@ A high fraction of Mitochondrial reads can indicate that a cell is dying. The to
 
 We set up the quality annotations like this:
 ```@example
-counts = Jobs.var_counts_fraction(raw_counts, "fraction_mt", "name"=>startswith("MT-"))
-counts = Jobs.var_counts_sum(counts, "total_RNA_count")
-counts = Jobs.var_counts_sum(!iszero, counts, "nonzero_RNA_count")
-counts = Jobs.obs_counts_sum(!iszero, counts, "nonzero_cell_count")
+counts = SCP.var_counts_fraction(raw_counts, "fraction_mt", "name"=>startswith("MT-"))
+counts = SCP.var_counts_sum(counts, "total_RNA_count")
+counts = SCP.var_counts_sum(!iszero, counts, "nonzero_RNA_count")
+counts = SCP.obs_counts_sum(!iszero, counts, "nonzero_cell_count")
 ```
 
 And apply filtering:
 ```@example
-filtered = Jobs.filter_obs("fraction_mt" => <(0.15), counts)
-filtered = Jobs.filter_obs("total_RNA_count" => >(1000), filtered)
-filtered = Jobs.filter_obs("nonzero_RNA_count" => >(500), filtered)
+filtered = SCP.filter_obs("fraction_mt" => <(0.15), counts)
+filtered = SCP.filter_obs("total_RNA_count" => >(1000), filtered)
+filtered = SCP.filter_obs("nonzero_RNA_count" => >(500), filtered)
 ```
 
 And if we `fetch!` the result:
@@ -139,7 +140,7 @@ The raw counts data is not suitable for analyses like PCA, since the data is far
 A common strategy to handle this is to transform the data.
 Here we will use [SCTransform](https://github.com/rasmushenningsson/SCTransform.jl) (see also [original sctransform implementation in R](https://github.com/satijalab/sctransform)).
 ```@example
-transformed = Jobs.sctransform(filtered)
+transformed = SCP.sctransform(filtered)
 fetch!(transformed)
 ```
 From the output, we see that the number of variables has been reduced, since by default, `sctransform` removes variables present in very few cells.
@@ -152,10 +153,10 @@ Instead of storing the SCTransformed matrix as a huge dense matrix, it is stored
 
 ## Normalization
 After transformation we always want to normalize the data.
-At the very least, data should be centered for PCA to work properly. This can be achieved by just running `Jobs.normalize_matrix` with the default parameters.
+At the very least, data should be centered for PCA to work properly. This can be achieved by just running `SCP.normalize_matrix` with the default parameters.
 Here, we also want to regress out `"fraction_mt"`. You can add more `obs` annotations (categorical and/or numerical) to regress out if needed.
 ```@example
-normalized = Jobs.normalize_matrix(transformed, "fraction_mt")
+normalized = SCP.normalize_matrix(transformed, "fraction_mt")
 fetch!(normalized)
 ```
 Now the matrix is shown as `A+B₁B₂B₃+(-β)X'`, i.e. another low-rank term was added to handle the normalization/regression.
@@ -169,7 +170,7 @@ Principal Component Analysis (PCA) is commonly used for single cell expression d
 2. It reduces noise by keeping only the common variations in the data set.
 
 ```@example
-reduced = Jobs.pca(normalized; nsv=40)
+reduced = SCP.pca(normalized; nsv=40)
 fetch!(reduced)
 ```
 
@@ -182,8 +183,8 @@ In preparation for the visualization below (or other analyses), we also load som
 ```@example
 annots_path = "annotations/scRNA_AML.tsv"
 annots_path = SingleCellDocUtils.get_lilljebjorn_annot_path("scRNA_AML") # hide
-annots = Jobs.load_csv(annots_path)
-reduced = Jobs.annotate_obs(reduced, annots)
+annots = SCP.load_csv(annots_path)
+reduced = SCP.annotate_obs(reduced, annots)
 nothing # hide
 ```
 
@@ -206,7 +207,7 @@ using Colors
 using WGLMakie
 
 function scatter_3d(job)
-    matrix = fetch!(Jobs.get_matrix(job))
+    matrix = fetch!(SCP.get_matrix(job))
     fig = Figure(; size=(768, 768))
     ax = LScene(fig[1, 1])
     scatter!(ax, matrix; color = :black, markersize = 4)
@@ -214,14 +215,14 @@ function scatter_3d(job)
 end
 
 function scatter_categorical_3d(job, annot_name; bg=nothing, colors=nothing)
-    matrix = fetch!(Jobs.get_matrix(job))
-    annot = fetch!(Jobs.value_column_data(Jobs.annotation(Jobs.get_obs(job), annot_name)))
+    matrix = fetch!(SCP.get_matrix(job))
+    annot = fetch!(SCP.value_column_data(SCP.annotation(SCP.get_obs(job), annot_name)))
 
     fig = Figure(; size=(768, 768))
     ax = LScene(fig[1, 1])
 
     if bg !== nothing
-        bg_matrix = fetch!(Jobs.get_matrix(bg))
+        bg_matrix = fetch!(SCP.get_matrix(bg))
         scatter!(ax, bg_matrix; color=colorant"#BFCCE6", markersize=2)
     end
 
@@ -258,7 +259,7 @@ scatter_categorical_3d(data, "celltype.aml")
 ### Force Layout
 To embed the points in 2 or 3 dimensions using a Force Layout (also known as a SPRING plot), we set it up like this:
 ```@example
-fl = Jobs.force_layout(reduced; ndim = 3,
+fl = SCP.force_layout(reduced; ndim = 3,
                                 seed = 4567,
                                 k = 100,
                                 k_projection = 25)
@@ -267,8 +268,8 @@ scatter_3d(fl)
 
 To make a nicer visualization, we use a celltype annotation from the downloaded data to color the plot, and apply a utility function to rotate it such that the most immature cells (Hematopoietic Stem Cells, or HSCs for short) move to the top.
 ```@example
-transform = Jobs.find_optimal_coord_transform(fl, "celltype.aml"=>isequal("HSC"), "celltype.aml"=>isequal("T-cells"), "celltype.aml"=>isequal("B-cells"))
-fl = Jobs.transform_coords(fl, transform; keep_var=true)
+transform = SCP.find_optimal_coord_transform(fl, "celltype.aml"=>isequal("HSC"), "celltype.aml"=>isequal("T-cells"), "celltype.aml"=>isequal("B-cells"))
+fl = SCP.transform_coords(fl, transform; keep_var=true)
 colors = ["AML Immature" => colorant"#fec44f", "HSC" => colorant"#66b266", "Monocytes" => colorant"#fa9fb5", "GMP" => colorant"#008000", "Megakaryocytic cells" => colorant"#e5687e", "LMPP" => colorant"#756bb1", "Erythroid cells" => colorant"#a7241d", "B-cells" => colorant"#a64ca6", "T-cells" => colorant"#7fb4e5", "NK-cells" => colorant"#196fbe", "Dendritic cells" => colorant"#ff4d00"]
 scatter_categorical_3d(fl, "celltype.aml"; colors)
 ```
@@ -276,7 +277,7 @@ scatter_categorical_3d(fl, "celltype.aml"; colors)
 ### UMAP
 ```@example
 using UMAP
-umapped = Jobs.umap(reduced; ndim=3)
+umapped = SCP.umap(reduced; ndim=3)
 scatter_categorical_3d(umapped, "celltype.aml"; colors)
 ```
 
@@ -284,7 +285,7 @@ scatter_categorical_3d(umapped, "celltype.aml"; colors)
 t-SNE is also supported, just run:
 ```julia
 using TSne
-tsne_job = Jobs.tsne(reduced; ndim=3)
+tsne_job = SCP.tsne(reduced; ndim=3)
 ```
 
 
@@ -297,17 +298,17 @@ First, we just choose one or more samples to project:
 proj_name = "AML28"
 proj_path = joinpath("samples", string(proj_name, ".h5"))
 proj_path = SingleCellDocUtils.get_lilljebjorn_sample_path(proj_name) # hide
-proj_raw_counts = Jobs.load_counts(proj_path; sample_names=proj_name)
+proj_raw_counts = SCP.load_counts(proj_path; sample_names=proj_name)
 ```
 
-Then, a single call to `Jobs.project` sets up the entire analysis pipeline and projects the AML sample onto the reference map created from the NBM samples.
+Then, a single call to `SCP.project` sets up the entire analysis pipeline and projects the AML sample onto the reference map created from the NBM samples.
 ```@example
-proj_fl = Jobs.project(fl, raw_counts=>proj_raw_counts)
+proj_fl = SCP.project(fl, raw_counts=>proj_raw_counts)
 scatter_categorical_3d(proj_fl, "celltype.aml"; bg=fl, colors)
 ```
 
 And here is the projection onto the UMAP embedding of the NBM samples:
 ```@example
-proj_umapped = Jobs.project(umapped, raw_counts=>proj_raw_counts)
+proj_umapped = SCP.project(umapped, raw_counts=>proj_raw_counts)
 scatter_categorical_3d(proj_umapped, "celltype.aml"; bg=umapped, colors)
 ```

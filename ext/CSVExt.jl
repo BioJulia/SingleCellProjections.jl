@@ -3,7 +3,7 @@ module CSVExt
 using ReproducibleJobs
 using ReproducibleJobs: create_job, cached, Preprocess, Preprocessing
 using SingleCellProjections
-using SingleCellProjections: table_to_compound_result, table_from_compound_result
+using SingleCellProjections.Impl: table_to_compound_result, table_from_compound_result
 
 using DataFrames
 using CSV
@@ -27,7 +27,7 @@ parse_csv_job(filepath; kwargs...) =
 
 load_csv(::Preprocessing, filepath; kwargs...) =
 	table_from_compound_result(parse_csv_job(filepath; kwargs...))
-function Jobs.load_csv(filepath::Union{String,TimestampedFilePath}; kwargs...)
+function SingleCellProjections.load_csv(filepath::Union{String,TimestampedFilePath}; kwargs...)
 	filepath_job = checksummedfilepath_job(filepath)
 	create_job(Preprocess(load_csv), filepath_job; kwargs...)
 end

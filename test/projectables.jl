@@ -1,6 +1,6 @@
 using Test
 using SingleCellProjections
-using SingleCellProjections: Projectable, ProjectOnto, Action, DataMatrixFunction, Mat, Var, Obs, MatFunction, get_matrix_job
+using SingleCellProjections.Impl: Projectable, ProjectOnto, Action, DataMatrixFunction, Mat, Var, Obs, MatFunction, get_matrix_job
 import .SingleCellProjectionsCore as SCPCore
 using ReproducibleJobs: Preprocess, prefetched, create_job, fetch!, forward!, forward_once!
 using StableRNGs
@@ -63,24 +63,24 @@ TestJobs.my_apply(f, x) = my_apply_job(f, x)
 # DataMatrix versions
 # NB: We don't do anything interesting with obs/var, that is tested elsewhere, this file is just about testing DataMatrixFunction interactions with projections.
 dm_rand(::Mat, args...; kwargs...) = my_rand_job(args...; kwargs...)
-dm_rand(::Var, S, nrow, ncol; kwargs...) = SingleCellProjections.prefixed_ids_job("var_id", "var_", nrow)
-dm_rand(::Obs, S, nrow, ncol; kwargs...) = SingleCellProjections.prefixed_ids_job("obs_id", "obs_", ncol)
+dm_rand(::Var, S, nrow, ncol; kwargs...) = SingleCellProjections.Impl.prefixed_ids_job("var_id", "var_", nrow)
+dm_rand(::Obs, S, nrow, ncol; kwargs...) = SingleCellProjections.Impl.prefixed_ids_job("obs_id", "obs_", ncol)
 TestJobs.dm_rand(args...; kwargs...) = create_job(DataMatrixFunction(dm_rand), args...; kwargs...)
 
 dm_add(::Mat, a, b) = my_add_job(get_matrix_job(a), get_matrix_job(b))
-dm_add(f, a, b) = SingleCellProjections.get_job(f, a) # Var/Obs
+dm_add(f, a, b) = SingleCellProjections.Impl.get_job(f, a) # Var/Obs
 TestJobs.dm_add(a, b) = create_job(DataMatrixFunction(dm_add), a, b)
 
 dm_sub(::Mat, a, b) = my_sub_job(get_matrix_job(a), get_matrix_job(b))
-dm_sub(f, a, b) = SingleCellProjections.get_job(f, a) # Var/Obs
+dm_sub(f, a, b) = SingleCellProjections.Impl.get_job(f, a) # Var/Obs
 TestJobs.dm_sub(a, b) = create_job(DataMatrixFunction(dm_sub), a, b)
 
 dm_mul(::Mat, a, b) = my_mul_job(get_matrix_job(a), get_matrix_job(b))
-dm_mul(f, a, b) = SingleCellProjections.get_job(f, a) # Var/Obs
+dm_mul(f, a, b) = SingleCellProjections.Impl.get_job(f, a) # Var/Obs
 TestJobs.dm_mul(a, b) = create_job(DataMatrixFunction(dm_mul), a, b)
 
 dm_div(::Mat, a, b) = my_div_job(get_matrix_job(a), get_matrix_job(b))
-dm_div(f, a, b) = SingleCellProjections.get_job(f, a) # Var/Obs
+dm_div(f, a, b) = SingleCellProjections.Impl.get_job(f, a) # Var/Obs
 TestJobs.dm_div(a, b) = create_job(DataMatrixFunction(dm_div), a, b)
 
 
@@ -133,7 +133,7 @@ function run_projectables_tests()
 		end
 
 		@testset "Outer replacement" begin
-			jp1 = Jobs.project(A, A=>Ap)
+			jp1 = SCP.project(A, A=>Ap)
 			@test fetch!(jp1) == Ap_res
 			@test isequal(forward!(jp1), forward!(Ap))
 		end
@@ -142,13 +142,13 @@ function run_projectables_tests()
 			j1 = TestJobs.my_add(A, B)
 			@test fetch!(j1) == A_res+B_res
 
-			jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+			jp1 = SCP.project(j1, A=>Ap, B=>Bp)
 			@test fetch!(jp1) == Ap_res+Bp_res
 
 			@test isequal(forward!(jp1), forward!(Ap +ʲ Bp))
 			@test forward_once!(jp1).f == ProjectOnto(my_add_impl)
 
-			replaced = Jobs.project(j1, j1=>Bp)
+			replaced = SCP.project(j1, j1=>Bp)
 			@test fetch!(replaced) == Bp_res
 		end
 
@@ -156,13 +156,13 @@ function run_projectables_tests()
 			j1 = TestJobs.my_mul(A, B)
 			@test fetch!(j1) == A_res.*B_res
 
-			jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+			jp1 = SCP.project(j1, A=>Ap, B=>Bp)
 			@test fetch!(jp1) == Ap_res.*Bp_res
 
 			@test isequal(forward!(jp1), forward!(Ap *ʲ Bp))
 			@test forward_once!(jp1).f == ProjectOnto(my_mul_impl)
 
-			replaced = Jobs.project(j1, j1=>Bp)
+			replaced = SCP.project(j1, j1=>Bp)
 			@test fetch!(replaced) == Bp_res
 		end
 
@@ -171,14 +171,14 @@ function run_projectables_tests()
 			j1 = TestJobs.my_sub(A, B)
 			@test fetch!(j1) == A_res-B_res
 
-			jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+			jp1 = SCP.project(j1, A=>Ap, B=>Bp)
 			@test fetch!(jp1) == A_res-Bp_res
 			@test isequal(forward!(jp1), forward!(A -ʲ Bp))
 
 			jp1fwd = forward_once!(jp1)
 			@test jp1fwd.f == ProjectOnto(Projectable(my_sub))
 
-			replaced = Jobs.project(j1, j1=>Bp)
+			replaced = SCP.project(j1, j1=>Bp)
 			@test fetch!(replaced) == Bp_res
 		end
 
@@ -187,13 +187,13 @@ function run_projectables_tests()
 			j1 = TestJobs.my_div(A, B)
 			@test fetch!(j1) == A_res./B_res
 
-			jp1 = Jobs.project(j1, A=>Ap, B=>Bp) # thus, replacnig A=>Ap has now effect
+			jp1 = SCP.project(j1, A=>Ap, B=>Bp) # thus, replacnig A=>Ap has now effect
 			@test fetch!(jp1) == A_res./Bp_res
 			@test isequal(forward!(jp1), forward!(A /ʲ Bp))
 
 			@test forward_once!(jp1).f == ProjectOnto(Projectable(my_div))
 
-			replaced = Jobs.project(j1, j1=>Bp)
+			replaced = SCP.project(j1, j1=>Bp)
 			@test fetch!(replaced) == Bp_res
 		end
 
@@ -204,7 +204,7 @@ function run_projectables_tests()
 
 			@test fetch!(j2) == (A_res+B_res) ./ C_res
 
-			jp2 = Jobs.project(j2, C=>Cp)
+			jp2 = SCP.project(j2, C=>Cp)
 			@test fetch!(jp2) == (A_res+B_res) ./ Cp_res
 			@test isequal(forward!(jp2), forward!((A +ʲ B)/ʲ Cp))
 			jp2fwd = forward_once!(jp2)
@@ -212,13 +212,13 @@ function run_projectables_tests()
 			jp2fwd2 = forward_once!(jp2fwd)
 			@test jp2fwd2.f == my_div_impl
 			# TODO: This will be change so that forwarding is done directly to ProjectOnto(my_add_impl)!
-			@test jp2fwd2.args[2].f == Preprocess(SingleCellProjections.project)
+			@test jp2fwd2.args[2].f == Preprocess(SingleCellProjections.Impl.project)
 
-			jp2b = Jobs.project(j2, B=>Bp) # replacing B=>Bp should have no effect
+			jp2b = SCP.project(j2, B=>Bp) # replacing B=>Bp should have no effect
 			@test fetch!(jp2b) == (A_res+B_res) ./ C_res
 			@test isequal(forward!(jp2b), forward!((A +ʲ B)/ʲ C))
 
-			jp2c = Jobs.project(j2, j1=>Bp) # replacing j1=>Bp should have no effect
+			jp2c = SCP.project(j2, j1=>Bp) # replacing j1=>Bp should have no effect
 			@test fetch!(jp2c) == (A_res+B_res) ./ C_res
 			@test isequal(forward!(jp2c), forward!((A +ʲ B)/ʲ C))
 		end
@@ -229,7 +229,7 @@ function run_projectables_tests()
 
 			@test fetch!(j2) == (A_res./B_res) + C_res
 
-			jp2 = Jobs.project(j2, C=>Cp)
+			jp2 = SCP.project(j2, C=>Cp)
 			@test fetch!(jp2) == (A_res./B_res) + Cp_res
 			@test isequal(forward!(jp2), forward!(A /ʲ B +ʲ Cp))
 			jp2fwd = forward_once!(jp2)
@@ -237,17 +237,17 @@ function run_projectables_tests()
 			jp2fwd2 = forward_once!(jp2fwd)
 			@test jp2fwd2.f == my_add_impl
 			# TODO: This will be change so that forwarding is done directly to ProjectOnto(Projectable(my_div))!
-			@test jp2fwd2.args[2].f == Preprocess(SingleCellProjections.project)
+			@test jp2fwd2.args[2].f == Preprocess(SingleCellProjections.Impl.project)
 
-			jp2b = Jobs.project(j2, B=>Bp)
+			jp2b = SCP.project(j2, B=>Bp)
 			@test fetch!(jp2b) == (A_res./Bp_res) + C_res
 			@test isequal(forward!(jp2b), forward!(A /ʲ Bp +ʲ C))
 
-			jp2c = Jobs.project(j2, j1=>Bp)
+			jp2c = SCP.project(j2, j1=>Bp)
 			@test fetch!(jp2c) == Bp_res + C_res
 			@test isequal(forward!(jp2c), forward!(Bp +ʲ C))
 
-			jp2d = Jobs.project(j2, A=>Ap) # replacing A=>Ap should have no effect
+			jp2d = SCP.project(j2, A=>Ap) # replacing A=>Ap should have no effect
 			@test fetch!(jp2d) == (A_res./B_res) + C_res
 			@test isequal(forward!(jp2d), forward!(A /ʲ B +ʲ C))
 		end
@@ -255,7 +255,7 @@ function run_projectables_tests()
 		# WIP
 		@testset "prefetched" begin
 			j1 = TestJobs.my_apply(Base.Fix2(<, prefetched(B)), A)
-			jp1 = Jobs.project(j1, A=>Ap)
+			jp1 = SCP.project(j1, A=>Ap)
 
 			f1 = forward!(j1)
 			fp1 = forward!(jp1)
@@ -306,7 +306,7 @@ function run_projectables_tests()
 		end
 
 		@testset "Outer replacement" begin
-			jp1 = Jobs.project(A, A=>Ap)
+			jp1 = SCP.project(A, A=>Ap)
 			@test fetch!(jp1).matrix == Ap_res
 			@test isequal(forward!(jp1), forward!(Ap))
 		end
@@ -315,13 +315,13 @@ function run_projectables_tests()
 			j1 = TestJobs.dm_add(A, B)
 			@test fetch!(j1).matrix == A_res+B_res
 
-			jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+			jp1 = SCP.project(j1, A=>Ap, B=>Bp)
 			@test fetch!(jp1).matrix == Ap_res+Bp_res
 			@test isequal(forward!(jp1), forward!(Ap +ᵈ Bp))
 
 			@test forward_once!(jp1).f == ProjectOnto(DataMatrixFunction(dm_add))
 
-			replaced = Jobs.project(j1, j1=>Bp)
+			replaced = SCP.project(j1, j1=>Bp)
 			@test fetch!(replaced).matrix == Bp_res
 		end
 
@@ -329,13 +329,13 @@ function run_projectables_tests()
 			j1 = TestJobs.dm_mul(A, B)
 			@test fetch!(j1).matrix == A_res.*B_res
 
-			jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+			jp1 = SCP.project(j1, A=>Ap, B=>Bp)
 			@test fetch!(jp1).matrix == Ap_res.*Bp_res
 			@test isequal(forward!(jp1), forward!(Ap *ᵈ Bp))
 
 			@test forward_once!(jp1).f == ProjectOnto(DataMatrixFunction(dm_mul))
 
-			replaced = Jobs.project(j1, j1=>Bp)
+			replaced = SCP.project(j1, j1=>Bp)
 			@test fetch!(replaced).matrix == Bp_res
 		end
 
@@ -344,13 +344,13 @@ function run_projectables_tests()
 			j1 = TestJobs.dm_sub(A, B)
 			@test fetch!(j1).matrix == A_res-B_res
 
-			jp1 = Jobs.project(j1, A=>Ap, B=>Bp)
+			jp1 = SCP.project(j1, A=>Ap, B=>Bp)
 			@test fetch!(jp1).matrix == A_res-Bp_res
 			@test isequal(forward!(jp1), forward!(A -ᵈ Bp))
 
 			@test forward_once!(jp1).f == ProjectOnto(DataMatrixFunction(dm_sub))
 
-			replaced = Jobs.project(j1, j1=>Bp)
+			replaced = SCP.project(j1, j1=>Bp)
 			@test fetch!(replaced).matrix == Bp_res
 		end
 
@@ -359,13 +359,13 @@ function run_projectables_tests()
 			j1 = TestJobs.dm_div(A, B)
 			@test fetch!(j1).matrix == A_res./B_res
 
-			jp1 = Jobs.project(j1, A=>Ap, B=>Bp) # thus, replacnig A=>Ap has now effect
+			jp1 = SCP.project(j1, A=>Ap, B=>Bp) # thus, replacnig A=>Ap has now effect
 			@test fetch!(jp1).matrix == A_res./Bp_res
 			@test isequal(forward!(jp1), forward!(A /ᵈ Bp))
 
 			@test forward_once!(jp1).f == ProjectOnto(DataMatrixFunction(dm_div))
 
-			replaced = Jobs.project(j1, j1=>Bp)
+			replaced = SCP.project(j1, j1=>Bp)
 			@test fetch!(replaced).matrix == Bp_res
 		end
 
@@ -376,7 +376,7 @@ function run_projectables_tests()
 
 			@test fetch!(j2).matrix == (A_res+B_res) ./ C_res
 
-			jp2 = Jobs.project(j2, C=>Cp)
+			jp2 = SCP.project(j2, C=>Cp)
 			@test fetch!(jp2).matrix == (A_res+B_res) ./ Cp_res
 			@test isequal(forward!(jp2), forward!((A +ᵈ B)/ᵈ Cp))
 			jp2fwd = forward_once!(jp2)
@@ -387,12 +387,12 @@ function run_projectables_tests()
 			jp2fwd2 = forward_once!(jp2fwd)
 			@test jp2fwd2.f == SCPCore.DataMatrix
 			jp2fwd3 = jp2fwd2.args[1] # the matrix arg
-			@test jp2fwd3.f == Preprocess(SingleCellProjections.project)
+			@test jp2fwd3.f == Preprocess(SingleCellProjections.Impl.project)
 			jp2fwd4 = forward_once!(jp2fwd3)
 			@test jp2fwd4.f == ProjectOnto(MatFunction(dm_div))
 
 			jp2fwd5 = forward_once!(jp2fwd4)
-			@test jp2fwd5.f == Preprocess(SingleCellProjections.project)
+			@test jp2fwd5.f == Preprocess(SingleCellProjections.Impl.project)
 			jp2fwd6 = forward_once!(jp2fwd5)
 			@test jp2fwd6.f == ProjectOnto(Projectable(my_div))
 
@@ -402,11 +402,11 @@ function run_projectables_tests()
 			@test jp2fwd8.f == MatFunction(dm_add) # i.e. not projection here
 
 
-			jp2b = Jobs.project(j2, B=>Bp) # replacing B=>Bp should have no effect
+			jp2b = SCP.project(j2, B=>Bp) # replacing B=>Bp should have no effect
 			@test fetch!(jp2b).matrix == (A_res+B_res) ./ C_res
 			@test isequal(forward!(jp2b), forward!((A +ᵈ B)/ᵈ C))
 
-			jp2c = Jobs.project(j2, j1=>Bp) # replacing j1=>Bp should have no effect
+			jp2c = SCP.project(j2, j1=>Bp) # replacing j1=>Bp should have no effect
 			@test fetch!(jp2c).matrix == (A_res+B_res) ./ C_res
 			@test isequal(forward!(jp2c), forward!((A +ᵈ B)/ᵈ C))
 		end
@@ -417,7 +417,7 @@ function run_projectables_tests()
 
 			@test fetch!(j2).matrix == (A_res./B_res) + C_res
 
-			jp2 = Jobs.project(j2, C=>Cp)
+			jp2 = SCP.project(j2, C=>Cp)
 			@test fetch!(jp2).matrix == (A_res./B_res) + Cp_res
 			@test isequal(forward!(jp2), forward!(A /ᵈ B +ᵈ Cp))
 			jp2fwd = forward_once!(jp2)
@@ -428,37 +428,37 @@ function run_projectables_tests()
 			jp2fwd2 = forward_once!(jp2fwd)
 			@test jp2fwd2.f == SCPCore.DataMatrix
 			jp2fwd3 = jp2fwd2.args[1] # the matrix arg
-			@test jp2fwd3.f == Preprocess(SingleCellProjections.project)
+			@test jp2fwd3.f == Preprocess(SingleCellProjections.Impl.project)
 			jp2fwd4 = forward_once!(jp2fwd3)
 			@test jp2fwd4.f == ProjectOnto(MatFunction(dm_add))
 
 			jp2fwd5 = forward_once!(jp2fwd4)
-			@test jp2fwd5.f == Preprocess(SingleCellProjections.project)
+			@test jp2fwd5.f == Preprocess(SingleCellProjections.Impl.project)
 			jp2fwd6 = forward_once!(jp2fwd5)
 			@test jp2fwd6.f == ProjectOnto(my_add_impl)
 
 			jp2fwd7 = forward_once!(jp2fwd6)
 			@test jp2fwd7.f == my_add_impl
 			jp2fwd8 = jp2fwd7.args[1]
-			@test jp2fwd8.f == Preprocess(SingleCellProjections.project)
+			@test jp2fwd8.f == Preprocess(SingleCellProjections.Impl.project)
 
 			jp2fwd9 = forward_once!(jp2fwd8)
 			@test jp2fwd9.f == ProjectOnto(MatFunction(dm_div))
 			jp2fwd10 = forward_once!(jp2fwd9)
-			@test jp2fwd10.f == Preprocess(SingleCellProjections.project)
+			@test jp2fwd10.f == Preprocess(SingleCellProjections.Impl.project)
 			jp2fwd11 = forward_once!(jp2fwd10)
 			@test jp2fwd11.f == ProjectOnto(Projectable(my_div))
 
 
-			jp2b = Jobs.project(j2, B=>Bp)
+			jp2b = SCP.project(j2, B=>Bp)
 			@test fetch!(jp2b).matrix == (A_res./Bp_res) + C_res
 			@test isequal(forward!(jp2b), forward!(A /ᵈ Bp +ᵈ C))
 
-			jp2c = Jobs.project(j2, j1=>Bp)
+			jp2c = SCP.project(j2, j1=>Bp)
 			@test fetch!(jp2c).matrix == Bp_res + C_res
 			@test isequal(forward!(jp2c), forward!(Bp +ᵈ C))
 
-			jp2d = Jobs.project(j2, A=>Ap) # replacing A=>Ap should have no effect
+			jp2d = SCP.project(j2, A=>Ap) # replacing A=>Ap should have no effect
 			@test fetch!(jp2d).matrix == (A_res./B_res) + C_res
 			@test isequal(forward!(jp2d), forward!(A /ᵈ B +ᵈ C))
 		end

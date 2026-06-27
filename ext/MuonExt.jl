@@ -3,7 +3,7 @@ module MuonExt
 using ReproducibleJobs
 using ReproducibleJobs: create_job, cached, prefetched, ChecksummedFilePath
 using SingleCellProjections
-using SingleCellProjections: DataMatrixFunction, Mat, Var, Obs, table_to_compound_result, table_from_compound_result, checksummedfilepath_job, prefixed_ids_job, compute_size_job
+using SingleCellProjections.Impl: DataMatrixFunction, Mat, Var, Obs, table_to_compound_result, table_from_compound_result, checksummedfilepath_job, prefixed_ids_job, compute_size_job
 using .SingleCellProjections.SingleCellProjectionsCore
 using DataFrames
 using SparseArrays: SparseMatrixCSC
@@ -113,7 +113,7 @@ function load_h5ad(::Obs, filepath; varm=nothing, varp=nothing, kwargs...)
 	end
 end
 
-function Jobs.load_h5ad(filepath; kwargs...)
+function SingleCellProjections.load_h5ad(filepath; kwargs...)
 	if count(key->haskey(kwargs,key), (:layer, :obsm, :obsp, :varm, :varp)) > 1
 		throw(ArgumentError("At most one of layer, obsm, obsp, varm, varp can be specified."))
 	end
@@ -121,7 +121,7 @@ function Jobs.load_h5ad(filepath; kwargs...)
 	filepath_job = checksummedfilepath_job(filepath)
 	create_job(DataMatrixFunction(load_h5ad), filepath_job; kwargs...)
 end
-Jobs.load_h5ad(::Type{T}, filepath; kwargs...) where T = Jobs.load_h5ad(filepath; T, kwargs...)
+SingleCellProjections.load_h5ad(::Type{T}, filepath; kwargs...) where T = SingleCellProjections.load_h5ad(filepath; T, kwargs...)
 
 
 end

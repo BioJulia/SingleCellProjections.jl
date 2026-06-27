@@ -52,7 +52,7 @@ DocMeta.setdocmeta!(SingleCellProjections, :DocTestSetup, :(using SingleCellProj
 
 makedocs(;
 	modules = [SingleCellProjections],
-	checkdocs_ignored_modules = [SingleCellProjections.SingleCellProjectionsCore],
+	checkdocs_ignored_modules = [SingleCellProjections.SingleCellProjectionsCore, SingleCellProjections.Impl],
 	authors = "Rasmus Henningsson <rasmus.henningsson@med.lu.se>",
 	repo = Remotes.GitHub("BioJulia", "SingleCellProjections.jl"),
 	sitename = "SingleCellProjections.jl",

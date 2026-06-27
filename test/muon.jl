@@ -46,7 +46,7 @@ function run_muon_tests()
 
 	@testset "load_h5ad" begin
 		@testset "X (default)" begin
-			job = Jobs.load_h5ad(h5ad_path)
+			job = SCP.load_h5ad(h5ad_path)
 			dm = fetch!(job)
 
 			@test size(dm) == (ground_truth.nvar, ground_truth.nobs)
@@ -59,7 +59,7 @@ function run_muon_tests()
 		end
 
 		@testset "X with eltype conversion" begin
-			job = Jobs.load_h5ad(Float64, h5ad_path)
+			job = SCP.load_h5ad(Float64, h5ad_path)
 			dm = fetch!(job)
 
 			@test eltype(dm.matrix) == Float64
@@ -67,7 +67,7 @@ function run_muon_tests()
 		end
 
 		@testset "layer (raw_counts)" begin
-			job = Jobs.load_h5ad(Int, h5ad_path; layer="raw_counts")
+			job = SCP.load_h5ad(Int, h5ad_path; layer="raw_counts")
 			dm = fetch!(job)
 
 			@test size(dm) == (ground_truth.nvar, ground_truth.nobs)
@@ -79,7 +79,7 @@ function run_muon_tests()
 		end
 
 		@testset "layer (dense)" begin
-			job = Jobs.load_h5ad(h5ad_path; layer="dense")
+			job = SCP.load_h5ad(h5ad_path; layer="dense")
 			dm = fetch!(job)
 
 			@test size(dm) == (ground_truth.nvar, ground_truth.nobs)
@@ -91,7 +91,7 @@ function run_muon_tests()
 		end
 
 		@testset "obsm" begin
-			job = Jobs.load_h5ad(h5ad_path; obsm="X_umap")
+			job = SCP.load_h5ad(h5ad_path; obsm="X_umap")
 			dm = fetch!(job)
 
 			@test size(dm) == (ground_truth.ndim, ground_truth.nobs)
@@ -103,7 +103,7 @@ function run_muon_tests()
 		end
 
 		@testset "varm" begin
-			job = Jobs.load_h5ad(h5ad_path; varm="PCs")
+			job = SCP.load_h5ad(h5ad_path; varm="PCs")
 			dm = fetch!(job)
 
 			@test size(dm) == (ground_truth.nvar, ground_truth.ndim)
@@ -115,7 +115,7 @@ function run_muon_tests()
 		end
 
 		@testset "obsp" begin
-			job = Jobs.load_h5ad(h5ad_path; obsp="distances")
+			job = SCP.load_h5ad(h5ad_path; obsp="distances")
 			dm = fetch!(job)
 
 			@test size(dm) == (ground_truth.nobs, ground_truth.nobs)
@@ -126,7 +126,7 @@ function run_muon_tests()
 		end
 
 		@testset "varp" begin
-			job = Jobs.load_h5ad(h5ad_path; varp="correlations")
+			job = SCP.load_h5ad(h5ad_path; varp="correlations")
 			dm = fetch!(job)
 
 			@test size(dm) == (ground_truth.nvar, ground_truth.nvar)
@@ -137,31 +137,31 @@ function run_muon_tests()
 		end
 
 		@testset "mutually exclusive kwargs" begin
-			@test_throws ArgumentError Jobs.load_h5ad(h5ad_path; layer="raw_counts", obsm="X_umap")
+			@test_throws ArgumentError SCP.load_h5ad(h5ad_path; layer="raw_counts", obsm="X_umap")
 		end
 
 		@testset "var/obs sharing across sources" begin
-			job_x = Jobs.load_h5ad(h5ad_path)
-			var = forward!(Jobs.get_var(job_x))
-			obs = forward!(Jobs.get_obs(job_x))
+			job_x = SCP.load_h5ad(h5ad_path)
+			var = forward!(SCP.get_var(job_x))
+			obs = forward!(SCP.get_obs(job_x))
 
-			job_raw = Jobs.load_h5ad(h5ad_path; layer="raw_counts")
-			@test forward!(Jobs.get_var(job_raw)) === var
-			@test forward!(Jobs.get_obs(job_raw)) === obs
+			job_raw = SCP.load_h5ad(h5ad_path; layer="raw_counts")
+			@test forward!(SCP.get_var(job_raw)) === var
+			@test forward!(SCP.get_obs(job_raw)) === obs
 
-			job_obsp = Jobs.load_h5ad(h5ad_path; obsp="distances")
-			@test forward!(Jobs.get_var(job_obsp)) === obs
-			@test forward!(Jobs.get_obs(job_obsp)) === obs
+			job_obsp = SCP.load_h5ad(h5ad_path; obsp="distances")
+			@test forward!(SCP.get_var(job_obsp)) === obs
+			@test forward!(SCP.get_obs(job_obsp)) === obs
 
-			job_obsm = Jobs.load_h5ad(h5ad_path; obsm="X_umap")
-			@test forward!(Jobs.get_obs(job_obsm)) === obs
+			job_obsm = SCP.load_h5ad(h5ad_path; obsm="X_umap")
+			@test forward!(SCP.get_obs(job_obsm)) === obs
 
-			job_varp = Jobs.load_h5ad(h5ad_path; varp="correlations")
-			@test forward!(Jobs.get_var(job_varp)) === var
-			@test forward!(Jobs.get_obs(job_varp)) === var
+			job_varp = SCP.load_h5ad(h5ad_path; varp="correlations")
+			@test forward!(SCP.get_var(job_varp)) === var
+			@test forward!(SCP.get_obs(job_varp)) === var
 
-			job_varm = Jobs.load_h5ad(h5ad_path; varm="PCs")
-			@test forward!(Jobs.get_var(job_varm)) === var
+			job_varm = SCP.load_h5ad(h5ad_path; varm="PCs")
+			@test forward!(SCP.get_var(job_varm)) === var
 		end
 	end
 end

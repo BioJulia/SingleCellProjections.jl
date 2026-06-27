@@ -7,10 +7,10 @@ using DataFrames
 
 function run_transform_tests()
 	@testset "Transforms" begin
-		counts_job = Jobs.load_counts(h5_path; sample_names="a")
+		counts_job = SCP.load_counts(h5_path; sample_names="a")
 		counts = fetch!(counts_job)
 
-		counts_sub_job = Jobs.load_counts(h5_subset_path; sample_names="p")
+		counts_sub_job = SCP.load_counts(h5_subset_path; sample_names="p")
 
 		# TODO: test forwarding
 		# TODO: test hash stability
@@ -22,10 +22,10 @@ function run_transform_tests()
 			@testset "standard" begin
 				X = T.(simple_logtransform(expected_mat, scale_factor))
 
-				l_job = Jobs.logtransform(T_args..., counts_job; kwargs...)
+				l_job = SCP.logtransform(T_args..., counts_job; kwargs...)
 
-				@test forward!(Jobs.get_obs(l_job)) == forward!(Jobs.get_obs(counts_job))
-				@test forward!(Jobs.get_var(l_job)) == forward!(Jobs.get_var(counts_job))
+				@test forward!(SCP.get_obs(l_job)) == forward!(SCP.get_obs(counts_job))
+				@test forward!(SCP.get_var(l_job)) == forward!(SCP.get_var(counts_job))
 
 				let l = fetch!(l_job)
 					@test unblockify(l.matrix) ≈ X
@@ -36,18 +36,18 @@ function run_transform_tests()
 					test_dataframe_columns_identical("l.obs vs counts.obs", l.obs, counts.obs)
 				end
 
-				p_job = Jobs.project(l_job, counts_job=>counts_sub_job)
+				p_job = SCP.project(l_job, counts_job=>counts_sub_job)
 
 				# Test that it is identical to logtransforming the matrix without projection
-				p_matrix_job = Jobs.get_matrix(p_job)
-				p_matrix_job2 = Jobs.get_matrix(Jobs.logtransform(T_args..., counts_sub_job; kwargs...))
+				p_matrix_job = SCP.get_matrix(p_job)
+				p_matrix_job2 = SCP.get_matrix(SCP.logtransform(T_args..., counts_sub_job; kwargs...))
 				@test forward!(p_matrix_job) == forward!(p_matrix_job2)
 
 				# Vars shouldn't be changed by the projection
-				@test forward!(Jobs.get_var(p_job)) == forward!(Jobs.get_var(counts_sub_job))
+				@test forward!(SCP.get_var(p_job)) == forward!(SCP.get_var(counts_sub_job))
 
 				# Obs shouldn't be changed by the projection
-				@test forward!(Jobs.get_obs(p_job)) == forward!(Jobs.get_obs(counts_sub_job))
+				@test forward!(SCP.get_obs(p_job)) == forward!(SCP.get_obs(counts_sub_job))
 
 
 				let p = fetch!(p_job), Xs = sparse(X[:,pbmc_subset_ind]), counts_sub = fetch!(counts_sub_job)
@@ -66,9 +66,9 @@ function run_transform_tests()
 			# 	var_mask = expected_feature_names .> "L"
 			# 	X = T.(simple_logtransform(expected_mat[var_mask,:], scale_factor))
 
-			# 	l_job = Jobs.logtransform(T_args..., counts_job; var_filter="name"=>>("L"), kwargs...)
+			# 	l_job = SCP.logtransform(T_args..., counts_job; var_filter="name"=>>("L"), kwargs...)
 
-			# 	@test forward!(Jobs.get_obs(l_job)) == forward!(Jobs.get_obs(counts_job))
+			# 	@test forward!(SCP.get_obs(l_job)) == forward!(SCP.get_obs(counts_job))
 
 			# 	let l = fetch!(l_job)
 			# 		@test unblockify(l.matrix) ≈ X
@@ -78,19 +78,19 @@ function run_transform_tests()
 			# 		test_dataframe_columns_identical("l.obs vs counts.obs", l.obs, counts.obs)
 			# 	end
 
-			# 	p_job = Jobs.project(l_job, counts_job=>counts_sub_job)
+			# 	p_job = SCP.project(l_job, counts_job=>counts_sub_job)
 
 
 			# 	# Test that it is identical to logtransforming the matrix without projection
-			# 	p_matrix_job = Jobs.get_matrix(p_job)
-			# 	p_matrix_job2 = Jobs.get_matrix(Jobs.logtransform(T_args..., counts_sub_job; var_filter="name"=>>("L"), kwargs...))
+			# 	p_matrix_job = SCP.get_matrix(p_job)
+			# 	p_matrix_job2 = SCP.get_matrix(SCP.logtransform(T_args..., counts_sub_job; var_filter="name"=>>("L"), kwargs...))
 			# 	@test forward!(p_matrix_job) == forward!(p_matrix_job2)
 
 			# 	# Vars where subsetted. Alternatively to testing the result, we could've tested the spec.
-			# 	@test isequal(fetch!(Jobs.get_var(p_job)), fetch!(Jobs.get_var(counts_sub_job))[var_mask,:])
+			# 	@test isequal(fetch!(SCP.get_var(p_job)), fetch!(SCP.get_var(counts_sub_job))[var_mask,:])
 
 			# 	# Obs shouldn't be changed by the projection
-			# 	@test forward!(Jobs.get_obs(p_job)) == forward!(Jobs.get_obs(counts_sub_job))
+			# 	@test forward!(SCP.get_obs(p_job)) == forward!(SCP.get_obs(counts_sub_job))
 
 
 			# 	let p = fetch!(p_job), Xs = sparse(X[:, pbmc_subset_ind]), counts_sub = fetch!(counts_sub_job)
@@ -114,11 +114,11 @@ function run_transform_tests()
 
 			@testset "standard" begin
 				X = sctransform(expected_sparse, counts.var, params)
-				sct_job = Jobs.sctransform(T_args..., counts_job; kwargs...)
+				sct_job = SCP.sctransform(T_args..., counts_job; kwargs...)
 
-				@test forward!(Jobs.get_obs(sct_job)) == forward!(Jobs.get_obs(counts_job))
+				@test forward!(SCP.get_obs(sct_job)) == forward!(SCP.get_obs(counts_job))
 				# TODO: test var forwarding?
-				# @show forward!(Jobs.get_var(sct_job))
+				# @show forward!(SCP.get_var(sct_job))
 
 				let sct = fetch!(sct_job)
 					# var
@@ -146,11 +146,11 @@ function run_transform_tests()
 					@test materialize(sct.matrix) ≈ X rtol=1e-3
 				end
 
-				p_job = Jobs.project(sct_job, counts_job=>counts_sub_job)
+				p_job = SCP.project(sct_job, counts_job=>counts_sub_job)
 
-				@test forward!(Jobs.get_obs(p_job)) == forward!(Jobs.get_obs(counts_sub_job))
+				@test forward!(SCP.get_obs(p_job)) == forward!(SCP.get_obs(counts_sub_job))
 				# TODO: test var forwarding?
-				# @show forward!(Jobs.get_var(p_job))
+				# @show forward!(SCP.get_var(p_job))
 
 				let p = fetch!(p_job), counts_sub = fetch!(counts_sub_job)
 					Xs = sctransform(expected_sparse[:, pbmc_subset_ind], counts.var, params; clip=sqrt(size(X,2)/30))
@@ -187,12 +187,12 @@ function run_transform_tests()
 				params_filtered = scparams(es, DataFrame(id=expected_feature_ids, name=expected_feature_names, feature_type=expected_feature_types)[var_mask,:]; use_cache=false)
 				X = sctransform(es, counts.var[var_mask,:], params_filtered)
 
-				sct_job = Jobs.sctransform(T_args..., counts_job; var_filter="name"=>.>("C"), kwargs...)
+				sct_job = SCP.sctransform(T_args..., counts_job; var_filter="name"=>.>("C"), kwargs...)
 
-				@test forward!(Jobs.get_obs(sct_job)) == forward!(Jobs.get_obs(counts_job))
+				@test forward!(SCP.get_obs(sct_job)) == forward!(SCP.get_obs(counts_job))
 
 				# TODO: test var forwarding?
-				# @show forward!(Jobs.get_var(sct_job))
+				# @show forward!(SCP.get_var(sct_job))
 
 				let sct = fetch!(sct_job)
 					# var
@@ -221,11 +221,11 @@ function run_transform_tests()
 				end
 
 
-				p_job = Jobs.project(sct_job, counts_job=>counts_sub_job)
+				p_job = SCP.project(sct_job, counts_job=>counts_sub_job)
 
-				@test forward!(Jobs.get_obs(p_job)) == forward!(Jobs.get_obs(counts_sub_job))
+				@test forward!(SCP.get_obs(p_job)) == forward!(SCP.get_obs(counts_sub_job))
 				# TODO: test var forwarding?
-				# @show forward!(Jobs.get_var(p_job))
+				# @show forward!(SCP.get_var(p_job))
 
 				let p = fetch!(p_job), counts_sub = fetch!(counts_sub_job)
 					Xs = sctransform(es[:, pbmc_subset_ind], counts.var[var_mask,:], params_filtered; clip=sqrt(size(X,2)/30))

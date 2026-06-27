@@ -8,9 +8,9 @@ function run_load_tests()
 		P,N = (50,587)
 
 		# TODO: Test .mtx file (implement with specs first!)
-		counts_job = Jobs.load_counts(h5_path; sample_names="a")
+		counts_job = SCP.load_counts(h5_path; sample_names="a")
 
-		counts_sub_job = Jobs.load_counts(h5_subset_path; sample_names="p")
+		counts_sub_job = SCP.load_counts(h5_subset_path; sample_names="p")
 
 
 		# Test result
@@ -34,22 +34,22 @@ function run_load_tests()
 		end
 
 		@testset "Projection top-level replacements" begin
-			p_job = Jobs.project(counts_job, counts_job=>counts_sub_job)
+			p_job = SCP.project(counts_job, counts_job=>counts_sub_job)
 			@test isequal(forward!(p_job), forward!(counts_sub_job))
 
-			matrix_job = Jobs.get_matrix(counts_job)
-			matrix_sub_job = Jobs.get_matrix(counts_sub_job)
-			p_matrix_job = Jobs.project(matrix_job, matrix_job=>matrix_sub_job)
+			matrix_job = SCP.get_matrix(counts_job)
+			matrix_sub_job = SCP.get_matrix(counts_sub_job)
+			p_matrix_job = SCP.project(matrix_job, matrix_job=>matrix_sub_job)
 			@test isequal(forward!(p_matrix_job), forward!(matrix_sub_job))
 
-			var_job = Jobs.get_var(counts_job)
-			var_sub_job = Jobs.get_var(counts_sub_job)
-			p_var_job = Jobs.project(var_job, var_job=>var_sub_job)
+			var_job = SCP.get_var(counts_job)
+			var_sub_job = SCP.get_var(counts_sub_job)
+			p_var_job = SCP.project(var_job, var_job=>var_sub_job)
 			@test isequal(forward!(p_var_job), forward!(var_sub_job))
 
-			obs_job = Jobs.get_obs(counts_job)
-			obs_sub_job = Jobs.get_obs(counts_sub_job)
-			p_obs_job = Jobs.project(obs_job, obs_job=>obs_sub_job)
+			obs_job = SCP.get_obs(counts_job)
+			obs_sub_job = SCP.get_obs(counts_sub_job)
+			p_obs_job = SCP.project(obs_job, obs_job=>obs_sub_job)
 			@test isequal(forward!(p_obs_job), forward!(obs_sub_job))
 		end
 	end

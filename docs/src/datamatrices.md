@@ -11,6 +11,7 @@ Let's load a sample to see what a `DataMatrix` looks like:
 
 ```@example
 using SingleCellProjections
+import SingleCellProjections as SCP
 using ReproducibleJobs
 using SparseArrays
 
@@ -21,7 +22,7 @@ using ..SingleCellDocUtils
 sample_path = SingleCellDocUtils.get_lilljebjorn_sample_path("AML28")
 ```
 ```@example
-counts = Jobs.load_counts(sample_path; sample_names="AML28")
+counts = SCP.load_counts(sample_path; sample_names="AML28")
 c = fetch!(counts)
 ```
 
@@ -37,7 +38,7 @@ c.var[1:6, :]
 
 
 ## Observations
-Observations, or `obs` for short, are typically cells, but can also be [`pseudobulk`](@ref Jobs.pseudobulk) samples, for example.
+Observations, or `obs` for short, are typically cells, but can also be [`pseudobulk`](@ref pseudobulk) samples, for example.
 The observations are stored as a [`DataFrame`](https://dataframes.juliadata.org/stable/) and can be accessed by:
 ```@example
 c.obs[1:6, :]
@@ -60,7 +61,7 @@ Most of this complexity is hidden from the user, but internally SingleCellProjec
 
 !!! warning "Read-only"
     SingleCellProjections.jl will reuse matrices when possible, in order to reduce memory usage.
-    E.g. [`Jobs.normalize_matrix`](@ref) will reuse and extend the Matrix Expression of the source `DataMatrix`, without creating a copy of the actual data.
+    E.g. [`normalize_matrix`](@ref) will reuse and extend the Matrix Expression of the source `DataMatrix`, without creating a copy of the actual data.
     When matrices are reused/copied is considered an implementation detail, and can change at any time.
     Users of SingleCellProjections.jl should thus consider the matrices to be "read-only".
     This should rarely present problems in practice.
@@ -76,22 +77,22 @@ Roughly, the matrix types used at different stages are:
 ## Jobs and DataMatrices
 
 A `DataMatrix` `Job` is internally split into three component Jobs: one for the matrix, one for `var`, and one for `obs`. You can access these with:
-- `Jobs.get_matrix(job)` — the matrix component
-- `Jobs.get_var(job)` — the variable annotations
-- `Jobs.get_obs(job)` — the observation annotations
+- `SCP.get_matrix(job)` — the matrix component
+- `SCP.get_var(job)` — the variable annotations
+- `SCP.get_obs(job)` — the observation annotations
 
-Operations that only affect one component leave the others unchanged. For example, `Jobs.logtransform` only transforms the matrix — it passes `var` and `obs` through without modification. This means the var and obs Jobs are literally the same object (identical by `===`) before and after the transformation:
+Operations that only affect one component leave the others unchanged. For example, `SCP.logtransform` only transforms the matrix — it passes `var` and `obs` through without modification. This means the var and obs Jobs are literally the same object (identical by `===`) before and after the transformation:
 
 ```@example
-transformed = Jobs.logtransform(counts)
+transformed = SCP.logtransform(counts)
 
 # var is unchanged by logtransform — same Job object
-forward!(Jobs.get_var(transformed)) === forward!(Jobs.get_var(counts))
+forward!(SCP.get_var(transformed)) === forward!(SCP.get_var(counts))
 ```
 
 ```@example
 # matrix is different — logtransform created a new matrix Job
-forward!(Jobs.get_matrix(transformed)) === forward!(Jobs.get_matrix(counts))
+forward!(SCP.get_matrix(transformed)) === forward!(SCP.get_matrix(counts))
 ```
 
 This splitting is what makes the caching and projection system efficient — unchanged components are never recomputed or stored redundantly.

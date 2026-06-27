@@ -2,6 +2,7 @@ __revise_mode__ = :evalassign
 
 using Test
 using SingleCellProjections
+import SingleCellProjections as SCP
 using SingleCellProjections: SingleCellProjectionsCore, register_scp_functions!
 import .SingleCellProjectionsCore as SCPCore
 using .SingleCellProjectionsCore.MatrixExpressions
