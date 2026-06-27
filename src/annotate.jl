@@ -8,7 +8,7 @@ The IDs are used as the key when joining the tables.
 See also [`annotate_obs`](@ref), [`add_var_column`](@ref).
 """
 annotate_var(data, df; kwargs...) =
-	create_job(Impl.DataMatrixFunction(Impl.annotate), data; kwargs..., var=df)
+	create_job(DataMatrixFunction(Impl.annotate), data; kwargs..., var=df)
 
 """
     SCP.annotate_obs(data, df; kwargs...) -> Job
@@ -20,7 +20,7 @@ The IDs are used as the key when joining the tables.
 See also [`annotate_var`](@ref), [`add_obs_column`](@ref).
 """
 annotate_obs(data, df; kwargs...) =
-	create_job(Impl.DataMatrixFunction(Impl.annotate), data; kwargs..., obs=df)
+	create_job(DataMatrixFunction(Impl.annotate), data; kwargs..., obs=df)
 
 """
     SCP.add_var_column(data, name, column) -> Job
@@ -31,7 +31,7 @@ The length and order of `column` must match the rows of `data.var`.
 See also [`add_obs_column`](@ref), [`annotate_var`](@ref).
 """
 add_var_column(data, name, column) =
-	create_job(Impl.DataMatrixFunction(Impl.add_var_column), data, name, column)
+	create_job(DataMatrixFunction(Impl.add_var_column), data, name, column)
 
 """
     SCP.add_obs_column(data, name, column) -> Job
@@ -42,7 +42,7 @@ The length and order of `column` must match the rows of `data.obs`.
 See also [`add_var_column`](@ref), [`annotate_obs`](@ref).
 """
 add_obs_column(data, name, column) =
-	create_job(Impl.DataMatrixFunction(Impl.add_obs_column), data, name, column)
+	create_job(DataMatrixFunction(Impl.add_obs_column), data, name, column)
 
 
 # TODO: project_ids should it be :yes or :intersect by default???
@@ -65,7 +65,7 @@ julia> SCP.var_counts_fraction(counts, "fraction_mt", "name"=>startswith("MT-"))
 See also [`var_counts_sum`](@ref), [`obs_counts_fraction`](@ref).
 """
 function var_counts_fraction(counts, col, sub_filter, tot_filter=Returns(true); project_ids=:intersect)
-	create_job(Impl.DataMatrixFunction(Impl.var_counts_fraction), counts, col, sub_filter, tot_filter; project_ids)
+	create_job(DataMatrixFunction(Impl.var_counts_fraction), counts, col, sub_filter, tot_filter; project_ids)
 end
 
 
@@ -93,7 +93,7 @@ julia> SCP.var_counts_sum(!iszero, counts, "nonzero_RNA_count")
 See also [`var_counts_fraction`](@ref), [`obs_counts_sum`](@ref), [`load_counts`](@ref).
 """
 function var_counts_sum(f, counts, col::String, filter=Returns(true); project_ids=:intersect)
-	create_job(Impl.DataMatrixFunction(Impl.var_counts_sum), counts, col, filter; f, project_ids)
+	create_job(DataMatrixFunction(Impl.var_counts_sum), counts, col, filter; f, project_ids)
 end
 var_counts_sum(counts, col::String, args...; kwargs...) = var_counts_sum(identity, counts, col, args...; kwargs...)
 
@@ -110,7 +110,7 @@ the subset and total gene sets respectively.
 See also [`obs_counts_sum`](@ref), [`var_counts_fraction`](@ref).
 """
 function obs_counts_fraction(counts, col, sub_filter, tot_filter=Returns(true); project_ids=:no)
-	create_job(Impl.DataMatrixFunction(Impl.obs_counts_fraction), counts, col, sub_filter, tot_filter; project_ids)
+	create_job(DataMatrixFunction(Impl.obs_counts_fraction), counts, col, sub_filter, tot_filter; project_ids)
 end
 
 
@@ -130,6 +130,6 @@ julia> SCP.obs_counts_sum(!iszero, counts, "nonzero_cell_count")
 See also [`obs_counts_fraction`](@ref), [`var_counts_sum`](@ref).
 """
 function obs_counts_sum(f, counts, col::String, filter=Returns(true); project_ids=:no)
-	create_job(Impl.DataMatrixFunction(Impl.obs_counts_sum), counts, col, filter; f, project_ids)
+	create_job(DataMatrixFunction(Impl.obs_counts_sum), counts, col, filter; f, project_ids)
 end
 obs_counts_sum(counts, col::String, args...; kwargs...) = obs_counts_sum(identity, counts, col, args...; kwargs...)

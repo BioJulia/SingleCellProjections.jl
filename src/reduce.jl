@@ -13,7 +13,7 @@ Keyword arguments controlling the iterative procedure:
 See also [`pca`](@ref), [`loadings`](@ref).
 """
 function svd(matrix; nsv, seed=1234, kwargs...)
-	create_job(Impl.DataMatrixFunction(Impl.svd), matrix; nsv, seed, kwargs...)
+	create_job(DataMatrixFunction(Impl.svd), matrix; nsv, seed, kwargs...)
 end
 
 
@@ -42,7 +42,7 @@ julia> SCP.pca(normalized; nsv=100)
 See also [`svd`](@ref), [`loadings`](@ref), [`normalize_matrix`](@ref).
 """
 function pca(data; nsv, seed=1234, kwargs...)
-	create_job(Impl.DataMatrixFunction(Impl.pca), data; nsv, seed, kwargs...)
+	create_job(DataMatrixFunction(Impl.pca), data; nsv, seed, kwargs...)
 end
 
 
@@ -64,7 +64,7 @@ julia> SCP.loadings(normalized; nsv=100)
 See also [`pca`](@ref), [`svd`](@ref).
 """
 function loadings(args...; nsv, seed=1234, kwargs...)
-	create_job(Impl.DataMatrixFunction(Impl.loadings), args...; nsv, seed, kwargs...)
+	create_job(DataMatrixFunction(Impl.loadings), args...; nsv, seed, kwargs...)
 end
 
 
@@ -96,5 +96,5 @@ julia> SCP.force_layout(reduced; ndim=3, seed=4567, k=100, k_projection=25)
 See also [`transform_coords`](@ref), [`find_optimal_coord_transform`](@ref), [`umap`](@ref), [`tsne`](@ref).
 """
 function force_layout(args...; ndim=3, kwargs...)
-	create_job(Impl.DataMatrixFunction(Impl.force_layout), args...; ndim, kwargs...)
+	create_job(DataMatrixFunction(Impl.force_layout), args...; ndim, kwargs...)
 end

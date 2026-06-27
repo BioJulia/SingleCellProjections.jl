@@ -9,7 +9,7 @@ Apply log transformation: `log(1 + x * scale_factor / total_counts)`. Returns a
 See also [`sctransform`](@ref), [`normalize_matrix`](@ref).
 """
 function logtransform(T::DataType, counts; scale_factor=10_000, kwargs...)
-	create_job(Impl.DataMatrixFunction(Impl.logtransform), T, counts; scale_factor, kwargs...)
+	create_job(DataMatrixFunction(Impl.logtransform), T, counts; scale_factor, kwargs...)
 end
 logtransform(counts; kwargs...) = logtransform(Float64, counts; kwargs...)
 
@@ -35,6 +35,6 @@ julia> SCP.sctransform(counts)
 See also [`logtransform`](@ref), [`normalize_matrix`](@ref).
 """
 function sctransform(T::DataType, counts; kwargs...)
-	create_job(Impl.DataMatrixFunction(Impl.sctransform), T, counts; kwargs...)
+	create_job(DataMatrixFunction(Impl.sctransform), T, counts; kwargs...)
 end
 sctransform(counts; kwargs...) = sctransform(Float64, counts; kwargs...)
