@@ -2,7 +2,10 @@ module Impl
 
 # Reference to the parent `SingleCellProjections` module, so that internal code can call
 # the public API functions (e.g. `SCP.annotate_var`) that are defined in the parent.
-const SCP = parentmodule(@__MODULE__)
+import ..SingleCellProjections as SCP
+
+import SCP.SingleCellProjectionsCore as SCPCore
+using SCPCore: DataMatrix, Blocks
 
 import SCTransform
 import SingleCell10x
@@ -22,9 +25,6 @@ using ReproducibleJobs: create_job, fetched, prefetched, cached, throw_if_cancel
 using ReadOnlyArrays: ReadOnlyVector
 
 using StyledStrings
-
-import ..SingleCellProjectionsCore as SCPCore
-using ..SingleCellProjectionsCore: DataMatrix, Blocks
 
 
 # TODO: Where to put these?
