@@ -9,7 +9,7 @@ using DataFrames
 using CSV
 
 
-# TODO: Move some things into SingleCellProjectionsCore?
+# TODO: Move some things into SCPCore?
 
 # _auto_delim(fp) = endswith(fp, r"\.(txt|tsv)(.gz)?"i) ? '\t' : ','
 

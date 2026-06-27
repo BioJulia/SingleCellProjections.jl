@@ -4,7 +4,7 @@ module Impl
 # the public API functions (e.g. `SCP.annotate_var`) that are defined in the parent.
 import ..SingleCellProjections as SCP
 
-import .SCP.SingleCellProjectionsCore as SCPCore
+import .SCP.SCPCore
 using .SCPCore: DataMatrix, Blocks
 
 import SCTransform

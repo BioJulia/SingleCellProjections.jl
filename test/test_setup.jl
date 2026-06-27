@@ -3,9 +3,8 @@ __revise_mode__ = :evalassign
 using Test
 using SingleCellProjections
 import SingleCellProjections as SCP
-using SingleCellProjections: SingleCellProjectionsCore, register_scp_functions!
-import .SingleCellProjectionsCore as SCPCore
-using .SingleCellProjectionsCore.MatrixExpressions
+using SingleCellProjections: SCPCore, register_scp_functions!
+using .SCPCore.MatrixExpressions
 using .SCPCore: unblockify
 using SCTransform
 using ReproducibleJobs: Scheduler, with_scheduler

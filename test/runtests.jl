@@ -19,7 +19,7 @@ include("sum_squared.jl")
 include("umap.jl")
 include("tsne.jl")
 include("muon.jl")
-include("SingleCellProjectionsCore/runtests.jl")
+include("SCPCore/runtests.jl")
 include("MatrixExpressions/runtests.jl")
 
 # mktempdir() do tmp # Cleanup directly

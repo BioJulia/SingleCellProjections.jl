@@ -45,16 +45,16 @@ See `docs/src/` for detailed documentation: `tutorial.md` (workflow walkthrough)
   `import SingleCellProjections as SCP; SCP.svd(...)`. Each wrapper delegates to `Impl`.
 - **`Impl`** (`src/Impl/`): Internal submodule with all non-public code — the `ReproducibleJobs`
   integration (spec construction, caching, preprocessing `Projectable`/`ProjectOnto`), internal
-  dispatchers, `*_job` helpers, and type registrations. Mirrors the `SingleCellProjectionsCore` layout.
+  dispatchers, `*_job` helpers, and type registrations. Mirrors the `SCPCore` layout.
   `const SCP = parentmodule(@__MODULE__)` lets internal code call back into the public API.
-- **`SingleCellProjectionsCore`** (`src/SingleCellProjectionsCore/`): Pure algorithms — no dependency on `ReproducibleJobs`.
-- **`MatrixExpressions`** (`src/SingleCellProjectionsCore/MatrixExpressions/`): Lazy matrix expression trees (`MatrixRef`, `MatrixProduct`, `MatrixSum`, `DiagGram`, `Diag`).
+- **`SCPCore`** (`src/SCPCore/`): Pure algorithms — no dependency on `ReproducibleJobs`.
+- **`MatrixExpressions`** (`src/MatrixExpressions/`): Lazy matrix expression trees (`MatrixRef`, `MatrixProduct`, `MatrixSum`, `DiagGram`, `Diag`).
 
 There is **no longer a `Jobs` submodule** — what used to be `Jobs.svd` is now the public `SingleCellProjections.svd` (i.e. `SCP.svd`). For a spec file `src/X.jl`, the internal half lives in `src/Impl/X.jl` (included into `Impl`) and the public wrappers remain in `src/X.jl` (included into the top-level module, calling `Impl.…`).
 
 ### DataMatrix
 
-`DataMatrix{T}` (`src/SingleCellProjectionsCore/datamatrix.jl`): matrix of type `T` + `var::DataFrame` (variables/genes, rows) + `obs::DataFrame` (observations/cells, columns). First column of var/obs is a unique ID.
+`DataMatrix{T}` (`src/SCPCore/datamatrix.jl`): matrix of type `T` + `var::DataFrame` (variables/genes, rows) + `obs::DataFrame` (observations/cells, columns). First column of var/obs is a unique ID.
 
 ### DataMatrixFunction Pattern
 
@@ -84,7 +84,7 @@ Public wrappers live in `src/X.jl`; their internal implementations live in `src/
 | `src/Impl/internal.jl` | Utility specs (`getindex_job`, `indexin_job`, `prefixed_ids_job`, `compute_size_job`, etc.) |
 | `src/{X.jl, Impl/X.jl}` | Public wrappers / internal impl for `tables`, `load`, `transform`, `normalize`, `reduce`, `filter`, etc. |
 | `src/{design.jl, transform_coords.jl}` | Also hold the exported covariate (`categorical_covariate`, …) and rotation (`rot2d`, …) helpers |
-| `src/SingleCellProjectionsCore/` | Pure algorithm implementations (load, transform, normalize, reduce, force_layout, statistical_tests, etc.) |
+| `src/SCPCore/` | Pure algorithm implementations (load, transform, normalize, reduce, force_layout, statistical_tests, etc.) |
 | `src/MatrixExpression/` | Lazy sums/products etc of matrices. Core functionality in SingleCellProjections.jl for making computations efficient in terms of speed and memory. |
 
 ### Extensions

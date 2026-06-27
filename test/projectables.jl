@@ -1,7 +1,7 @@
 using Test
 using SingleCellProjections
+using SingleCellProjections: SCPCore
 using SingleCellProjections.Impl: Projectable, ProjectOnto, Action, DataMatrixFunction, Mat, Var, Obs, MatFunction, get_matrix_job
-import .SingleCellProjectionsCore as SCPCore
 using ReproducibleJobs: Preprocess, prefetched, create_job, fetch!, forward!, forward_once!
 using StableRNGs
 using DataFrames

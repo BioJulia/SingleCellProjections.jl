@@ -1,4 +1,4 @@
-using .SingleCellProjectionsCore: ustatistic_single, mannwhitney_single, mannwhitney_σ, mannwhitney_sparse
+using .SCPCore: ustatistic_single, mannwhitney_single, mannwhitney_σ, mannwhitney_sparse
 
 @testset "MannWhitney" begin
 	@testset "No ties" begin

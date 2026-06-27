@@ -1,7 +1,7 @@
 using Test
 using SingleCellProjections
-using SingleCellProjections: SingleCellProjectionsCore
-using .SingleCellProjectionsCore: unblockify
+import SingleCellProjections.SCPCore
+using .SCPCore: unblockify
 using ReproducibleJobs: fetch!, forward!
 using Muon: AnnData, writeh5ad
 using SparseArrays

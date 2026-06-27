@@ -1,17 +1,17 @@
 using SingleCellProjections
-using .SingleCellProjections.SingleCellProjectionsCore
+using .SingleCellProjections.SCPCore
 using Test
 using StaticArrays
 using Statistics
 
 
-using .SingleCellProjectionsCore: BarnesHutTree, build!
+using .SCPCore: BarnesHutTree, build!
 
 include("datamatrix.jl")
 include("test_barnes_hut.jl")
 
 function run_core_tests()
-	@testset "SingleCellProjectionsCore.jl" begin
+	@testset "SCPCore.jl" begin
 		# include("ranktests.jl")
 		run_datamatrix_tests()
 		# include("duplicate_var_ids.jl")

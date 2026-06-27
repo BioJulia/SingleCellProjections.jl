@@ -1,6 +1,6 @@
 using SingleCellProjections
-using .SingleCellProjections.SingleCellProjectionsCore
-using .SingleCellProjectionsCore.MatrixExpressions
+using .SingleCellProjections.SCPCore
+using .SCPCore.MatrixExpressions
 using LinearAlgebra
 using SparseArrays
 using Random

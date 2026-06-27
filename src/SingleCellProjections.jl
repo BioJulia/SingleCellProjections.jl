@@ -91,9 +91,8 @@ if VERSION >= v"1.11.0-DEV.469"
 	end
 end
 
-include("SingleCellProjectionsCore/SingleCellProjectionsCore.jl")
+include("SCPCore/SCPCore.jl")
 
-import .SingleCellProjectionsCore as SCPCore
 using .SCPCore: DataMatrix, Blocks
 
 import SCTransform

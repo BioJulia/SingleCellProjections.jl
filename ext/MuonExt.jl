@@ -4,7 +4,7 @@ using ReproducibleJobs
 using ReproducibleJobs: create_job, cached, prefetched, ChecksummedFilePath
 using SingleCellProjections
 using SingleCellProjections.Impl: DataMatrixFunction, Mat, Var, Obs, table_to_compound_result, table_from_compound_result, checksummedfilepath_job, prefixed_ids_job, compute_size_job
-using .SingleCellProjections.SingleCellProjectionsCore
+import .SingleCellProjections.SCPCore
 using DataFrames
 using SparseArrays: SparseMatrixCSC
 import LinearAlgebra
@@ -81,7 +81,7 @@ function load_h5ad_matrix_impl(filepath; T, layer=nothing, obsm=nothing, obsp=no
 		end
 		X = convert_matrix(T, X)
 		if X isa SparseMatrixCSC
-			X = SingleCellProjectionsCore.blockify(X; row_block_size, col_block_size)
+			X = SCPCore.blockify(X; row_block_size, col_block_size)
 		end
 		X
 	end
