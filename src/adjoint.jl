@@ -6,5 +6,5 @@
 Transpose a `DataMatrix`, swapping variables and observations.
 """
 function transpose(data)
-	Impl.adjoint_job(data)
+	create_job(DataMatrixFunction(Impl.adjoint), data)
 end

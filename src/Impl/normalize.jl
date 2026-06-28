@@ -32,7 +32,7 @@ function normalize_matrix(::Preprocessing, data, args...; center=true,
 		kwargs...)
 	dm = designmatrix_job(data, args...; center)
 	negβT = negative_regression_matrix_job(data, dm; kwargs...)
-	dmT = adjoint_job(dm)
+	dmT = SCP.transpose(dm)
 	normalized = matrix_sum_job(:A=>data, matrix_product_job(Symbol("(-β)")=>negβT, :X=>dmT))
 
 	if annotate_variance || annotate_std || annotate_relative_std
