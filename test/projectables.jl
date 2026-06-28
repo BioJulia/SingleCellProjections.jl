@@ -1,7 +1,7 @@
 using Test
 using SingleCellProjections
 using SingleCellProjections: SCPCore
-using SingleCellProjections.Impl: Projectable, ProjectOnto, Action, DataMatrixFunction, Mat, Var, Obs, MatFunction, get_matrix_job
+using SingleCellProjections.Impl: Impl, Projectable, ProjectOnto, Action, DataMatrixFunction, Mat, Var, Obs, MatFunction, get_matrix_job, prefixed_ids_job
 using ReproducibleJobs: Preprocess, prefetched, create_job, fetch!, forward!, forward_once!
 using StableRNGs
 using DataFrames
@@ -63,24 +63,24 @@ TestJobs.my_apply(f, x) = my_apply_job(f, x)
 # DataMatrix versions
 # NB: We don't do anything interesting with obs/var, that is tested elsewhere, this file is just about testing DataMatrixFunction interactions with projections.
 dm_rand(::Mat, args...; kwargs...) = my_rand_job(args...; kwargs...)
-dm_rand(::Var, S, nrow, ncol; kwargs...) = SingleCellProjections.Impl.prefixed_ids_job("var_id", "var_", nrow)
-dm_rand(::Obs, S, nrow, ncol; kwargs...) = SingleCellProjections.Impl.prefixed_ids_job("obs_id", "obs_", ncol)
+dm_rand(::Var, S, nrow, ncol; kwargs...) = prefixed_ids_job("var_id", "var_", nrow)
+dm_rand(::Obs, S, nrow, ncol; kwargs...) = prefixed_ids_job("obs_id", "obs_", ncol)
 TestJobs.dm_rand(args...; kwargs...) = create_job(DataMatrixFunction(dm_rand), args...; kwargs...)
 
 dm_add(::Mat, a, b) = my_add_job(get_matrix_job(a), get_matrix_job(b))
-dm_add(f, a, b) = SingleCellProjections.Impl.get_job(f, a) # Var/Obs
+dm_add(f, a, b) = Impl.get_job(f, a) # Var/Obs
 TestJobs.dm_add(a, b) = create_job(DataMatrixFunction(dm_add), a, b)
 
 dm_sub(::Mat, a, b) = my_sub_job(get_matrix_job(a), get_matrix_job(b))
-dm_sub(f, a, b) = SingleCellProjections.Impl.get_job(f, a) # Var/Obs
+dm_sub(f, a, b) = Impl.get_job(f, a) # Var/Obs
 TestJobs.dm_sub(a, b) = create_job(DataMatrixFunction(dm_sub), a, b)
 
 dm_mul(::Mat, a, b) = my_mul_job(get_matrix_job(a), get_matrix_job(b))
-dm_mul(f, a, b) = SingleCellProjections.Impl.get_job(f, a) # Var/Obs
+dm_mul(f, a, b) = Impl.get_job(f, a) # Var/Obs
 TestJobs.dm_mul(a, b) = create_job(DataMatrixFunction(dm_mul), a, b)
 
 dm_div(::Mat, a, b) = my_div_job(get_matrix_job(a), get_matrix_job(b))
-dm_div(f, a, b) = SingleCellProjections.Impl.get_job(f, a) # Var/Obs
+dm_div(f, a, b) = Impl.get_job(f, a) # Var/Obs
 TestJobs.dm_div(a, b) = create_job(DataMatrixFunction(dm_div), a, b)
 
 
@@ -212,7 +212,7 @@ function run_projectables_tests()
 			jp2fwd2 = forward_once!(jp2fwd)
 			@test jp2fwd2.f == my_div_impl
 			# TODO: This will be change so that forwarding is done directly to ProjectOnto(my_add_impl)!
-			@test jp2fwd2.args[2].f == Preprocess(SingleCellProjections.Impl.project)
+			@test jp2fwd2.args[2].f == Preprocess(Impl.project)
 
 			jp2b = SCP.project(j2, B=>Bp) # replacing B=>Bp should have no effect
 			@test fetch!(jp2b) == (A_res+B_res) ./ C_res
@@ -237,7 +237,7 @@ function run_projectables_tests()
 			jp2fwd2 = forward_once!(jp2fwd)
 			@test jp2fwd2.f == my_add_impl
 			# TODO: This will be change so that forwarding is done directly to ProjectOnto(Projectable(my_div))!
-			@test jp2fwd2.args[2].f == Preprocess(SingleCellProjections.Impl.project)
+			@test jp2fwd2.args[2].f == Preprocess(Impl.project)
 
 			jp2b = SCP.project(j2, B=>Bp)
 			@test fetch!(jp2b) == (A_res./Bp_res) + C_res
@@ -387,12 +387,12 @@ function run_projectables_tests()
 			jp2fwd2 = forward_once!(jp2fwd)
 			@test jp2fwd2.f == SCPCore.DataMatrix
 			jp2fwd3 = jp2fwd2.args[1] # the matrix arg
-			@test jp2fwd3.f == Preprocess(SingleCellProjections.Impl.project)
+			@test jp2fwd3.f == Preprocess(Impl.project)
 			jp2fwd4 = forward_once!(jp2fwd3)
 			@test jp2fwd4.f == ProjectOnto(MatFunction(dm_div))
 
 			jp2fwd5 = forward_once!(jp2fwd4)
-			@test jp2fwd5.f == Preprocess(SingleCellProjections.Impl.project)
+			@test jp2fwd5.f == Preprocess(Impl.project)
 			jp2fwd6 = forward_once!(jp2fwd5)
 			@test jp2fwd6.f == ProjectOnto(Projectable(my_div))
 
@@ -428,24 +428,24 @@ function run_projectables_tests()
 			jp2fwd2 = forward_once!(jp2fwd)
 			@test jp2fwd2.f == SCPCore.DataMatrix
 			jp2fwd3 = jp2fwd2.args[1] # the matrix arg
-			@test jp2fwd3.f == Preprocess(SingleCellProjections.Impl.project)
+			@test jp2fwd3.f == Preprocess(Impl.project)
 			jp2fwd4 = forward_once!(jp2fwd3)
 			@test jp2fwd4.f == ProjectOnto(MatFunction(dm_add))
 
 			jp2fwd5 = forward_once!(jp2fwd4)
-			@test jp2fwd5.f == Preprocess(SingleCellProjections.Impl.project)
+			@test jp2fwd5.f == Preprocess(Impl.project)
 			jp2fwd6 = forward_once!(jp2fwd5)
 			@test jp2fwd6.f == ProjectOnto(my_add_impl)
 
 			jp2fwd7 = forward_once!(jp2fwd6)
 			@test jp2fwd7.f == my_add_impl
 			jp2fwd8 = jp2fwd7.args[1]
-			@test jp2fwd8.f == Preprocess(SingleCellProjections.Impl.project)
+			@test jp2fwd8.f == Preprocess(Impl.project)
 
 			jp2fwd9 = forward_once!(jp2fwd8)
 			@test jp2fwd9.f == ProjectOnto(MatFunction(dm_div))
 			jp2fwd10 = forward_once!(jp2fwd9)
-			@test jp2fwd10.f == Preprocess(SingleCellProjections.Impl.project)
+			@test jp2fwd10.f == Preprocess(Impl.project)
 			jp2fwd11 = forward_once!(jp2fwd10)
 			@test jp2fwd11.f == ProjectOnto(Projectable(my_div))
 

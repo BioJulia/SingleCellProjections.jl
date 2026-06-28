@@ -1,5 +1,6 @@
 using Test
 using SingleCellProjections
+using SingleCellProjections: Impl
 using ReproducibleJobs: ReproducibleJobs, TimestampedFilePath, prefetched, fetch!, forward!
 using CSV
 using DataFrames
@@ -88,7 +89,7 @@ function run_tables_tests()
 
 			if name != "DataFrame" # TODO: Enable this test for DataFrames to when I make it work
 				let annot_fwd = forward!(annot)
-					@test annot_fwd.f === SingleCellProjections.Impl.create_table
+					@test annot_fwd.f === Impl.create_table
 					@test first.(annot_fwd.args) == ["id", "y"]
 				end
 			end
@@ -116,7 +117,7 @@ function run_tables_tests()
 			end
 
 			let ind = collect(n:-2:1)
-				table2 = SingleCellProjections.Impl.table_getindex_job(table, ind)
+				table2 = Impl.table_getindex_job(table, ind)
 				@test isequal(fetch!(table2), df[ind,:])
 			end
 
@@ -155,7 +156,7 @@ function run_tables_tests()
 			end
 
 			@testset "prefetched scalar inside Base.Fix2" begin
-				max_job = SingleCellProjections.Impl.apply_job(maximum, SCP.value_column_data(annot_x))
+				max_job = Impl.apply_job(maximum, SCP.value_column_data(annot_x))
 				ta = SCP.transform_annotation(Base.Fix2(/, prefetched(max_job)), annot_x)
 				expected = DataFrame("id"=>df.id, "x"=>x_vals ./ maximum(x_vals))
 				@test isequal(fetch!(ta), expected)
