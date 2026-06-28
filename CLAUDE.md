@@ -68,7 +68,7 @@ Projecting a computation pipeline onto a different dataset (e.g., PCA trained on
 
 - `Projectable(f)` — marks a preprocessing function as projectable. `f` receives an `Action` (`Eval()` or `Projection(replacements)`) as its first argument.
 - `ProjectOnto(f)` — variant that receives explicit replacement pairs.
-- `try_replace_job` / `try_replace_spec_single` — replacement logic using `===` identity (deduplication ensures this works).
+- `try_replace_job` / `try_replace_job_single` — replacement logic using `===` identity (deduplication ensures this works).
 
 ### Key Source Files
 

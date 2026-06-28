@@ -205,26 +205,26 @@ end
 
 
 
-function _try_replace_get_spec_single(f::DataMatrixField, spec::SpecRef, k::SpecRef, v)
-	# @info "_try_replace_get_spec_single"
+function _try_replace_get_job_single(f::DataMatrixField, spec::SpecRef, k::SpecRef, v)
+	# @info "_try_replace_get_job_single"
 	if is_datamatrix_job(k)
 		# TODO: Improve this code, avoid recreating the original spec
 		onto = create_job(DataMatrixFunction(spec.f.f), spec.args...; spec.kwargs...) # recreate original spec...
-		res = try_replace_spec_single(onto, nothing, k, v)
+		res = try_replace_job_single(onto, nothing, k, v)
 		return res === nothing ? res : get_job(f, res)
 	else
 		# Fallback to standard replace
-		return try_replace_spec_single(spec, nothing, k, v)
+		return try_replace_job_single(spec, nothing, k, v)
 	end
 end
 
 # Testing ProjectOnto
-try_replace_spec_single(spec::SpecRef, ::MatFunction, k::SpecRef, v) =
-	_try_replace_get_spec_single(Mat(), spec, k, v)
-try_replace_spec_single(spec::SpecRef, ::VarFunction, k::SpecRef, v) =
-	_try_replace_get_spec_single(Var(), spec, k, v)
-try_replace_spec_single(spec::SpecRef, ::ObsFunction, k::SpecRef, v) =
-	_try_replace_get_spec_single(Obs(), spec, k, v)
+try_replace_job_single(spec::SpecRef, ::MatFunction, k::SpecRef, v) =
+	_try_replace_get_job_single(Mat(), spec, k, v)
+try_replace_job_single(spec::SpecRef, ::VarFunction, k::SpecRef, v) =
+	_try_replace_get_job_single(Var(), spec, k, v)
+try_replace_job_single(spec::SpecRef, ::ObsFunction, k::SpecRef, v) =
+	_try_replace_get_job_single(Obs(), spec, k, v)
 
 
 # Testing with ProjectOnto

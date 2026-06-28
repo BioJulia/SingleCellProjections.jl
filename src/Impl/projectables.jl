@@ -29,7 +29,7 @@ end
 
 
 
-function try_replace_spec_single(spec::SpecRef, ::Any, k::SpecRef, v)
+function try_replace_job_single(spec::SpecRef, ::Any, k::SpecRef, v)
 	if ReproducibleJobs.get_sr(spec) === ReproducibleJobs.get_sr(k) # Because of deduplication we can use ===
 		if v isa SpecRef
 			return ReproducibleJobs.apply_op(k.op, v) # Transfer the op
@@ -48,7 +48,7 @@ function try_replace_job(spec::SpecRef, f::F, args...) where F
 
 	for (k,v) in args
 		if k isa SpecRef
-			r = try_replace_spec_single(spec, f, k, v)
+			r = try_replace_job_single(spec, f, k, v)
 			r !== nothing && return r
 		end
 	end
