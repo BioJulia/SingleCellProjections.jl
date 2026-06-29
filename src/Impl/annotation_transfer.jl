@@ -32,8 +32,8 @@ update_name_job(old_name; kwargs...) =
 
 function transfer_annotation(::Preprocessing, base, new, covariate; k, weight_fun=InvMax(1e-12), kwargs...)
 	# TODO: Check that var agree
-	base_mat = get_matrix_job(base)
-	new_mat = get_matrix_job(new)
+	base_mat = SCP.get_matrix(base)
+	new_mat = SCP.get_matrix(new)
 
 	# TODO: reimplement without actually constructing dists as an intermediate representation
 
@@ -41,12 +41,12 @@ function transfer_annotation(::Preprocessing, base, new, covariate; k, weight_fu
 	# # Unwrap knn_job CompoundResult
 	# indices = cached(knn, "indices")
 	# dists = cached(knn, "distances")
-	# wadj = weighted_adjacency_matrix_job(weight_fun, indices, dists; NX=nobs_job(base))
+	# wadj = weighted_adjacency_matrix_job(weight_fun, indices, dists; NX=SCP.nobs(base))
 
 
 	knn_indices = find_nearest_neighbors_job(base_mat, new_mat; k)
 
-	obs = get_obs_job(base)
+	obs = SCP.get_obs(base)
 	annot, desc = setup_covariate_description(obs, covariate)
 	annot_name = fetched(_extract_name(annot))
 	annot_data = _extract_data_job(obs, annot)
@@ -57,8 +57,8 @@ function transfer_annotation(::Preprocessing, base, new, covariate; k, weight_fu
 	score = cached(t, "score")
 
 	# make into table
-	new_obs_ids = id_column_job(get_obs_job(new))
+	new_obs_ids = SCP.id_column(SCP.get_obs(new))
 	transferred_name = fetched(update_name_job(annot_name; kwargs...))
 	score_name = fetched(update_name_job(transferred_name; new_suffix="_score"))
-	table_hcat_job(new_obs_ids, create_table_job(transferred_name=>transferred, score_name=>score))
+	SCP.table_hcat(new_obs_ids, SCP.create_table(transferred_name=>transferred, score_name=>score))
 end

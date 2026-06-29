@@ -1,6 +1,6 @@
 function subset_matrix(::Preprocessing, data; var_ids=nothing, obs_ids=nothing)
-	var_ind_args = var_ids === nothing ? (;) : (; var_ind=indexin_job(var_ids, id_column_job(get_var_job(data)); not_found=:error))
-	obs_ind_args = obs_ids === nothing ? (;) : (; obs_ind=indexin_job(obs_ids, id_column_job(get_obs_job(data)); not_found=:error))
+	var_ind_args = var_ids === nothing ? (;) : (; var_ind=indexin_job(var_ids, SCP.id_column(SCP.get_var(data)); not_found=:error))
+	obs_ind_args = obs_ids === nothing ? (;) : (; obs_ind=indexin_job(obs_ids, SCP.id_column(SCP.get_obs(data)); not_found=:error))
 	create_datamatrix_getindex_job(data; var_ind_args..., obs_ind_args...)
 end
 
@@ -19,8 +19,8 @@ function filter_matrix(::Preprocessing, data; fvar=nothing, fobs=nothing, projec
 	project_var_ids = @something(project_var_ids, :intersect)
 	project_obs_ids = @something(project_obs_ids, :no)
 
-	var_ind = create_find_matching_ind_job(fvar, get_var_job(data); project_ids=project_var_ids)
-	obs_ind = create_find_matching_ind_job(fobs, get_obs_job(data); project_ids=project_obs_ids)
+	var_ind = create_find_matching_ind_job(fvar, SCP.get_var(data); project_ids=project_var_ids)
+	obs_ind = create_find_matching_ind_job(fobs, SCP.get_obs(data); project_ids=project_obs_ids)
 
 	create_datamatrix_getindex_job(data; var_ind, obs_ind)
 end

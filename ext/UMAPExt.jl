@@ -3,7 +3,7 @@ module UMAPExt
 using ReproducibleJobs
 using ReproducibleJobs: create_job, cached, TypeTag, Cache
 using SingleCellProjections
-using SingleCellProjections.Impl: DataMatrixFunction, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_matrix_job, get_job, prefixed_ids_job
+using SingleCellProjections.Impl: DataMatrixFunction, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_job, prefixed_ids_job
 
 using DataFrames
 
@@ -71,7 +71,7 @@ end
 
 
 function umap(::Mat, data; ndim, seed, kwargs...)
-	matrix_job = get_matrix_job(data)
+	matrix_job = SingleCellProjections.get_matrix(data)
 	create_job(Projectable(umap_impl), matrix_job; ndim, seed, kwargs...)
 end
 umap(::Obs, data; ndim, kwargs...) = get_job(Obs(), data)

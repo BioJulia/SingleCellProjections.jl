@@ -1,7 +1,8 @@
 using Test
 using SingleCellProjections
 using SingleCellProjections: SCPCore
-using SingleCellProjections.Impl: Impl, Projectable, ProjectOnto, Action, DataMatrixFunction, Mat, Var, Obs, MatFunction, get_matrix_job, prefixed_ids_job
+using SingleCellProjections: get_matrix
+using SingleCellProjections.Impl: Impl, Projectable, ProjectOnto, Action, DataMatrixFunction, Mat, Var, Obs, MatFunction, prefixed_ids_job
 using ReproducibleJobs: Preprocess, prefetched, create_job, fetch!, forward!, forward_once!
 using StableRNGs
 using DataFrames
@@ -67,19 +68,19 @@ dm_rand(::Var, S, nrow, ncol; kwargs...) = prefixed_ids_job("var_id", "var_", nr
 dm_rand(::Obs, S, nrow, ncol; kwargs...) = prefixed_ids_job("obs_id", "obs_", ncol)
 TestJobs.dm_rand(args...; kwargs...) = create_job(DataMatrixFunction(dm_rand), args...; kwargs...)
 
-dm_add(::Mat, a, b) = my_add_job(get_matrix_job(a), get_matrix_job(b))
+dm_add(::Mat, a, b) = my_add_job(get_matrix(a), get_matrix(b))
 dm_add(f, a, b) = Impl.get_job(f, a) # Var/Obs
 TestJobs.dm_add(a, b) = create_job(DataMatrixFunction(dm_add), a, b)
 
-dm_sub(::Mat, a, b) = my_sub_job(get_matrix_job(a), get_matrix_job(b))
+dm_sub(::Mat, a, b) = my_sub_job(get_matrix(a), get_matrix(b))
 dm_sub(f, a, b) = Impl.get_job(f, a) # Var/Obs
 TestJobs.dm_sub(a, b) = create_job(DataMatrixFunction(dm_sub), a, b)
 
-dm_mul(::Mat, a, b) = my_mul_job(get_matrix_job(a), get_matrix_job(b))
+dm_mul(::Mat, a, b) = my_mul_job(get_matrix(a), get_matrix(b))
 dm_mul(f, a, b) = Impl.get_job(f, a) # Var/Obs
 TestJobs.dm_mul(a, b) = create_job(DataMatrixFunction(dm_mul), a, b)
 
-dm_div(::Mat, a, b) = my_div_job(get_matrix_job(a), get_matrix_job(b))
+dm_div(::Mat, a, b) = my_div_job(get_matrix(a), get_matrix(b))
 dm_div(f, a, b) = Impl.get_job(f, a) # Var/Obs
 TestJobs.dm_div(a, b) = create_job(DataMatrixFunction(dm_div), a, b)
 

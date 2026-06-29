@@ -6,7 +6,7 @@ negative_regression_matrix_impl_job(data, dm; kwargs...) =
 
 function negative_regression_matrix(::Mat, data, dm; kwargs...)
 	# TODO: check that data and dm IDs match
-	negative_regression_matrix_impl_job(get_matrix_job(data), get_matrix_job(dm); kwargs...)
+	negative_regression_matrix_impl_job(SCP.get_matrix(data), SCP.get_matrix(dm); kwargs...)
 end
 negative_regression_matrix(::Var, data, dm; kwargs...) = get_job(Var(), data)
 negative_regression_matrix(::Obs, data, dm; kwargs...) = get_job(Obs(), dm)
@@ -30,7 +30,7 @@ function normalize_matrix(::Preprocessing, data, args...; center=true,
 		annotate_std = std_col !== nothing,
 		annotate_relative_std = relative_std_col !== nothing,
 		kwargs...)
-	dm = designmatrix_job(data, args...; center)
+	dm = SCP.designmatrix(data, args...; center)
 	negβT = negative_regression_matrix_job(data, dm; kwargs...)
 	dmT = SCP.transpose(dm)
 	normalized = matrix_sum_job(:A=>data, matrix_product_job(Symbol("(-β)")=>negβT, :X=>dmT))

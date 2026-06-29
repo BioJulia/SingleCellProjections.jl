@@ -196,13 +196,9 @@ indexin_job(a, b; not_found=:error) = create_job(indexin_impl, a, b; not_found, 
 
 
 
-nvar_job(data) = table_nrow_job(get_var_job(data))
-
-nobs_job(data) = table_nrow_job(get_obs_job(data))
-
 
 # These are for situations were we cannot avoid using size on the materialized matrix.
-# Prefer nvar_job/nobs_job or other smart ways to get size when possible.
+# Prefer SCP.nvar/SCP.nobs or other smart ways to get size when possible.
 compute_size(X, dim) = size(X, dim)
 compute_size_job(X, dim) = create_job(compute_size, X, dim; __version=v"0.1.0")
 
@@ -227,19 +223,19 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 
 		# subset the columns to only depend on those that are used
 		if k isa AbstractString
-			x = get_columns_job(df, k)
+			x = SCP.get_columns(df, k)
 			matching_ind = cached(find_matching_ind_impl_job(f, x))
 		elseif k isa AbstractVector
-			x = get_columns_job(df, k...)
+			x = SCP.get_columns(df, k...)
 			matching_ind = cached(find_matching_ind_impl_job(f, x))
 		elseif k isa Union{SpecRef, DataFrame}
 			# k is an "Annotation" - a DataFrame with an ID and a value column. Will be leftjoined and the function will be applied to the leftjoined vector with values.
 
 			# TODO: Share code with `_extract_data_job`?
-			ids_a = id_column_job(df)
-			ids_b = id_column_job(k)
+			ids_a = SCP.id_column(df)
+			ids_b = SCP.id_column(k)
 			ind_job = indexin_job(ids_a, ids_b; not_found=:nothing)
-			v = value_column_data_job(k)
+			v = SCP.value_column_data(k)
 			x = getindex_or_missing_job(v, ind_job) # The values of the annotation `k`, reordered to match the order in df.
 
 			matching_ind = cached(find_matching_ind_impl_job(last(f), x))
@@ -257,7 +253,7 @@ function find_matching_ind(action::Action, f, df; project_ids::Symbol)
 		return Colon()
 	else
 		# We need to remap the indices, going through IDs
-		ids = id_column_job(df)
+		ids = SCP.id_column(df)
 		ids2 = action(ids) # IDs from projected dataset
 
 		cond = isequal_job(ids, ids2)
@@ -385,13 +381,13 @@ end
 
 
 datamatrix_getindex(::Mat, data; kwargs...) =
-	create_matrix_getindex_job(get_matrix_job(data); kwargs...)
+	create_matrix_getindex_job(SCP.get_matrix(data); kwargs...)
 function datamatrix_getindex(::Var, data; var_ind=nothing, kwargs...)
-	var = get_var_job(data)
+	var = SCP.get_var(data)
 	var_ind === nothing ? var : table_getindex_job(var, var_ind)
 end
 function datamatrix_getindex(::Obs, data; obs_ind=nothing, kwargs...)
-	obs = get_obs_job(data)
+	obs = SCP.get_obs(data)
 	obs_ind === nothing ? obs : table_getindex_job(obs, obs_ind)
 end
 
@@ -467,7 +463,7 @@ get_matrix_col_job(matrix, ind) =
 prefixed_id_values(prefix::String, n) = string.(prefix, 1:n)
 function prefixed_ids(::Preprocessing, col::String, prefix, n)
 	col_data = create_job(prefixed_id_values, prefix, n; __version=v"0.1.0")
-	create_table_job(col=>col_data)
+	SCP.create_table(col=>col_data)
 end
 prefixed_ids_job(col, prefix, n) =
 	create_job(Preprocess(prefixed_ids), col, prefix, n)

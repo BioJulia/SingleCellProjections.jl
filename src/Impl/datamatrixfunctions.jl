@@ -168,15 +168,9 @@ end
 # end
 
 
-get_matrix_job(x) = create_job(Preprocess(get_matrix), x)
-
-get_var_job(x) = create_job(Preprocess(get_var), x)
-
-get_obs_job(x) = create_job(Preprocess(get_obs), x)
-
-get_job(::Mat, x) = get_matrix_job(x)
-get_job(::Var, x) = get_var_job(x)
-get_job(::Obs, x) = get_obs_job(x)
+get_job(::Mat, x) = SCP.get_matrix(x)
+get_job(::Var, x) = SCP.get_var(x)
+get_job(::Obs, x) = SCP.get_obs(x)
 
 
 
@@ -240,9 +234,9 @@ end
 
 function project_onto_impl(d::DataMatrixFunction{F}, replacements, args...; kwargs...) where F
 	onto = create_job(d, args...; kwargs...) # recreate original spec...
-	matrix = create_project_job(get_matrix_job(onto), replacements...)
-	var = create_project_job(get_var_job(onto), replacements...)
-	obs = create_project_job(get_obs_job(onto), replacements...)
+	matrix = create_project_job(SCP.get_matrix(onto), replacements...)
+	var = create_project_job(SCP.get_var(onto), replacements...)
+	obs = create_project_job(SCP.get_obs(onto), replacements...)
 	create_datamatrix_job(matrix, var, obs)
 end
 

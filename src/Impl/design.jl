@@ -5,17 +5,17 @@ detect_covariate_desc_job(values) = create_job(detect_covariate_desc, values; __
 
 
 # TODO: Move this to internal? It can be used in many places.
-_extract_data_job(table, column::String) = column_data_job(table, column) # Column in the table (typically obs)
+_extract_data_job(table, column::String) = SCP.column_data(table, column) # Column in the table (typically obs)
 function _extract_data_job(table, annot) # External annotation (DataFrame or spec)
-	ids_a = id_column_job(table)
-	ids_b = id_column_job(annot)
+	ids_a = SCP.id_column(table)
+	ids_b = SCP.id_column(annot)
 	ind_job = indexin_job(ids_a, ids_b; not_found=:nothing)
-	v = value_column_data_job(annot)
+	v = SCP.value_column_data(annot)
 	getindex_or_missing_job(v, ind_job) # The values of the annotation, reordered to match the order in table.
 end
 
 _extract_name(column::String) = column
-_extract_name(annot) = get_value_colname_job(annot)
+_extract_name(annot) = SCP.get_value_colname(annot)
 
 
 
@@ -176,11 +176,11 @@ has_centering_job(cov_descs) =
 
 function build_designmatrix_dm(::Mat, data, cov_data, cov_descs, ::Any; center, kwargs...)
 	@assert length(cov_data) == length(cov_descs)
-	obs = get_obs_job(data)
+	obs = SCP.get_obs(data)
 
 	cm = covariate_matrix_job.(cov_data, cov_descs; center, kwargs...)
 	if center
-		ispec = intercept_covariate_matrix_job(table_nrow_job(obs))
+		ispec = intercept_covariate_matrix_job(SCP.table_nrow(obs))
 		hcat_job(vcat(ispec, cm))
 	else
 		hcat_job(cm)
@@ -188,10 +188,10 @@ function build_designmatrix_dm(::Mat, data, cov_data, cov_descs, ::Any; center, 
 end
 function build_designmatrix_dm(::Obs, ::Any, ::Any, ::Any, cov_names; center, kwargs...)
 	center && (cov_names = vcat("Intercept", cov_names))
-	# create_table_job("covariate"=>vcat_job(cov_names...))
-	create_table_job("covariate"=>vcat_job(cov_names))
+	# SCP.create_table("covariate"=>vcat_job(cov_names...))
+	SCP.create_table("covariate"=>vcat_job(cov_names))
 end
-build_designmatrix_dm(::Var, data, ::Any, ::Any, ::Any; kwargs...) = get_obs_job(data) # Yes this is correct. (See note below regarding transposing)
+build_designmatrix_dm(::Var, data, ::Any, ::Any, ::Any; kwargs...) = SCP.get_obs(data) # Yes this is correct. (See note below regarding transposing)
 
 
 # This preprocessing step is needed so that the covariate representations are preprocessed
@@ -204,7 +204,7 @@ build_designmatrix_job(data, cov_data, cov_descs, cov_names; kwargs...) =
 
 
 function designmatrix(::Preprocessing, data, args...; center, kwargs...)
-	obs = get_obs_job(data)
+	obs = SCP.get_obs(data)
 	cov_annots, cov_descs = setup_covariate_descriptions(obs, args...)
 	cov_data = _extract_data_job.(Ref(obs), cov_annots)
 	center = center || fetched(has_centering_job(cov_descs))
@@ -217,6 +217,4 @@ end
 # Creates a DataMatrix with obs as var and covariates as obs
 # TODO: Consider transposing
 # data::DataMatrix, args are covariates (names, two-column DataFrames with IDs+Values, optionally in pairs with covariate descriptions), center::Bool
-designmatrix_job(data, args...; center=true, kwargs...) =
-	create_job(Preprocess(designmatrix), data, args...; center, kwargs...)
 

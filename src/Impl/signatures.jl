@@ -7,14 +7,14 @@ function signature_pre(::Preprocessing, data, var_filter, out_col_name; loadings
 	if loadings
 		reduced = SCP.loadings(data; svd_kwargs...)
 		pc1 = get_matrix_col_job(SCP.get_matrix(reduced), 1)
-		annot = get_var_job(reduced)
+		annot = SCP.get_var(reduced)
 	else
 		reduced = SCP.pca(data; svd_kwargs...)
 		pc1 = get_matrix_row_job(SCP.get_matrix(reduced), 1)
-		annot = get_obs_job(reduced)
+		annot = SCP.get_obs(reduced)
 	end
 
 	extra_cols isa Union{Symbol,<:AbstractString} && (extra_cols = (extra_cols,)) # for splatting convenience
-	table = get_columns_job(annot, fetched(get_id_colname_job(annot)), extra_cols...)
-	table_hcat_job(table, create_table_job(out_col_name=>pc1))
+	table = SCP.get_columns(annot, fetched(SCP.get_id_colname(annot)), extra_cols...)
+	SCP.table_hcat(table, SCP.create_table(out_col_name=>pc1))
 end

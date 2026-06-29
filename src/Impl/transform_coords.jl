@@ -8,16 +8,16 @@ function transform_coords_impl(X::TM, transform::TT) where {TM,TT}
 end
 
 transform_coords(::Mat, data, transform; kwargs...) =
-	create_job(transform_coords_impl, get_matrix_job(data), transform; __version=v"0.0.1")
+	create_job(transform_coords_impl, SCP.get_matrix(data), transform; __version=v"0.0.1")
 function transform_coords(::Var, data, transform; keep_var=false)
 	if keep_var
-		get_var_job(data)
+		SCP.get_var(data)
 	else
 		prefixed_ids_job("dim_id", "dim", size(transform,1))
 	end
 end
 
-transform_coords(::Obs, data, transform; kwargs...) = get_obs_job(data)
+transform_coords(::Obs, data, transform; kwargs...) = SCP.get_obs(data)
 
 
 _default_transform_axis_order(::Val{2}) = [2,1] # y is up
@@ -53,6 +53,6 @@ find_optimal_coord_transform_impl(X::ROMat, args...; kwargs...) = find_optimal_c
 
 function find_optimal_coord_transform(::Action, data, args...; kwargs...)
 	# NB: Do not apply action at all, the layout is based on the unprojected data set
-	ind_specs = (create_find_matching_ind_job(arg, get_obs_job(data); project_ids=:no) for arg in args)
-	create_job(find_optimal_coord_transform_impl, get_matrix_job(data), ind_specs...; kwargs..., __version=v"0.1.0")
+	ind_specs = (create_find_matching_ind_job(arg, SCP.get_obs(data); project_ids=:no) for arg in args)
+	create_job(find_optimal_coord_transform_impl, SCP.get_matrix(data), ind_specs...; kwargs..., __version=v"0.1.0")
 end

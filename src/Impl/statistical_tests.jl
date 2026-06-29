@@ -36,7 +36,7 @@ function _filter_missing_obs(data, h::Tuple)
 
 	# Handle missing values
 	skip_missing_cols = []
-	obs = get_obs_job(data)
+	obs = SCP.get_obs(data)
 
 	for a in h
 		if a isa Pair
@@ -88,19 +88,19 @@ function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	extra_kwargs = max_categories === nothing ? (;) : (; max_categories)
 
 	# Hmm. We want h1 to be mean-zero (if center=true), but we don't want the intercept column.
-	h1_design = designmatrix_job(data, h1...; center=false, extra_kwargs...)
-	h0_design = designmatrix_job(data, h0...; center, extra_kwargs...)
+	h1_design = SCP.designmatrix(data, h1...; center=false, extra_kwargs...)
+	h0_design = SCP.designmatrix(data, h0...; center, extra_kwargs...)
 
-	matrix = get_matrix_job(data)
+	matrix = SCP.get_matrix(data)
 
-	var = get_var_job(data)
-	table_var = id_column_job(var)
+	var = SCP.get_var(data)
+	table_var = SCP.id_column(var)
 	if var_cols !== nothing
 		var_cols = _splattable(var_cols)
-		table_var = table_hcat_job(table_var, get_columns_job(var, var_cols...))
+		table_var = SCP.table_hcat(table_var, SCP.get_columns(var, var_cols...))
 	end
 
-	ftest_table_job(matrix, table_var, get_matrix_job(h1_design), get_matrix_job(h0_design); do_sort)
+	ftest_table_job(matrix, table_var, SCP.get_matrix(h1_design), SCP.get_matrix(h0_design); do_sort)
 end
 
 
@@ -144,7 +144,7 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	# Handle missing values
 	data = _filter_missing_obs(data; h1=_splattable(h1), h0, h1_missing, h0_missing)
 
-	obs = get_obs_job(data)
+	obs = SCP.get_obs(data)
 
 
 	extra_kwargs = max_categories === nothing ? (;) : (; max_categories)
@@ -160,23 +160,23 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	end
 
 
-	h0_design = designmatrix_job(data, h0...; center, extra_kwargs...)
+	h0_design = SCP.designmatrix(data, h0...; center, extra_kwargs...)
 
 	h1_cov_data = _extract_data_job(obs, h1_cov_annot)
 	ms = mean_and_scale_job(h1_cov_data, h1_cov_desc; center)
 	h1_scale = fetched(getindex_job(ms, 2))
 	h1_design_mat = covariate_matrix_job(h1_cov_data, h1_cov_desc; center) # center affects this column, but we don't get an intercept
 
-	matrix = get_matrix_job(data)
+	matrix = SCP.get_matrix(data)
 
-	var = get_var_job(data)
-	table_var = id_column_job(var)
+	var = SCP.get_var(data)
+	table_var = SCP.id_column(var)
 	if var_cols !== nothing
 		var_cols = _splattable(var_cols)
-		table_var = table_hcat_job(table_var, get_columns_job(var, var_cols...))
+		table_var = SCP.table_hcat(table_var, SCP.get_columns(var, var_cols...))
 	end
 
-	ttest_table_job(matrix, table_var, h1_design_mat, h1_scale, get_matrix_job(h0_design); do_sort)
+	ttest_table_job(matrix, table_var, h1_design_mat, h1_scale, SCP.get_matrix(h0_design); do_sort)
 end
 
 

@@ -9,9 +9,9 @@ matrix_product_impl_job(args...) =
 	create_job(SCPCore.matrixproduct, args...; __version=v"0.1.1")
 
 # TODO: check that the inner var/obs IDs match!
-matrix_product(::Mat, args...) = matrix_product_impl_job(_map_value.(get_matrix_job, args)...)
-matrix_product(::Var, args...) = get_var_job(_get_value(first(args)))
-matrix_product(::Obs, args...) = get_obs_job(_get_value(last(args)))
+matrix_product(::Mat, args...) = matrix_product_impl_job(_map_value.(SCP.get_matrix, args)...)
+matrix_product(::Var, args...) = SCP.get_var(_get_value(first(args)))
+matrix_product(::Obs, args...) = SCP.get_obs(_get_value(last(args)))
 
 function matrix_product_job(arg1, args...)
 	create_job(DataMatrixFunction(matrix_product), arg1, args...)
@@ -22,9 +22,9 @@ matrix_sum_impl_job(args...) =
 	create_job(SCPCore.matrixsum, args...; __version=v"0.1.1")
 
 # TODO: check that the inner var/obs IDs match!
-matrix_sum(::Mat, args...) = matrix_sum_impl_job(_map_value.(get_matrix_job, args)...)
-matrix_sum(::Var, args...) = get_var_job(_get_value(first(args)))
-matrix_sum(::Obs, args...) = get_obs_job(_get_value(first(args)))
+matrix_sum(::Mat, args...) = matrix_sum_impl_job(_map_value.(SCP.get_matrix, args)...)
+matrix_sum(::Var, args...) = SCP.get_var(_get_value(first(args)))
+matrix_sum(::Obs, args...) = SCP.get_obs(_get_value(first(args)))
 
 function matrix_sum_job(arg1, args...)
 	create_job(DataMatrixFunction(matrix_sum), arg1, args...)

@@ -6,11 +6,11 @@ end
 
 
 function logtransform(f::Union{Mat,Var}, T::DataType, data; scale_factor)
-	matrix_job = get_matrix_job(data)
+	matrix_job = SCP.get_matrix(data)
 	create_job(Preprocess{false}(logtransform_matrix), T, matrix_job; scale_factor)
 end
-logtransform(::Var, ::DataType, data; kwargs...) = get_var_job(data)
-logtransform(::Obs, ::DataType, data; kwargs...) = get_obs_job(data)
+logtransform(::Var, ::DataType, data; kwargs...) = SCP.get_var(data)
+logtransform(::Obs, ::DataType, data; kwargs...) = SCP.get_obs(data)
 
 
 
@@ -75,7 +75,7 @@ function scparams(action::Action, matrix, var, var_ind; log_cell_counts)
 		return params
 	else#if actions is Projection
 		# We need to remap IDs
-		var_ids = id_column_job(var)
+		var_ids = SCP.id_column(var)
 		var_ids2 = action(var_ids)
 
 		param_ids = table_getindex_job(var_ids, var_ind) # The IDs represented in the params table
@@ -144,15 +144,15 @@ sctransform_matrix_job(T, matrix, params, log_cell_counts; var_ind, kwargs...) =
 
 
 function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=:, min_cells=5, annotate=false, kwargs...) where T
-	matrix_job = get_matrix_job(counts)
-	var_job = get_var_job(counts)
+	matrix_job = SCP.get_matrix(counts)
+	var_job = SCP.get_var(counts)
 
 	var_ind_logcellcounts = prefetched(create_find_matching_ind_job(var_filter, var_job; project_ids=:intersect))
 	log_cell_counts = logcellcounts_job(matrix_job, var_ind_logcellcounts)
 
 	# min_cells
 	nnz_cells = cached(counts_sum_impl_job(!iszero, matrix_job, :; dims=2)) # returns vector
-	var_nnz_cells = add_column_job(id_column_job(var_job), "nnzCells", nnz_cells)
+	var_nnz_cells = SCP.add_column(SCP.id_column(var_job), "nnzCells", nnz_cells)
 	var_ind_min_cells = create_find_matching_ind_job("nnzCells"=>>=(min_cells), var_nnz_cells; project_ids=:yes)
 
 	var_ind = prefetched(intersect_ind_job(var_ind_logcellcounts, var_ind_min_cells))
@@ -161,15 +161,15 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=:, min_cel
 	if f isa Var
 		var_out = table_getindex_job(var_job, var_ind)
 		if annotate
-			var_out = table_hcat_job(var_out, params_job)
+			var_out = SCP.table_hcat(var_out, params_job)
 		end
 		return var_out
 	else # if f isa Mat
-		nobs = fetched(nobs_job(counts)) # fetch since we need the value now and the value should **not** be affected by projecion
+		nobs = fetched(SCP.nobs(counts)) # fetch since we need the value now and the value should **not** be affected by projecion
 		return sctransform_matrix_job(T, matrix_job, params_job, log_cell_counts; var_ind, nobs, kwargs...)
 	end
 end
-sctransform(::Obs, ::DataType, counts; kwargs...) = get_obs_job(counts)
+sctransform(::Obs, ::DataType, counts; kwargs...) = SCP.get_obs(counts)
 
 
 

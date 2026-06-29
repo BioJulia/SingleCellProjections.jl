@@ -3,7 +3,7 @@
 
 Create a new table `Job` from column name/value pairs.
 """
-create_table(args...) = Impl.create_table_job(args...)
+create_table(args...) = create_job(Impl.create_table, args...; __version=v"0.1.0")
 
 """
     SCP.get_colnames(table; kwargs...) -> Job
@@ -12,7 +12,7 @@ Return the column names of `table`.
 
 See also [`get_id_colname`](@ref), [`get_value_colname`](@ref).
 """
-get_colnames(table, args...; kwargs...) = Impl.get_colnames_job(table, args...; kwargs...)
+get_colnames(table, args...; kwargs...) = create_job(Preprocess(Impl.get_colnames), table, args...; kwargs...)
 
 """
     SCP.get_id_colname(table) -> Job
@@ -21,7 +21,7 @@ Return the name of the first (ID) column of `table`.
 
 See also [`get_colnames`](@ref), [`get_value_colname`](@ref).
 """
-get_id_colname(table) = Impl.get_id_colname_job(table)
+get_id_colname(table) = create_job(Preprocess(Impl.get_colnames), table, 1)
 
 """
     SCP.get_value_colname(table) -> Job
@@ -31,7 +31,7 @@ exactly two columns.
 
 See also [`get_colnames`](@ref), [`get_id_colname`](@ref).
 """
-get_value_colname(table) = Impl.get_value_colname_job(table)
+get_value_colname(table) = create_job(Preprocess(Impl.get_colnames), table, 2; require_n_cols=2)
 
 """
     SCP.get_columns(table, colnames...) -> Job
@@ -40,7 +40,7 @@ Select specific columns from `table` by name or index.
 
 See also [`id_column`](@ref), [`value_column`](@ref).
 """
-get_columns(table, colname1, colnames...; kwargs...) = Impl.get_columns_job(table, colname1, colnames...; kwargs...)
+get_columns(table, colname1, colnames...; kwargs...) = create_job(Preprocess(Impl.get_columns), table, colname1, colnames...; kwargs...)
 
 """
     SCP.id_column(table) -> Job
@@ -49,7 +49,7 @@ Extract the first (ID) column of `table` as a single-column table.
 
 See also [`value_column`](@ref), [`id_column_data`](@ref).
 """
-id_column(table) = Impl.id_column_job(table)
+id_column(table) = create_job(Preprocess(Impl.id_column), table)
 
 """
     SCP.value_column(table) -> Job
@@ -75,7 +75,7 @@ Return the values of column `col` from `table` as a vector.
 
 See also [`id_column_data`](@ref), [`value_column_data`](@ref).
 """
-column_data(table, col; kwargs...) = Impl.column_data_job(table, col; kwargs...)
+column_data(table, col; kwargs...) = create_job(Preprocess(Impl.column_data), table, col; kwargs...)
 
 """
     SCP.id_column_data(table) -> Job
@@ -94,7 +94,7 @@ exactly two columns.
 
 See also [`column_data`](@ref), [`id_column_data`](@ref).
 """
-value_column_data(table) = Impl.value_column_data_job(table)
+value_column_data(table) = create_job(Preprocess(Impl.value_column_data), table)
 
 """
     SCP.table_nrow(table) -> Job
@@ -103,7 +103,7 @@ Return the number of rows in `table`.
 
 See also [`table_ncol`](@ref).
 """
-table_nrow(table) = Impl.table_nrow_job(table)
+table_nrow(table) = create_job(Preprocess(Impl.table_nrow), table)
 
 """
     SCP.table_ncol(table) -> Job
@@ -122,7 +122,7 @@ The length of `column` must match the number of rows in `table`.
 
 See also [`table_hcat`](@ref), [`add_var_column`](@ref), [`add_obs_column`](@ref).
 """
-add_column(table, name, column) = Impl.add_column_job(table, name, column)
+add_column(table, name, column) = create_job(Preprocess(Impl.add_column), table, name, column)
 
 """
     SCP.table_hcat(a, tables...) -> Job
@@ -132,7 +132,7 @@ matching row order.
 
 See also [`table_leftjoin`](@ref), [`add_column`](@ref).
 """
-table_hcat(a, args...) = Impl.table_hcat_job(a, args...)
+table_hcat(a, args...) = create_job(Preprocess(Impl.table_hcat), a, args...)
 
 """
     SCP.table_leftjoin(a, b) -> Job
@@ -141,7 +141,7 @@ Left-join table `b` onto table `a` by their ID columns.
 
 See also [`table_hcat`](@ref), [`annotate_var`](@ref), [`annotate_obs`](@ref).
 """
-table_leftjoin(a, b) = Impl.table_leftjoin_job(a, b)
+table_leftjoin(a, b) = create_job(Preprocess(Impl.table_leftjoin), a, b)
 
 """
     SCP.transform_annotation(f, table; kwargs...) -> Job
@@ -152,4 +152,4 @@ Use `new_name` to rename the value column.
 
 (TODO: Example.)
 """
-transform_annotation(f, table; kwargs...) = Impl.transform_annotation_job(f, table; kwargs...)
+transform_annotation(f, table; kwargs...) = create_job(Preprocess(Impl.transform_annotation), f, table; kwargs...)

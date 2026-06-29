@@ -1,7 +1,7 @@
 function actual_nsv_pr(::Action, data, nsv)
 	# NB: nsv is determined completely by the base case, so we do not project
-	P = nvar_job(data)
-	N = nobs_job(data)
+	P = SCP.nvar(data)
+	N = SCP.nobs(data)
 	create_job(min, nsv, P, N; __version=v"0.1.0")
 end
 actual_nsv_job(data, nsv) = create_job(Projectable(actual_nsv_pr), data, nsv)
@@ -52,7 +52,7 @@ end
 
 function svd(::Mat, data; nsv, kwargs...)
 	nsv = fetched(actual_nsv_job(data, nsv))
-	create_job(Projectable(svd_pr), get_matrix_job(data); nsv, kwargs...)
+	create_job(Projectable(svd_pr), SCP.get_matrix(data); nsv, kwargs...)
 end
 svd(f::Union{Var,Obs}, data; kwargs...) = get_job(f, data)
 
@@ -81,7 +81,7 @@ pca_pre(::Preprocessing, matrix; kwargs...) =
 
 function pca(::Mat, data; nsv, kwargs...)
 	nsv = fetched(actual_nsv_job(data, nsv))
-	create_job(Preprocess(pca_pre), get_matrix_job(data); nsv, kwargs...)
+	create_job(Preprocess(pca_pre), SCP.get_matrix(data); nsv, kwargs...)
 end
 function pca(::Var, data; nsv, kwargs...)
 	nsv = fetched(actual_nsv_job(data, nsv))
@@ -97,7 +97,7 @@ end
 
 function loadings(::Mat, data; nsv, kwargs...)
 	nsv = fetched(actual_nsv_job(data, nsv))
-	create_job(Projectable(loadings_pr), get_matrix_job(data); nsv, kwargs...)
+	create_job(Projectable(loadings_pr), SCP.get_matrix(data); nsv, kwargs...)
 end
 loadings(::Var, data; kwargs...) = get_job(Var(), data)
 function loadings(::Obs, data; nsv, kwargs...)
@@ -196,7 +196,7 @@ end
 
 
 function force_layout(::Mat, data; kwargs...)
-	matrix_job = get_matrix_job(data)
+	matrix_job = SCP.get_matrix(data)
 	create_job(Projectable(force_layout), matrix_job; kwargs...)
 end
 force_layout(::Obs, data; kwargs...) = get_job(Obs(), data)

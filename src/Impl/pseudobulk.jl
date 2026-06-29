@@ -64,7 +64,7 @@ function pseudobulk_table_impl(::Preprocessing, categories, basenames, n_categor
 	reverse!(inner)
 
 	pb_cols = (name=>repeat_job(c; outer=outer[i], inner=extra_inner*inner[i]) for (i,(name,c)) in enumerate(zip(basenames, categories)))
-	create_table_job(pb_cols...)
+	SCP.create_table(pb_cols...)
 end
 
 function pseudobulk_table(action::Action, categories, basenames; do_project::Bool, kwargs...)
@@ -97,7 +97,7 @@ function pseudobulk_dm(::Mat, data, obs_cov_categories, obs_cov_ind, ::Any;
 	linear_ind_job = pseudobulk_linear_indices_job(cov_ind, n_categories)
 
 	n_combinations = prefetched(prod_job(n_categories))
-	mat = create_job(pseudobulk_mat, get_matrix_job(data), linear_ind_job, n_combinations; __version=v"0.1.0")
+	mat = create_job(pseudobulk_mat, SCP.get_matrix(data), linear_ind_job, n_combinations; __version=v"0.1.0")
 
 	# reshape if needed
 	if new_var_cov_categories !== nothing
@@ -113,12 +113,12 @@ function pseudobulk_dm(::Var, data, args...;
                        delim,
                        var_id_colname = nothing,
                        kwargs...)
-	var = get_var_job(data)
+	var = SCP.get_var(data)
 	# Standard case, we just keep the same variables
 	new_var_cov_categories === nothing && return var
 
 	# Table for the new covariates, already repeated to match number of variables
-	extra_inner = fetched(table_nrow_job(var))
+	extra_inner = fetched(SCP.table_nrow(var))
 	pb_table_job = pseudobulk_table_job(new_var_cov_categories, new_var_cov_basenames; do_project=false, extra_inner)
 
 	# Repeat the existing var table
@@ -126,11 +126,11 @@ function pseudobulk_dm(::Var, data, args...;
 	var = repeat_columns_job(var; outer=n_new_var_combinations)
 
 
-	id_table = table_hcat_job(id_column_job(var), pb_table_job)
+	id_table = SCP.table_hcat(SCP.id_column(var), pb_table_job)
 	id_values = combine_column_values_job(id_table; delim)
-	var_id_colname = @something var_id_colname fetched(join_job(get_colnames_job(id_table), delim))
+	var_id_colname = @something var_id_colname fetched(join_job(SCP.get_colnames(id_table), delim))
 
-	table_hcat_job(create_table_job(var_id_colname=>id_values),
+	SCP.table_hcat(SCP.create_table(var_id_colname=>id_values),
 	                var,
 	                pb_table_job)
 end
@@ -140,8 +140,8 @@ function pseudobulk_dm(::Obs, data, obs_cov_categories, ::Any, obs_cov_basenames
 	if length(obs_cov_categories)>1
 		# Add ID column if we need it. Otherwise reuse the name of the single covariate.
 		id_values = combine_column_values_job(pb_table_job; delim)
-		obs_id_colname = @something obs_id_colname fetched(join_job(get_colnames_job(pb_table_job), delim))
-		pb_table_job = table_hcat_job(create_table_job(obs_id_colname=>id_values), pb_table_job)
+		obs_id_colname = @something obs_id_colname fetched(join_job(SCP.get_colnames(pb_table_job), delim))
+		pb_table_job = SCP.table_hcat(SCP.create_table(obs_id_colname=>id_values), pb_table_job)
 	end
 
 	pb_table_job
@@ -190,7 +190,7 @@ end
 
 
 function pseudobulk(::Preprocessing, data, obs_covariate1, obs_covariates...; new_var_covariates=nothing, delim=nothing, kwargs...)
-	obs = get_obs_job(data)
+	obs = SCP.get_obs(data)
 
 	# obs_cov_annots, obs_cov_descs = setup_pseudobulk_covariates(obs_covariate1, obs_covariates...) # Something like this for TwoGroup support
 	obs_cov_annots = setup_pseudobulk_covariates(obs_covariate1, obs_covariates...)
@@ -276,8 +276,8 @@ function population_matrix_dm(::Var, args...;
 	if length(new_var_cov_categories)>1
 		# Add ID column if we need it. Otherwise reuse the name of the single covariate.
 		id_values = combine_column_values_job(pb_table_job; delim)
-		var_id_colname = @something var_id_colname fetched(join_job(get_colnames_job(pb_table_job), delim))
-		pb_table_job = table_hcat_job(create_table_job(var_id_colname=>id_values), pb_table_job)
+		var_id_colname = @something var_id_colname fetched(join_job(SCP.get_colnames(pb_table_job), delim))
+		pb_table_job = SCP.table_hcat(SCP.create_table(var_id_colname=>id_values), pb_table_job)
 	end
 	pb_table_job
 end
@@ -287,8 +287,8 @@ function population_matrix_dm(::Obs, obs_cov_categories, ::Any, obs_cov_basename
 	if length(obs_cov_categories)>1
 		# Add ID column if we need it. Otherwise reuse the name of the single covariate.
 		id_values = combine_column_values_job(pb_table_job; delim)
-		obs_id_colname = @something obs_id_colname fetched(join_job(get_colnames_job(pb_table_job), delim))
-		pb_table_job = table_hcat_job(create_table_job(obs_id_colname=>id_values), pb_table_job)
+		obs_id_colname = @something obs_id_colname fetched(join_job(SCP.get_colnames(pb_table_job), delim))
+		pb_table_job = SCP.table_hcat(SCP.create_table(obs_id_colname=>id_values), pb_table_job)
 	end
 	pb_table_job
 end

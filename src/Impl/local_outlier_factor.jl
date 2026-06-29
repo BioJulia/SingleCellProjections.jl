@@ -47,11 +47,11 @@ end
 
 
 function local_outlier_factor_pre(::Preprocessing, data, full; k, col::String)
-	mat = get_matrix_job(data)
-	full_mat = get_matrix_job(full)
+	mat = SCP.get_matrix(data)
+	full_mat = SCP.get_matrix(full)
 
-	obs_ids = id_column_job(get_obs_job(data)) # TODO: check that this is equal to `id_column_job(get_obs_job(full))`
+	obs_ids = SCP.id_column(SCP.get_obs(data)) # TODO: check that this is equal to `SCP.id_column(SCP.get_obs(full))`
 
 	lof_job = create_job(Projectable(local_outlier_factor), mat, full_mat; k)
-	table_hcat_job(obs_ids, create_table_job(col=>lof_job))
+	SCP.table_hcat(obs_ids, SCP.create_table(col=>lof_job))
 end

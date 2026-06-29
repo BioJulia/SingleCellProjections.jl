@@ -47,7 +47,7 @@ end
 
 blockify_matrix_job(A; kwargs...) = create_job(Preprocess{false}(blockify_matrix), A; kwargs...)
 
-blockify(::Mat, data; kwargs...) = blockify_matrix_job(get_matrix_job(data); kwargs...)
+blockify(::Mat, data; kwargs...) = blockify_matrix_job(SCP.get_matrix(data); kwargs...)
 blockify(f::Union{Var,Obs}, data; kwargs...) = get_job(f, data)
 
 blockify_job(data; kwargs...) = create_job(DataMatrixFunction(blockify), data; kwargs...)

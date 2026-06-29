@@ -25,7 +25,7 @@ vcat_tables_job(tables; kwargs...) = create_job(vcat_tables, tables; kwargs..., 
 function combine_obs(::Preprocessing, filenames, sample_names)
 	sample_barcodes_specs = load_barcodes_job.(filenames)
 	sample_id_specs = combine_vectors_job.(sample_names, '_', sample_barcodes_specs)
-	sample_obs_specs = create_table_job.("cell_id" .=> sample_id_specs,
+	sample_obs_specs = SCP.create_table.("cell_id" .=> sample_id_specs,
 	                                      "sample_name" .=> sample_names,
 	                                      "barcode" .=> sample_barcodes_specs)
 	combined = vcat_tables_job(sample_obs_specs)
