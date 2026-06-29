@@ -192,7 +192,7 @@ function tsne end
 
 include("Impl/Impl.jl")
 
-using .Impl: DataMatrixFunction
+using .Impl: DataMatrixFunction, Projectable
 
 
 include("projectables.jl")

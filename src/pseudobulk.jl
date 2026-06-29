@@ -9,7 +9,7 @@ specified covariates. Returns a `DataMatrix` where each column is a pseudobulk s
 See also [`population_matrix`](@ref).
 """
 function pseudobulk(data, obs_covariate1, obs_covariates...; kwargs...)
-	Impl.pseudobulk_job(data, obs_covariate1, obs_covariates...; kwargs...)
+	create_job(Preprocess(Impl.pseudobulk), data, obs_covariate1, obs_covariates...; kwargs...)
 end
 
 
@@ -26,5 +26,5 @@ covariates define the columns (samples/groups) and `new_var_covariates` define t
 See also [`pseudobulk`](@ref).
 """
 function population_matrix(obs, obs_covariate1, obs_covariates...; new_var_covariates, kwargs...)
-	Impl.population_matrix_job(obs, obs_covariate1, obs_covariates...; new_var_covariates, kwargs...)
+	create_job(Preprocess(Impl.population_matrix), obs, obs_covariate1, obs_covariates...; new_var_covariates, kwargs...)
 end

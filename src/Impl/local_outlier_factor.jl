@@ -55,7 +55,3 @@ function local_outlier_factor_pre(::Preprocessing, data, full; k, col::String)
 	lof_job = create_job(Projectable(local_outlier_factor), mat, full_mat; k)
 	table_hcat_job(obs_ids, create_table_job(col=>lof_job))
 end
-
-
-local_outlier_factor_job(data, full; k=10, col="LOF") =
-	create_job(Preprocess(local_outlier_factor_pre), data, full; k, col)

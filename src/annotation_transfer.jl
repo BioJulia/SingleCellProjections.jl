@@ -10,4 +10,4 @@ Returns a table with the transferred labels and confidence scores.
 (TODO: Add example - maybe I need to construct one? It should be about celltype transfer.)
 """
 transfer_annotation(base, new, covariate; k, kwargs...) =
-	Impl.transfer_annotation_job(base, new, covariate; k, kwargs...)
+	create_job(Preprocess(Impl.transfer_annotation), base, new, covariate; k, kwargs...)

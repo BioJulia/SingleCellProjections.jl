@@ -58,7 +58,7 @@ Extract the second (value) column of `table` as a single-column table.
 
 See also [`id_column`](@ref), [`value_column_data`](@ref).
 """
-value_column(table) = Impl.value_column_job(table)
+value_column(table) = create_job(Preprocess(Impl.value_column), table)
 
 """
     SCP.annotation(table, colname) -> Job
@@ -66,7 +66,7 @@ value_column(table) = Impl.value_column_job(table)
 Extract the ID column and the column named `colname` from `table`, returning a two-column
 table. Useful for passing annotations to filtering or covariate specification.
 """
-annotation(table, colname) = Impl.annotation_job(table, colname)
+annotation(table, colname) = create_job(Preprocess(Impl.annotation), table, colname)
 
 """
     SCP.column_data(table, col; kwargs...) -> Job
@@ -84,7 +84,7 @@ Return the vector of IDs (first column) from `table`.
 
 See also [`column_data`](@ref), [`value_column_data`](@ref).
 """
-id_column_data(table) = Impl.id_column_data_job(table)
+id_column_data(table) = create_job(Preprocess(Impl.id_column_data), table)
 
 """
     SCP.value_column_data(table) -> Job
@@ -112,7 +112,7 @@ Return the number of columns in `table`.
 
 See also [`table_nrow`](@ref).
 """
-table_ncol(table) = Impl.table_ncol_job(table)
+table_ncol(table) = create_job(Preprocess(Impl.table_ncol), table)
 
 """
     SCP.add_column(table, name, column) -> Job

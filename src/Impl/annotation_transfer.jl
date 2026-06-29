@@ -62,6 +62,3 @@ function transfer_annotation(::Preprocessing, base, new, covariate; k, weight_fu
 	score_name = fetched(update_name_job(transferred_name; new_suffix="_score"))
 	table_hcat_job(new_obs_ids, create_table_job(transferred_name=>transferred, score_name=>score))
 end
-
-transfer_annotation_job(base, new, covariate; k, kwargs...) =
-	create_job(Preprocess(transfer_annotation), base, new, covariate; k, kwargs...)

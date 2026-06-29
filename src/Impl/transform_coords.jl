@@ -20,11 +20,6 @@ end
 transform_coords(::Obs, data, transform; kwargs...) = get_obs_job(data)
 
 
-transform_coords_job(data, transform; kwargs...) =
-	create_job(DataMatrixFunction(transform_coords), data, transform; kwargs...)
-
-
-
 _default_transform_axis_order(::Val{2}) = [2,1] # y is up
 _default_transform_axis_order(::Val{3}) = [3,1,2] # z is up
 _default_transform_axis_order(::Val{N}) where N = nothing # default
@@ -61,6 +56,3 @@ function find_optimal_coord_transform(::Action, data, args...; kwargs...)
 	ind_specs = (create_find_matching_ind_job(arg, get_obs_job(data); project_ids=:no) for arg in args)
 	create_job(find_optimal_coord_transform_impl, get_matrix_job(data), ind_specs...; kwargs..., __version=v"0.1.0")
 end
-
-find_optimal_coord_transform_job(args...; kwargs...) =
-	create_job(Projectable(find_optimal_coord_transform), args...; kwargs...)

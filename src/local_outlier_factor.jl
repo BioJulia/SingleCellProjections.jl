@@ -7,6 +7,6 @@ neighbors. Returns a table with IDs and LOF scores in a column named `col`.
 
 When projecting, only neighbors in the base dataset are considered.
 """
-function local_outlier_factor(data, full; kwargs...)
-	Impl.local_outlier_factor_job(data, full; kwargs...)
+function local_outlier_factor(data, full; k=10, col="LOF")
+	create_job(Preprocess(Impl.local_outlier_factor_pre), data, full; k, col)
 end

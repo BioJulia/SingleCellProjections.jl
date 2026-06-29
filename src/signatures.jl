@@ -10,5 +10,5 @@ with IDs and the signature scores in a column named `out_col_name`.
 See also [`pca`](@ref), [`loadings`](@ref).
 """
 function signature(data, var_filter, out_col_name; kwargs...)
-	Impl.signature_job(data, var_filter, out_col_name; kwargs...)
+	create_job(Preprocess(Impl.signature_pre), data, var_filter, out_col_name; kwargs...)
 end

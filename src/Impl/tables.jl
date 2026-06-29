@@ -111,10 +111,8 @@ id_column(::Preprocessing, table) = get_columns_job(table, 1)
 id_column_job(table) = create_job(Preprocess(id_column), table)
 
 value_column(::Preprocessing, table) = get_columns_job(table, 2; require_n_cols=2)
-value_column_job(table) = create_job(Preprocess(value_column), table)
 
 annotation(::Preprocessing, table, colname) = get_columns_job(table, fetched(get_id_colname_job(table)), colname) # If we add support for mixed column indexing, this could be (1, colname)
-annotation_job(table, colname) = create_job(Preprocess(annotation), table, colname)
 
 
 
@@ -146,7 +144,6 @@ column_data_job(table, col; kwargs...) = create_job(Preprocess(column_data), tab
 
 
 id_column_data(::Preprocessing, table) = column_data_job(table, 1)
-id_column_data_job(table) = create_job(Preprocess(id_column_data), table)
 
 value_column_data(::Preprocessing, table) = column_data_job(table, 2; require_n_cols=2)
 value_column_data_job(table) = create_job(Preprocess(value_column_data), table)
@@ -170,7 +167,6 @@ function table_ncol(::Preprocessing{E}, table) where E
 		create_job(table_ncol_fallback, table; __version=v"0.1.0")
 	end
 end
-table_ncol_job(table) = create_job(Preprocess(table_ncol), table)
 
 
 

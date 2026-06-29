@@ -104,8 +104,6 @@ function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 end
 
 
-ftest_job(data, h1; kwargs...) =
-	create_job(Preprocess(ftest), data, h1; kwargs...)
 
 
 
@@ -183,5 +181,3 @@ end
 
 
 
-ttest_job(data, h1; kwargs...) =
-	create_job(Preprocess(ttest), data, h1; kwargs...)

@@ -226,8 +226,6 @@ function pseudobulk(::Preprocessing, data, obs_covariate1, obs_covariates...; ne
 end
 
 
-pseudobulk_job(data, obs_covariate1, obs_covariates...; kwargs...) =
-	create_job(Preprocess(pseudobulk), data, obs_covariate1, obs_covariates...; kwargs...)
 
 
 
@@ -329,5 +327,3 @@ function population_matrix(::Preprocessing, obs, obs_covariate1, obs_covariates.
 end
 
 
-population_matrix_job(obs, obs_covariate1, obs_covariates...; kwargs...) =
-	create_job(Preprocess(population_matrix), obs, obs_covariate1, obs_covariates...; kwargs...)

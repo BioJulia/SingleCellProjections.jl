@@ -83,7 +83,7 @@ Apply a coordinate transformation matrix `transform` to the matrix of `data`.
 See also [`find_optimal_coord_transform`](@ref), [`force_layout`](@ref).
 """
 transform_coords(data, transform; kwargs...) =
-	Impl.transform_coords_job(data, transform; kwargs...)
+	create_job(DataMatrixFunction(Impl.transform_coords), data, transform; kwargs...)
 
 
 # Find a better name?
@@ -119,5 +119,5 @@ julia> fl_rotated = SCP.transform_coords(fl_2d, transform; keep_var=true)
 See also [`transform_coords`](@ref), [`force_layout`](@ref).
 """
 function find_optimal_coord_transform(args...; kwargs...)
-	Impl.find_optimal_coord_transform_job(args...)
+	create_job(Projectable(Impl.find_optimal_coord_transform), args...; kwargs...)
 end

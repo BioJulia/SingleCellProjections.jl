@@ -13,7 +13,7 @@ a single categorical covariate, this is equivalent to a one-way ANOVA.
 See also [`ttest`](@ref), [`normalize_matrix`](@ref).
 """
 function ftest(data, h1; kwargs...)
-	Impl.ftest_job(data, h1; kwargs...)
+	create_job(Preprocess(Impl.ftest), data, h1; kwargs...)
 end
 
 
@@ -29,5 +29,5 @@ two-group covariate.
 See also [`ftest`](@ref), [`normalize_matrix`](@ref), [`twogroup_covariate`](@ref).
 """
 function ttest(data, h1; kwargs...)
-	Impl.ttest_job(data, h1; kwargs...)
+	create_job(Preprocess(Impl.ttest), data, h1; kwargs...)
 end

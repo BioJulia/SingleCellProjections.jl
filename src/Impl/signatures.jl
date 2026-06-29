@@ -18,6 +18,3 @@ function signature_pre(::Preprocessing, data, var_filter, out_col_name; loadings
 	table = get_columns_job(annot, fetched(get_id_colname_job(annot)), extra_cols...)
 	table_hcat_job(table, create_table_job(out_col_name=>pc1))
 end
-
-signature_job(data, var_filter, out_col_name; kwargs...) =
-	create_job(Preprocess(signature_pre), data, var_filter, out_col_name; kwargs...)
