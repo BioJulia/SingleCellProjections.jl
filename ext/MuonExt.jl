@@ -2,7 +2,8 @@ module MuonExt
 
 using ReproducibleJobs
 using ReproducibleJobs: create_job, cached, prefetched, ChecksummedFilePath
-using SingleCellProjections
+import SingleCellProjections as SCP
+# using SingleCellProjections
 using SingleCellProjections.Impl: DataMatrixFunction, Mat, Var, Obs, table_to_compound_result, table_from_compound_result, checksummedfilepath_job, prefixed_ids_job, compute_size_job
 import .SingleCellProjections.SCPCore
 using DataFrames
@@ -113,7 +114,7 @@ function load_h5ad(::Obs, filepath; varm=nothing, varp=nothing, kwargs...)
 	end
 end
 
-function SingleCellProjections.load_h5ad(filepath; kwargs...)
+function SCP.load_h5ad(filepath; kwargs...)
 	if count(key->haskey(kwargs,key), (:layer, :obsm, :obsp, :varm, :varp)) > 1
 		throw(ArgumentError("At most one of layer, obsm, obsp, varm, varp can be specified."))
 	end
@@ -121,7 +122,7 @@ function SingleCellProjections.load_h5ad(filepath; kwargs...)
 	filepath_job = checksummedfilepath_job(filepath)
 	create_job(DataMatrixFunction(load_h5ad), filepath_job; kwargs...)
 end
-SingleCellProjections.load_h5ad(::Type{T}, filepath; kwargs...) where T = SingleCellProjections.load_h5ad(filepath; T, kwargs...)
+SCP.load_h5ad(::Type{T}, filepath; kwargs...) where T = SCP.load_h5ad(filepath; T, kwargs...)
 
 
 end

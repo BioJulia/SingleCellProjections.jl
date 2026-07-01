@@ -2,7 +2,8 @@ module TSneExt
 
 using ReproducibleJobs
 using ReproducibleJobs: create_job, cached
-using SingleCellProjections
+import SingleCellProjections as SCP
+# using SingleCellProjections
 using SingleCellProjections.Impl: DataMatrixFunction, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_job, prefixed_ids_job, find_nearest_neighbors_job, create_embed_points_job, InvMax
 import TSne
 
@@ -53,13 +54,13 @@ end
 
 
 function tsne(::Mat, data; kwargs...)
-	matrix_job = SingleCellProjections.get_matrix(data)
+	matrix_job = SCP.get_matrix(data)
 	create_job(Projectable(tsne), matrix_job; kwargs...)
 end
 tsne(::Obs, data; kwargs...) = get_job(Obs(), data)
 tsne(::Var, data; ndim, kwargs...) = prefixed_ids_job("id", "t-SNE ", ndim)
 
-function SingleCellProjections.tsne(args...; ndim=3, kwargs...)
+function SCP.tsne(args...; ndim=3, kwargs...)
 	create_job(DataMatrixFunction(tsne), args...; ndim, kwargs...)
 end
 

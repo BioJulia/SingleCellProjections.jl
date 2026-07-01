@@ -2,7 +2,8 @@ module UMAPExt
 
 using ReproducibleJobs
 using ReproducibleJobs: create_job, cached, TypeTag, Cache
-using SingleCellProjections
+import SingleCellProjections as SCP
+# using SingleCellProjections
 using SingleCellProjections.Impl: DataMatrixFunction, Projectable, Action, Eval, Projection, Mat, Var, Obs, get_job, prefixed_ids_job
 
 using DataFrames
@@ -71,14 +72,14 @@ end
 
 
 function umap(::Mat, data; ndim, seed, kwargs...)
-	matrix_job = SingleCellProjections.get_matrix(data)
+	matrix_job = SCP.get_matrix(data)
 	create_job(Projectable(umap_impl), matrix_job; ndim, seed, kwargs...)
 end
 umap(::Obs, data; ndim, kwargs...) = get_job(Obs(), data)
 umap(::Var, data; ndim, kwargs...) = prefixed_ids_job("id", "UMAP ", ndim)
 
 
-function SingleCellProjections.umap(data; ndim, seed=1234, kwargs...)
+function SCP.umap(data; ndim, seed=1234, kwargs...)
 	create_job(DataMatrixFunction(umap), data; ndim, seed, kwargs...)
 end
 
