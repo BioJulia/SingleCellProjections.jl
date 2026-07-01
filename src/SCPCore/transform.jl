@@ -184,3 +184,32 @@ logtransform_matrix(X; kwargs...) = logtransform_matrix(Float64, X; kwargs...)
 # 	sctransformsparse2(T, X, params, var_ind, log_cell_counts; kwargs...)
 # end
 # sctransform_matrix(X; kwargs...) = sctransform_matrix(Float64, X; kwargs...)
+
+
+# --- TF-IDF -------------------------------------------------------------------
+
+# Inverse document frequency: number of observations divided by the (clamped) total count per variable.
+tf_idf_idf(rowsum; nobs) = nobs ./ max.(1, rowsum)
+
+# TF-IDF transform of a (block of a) count matrix, restricted to the variables in `var_ind`.
+# `idf` is aligned to the selected rows. Formula: log(1 + scale_factor * tf * idf), with term
+# frequency tf = xᵢⱼ / max(1, ∑ᵢ xᵢⱼ), where the column sum is taken over the selected variables.
+function tf_idf_matrix(::Type{T}, X, idf, var_ind; scale_factor) where T
+	Xs = unblockify(X)
+	var_ind !== Colon() && (Xs = Xs[var_ind, :])
+	P,N = size(Xs)
+	s = max.(1, vec(sum(Xs; dims=1)))
+
+	R = rowvals(Xs)
+	nzval = nonzeros(Xs)
+	nzval_out = zeros(T, nnz(Xs))
+	for j in 1:N
+		nf = scale_factor / s[j]
+		for k in nzrange(Xs,j)
+			i = R[k]
+			nzval_out[k] = convert(T, log(1 + nzval[k]*nf*idf[i]))
+		end
+	end
+	SparseMatrixCSC(P, N, copy(Xs.colptr), copy(Xs.rowval), nzval_out)
+end
+tf_idf_matrix(X, idf, var_ind; kwargs...) = tf_idf_matrix(Float64, X, idf, var_ind; kwargs...)

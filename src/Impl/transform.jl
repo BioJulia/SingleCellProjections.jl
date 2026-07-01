@@ -173,3 +173,57 @@ sctransform(::Obs, ::DataType, counts; kwargs...) = SCP.get_obs(counts)
 
 
 
+
+
+# --- TF-IDF -------------------------------------------------------------------
+
+tf_idf_idf_job(rowsum; nobs) = create_job(SCPCore.tf_idf_idf, rowsum; nobs, __version=v"0.1.0")
+
+# The idf vector is computed from the base data and frozen: under projection it is remapped to the
+# projected variables by ID (mirroring `scparams`), never recomputed.
+function tf_idf_idf_pr(action::Action, idf, var)
+	if action isa Eval
+		return idf
+	else#if action isa Projection
+		var_ids = SCP.id_column(var)
+		var_ids2 = action(var_ids) # IDs from the projected dataset
+		ids_proj = intersect_ids_job(var_ids, var_ids2)
+		ind_proj = indexin_job(ids_proj, var_ids; not_found=:error)
+		return getindex_job(idf, prefetched(ind_proj))
+	end
+end
+create_idf_job(idf, var) = create_job(Projectable(tf_idf_idf_pr), idf, var)
+
+
+function tf_idf_matrix_impl(::Preprocessing, T, matrix, idf, var_ind; scale_factor)
+	hblock_map(matrix) do x
+		create_job(SCPCore.tf_idf_matrix, T, x, idf, var_ind; scale_factor, __version=v"0.1.0")
+	end
+end
+function tf_idf_matrix_pr(action::Action, T, matrix, idf, var_ind; scale_factor)
+	create_job(Preprocess{false}(tf_idf_matrix_impl), T, action(matrix), action(idf), action(var_ind); scale_factor)
+end
+tf_idf_matrix_job(T, matrix, idf, var_ind; kwargs...) =
+	create_job(Projectable(tf_idf_matrix_pr), T, matrix, idf, var_ind; kwargs...)
+
+
+function tf_idf_transform(f::Union{Mat,Var}, ::Type{T}, counts; scale_factor=10_000, annotate=false) where T
+	matrix_job = SCP.get_matrix(counts)
+	var_job = SCP.get_var(counts)
+
+	# All variables are used, but we still need the index for its projection (`:intersect`) behavior.
+	var_ind = prefetched(create_find_matching_ind_job(:, var_job; project_ids=:intersect))
+
+	nobs = fetched(SCP.nobs(counts)) # base nobs, frozen - must **not** be affected by projection
+	rowsum = cached(counts_sum_impl_job(identity, matrix_job, :; dims=2))
+	idf = create_idf_job(tf_idf_idf_job(rowsum; nobs), var_job)
+
+	if f isa Var
+		var_out = table_getindex_job(var_job, var_ind)
+		annotate && (var_out = SCP.add_column(var_out, "idf", idf))
+		return var_out
+	else # f isa Mat
+		return tf_idf_matrix_job(T, matrix_job, idf, var_ind; scale_factor)
+	end
+end
+tf_idf_transform(::Obs, ::DataType, counts; kwargs...) = SCP.get_obs(counts)
