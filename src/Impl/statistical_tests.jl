@@ -181,3 +181,50 @@ end
 
 
 
+
+# groups vector - Projectable so projection recomputes it on the projected obs column, using the frozen group labels.
+# `nothing` (the "group A vs the rest" case) must not be passed as a spec argument, so the group labels are
+# splatted in (see `mannwhitney_groups_job`) - matching how `_group_args` strips a `nothing` group_b in design.jl.
+mannwhitney_groups_pr(action::Action, cov_data, group_labels...; h1_missing) =
+	create_job(SCPCore.mannwhitney_groups, action(cov_data), group_labels...; h1_missing, __version=v"0.1.0")
+
+mannwhitney_groups_job(cov_data, group_labels...; kwargs...) =
+	create_job(Projectable(mannwhitney_groups_pr), cov_data, group_labels...; kwargs...)
+
+
+mannwhitney_table_pr(action::Action, matrix, var, groups; kwargs...) =
+	cached(create_job(SCPCore.mannwhitney_table2, action(matrix), action(var), action(groups); kwargs..., __version=v"0.0.1"))
+
+mannwhitney_table_job(matrix, var, groups; kwargs...) =
+	create_job(Projectable(mannwhitney_table_pr), matrix, var, groups; kwargs...)
+
+
+function mannwhitney(::Preprocessing, data, column, group_a=nothing, group_b=nothing;
+                     statistic_col="U", pvalue_col="pValue", include_statistic=true, include_pvalue=true,
+                     h1_missing=:skip, do_sort=false, kwargs...)
+	@assert h1_missing in (:skip,:error)
+
+	obs = SCP.get_obs(data)
+	cov_data = _extract_data_job(obs, column)
+
+	if group_a === nothing
+		# Auto-detect the two labels from the base data and freeze them: they are bound to the base
+		# `cov_data` and never `action`-projected, so a projected test reuses them instead of re-inferring.
+		@assert group_b === nothing
+		resolved = create_job(SCPCore.mannwhitney_resolve_groups, cov_data; __version=v"0.1.0")
+		groups = mannwhitney_groups_job(cov_data, fetched(getindex_job(resolved, 1)), fetched(getindex_job(resolved, 2)); h1_missing)
+	elseif group_b === nothing
+		# Group A vs the rest - leave group_b unset (never pass `nothing` into a spec).
+		groups = mannwhitney_groups_job(cov_data, group_a; h1_missing)
+	else
+		groups = mannwhitney_groups_job(cov_data, group_a, group_b; h1_missing)
+	end
+
+	matrix = SCP.get_matrix(data)
+	var = SCP.id_column(SCP.get_var(data))
+
+	mannwhitney_table_job(matrix, var, groups; statistic_col, pvalue_col, include_statistic, include_pvalue, do_sort, kwargs...)
+end
+
+
+

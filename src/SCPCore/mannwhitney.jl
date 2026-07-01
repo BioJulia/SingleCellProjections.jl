@@ -116,3 +116,78 @@ function mannwhitney_sparse(X::AbstractSparseMatrix, groups; kwargs...)
 
 	U, p
 end
+
+
+"""
+	mannwhitney_resolve_groups(v, group_a, group_b=nothing) -> (group_a, group_b)
+
+Resolve the two group labels for a Mann-Whitney U-test from the values `v`.
+
+If `group_a` is not given (`nothing`), `v` must have exactly two unique values (ignoring
+`missing`), which become the two groups. Returns concrete group labels - this is what should
+be frozen when the test is later projected onto other data.
+"""
+function mannwhitney_resolve_groups(v, group_a=nothing, group_b=nothing)
+	if group_a === nothing
+		@assert group_b === nothing
+		uv = unique(skipmissing(v))
+		length(uv)==2 || throw(ArgumentError(string("Expected exactly two unique values, found: ", collect(uv), ".")))
+		group_a, group_b = minmax(uv[1], uv[2])
+	end
+	group_a, group_b
+end
+
+
+"""
+	mannwhitney_groups(v, group_a, group_b=nothing; h1_missing=:skip) -> Vector{Int}
+
+Assign each element of `v` to a group for a Mann-Whitney U-test:
+* `1` - equal to `group_a`.
+* `2` - equal to `group_b`, or (if `group_b===nothing`) anything that is neither `group_a` nor `missing`.
+* `0` - excluded (including `missing`).
+
+If `h1_missing==:error`, an error is thrown if `v` contains any `missing` values.
+"""
+function mannwhitney_groups(v, group_a, group_b=nothing; h1_missing=:skip)
+	@assert h1_missing in (:skip,:error)
+	if h1_missing == :error && any(ismissing, v)
+		throw(ArgumentError("Values contain missing, set `h1_missing=:skip` to skip them."))
+	end
+
+	maskA = isequal.(v, group_a)
+	any(maskA) || throw(ArgumentError(string("Values don't contain group \"", group_a, "\".")))
+
+	if group_b !== nothing
+		maskB = isequal.(v, group_b)
+		any(maskB) || throw(ArgumentError(string("Values don't contain group \"", group_b, "\".")))
+	else
+		maskB = .!isequal.(v, group_a) .& .!ismissing.(v)
+		any(maskB) || throw(ArgumentError(string("Values only contain one group: \"", group_a, "\".")))
+	end
+
+	groups = zeros(Int, length(v))
+	groups[maskA] .= 1
+	groups[maskB] .= 2
+	groups
+end
+
+
+"""
+	mannwhitney_table2(matrix, var, groups; statistic_col="U", pvalue_col="pValue", include_statistic=true, include_pvalue=true, do_sort=false, kwargs...)
+
+Compute the Mann-Whitney U-test for each variable (row of the sparse `matrix`) given a
+`groups` vector (see [`mannwhitney_groups`](@ref)), and return a copy of the `var` table with
+the U statistics and p-values added. `matrix` must be sparse. The `include_*` flags control
+whether each column is added (kept separate from the names so that omission need not be
+expressed as `nothing`, which cannot be stored in a job spec).
+"""
+function mannwhitney_table2(matrix, var, groups;
+                            statistic_col="U", pvalue_col="pValue",
+                            include_statistic=true, include_pvalue=true, do_sort=false, kwargs...)
+	U,p = mannwhitney_sparse(unblockify(matrix), groups; kwargs...)
+	table = copy(var; copycols=do_sort)
+	include_statistic && insertcols!(table, statistic_col=>U; copycols=false)
+	include_pvalue && insertcols!(table, pvalue_col=>p; copycols=false)
+	do_sort && sort!(table, statistic_col; rev=true)
+	table
+end

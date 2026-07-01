@@ -31,3 +31,39 @@ See also [`ftest`](@ref), [`normalize_matrix`](@ref), [`twogroup_covariate`](@re
 function ttest(data, h1; kwargs...)
 	create_job(Preprocess(Impl.ttest), data, h1; kwargs...)
 end
+
+
+"""
+    SCP.mannwhitney(data, column, [group_a, group_b]; h1_missing=:skip, kwargs...) -> Job
+
+Perform a Mann-Whitney U-test (a.k.a. Wilcoxon rank-sum test) between two groups of
+observations, for each variable. The U statistic is corrected for ties, and p-values are
+computed using a normal approximation. Returns a table with variable IDs, U statistics and
+p-values.
+
+`data` must contain a sparse matrix. It is recommended to first [`logtransform`](@ref) (or
+`tf_idf_transform`) the raw counts.
+
+`column` selects a column in `data.obs` that determines group membership:
+* If neither `group_a` nor `group_b` is given, `column` must have exactly two unique values (ignoring `missing`).
+* If only `group_a` is given, observations equal to `group_a` are compared against all others (ignoring `missing`).
+* If both are given, observations equal to `group_a` are compared against those equal to `group_b`.
+
+Keyword arguments:
+* `h1_missing=:skip` - `:skip` excludes `missing` values in `column`; `:error` throws if any are present.
+* `statistic_col="U"` / `pvalue_col="pValue"` - output column names (set to `nothing` to omit).
+
+The test is projectable: when projecting onto other data, the group labels resolved here are
+reused and the test is recomputed on the projected observations.
+
+See also [`ftest`](@ref), [`ttest`](@ref), [`logtransform`](@ref).
+"""
+function mannwhitney(data, column, args...; statistic_col="U", pvalue_col="pValue", kwargs...)
+	# Translate a `nothing` column name (omit the column) into a flag here, at the API boundary:
+	# `nothing` cannot be stored in a job spec.
+	include_statistic = statistic_col !== nothing
+	include_pvalue = pvalue_col !== nothing
+	create_job(Preprocess(Impl.mannwhitney), data, column, args...;
+	           statistic_col=something(statistic_col, "U"), pvalue_col=something(pvalue_col, "pValue"),
+	           include_statistic, include_pvalue, kwargs...)
+end
