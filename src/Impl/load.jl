@@ -130,24 +130,33 @@ metadata_to_hblock_ranges_job(metadata) =
 	create_job(metadata_to_hblock_ranges, metadata; __version=v"0.0.1")
 
 
-function load_counts(f::Union{Mat,Var}, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
-	sample_var_specs = load_var_job.(filename_specs)
+# Delegators: a single filename spec means the matrix, features and barcodes all come from the same
+# file (the .h5 case), so all three components read from `filename_specs`. This keeps the .h5 job
+# graph (and hashes) identical to before.
+load_counts(f::Union{Mat,Var}, filename_specs; kwargs...) =
+	load_counts(f, filename_specs, filename_specs, filename_specs; kwargs...)
+load_counts(f::Obs, filename_specs; kwargs...) =
+	load_counts(f, filename_specs, filename_specs, filename_specs; kwargs...)
+
+
+function load_counts(f::Union{Mat,Var}, matrix_specs, feature_specs, barcode_specs; sample_names, prefilter, extra_id_cols, kwargs...)
+	sample_var_specs = load_var_job.(feature_specs)
 	var_job = combine_var_job(sample_var_specs; prefilter, extra_id_cols)
 
 	if f isa Var
 		return var_job
 	else # if f isa Mat
 		var_ind_specs = prefetched.(sample_var_indices_job.(sample_var_specs, var_job; extra_id_cols))
-		sample_specs = load_sample_matrix_job.(filename_specs, var_ind_specs)
+		sample_specs = load_sample_matrix_job.(matrix_specs, var_ind_specs)
 
 		if length(sample_specs)	== 1
 			return only(sample_specs)
 		else
-			metadata_specs = load_sample_matrix_metadata_job.(filename_specs, var_ind_specs)
+			metadata_specs = load_sample_matrix_metadata_job.(matrix_specs, var_ind_specs)
 			ranges = fetched(metadata_to_hblock_ranges_job(vcat_job(metadata_specs)))
 			return hblock_job(sample_specs, ranges)
 		end
 	end
 end
-load_counts(::Obs, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...) =
-	combine_obs_job(filename_specs, sample_names)
+load_counts(::Obs, matrix_specs, feature_specs, barcode_specs; sample_names, prefilter, extra_id_cols, kwargs...) =
+	combine_obs_job(barcode_specs, sample_names)
