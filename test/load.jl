@@ -53,10 +53,6 @@ function run_load_tests()
 		end
 
 		@testset "Matrix Market (.mtx)" begin
-			mtx_dir   = joinpath(pbmc_path, "filtered_feature_bc_matrix")
-			feat_path = joinpath(mtx_dir, "features.tsv.gz")
-			bc_path   = joinpath(mtx_dir, "barcodes.tsv.gz")
-
 			mtx_job = SCP.load_counts(mtx_path; sample_names="a")
 			let mtx = fetch!(mtx_job)
 				@test size(mtx) == (P,N)
@@ -76,16 +72,16 @@ function run_load_tests()
 				@test mtx.var.feature_type == expected_feature_types
 			end
 
-			# explicit feature/barcode filenames give the same result as guessing them
-			let mtx = fetch!(mtx_job),
-			    mtx_expl = fetch!(SCP.load_counts(mtx_path; sample_names="a", feature_filenames=feat_path, barcode_filenames=bc_path))
-				@test unblockify(mtx_expl.matrix) == unblockify(mtx.matrix)
-				@test isequal(mtx_expl.var, mtx.var)
-				@test isequal(mtx_expl.obs, mtx.obs)
-			end
+			feat_path = joinpath(dirname(mtx_path), "features.tsv.gz")
+			bc_path   = joinpath(dirname(mtx_path), "barcodes.tsv.gz")
+
+			# Specifying paths identical to the guessed paths should result in identical jobs (after forwarding)
+			mtx_job2 = SCP.load_counts(mtx_path; sample_names="a", feature_filenames=feat_path, barcode_filenames=bc_path)
+			@test forward!(mtx_job2) === forward!(mtx_job)
 
 			# a mismatched number of explicit filenames is an error
 			@test_throws ArgumentError SCP.load_counts([mtx_path]; sample_names="a", feature_filenames=[feat_path, feat_path])
+			@test_throws ArgumentError SCP.load_counts([mtx_path]; sample_names="a", barcode_filenames=[bc_path, bc_path])
 		end
 
 		@testset "Mixed .h5 and .mtx" begin
