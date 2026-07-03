@@ -7,7 +7,6 @@ function run_load_tests()
 	@testset "load_counts" begin
 		P,N = (50,587)
 
-		# TODO: Test .mtx file (implement with specs first!)
 		counts_job = SCP.load_counts(h5_path; sample_names="a")
 
 		counts_sub_job = SCP.load_counts(h5_subset_path; sample_names="p")
@@ -51,6 +50,67 @@ function run_load_tests()
 			obs_sub_job = SCP.get_obs(counts_sub_job)
 			p_obs_job = SCP.project(obs_job, obs_job=>obs_sub_job)
 			@test isequal(forward!(p_obs_job), forward!(obs_sub_job))
+		end
+
+		@testset "Matrix Market (.mtx)" begin
+			mtx_dir   = joinpath(pbmc_path, "filtered_feature_bc_matrix")
+			feat_path = joinpath(mtx_dir, "features.tsv.gz")
+			bc_path   = joinpath(mtx_dir, "barcodes.tsv.gz")
+
+			mtx_job = SCP.load_counts(mtx_path; sample_names="a")
+			let mtx = fetch!(mtx_job)
+				@test size(mtx) == (P,N)
+				@test unblockify(mtx.matrix) == expected_mat
+				@test unblockify(mtx.matrix) isa SparseMatrixCSC{Int64,Int32}
+
+				# obs is identical to the .h5 load
+				@test names(mtx.obs) == ["cell_id", "sample_name", "barcode"]
+				@test mtx.obs.cell_id == string.("a_", expected_barcodes)
+				@test mtx.obs.sample_name == fill("a",N)
+				@test mtx.obs.barcode == expected_barcodes
+
+				# var: features.tsv has no `genome` column, but the shared columns match the .h5 load
+				@test names(mtx.var) == ["id", "name", "feature_type"]
+				@test mtx.var.id == expected_feature_ids
+				@test mtx.var.name == expected_feature_names
+				@test mtx.var.feature_type == expected_feature_types
+			end
+
+			# explicit feature/barcode filenames give the same result as guessing them
+			let mtx = fetch!(mtx_job),
+			    mtx_expl = fetch!(SCP.load_counts(mtx_path; sample_names="a", feature_filenames=feat_path, barcode_filenames=bc_path))
+				@test unblockify(mtx_expl.matrix) == unblockify(mtx.matrix)
+				@test isequal(mtx_expl.var, mtx.var)
+				@test isequal(mtx_expl.obs, mtx.obs)
+			end
+
+			# a mismatched number of explicit filenames is an error
+			@test_throws ArgumentError SCP.load_counts([mtx_path]; sample_names="a", feature_filenames=[feat_path, feat_path])
+		end
+
+		@testset "Mixed .h5 and .mtx" begin
+			# load one .h5 sample and one .mtx sample in the same call (same underlying data)
+			mixed = fetch!(SCP.load_counts([h5_path, mtx_path]; sample_names=["a","b"]))
+			@test size(mixed) == (P, 2N)
+
+			# obs: both samples merged, in order
+			@test names(mixed.obs) == ["cell_id", "sample_name", "barcode"]
+			@test mixed.obs.sample_name == [fill("a",N); fill("b",N)]
+			@test mixed.obs.cell_id == [string.("a_",expected_barcodes); string.("b_",expected_barcodes)]
+
+			# var: `id`/`name`/`feature_type` agree across both samples and are kept. `genome` exists
+			# only in the .h5 features, so per gene the value is inconsistent across the two samples and
+			# `combine_var` marks it "ambiguous" (its sentinel for annotations that differ between samples).
+			@test names(mixed.var) == ["id", "name", "feature_type", "genome"]
+			@test mixed.var.id == expected_feature_ids
+			@test mixed.var.name == expected_feature_names
+			@test mixed.var.feature_type == expected_feature_types
+			@test all(==("ambiguous"), mixed.var.genome)
+
+			# each sample's block equals the expected matrix
+			M = unblockify(mixed.matrix)
+			@test M[:, mixed.obs.sample_name .== "a"] == expected_mat
+			@test M[:, mixed.obs.sample_name .== "b"] == expected_mat
 		end
 	end
 end
