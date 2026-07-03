@@ -1,14 +1,5 @@
 _is_h5(filename) = lowercase(splitext(filename)[2]) == ".h5"
 
-# `nothing` -> guess a sibling file for each input; otherwise normalize to a vector matching `filenames`.
-function _component_filenames(given, filenames, guess)
-	given === nothing && return guess.(filenames)
-	given isa AbstractArray || (given = [given])
-	length(given) == length(filenames) ||
-		throw(ArgumentError("Expected $(length(filenames)) filename(s), got $(length(given))."))
-	given
-end
-
 """
     SCP.load_counts(filenames; sample_names, feature_filenames=nothing, barcode_filenames=nothing, prefilter="feature_type"=>isequal("Gene Expression"), extra_id_cols="feature_type", kwargs...) -> Job
 
@@ -45,28 +36,37 @@ julia> SCP.load_counts("matrix.mtx.gz"; sample_names="SampleA")
 See also [`load_csv`](@ref).
 """
 function load_counts(filenames;
-                          sample_names,
-                          feature_filenames = nothing,
-                          barcode_filenames = nothing,
-                          prefilter = "feature_type"=>isequal("Gene Expression"),
-                          extra_id_cols = "feature_type", # TODO: Remove this default value?
-                          kwargs...)
+                     sample_names,
+                     feature_filenames = nothing,
+                     barcode_filenames = nothing,
+                     prefilter = "feature_type"=>isequal("Gene Expression"),
+                     extra_id_cols = "feature_type", # TODO: Remove this default value?
+                     kwargs...)
 	filenames isa AbstractArray || (filenames = [filenames])
 	sample_names isa AbstractArray || (sample_names = [sample_names])
 
 	matrix_specs = checksummedfilepath_job.(filenames)
 
-	# Legacy path: pure .h5 with no explicit component files - keep the spec (and hashes) unchanged.
-	if feature_filenames === nothing && barcode_filenames === nothing && all(_is_h5, filenames)
-		return create_job(DataMatrixFunction(Impl.load_counts), matrix_specs; sample_names, prefilter, extra_id_cols, kwargs...)
+	extra_kwargs = (;)
+	if !all(_is_h5, filenames) || feature_filenames !== nothing || barcode_filenames !== nothing
+		# We need to specify feature and barcode filenames separately.
+
+		feature_filenames = @something feature_filenames SingleCell10x.guessfeaturefilename.(filenames)
+		feature_filenames isa AbstractArray || (feature_filenames = [feature_filenames])
+		feature_specs = checksummedfilepath_job.(feature_filenames)
+
+		barcode_filenames = @something barcode_filenames SingleCell10x.guessbarcodefilename.(filenames)
+		barcode_filenames isa AbstractArray || (barcode_filenames = [barcode_filenames])
+		barcode_specs = checksummedfilepath_job.(barcode_filenames)
+
+		nm = length(matrix_specs)
+		nf = length(feature_specs)
+		nb = length(barcode_specs)
+
+		nm != nf && throw(ArgumentError("The number of matrix filenames ($nm) and feature filenames ($nf) are not equal."))
+		nm != nb && throw(ArgumentError("The number of matrix filenames ($nm) and barcode filenames ($nb) are not equal."))
+
+		extra_kwargs = (; feature_specs, barcode_specs)
 	end
-
-	# General path: .mtx and/or explicit feature/barcode files. Guess the sibling files when not given
-	# (for a .h5 input the guess returns the .h5 path itself).
-	feature_files = _component_filenames(feature_filenames, filenames, SingleCell10x.guessfeaturefilename)
-	barcode_files = _component_filenames(barcode_filenames, filenames, SingleCell10x.guessbarcodefilename)
-	feature_specs = checksummedfilepath_job.(feature_files)
-	barcode_specs = checksummedfilepath_job.(barcode_files)
-
-	create_job(DataMatrixFunction(Impl.load_counts), matrix_specs, feature_specs, barcode_specs; sample_names, prefilter, extra_id_cols, kwargs...)
+	create_job(DataMatrixFunction(Impl.load_counts), matrix_specs; sample_names, prefilter, extra_id_cols, extra_kwargs..., kwargs...)
 end
