@@ -49,8 +49,9 @@ function run_mannwhitney_tests()
 				("A vs rest",    ("group", "A"),      [g=="A" ? 1 : 2 for g in l.obs.group]),
 				("auto-detect",  ("group2",),         [isequal(g,"A") ? 1 : isequal(g,"B") ? 2 : 0 for g in l.obs.group2]),
 			)
-			r = fetch!(SCP.mannwhitney(l_job, args...))
-			U, p = ref(groups)
+			# do_sort=false keeps original variable order so it aligns with the reference
+			r = fetch!(SCP.mannwhitney(l_job, args...; do_sort=false))
+			U, _, p = ref(groups)
 
 			@test r isa DataFrame
 			@test names(r) == [idcol, "U", "pValue"]
@@ -76,12 +77,36 @@ function run_mannwhitney_tests()
 
 		@testset "missing handling" begin
 			# :skip (default) excludes missing; :error throws
-			r_skip = fetch!(SCP.mannwhitney(l_job, "group2", "A", "B"))
+			r_skip = fetch!(SCP.mannwhitney(l_job, "group2", "A", "B"; do_sort=false))
 			groups = [isequal(g,"A") ? 1 : isequal(g,"B") ? 2 : 0 for g in l.obs.group2]
-			U, p = ref(groups)
+			U, _, p = ref(groups)
 			@test r_skip.U ≈ U
 			@test r_skip.pValue ≈ p
 			@test_throws Exception fetch!(SCP.mannwhitney(l_job, "group2", "A", "B"; h1_missing=:error))
+		end
+
+		@testset "z-score sorting and z_col" begin
+			groups = [g=="A" ? 1 : g=="B" ? 2 : 0 for g in l.obs.group]
+			U, z, p = ref(groups)
+			perm = sortperm(abs.(z); rev=true) # |z| descending == significance order
+
+			# z_col adds a signed z column; results are sorted by |z| (most significant first)
+			r = fetch!(SCP.mannwhitney(l_job, "group", "A", "B"; z_col="z"))
+			@test names(r) == [idcol, "U", "z", "pValue"]
+			@test issorted(abs.(r.z); rev=true)
+			@test isequal(r[!, idcol], l.var[perm, idcol])
+			@test r.z ≈ z[perm]
+			@test r.U ≈ U[perm]
+			@test r.pValue ≈ p[perm]
+
+			# z is omitted by default, but the |z| sort still happens
+			r_default = fetch!(SCP.mannwhitney(l_job, "group", "A", "B"))
+			@test names(r_default) == [idcol, "U", "pValue"]
+			@test isequal(r_default[!, idcol], r[!, idcol])
+
+			# do_sort=false keeps the original variable order
+			r_unsorted = fetch!(SCP.mannwhitney(l_job, "group", "A", "B"; do_sort=false))
+			@test isequal(r_unsorted[!, idcol], l.var[!, idcol])
 		end
 
 		@testset "projection" begin

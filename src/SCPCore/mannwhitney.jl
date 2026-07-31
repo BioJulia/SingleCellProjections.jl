@@ -87,16 +87,18 @@ mannwhitney_σ(n1,n2,tie_adjustment) =
 	sqrt(n1*n2/12 * (n1 + n2 + 1 - tie_adjustment/((n1+n2)*(n1+n2-1))))
 
 function mannwhitney_single(X::AbstractSparseMatrix, j, groups, n1, n2)
-	min(n1,n2)==0 && return 0.0, 1.0 # degenerate case
+	min(n1,n2)==0 && return 0.0, 0.0, 1.0 # degenerate case
+
 	U, tie_adjustment = ustatistic_single(X, j, groups, n1, n2)
 
 	m = n1*n2/2
 	σ = mannwhitney_σ(n1,n2,tie_adjustment)
 
 	# TODO: handle directional tests too
-	z = U-m
-	p = min(1, 2*ccdf(Normal(0,σ), abs(z)-0.5)) # 0.5 is the continuity correction factor
-	return U, p
+	d = U-m
+	p = min(1, 2*ccdf(Normal(0,σ), abs(d)-0.5)) # 0.5 is the continuity correction factor
+	z = σ>0 ? d/σ : 0.0 # standardized (signed) statistic - monotone with p, but never underflows
+	return U, z, p
 end
 
 
@@ -108,13 +110,14 @@ function mannwhitney_sparse(X::AbstractSparseMatrix, groups; kwargs...)
 	@assert n2>0
 
 	U = zeros(size(X,1))
+	z = zeros(size(X,1))
 	p = zeros(size(X,1))
 
 	threaded_sparse_row_map(X; kwargs...) do Y, col, i
-		U[i],p[i] = mannwhitney_single(Y,col,groups,n1,n2)
+		U[i],z[i],p[i] = mannwhitney_single(Y,col,groups,n1,n2)
 	end
 
-	U, p
+	U, z, p
 end
 
 
@@ -173,21 +176,28 @@ end
 
 
 """
-	mannwhitney_table2(matrix, var, groups; statistic_col="U", pvalue_col="pValue", include_statistic=true, include_pvalue=true, do_sort=false, kwargs...)
+	mannwhitney_table2(matrix, var, groups; statistic_col="U", pvalue_col="pValue", z_col=nothing, include_statistic=true, include_pvalue=true, include_z=false, do_sort=true, kwargs...)
 
 Compute the Mann-Whitney U-test for each variable (row of the sparse `matrix`) given a
 `groups` vector (see [`mannwhitney_groups`](@ref)), and return a copy of the `var` table with
-the U statistics and p-values added. `matrix` must be sparse. The `include_*` flags control
-whether each column is added (kept separate from the names so that omission need not be
-expressed as `nothing`, which cannot be stored in a job spec).
+the U statistics, z-scores and p-values added. `matrix` must be sparse.
+
+The signed z-score `z = (U - n1*n2/2)/σ` is a standardized statistic that is monotone with the
+p-value but never underflows; when `do_sort`, rows are sorted by `|z|` (most significant first)
+whether or not the `z` column is included. The `include_*` flags control whether each column is
+added (kept separate from the names so that omission need not be expressed as `nothing`, which
+cannot be stored in a job spec).
 """
 function mannwhitney_table2(matrix, var, groups;
-                            statistic_col="U", pvalue_col="pValue",
-                            include_statistic=true, include_pvalue=true, do_sort=false, kwargs...)
-	U,p = mannwhitney_sparse(unblockify(matrix), groups; kwargs...)
+                            statistic_col="U", pvalue_col="pValue", z_col=nothing,
+                            include_statistic=true, include_pvalue=true, include_z=false,
+                            do_sort=true, kwargs...)
+	U,z,p = mannwhitney_sparse(unblockify(matrix), groups; kwargs...)
 	table = copy(var; copycols=do_sort)
 	include_statistic && insertcols!(table, statistic_col=>U; copycols=false)
+	include_z && insertcols!(table, z_col=>z; copycols=false)
 	include_pvalue && insertcols!(table, pvalue_col=>p; copycols=false)
-	do_sort && sort!(table, statistic_col; rev=true)
+	# Sort by |z| (two-sided significance) regardless of whether z is an output column.
+	do_sort && (table = table[sortperm(z; by=abs, rev=true), :])
 	table
 end

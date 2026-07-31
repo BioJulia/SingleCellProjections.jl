@@ -39,7 +39,7 @@ end
 Perform a Mann-Whitney U-test (a.k.a. Wilcoxon rank-sum test) between two groups of
 observations, for each variable. The U statistic is corrected for ties, and p-values are
 computed using a normal approximation. Returns a table with variable IDs, U statistics and
-p-values.
+p-values, sorted by significance (see below).
 
 `data` must contain a sparse matrix. It is recommended to first [`logtransform`](@ref) (or
 `tf_idf_transform`) the raw counts.
@@ -51,19 +51,27 @@ p-values.
 
 Keyword arguments:
 * `h1_missing=:skip` - `:skip` excludes `missing` values in `column`; `:error` throws if any are present.
-* `statistic_col="U"` / `pvalue_col="pValue"` - output column names (set to `nothing` to omit).
+* `statistic_col="U"` / `pvalue_col="pValue"` / `z_col=nothing` - output column names (set to `nothing` to omit; `z` is omitted by default).
+* `do_sort=true` - sort variables by `|z|` (most significant first).
+
+Results are sorted by the absolute standardized statistic `|z|`, where `z = (U - n1*n2/2)/σ`. This
+orders variables by significance without the underflow that sorting by `pValue` suffers (p-values
+collapse to `0` for strongly-separated variables). The signed `z` (available via `z_col`) is monotone
+with the p-value and also indicates the direction of the effect.
 
 The test is projectable: when projecting onto other data, the group labels resolved here are
 reused and the test is recomputed on the projected observations.
 
 See also [`ftest`](@ref), [`ttest`](@ref), [`logtransform`](@ref).
 """
-function mannwhitney(data, column, args...; statistic_col="U", pvalue_col="pValue", kwargs...)
+function mannwhitney(data, column, args...; statistic_col="U", pvalue_col="pValue", z_col=nothing, kwargs...)
 	# Translate a `nothing` column name (omit the column) into a flag here, at the API boundary:
 	# `nothing` cannot be stored in a job spec.
 	include_statistic = statistic_col !== nothing
 	include_pvalue = pvalue_col !== nothing
+	include_z = z_col !== nothing
 	create_job(Preprocess(Impl.mannwhitney), data, column, args...;
 	           statistic_col=something(statistic_col, "U"), pvalue_col=something(pvalue_col, "pValue"),
-	           include_statistic, include_pvalue, kwargs...)
+	           z_col=something(z_col, "z"),
+	           include_statistic, include_pvalue, include_z, kwargs...)
 end
