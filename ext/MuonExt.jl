@@ -5,7 +5,7 @@ using ReproducibleJobs: create_job, cached, prefetched, ChecksummedFilePath
 import SingleCellProjections as SCP
 # using SingleCellProjections
 using SingleCellProjections.Impl: DataMatrixFunction, Mat, Var, Obs, table_to_compound_result, table_from_compound_result, checksummedfilepath_job, prefixed_ids_job, compute_size_job
-import .SingleCellProjections.SCPCore
+import .SCP.SCPCore
 using DataFrames
 using SparseArrays: SparseMatrixCSC
 import LinearAlgebra
