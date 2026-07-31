@@ -5,27 +5,20 @@ using SingleCellProjections: SCPCore
 using .SCPCore: unblockify
 using ReproducibleJobs: fetch!
 using DataFrames
-using SparseArrays
+import HypothesisTests
 
 
-# Independent, dependency-free tied-rank Mann-Whitney U for group 1 (matches the U reported by the kernel).
-function _tiedrank(v)
-	p = sortperm(v)
-	r = zeros(Float64, length(v))
-	i = 1
-	while i <= length(v)
-		j = i
-		while j < length(v) && isequal(v[p[j+1]], v[p[i]]); j += 1; end
-		avg = (i+j)/2
-		for k in i:j; r[p[k]] = avg; end
-		i = j+1
-	end
-	r
-end
-function _u_ref(x, mask1, mask2)
-	r = _tiedrank(vcat(x[mask1], x[mask2]))
-	n1 = count(mask1)
-	sum(r[1:n1]) - n1*(n1+1)/2
+# Independent reference: per-variable Mann-Whitney U/z/p from HypothesisTests. `m.U` matches the
+# kernel's group-1 U and `m.sigma` its tie-corrected σ, so the signed z-score is
+# `(m.U - n1*n2/2)/m.sigma` (guarding the fully-tied σ==0 case to match the kernel).
+function _mw_ref(X, groups)
+	n1 = count(==(1), groups)
+	n2 = count(==(2), groups)
+	mw = [HypothesisTests.ApproximateMannWhitneyUTest(X[i, groups.==1], X[i, groups.==2]) for i in axes(X,1)]
+	U = getfield.(mw, :U)
+	z = [m.sigma > 0 ? (m.U - n1*n2/2)/m.sigma : 0.0 for m in mw]
+	p = HypothesisTests.pvalue.(mw)
+	U, z, p
 end
 
 
@@ -41,27 +34,22 @@ function run_mannwhitney_tests()
 		X = convert(Matrix{Float64}, unblockify(materialize(l)))
 		idcol = only(names(l.var, 1))
 
-		# reference U/p via the (trusted) kernel, but with an INDEPENDENTLY constructed groups vector
-		ref(groups) = SCPCore.mannwhitney_sparse(sparse(X), groups)
-
 		@testset "$desc" for (desc, args, groups) in (
 				("A vs B",       ("group", "A", "B"), [g=="A" ? 1 : g=="B" ? 2 : 0 for g in l.obs.group]),
 				("A vs rest",    ("group", "A"),      [g=="A" ? 1 : 2 for g in l.obs.group]),
 				("auto-detect",  ("group2",),         [isequal(g,"A") ? 1 : isequal(g,"B") ? 2 : 0 for g in l.obs.group2]),
 			)
+			U, z, p = _mw_ref(X, groups)
+
 			# do_sort=false keeps original variable order so it aligns with the reference
-			r = fetch!(SCP.mannwhitney(l_job, args...; do_sort=false))
-			U, _, p = ref(groups)
+			r = fetch!(SCP.mannwhitney(l_job, args...; do_sort=false, z_col="z"))
 
 			@test r isa DataFrame
-			@test names(r) == [idcol, "U", "pValue"]
+			@test names(r) == [idcol, "U", "z", "pValue"]
 			@test isequal(r[!, idcol], l.var[!, idcol])
 			@test r.U ≈ U
+			@test r.z ≈ z
 			@test r.pValue ≈ p
-
-			# spot-check U against a fully independent tied-rank computation
-			ind = 7
-			@test r.U[ind] ≈ _u_ref(X[ind, :], groups .== 1, groups .== 2)
 		end
 
 		@testset "column names" begin
@@ -79,7 +67,7 @@ function run_mannwhitney_tests()
 			# :skip (default) excludes missing; :error throws
 			r_skip = fetch!(SCP.mannwhitney(l_job, "group2", "A", "B"; do_sort=false))
 			groups = [isequal(g,"A") ? 1 : isequal(g,"B") ? 2 : 0 for g in l.obs.group2]
-			U, _, p = ref(groups)
+			U, _, p = _mw_ref(X, groups)
 			@test r_skip.U ≈ U
 			@test r_skip.pValue ≈ p
 			@test_throws Exception fetch!(SCP.mannwhitney(l_job, "group2", "A", "B"; h1_missing=:error))
@@ -87,7 +75,7 @@ function run_mannwhitney_tests()
 
 		@testset "z-score sorting and z_col" begin
 			groups = [g=="A" ? 1 : g=="B" ? 2 : 0 for g in l.obs.group]
-			U, z, p = ref(groups)
+			U, z, p = _mw_ref(X, groups)
 			perm = sortperm(abs.(z); rev=true) # |z| descending == significance order
 
 			# z_col adds a signed z column; results are sorted by |z| (most significant first)
