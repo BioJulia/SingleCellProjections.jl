@@ -108,6 +108,60 @@ function run_transform_tests()
 		end
 
 
+		@testset "tf_idf_transform scale_factor=$scale_factor T=$T" for scale_factor in (10_000, 1_000), T in (Float64,Float32)
+			T_args = T==Float64 ? () : (T,)
+			kwargs = scale_factor == 10_000 ? (;) : (;scale_factor)
+
+			idf = simple_idf(expected_mat)
+			X = T.(simple_tf_idf_transform(expected_mat, idf, scale_factor))
+
+			@testset "standard" begin
+				tf_job = SCP.tf_idf_transform(T_args..., counts_job; kwargs...)
+
+				@test forward!(SCP.get_obs(tf_job)) == forward!(SCP.get_obs(counts_job))
+
+				let tf = fetch!(tf_job)
+					@test unblockify(tf.matrix) ≈ X
+					@test eltype(unblockify(tf.matrix)) == T
+					@test !hasproperty(tf.var, "idf") # annotate defaults to false
+					test_dataframe_columns_identical("tf.var vs counts.var", tf.var, counts.var)
+					test_dataframe_columns_identical("tf.obs vs counts.obs", tf.obs, counts.obs)
+				end
+
+				# annotate adds the idf as a var annotation
+				let tf = fetch!(SCP.tf_idf_transform(T_args..., counts_job; annotate=true, kwargs...))
+					@test hasproperty(tf.var, "idf")
+					@test tf.var.idf ≈ idf
+				end
+
+				# Projection: idf is frozen from the base data and applied to the projected cells,
+				# NOT recomputed from the projected data.
+				p_job = SCP.project(tf_job, counts_job=>counts_sub_job)
+				@test forward!(SCP.get_obs(p_job)) == forward!(SCP.get_obs(counts_sub_job))
+
+				let p = fetch!(p_job)
+					Xs = T.(simple_tf_idf_transform(expected_mat[:,pbmc_subset_ind], idf, scale_factor))
+					@test unblockify(p.matrix) ≈ Xs
+					@test eltype(unblockify(p.matrix)) == T
+				end
+			end
+
+			# Projection onto a (scattered) variable subset: idf and the matrix rows must be remapped by ID.
+			@testset "var subset projection" begin
+				sub_job = SCP.filter_var("name"=>>("L"), counts_job)
+				var_mask = expected_var.name .> "L"
+
+				tf_job = SCP.tf_idf_transform(T_args..., counts_job; kwargs...)
+				p = fetch!(SCP.project(tf_job, counts_job=>sub_job))
+
+				Xref = T.(simple_tf_idf_transform(expected_mat[var_mask,:], idf[var_mask], scale_factor))
+				@test unblockify(p.matrix) ≈ Xref
+				@test eltype(unblockify(p.matrix)) == T
+				@test isequal(p.var.id, fetch!(sub_job).var.id)
+			end
+		end
+
+
 		@testset "sctransform T=$T annotate=$annotate" for T in (Float64,Float32), annotate in (false,true)
 			T_args = T==Float64 ? () : (T,)
 			kwargs = annotate ? (; annotate) : (;)

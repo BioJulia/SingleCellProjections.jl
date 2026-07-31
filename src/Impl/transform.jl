@@ -1,3 +1,18 @@
+function remap_var_ind(action::Projection, model_var_ids, var_ids)
+	ids_proj = intersect_ids_job(model_var_ids, action(var_ids))
+	indexin_job(ids_proj, model_var_ids; not_found=:error)
+end
+
+remap_var(::Eval, model_var, var_ids) = model_var
+remap_var(action::Projection, model_var, var_ids) =
+	getindex_job(model_var, prefetched(remap_var_ind(action, var_ids, var_ids)))
+create_remap_var_job(model_var, var_ids) = create_job(Projectable(remap_var), model_var, var_ids)
+
+
+# ------------------------------------------------------------------------------
+
+
+
 function logtransform_matrix(::Preprocessing, T, matrix; scale_factor)
 	hblock_map(matrix) do x
 		create_job(SCPCore.logtransform_matrix, T, x; scale_factor, __version=v"0.2.0")
@@ -74,13 +89,9 @@ function scparams(action::Action, matrix, var, var_ind; log_cell_counts)
 	if action isa Eval
 		return params
 	else#if actions is Projection
-		# We need to remap IDs
 		var_ids = SCP.id_column(var)
-		var_ids2 = action(var_ids)
-
 		param_ids = table_getindex_job(var_ids, var_ind) # The IDs represented in the params table
-		var_ids_proj = intersect_ids_job(param_ids, var_ids2)
-		var_ind_proj = indexin_job(var_ids_proj, param_ids; not_found=:error)
+		var_ind_proj = remap_var_ind(action, param_ids, var_ids)
 		return table_getindex_job(params, prefetched(var_ind_proj))
 	end
 end
@@ -173,3 +184,43 @@ sctransform(::Obs, ::DataType, counts; kwargs...) = SCP.get_obs(counts)
 
 
 
+
+
+# --- TF-IDF -------------------------------------------------------------------
+
+idf_job(rowsum; nobs) = create_job(SCPCore.compute_idf, rowsum; nobs, __version=v"0.1.0")
+
+
+function tf_idf_matrix_impl(::Preprocessing, T, matrix, idf, var_ind; scale_factor)
+	hblock_map(matrix) do x
+		create_job(SCPCore.tf_idf_matrix, T, x, idf, var_ind; scale_factor, __version=v"0.1.0")
+	end
+end
+function tf_idf_matrix_pr(action::Action, T, matrix, idf, var_ind; scale_factor)
+	create_job(Preprocess{false}(tf_idf_matrix_impl), T, action(matrix), action(idf), action(var_ind); scale_factor)
+end
+tf_idf_matrix_job(T, matrix, idf, var_ind; kwargs...) =
+	create_job(Projectable(tf_idf_matrix_pr), T, matrix, idf, var_ind; kwargs...)
+
+
+function tf_idf_transform(f::Union{Mat,Var}, ::Type{T}, counts; scale_factor=10_000, annotate=false) where T
+	matrix_job = SCP.get_matrix(counts)
+	var_job = SCP.get_var(counts)
+
+	# All variables are used, but we still need the index for its projection (`:intersect`) behavior.
+	var_ind = prefetched(create_find_matching_ind_job(:, var_job; project_ids=:intersect))
+
+	nobs = fetched(SCP.nobs(counts)) # base nobs, frozen - must **not** be affected by projection
+	rowsum = cached(counts_sum_impl_job(identity, matrix_job, :; dims=2))
+	idf = idf_job(rowsum; nobs)
+	idf = create_remap_var_job(idf, SCP.id_column(var_job))
+
+	if f isa Var
+		var_out = table_getindex_job(var_job, var_ind)
+		annotate && (var_out = SCP.add_column(var_out, "idf", idf))
+		return var_out
+	else # f isa Mat
+		return tf_idf_matrix_job(T, matrix_job, idf, var_ind; scale_factor)
+	end
+end
+tf_idf_transform(::Obs, ::DataType, counts; kwargs...) = SCP.get_obs(counts)
