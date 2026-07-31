@@ -177,11 +177,11 @@ sctransform(::Obs, ::DataType, counts; kwargs...) = SCP.get_obs(counts)
 
 # --- TF-IDF -------------------------------------------------------------------
 
-tf_idf_idf_job(rowsum; nobs) = create_job(SCPCore.tf_idf_idf, rowsum; nobs, __version=v"0.1.0")
+idf_job(rowsum; nobs) = create_job(SCPCore.compute_idf, rowsum; nobs, __version=v"0.1.0")
 
 # The idf vector is computed from the base data and frozen: under projection it is remapped to the
 # projected variables by ID (mirroring `scparams`), never recomputed.
-function tf_idf_idf_pr(action::Action, idf, var)
+function idf_pr(action::Action, idf, var) # idf_pr is badly named, it's about remapping - and can we share code with sctransform for this?
 	if action isa Eval
 		return idf
 	else#if action isa Projection
@@ -192,7 +192,7 @@ function tf_idf_idf_pr(action::Action, idf, var)
 		return getindex_job(idf, prefetched(ind_proj))
 	end
 end
-create_idf_job(idf, var) = create_job(Projectable(tf_idf_idf_pr), idf, var)
+create_idf_job(idf, var) = create_job(Projectable(idf_pr), idf, var)
 
 
 function tf_idf_matrix_impl(::Preprocessing, T, matrix, idf, var_ind; scale_factor)
@@ -216,7 +216,7 @@ function tf_idf_transform(f::Union{Mat,Var}, ::Type{T}, counts; scale_factor=10_
 
 	nobs = fetched(SCP.nobs(counts)) # base nobs, frozen - must **not** be affected by projection
 	rowsum = cached(counts_sum_impl_job(identity, matrix_job, :; dims=2))
-	idf = create_idf_job(tf_idf_idf_job(rowsum; nobs), var_job)
+	idf = create_idf_job(idf_job(rowsum; nobs), var_job) # The naming makes this impossible to understand
 
 	if f isa Var
 		var_out = table_getindex_job(var_job, var_ind)

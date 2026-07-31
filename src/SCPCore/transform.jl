@@ -189,7 +189,7 @@ logtransform_matrix(X; kwargs...) = logtransform_matrix(Float64, X; kwargs...)
 # --- TF-IDF -------------------------------------------------------------------
 
 # Inverse document frequency: number of observations divided by the (clamped) total count per variable.
-tf_idf_idf(rowsum; nobs) = nobs ./ max.(1, rowsum)
+compute_idf(rowsum; nobs) = nobs ./ max.(1, rowsum)
 
 # TF-IDF transform of a (block of a) count matrix, restricted to the variables in `var_ind`.
 # `idf` is aligned to the selected rows. Formula: log(1 + scale_factor * tf * idf), with term
