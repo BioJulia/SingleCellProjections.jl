@@ -1,3 +1,15 @@
+# Index into a per-variable quantity (stored against `model_var_ids`) that aligns it to the
+# projected variables, given a projection `action` on the base dataset's `var_ids`.
+function remap_var_ind(action::Projection, model_var_ids, var_ids)
+	ids_proj = intersect_ids_job(model_var_ids, action(var_ids))
+	indexin_job(ids_proj, model_var_ids; not_found=:error)
+end
+
+
+# ------------------------------------------------------------------------------
+
+
+
 function logtransform_matrix(::Preprocessing, T, matrix; scale_factor)
 	hblock_map(matrix) do x
 		create_job(SCPCore.logtransform_matrix, T, x; scale_factor, __version=v"0.2.0")
@@ -74,13 +86,9 @@ function scparams(action::Action, matrix, var, var_ind; log_cell_counts)
 	if action isa Eval
 		return params
 	else#if actions is Projection
-		# We need to remap IDs
 		var_ids = SCP.id_column(var)
-		var_ids2 = action(var_ids)
-
 		param_ids = table_getindex_job(var_ids, var_ind) # The IDs represented in the params table
-		var_ids_proj = intersect_ids_job(param_ids, var_ids2)
-		var_ind_proj = indexin_job(var_ids_proj, param_ids; not_found=:error)
+		var_ind_proj = remap_var_ind(action, param_ids, var_ids)
 		return table_getindex_job(params, prefetched(var_ind_proj))
 	end
 end
@@ -186,9 +194,7 @@ function idf_pr(action::Action, idf, var) # idf_pr is badly named, it's about re
 		return idf
 	else#if action isa Projection
 		var_ids = SCP.id_column(var)
-		var_ids2 = action(var_ids) # IDs from the projected dataset
-		ids_proj = intersect_ids_job(var_ids, var_ids2)
-		ind_proj = indexin_job(ids_proj, var_ids; not_found=:error)
+		ind_proj = remap_var_ind(action, var_ids, var_ids)
 		return getindex_job(idf, prefetched(ind_proj))
 	end
 end
