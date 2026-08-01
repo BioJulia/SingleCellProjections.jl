@@ -8,12 +8,25 @@ model `h0`. Returns a table with test statistics and p-values.
 covariate description. The covariate type (categorical/numerical) is normally autodetected. With
 a single categorical covariate, this is equivalent to a one-way ANOVA.
 
+Keyword arguments:
+* `statistic_col="F"` / `pvalue_col="pValue"` - output column names (set to `nothing` to omit).
+* `do_sort=true` - sort variables by the `F` statistic (most significant first).
+
 (TODO: Examples.)
 
 See also [`ttest`](@ref), [`normalize_matrix`](@ref).
 """
-function ftest(data, h1; kwargs...)
-	create_job(Preprocess(Impl.ftest), data, h1; kwargs...)
+function ftest(data, h1; statistic_col="F", pvalue_col="pValue", kwargs...)
+	col_kwargs = (; )
+
+	if statistic_col !== nothing
+		col_kwargs = (; col_kwargs..., statistic_col)
+	end
+	if pvalue_col !== nothing
+		col_kwargs = (; col_kwargs..., pvalue_col)
+	end
+
+	create_job(Preprocess(Impl.ftest), data, h1; col_kwargs..., kwargs...)
 end
 
 
@@ -24,12 +37,28 @@ Perform a t-test for each variable testing the effect of `h1` while controlling 
 Returns a table with test statistics and p-values. `h1` must be a numerical covariate or a
 two-group covariate.
 
+Keyword arguments:
+* `statistic_col="t"` / `pvalue_col="pValue"` / `difference_col="difference"` - output column names (set to `nothing` to omit).
+* `do_sort=true` - sort variables by `|t|` (most significant first).
+
 (TODO: Examples.)
 
 See also [`ftest`](@ref), [`normalize_matrix`](@ref), [`twogroup_covariate`](@ref).
 """
-function ttest(data, h1; kwargs...)
-	create_job(Preprocess(Impl.ttest), data, h1; kwargs...)
+function ttest(data, h1; statistic_col="t", pvalue_col="pValue", difference_col="difference", kwargs...)
+	col_kwargs = (; )
+
+	if statistic_col !== nothing
+		col_kwargs = (; col_kwargs..., statistic_col)
+	end
+	if pvalue_col !== nothing
+		col_kwargs = (; col_kwargs..., pvalue_col)
+	end
+	if difference_col !== nothing
+		col_kwargs = (; col_kwargs..., difference_col)
+	end
+
+	create_job(Preprocess(Impl.ttest), data, h1; col_kwargs..., kwargs...)
 end
 
 
