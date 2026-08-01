@@ -157,7 +157,7 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	h1_cov_annot, h1_cov_desc = h1
 
 
-	center = center || (h1_cov_desc isa TwoGroupCovariateDesc) # Center if h1 requires it
+	center = center || (h1_cov_desc isa SCPCore.TwoGroupCovariateDesc) # Center if h1 requires it
 	if !center # Figure out if h0 requires centering
 		_, h0_cov_descs = setup_covariate_descriptions(obs, h0...)
 		center = fetched(has_centering_job(h0_cov_descs))

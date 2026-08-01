@@ -47,10 +47,13 @@ end
 
 
 function twogroup_values(v, group_a, group_b=nothing)
+	# `group_a` is encoded as the higher value (2). Downstream (t-test) treats a higher covariate as
+	# the positive direction, so this makes the reported effect positive when group_a > group_b -
+	# i.e. `twogroup_covariate(a, b)` reads as a two-sample test of `a` vs `b`.
 	if group_b === nothing
-		ifelse.(isequal.(v, group_a), 1, 2)
+		ifelse.(isequal.(v, group_a), 2, 1)
 	else
-		groups = [group_a, group_b]
+		groups = [group_b, group_a] # group_b -> 1, group_a -> 2
 		ind = indexin(v, groups)
 		if any(isnothing, ind)
 			new_values = setdiff(unique(v), groups)

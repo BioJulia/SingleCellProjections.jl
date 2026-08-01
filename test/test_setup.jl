@@ -134,7 +134,9 @@ function ttest_ground_truth(A, obs, formula, group_a; center)
 		p[i] = table.cols[table.pvalcol][end]
 		β[i] = table.cols[1][end]
 
-		# a little hack since we cannot control which group is outputted by lm/coeftable
+		# Normalize the sign to match `twogroup_covariate(group_a, group_b)`: t>0 when group_a > group_b
+		# (a two-sample test of a vs b). lm/coeftable reports whichever level is alphabetically last, so
+		# flip when that is not `group_a`.
 		if group_a !== nothing && !endswith(table.rownms[end], ": $group_a")
 			t[i] = -t[i]
 			β[i] = -β[i]
@@ -185,8 +187,8 @@ function ftest_ground_truth(A, obs, h1_formula, h0_formula)
 end
 function ftest_ground_truth(A, obs, h1::Tuple, h0::Tuple)
 	# simple unwrapping of Covariates, does not care about types or two-groups
-	h1 = (x->x isa CovariateDesc ? x.src : x).(h1)
-	h0 = (x->x isa CovariateDesc ? x.src : x).(h0)
+	h1 = (x->x isa SCPCore.AbstractCovariateDesc ? x.src : x).(h1)
+	h0 = (x->x isa SCPCore.AbstractCovariateDesc ? x.src : x).(h0)
 
 	all(in(h0), h1) && return zeros(size(A,1)), ones(size(A,1))
 
