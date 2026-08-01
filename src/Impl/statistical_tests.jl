@@ -67,7 +67,7 @@ function ftest_table_pr(action::Action, matrix, var, h1_design, h0_design; do_so
 	matrix = action(matrix)
 	ss = row_sum_squared_job(matrix)
 	cached(create_job(SCPCore.ftest_table,
-	                  matrix, action(var), action(h1_design), action(h0_design), ss;
+	                  matrix, action(var), ss, action(h1_design), action(h0_design);
 	                  do_sort, kwargs...,
 	                  __version=v"0.0.1"))
 end
@@ -90,6 +90,7 @@ function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	extra_kwargs = max_categories === nothing ? (;) : (; max_categories)
 
 	# Hmm. We want h1 to be mean-zero (if center=true), but we don't want the intercept column.
+	# TODO: Look into has_centering_job fix used by ttest
 	h1_design = SCP.designmatrix(data, h1...; center=false, extra_kwargs...)
 	h0_design = SCP.designmatrix(data, h0...; center, extra_kwargs...)
 
@@ -115,9 +116,9 @@ function ttest_table_pr(action::Action, matrix, var, h1_design, h1_scale, h0_des
 	matrix = action(matrix)
 	ss = row_sum_squared_job(matrix)
 	cached(create_job(SCPCore.ttest_table,
-	                  matrix, action(var),
+	                  matrix, action(var), ss,
 	                  action(h1_design), prefetched(action(h1_scale)),
-	                  action(h0_design), ss;
+	                  action(h0_design);
 	                  do_sort, kwargs...,
 	                  __version=v"0.0.1"))
 end
@@ -158,13 +159,24 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 
 
 	center = center || (h1_cov_desc isa SCPCore.TwoGroupCovariateDesc) # Center if h1 requires it
+
+
+	has_h0 = center || !isempty(h0) # NB: We can check this before center becomes a job
+
+
 	if !center # Figure out if h0 requires centering
 		_, h0_cov_descs = setup_covariate_descriptions(obs, h0...)
 		center = fetched(has_centering_job(h0_cov_descs))
 	end
 
 
-	h0_design = SCP.designmatrix(data, h0...; center, extra_kwargs...)
+	if has_h0
+		h0_design = SCP.designmatrix(data, h0...; center, extra_kwargs...)
+		h0_design_mat = SCP.get_matrix(h0_design)
+		h0_args = (h0_design_mat,)
+	else
+		h0_args = ()
+	end
 
 	h1_cov_data = _extract_data_job(obs, h1_cov_annot)
 	ms = mean_and_scale_job(h1_cov_data, h1_cov_desc; center)
@@ -180,7 +192,8 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 		table_var = SCP.table_hcat(table_var, SCP.get_columns(var, var_cols...))
 	end
 
-	ttest_table_job(matrix, table_var, h1_design_mat, h1_scale, SCP.get_matrix(h0_design); do_sort, kwargs...)
+	# ttest_table_job(matrix, table_var, h1_design_mat, h1_scale, SCP.get_matrix(h0_design); do_sort, kwargs...)
+	ttest_table_job(matrix, table_var, h1_design_mat, h1_scale, h0_args...; do_sort, kwargs...)
 end
 
 

@@ -19,7 +19,7 @@ function orthonormal_design2(X, Q0=nothing; rtol=sqrt(eps()))
 end
 
 
-function _linear_test2(A, h1, h0, ssA)
+function _linear_test2(A, ssA, h1, h0)
 	@assert size(A,2) == size(h1,1)
 	@assert size(A,2) == size(h0,1)
 
@@ -53,10 +53,10 @@ end
 
 
 
-function ftest_table(matrix, var::DataFrame, h1, h0, ssA;
+function ftest_table(matrix, var::DataFrame, ssA, h1, h0;
                      statistic_col=nothing, pvalue_col=nothing,
                      do_sort=true)
-	ssExplained, ssUnexplained, rank0, rank1, _, _ = _linear_test2(matrix, h1, h0, ssA)
+	ssExplained, ssUnexplained, rank0, rank1, _, _ = _linear_test2(matrix, ssA, h1, h0)
 	N = size(matrix,2)
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
@@ -80,10 +80,10 @@ function ftest_table(matrix, var::DataFrame, h1, h0, ssA;
 end
 
 
-function ttest_table(matrix, var, h1, h1_scale, h0, ssA;
+function ttest_table(matrix, var, ssA, h1, h1_scale, h0;
                      statistic_col=nothing, pvalue_col=nothing, difference_col=nothing,
                      do_sort=true)
-	_, ssUnexplained, rank0, rank1, β1, scale = _linear_test2(matrix, h1, h0, ssA)
+	_, ssUnexplained, rank0, rank1, β1, scale = _linear_test2(matrix, ssA, h1, h0)
 	N = size(matrix,2)
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
