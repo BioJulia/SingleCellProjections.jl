@@ -197,6 +197,6 @@ function mannwhitney_table(matrix, var, groups;
 	z_col !== nothing && insertcols!(table, z_col=>z; copycols=false)
 	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
 	# Sort by |z| (two-sided significance) regardless of whether z is an output column.
-	do_sort && (table = table[sortperm(z; by=abs, rev=true), :])
+	do_sort && permute!(table, sortperm(z; by=abs, rev=true))
 	table
 end

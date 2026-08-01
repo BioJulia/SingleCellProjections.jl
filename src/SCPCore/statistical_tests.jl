@@ -77,7 +77,7 @@ function ftest_table(matrix, var::DataFrame, h1, h0;
 	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
 
 	# Sort by F (larger = more significant) regardless of whether the F column is added.
-	do_sort && (table = table[sortperm(F; rev=true), :])
+	do_sort && permute!(table, sortperm(F; rev=true))
 
 	table
 end
@@ -108,7 +108,7 @@ function ttest_table(matrix, var, h1, h1_scale, h0;
 	difference_col !== nothing && insertcols!(table, difference_col=>d; copycols=false)
 
 	# Sort by |t| (larger = more significant) regardless of whether the t column is added.
-	do_sort && (table = table[sortperm(t; by=abs, rev=true), :])
+	do_sort && permute!(table, sortperm(t; by=abs, rev=true))
 
 	table
 end
