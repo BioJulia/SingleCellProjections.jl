@@ -64,8 +64,10 @@ end
 
 
 function ftest_table_pr(action::Action, matrix, var, h1_design, h0_design; do_sort, kwargs...)
+	matrix = action(matrix)
+	ss = row_sum_squared_job(matrix)
 	cached(create_job(SCPCore.ftest_table,
-	                  action(matrix), action(var), action(h1_design), action(h0_design);
+	                  matrix, action(var), action(h1_design), action(h0_design), ss;
 	                  do_sort, kwargs...,
 	                  __version=v"0.0.1"))
 end
@@ -110,10 +112,12 @@ end
 
 
 function ttest_table_pr(action::Action, matrix, var, h1_design, h1_scale, h0_design; do_sort, kwargs...)
+	matrix = action(matrix)
+	ss = row_sum_squared_job(matrix)
 	cached(create_job(SCPCore.ttest_table,
-	                  action(matrix), action(var),
+	                  matrix, action(var),
 	                  action(h1_design), prefetched(action(h1_scale)),
-	                  action(h0_design);
+	                  action(h0_design), ss;
 	                  do_sort, kwargs...,
 	                  __version=v"0.0.1"))
 end

@@ -19,7 +19,7 @@ function orthonormal_design2(X, Q0=nothing; rtol=sqrt(eps()))
 end
 
 
-function _linear_test2(A, h1, h0)
+function _linear_test2(A, h1, h0, ssA)
 	@assert size(A,2) == size(h1,1)
 	@assert size(A,2) == size(h0,1)
 
@@ -29,14 +29,11 @@ function _linear_test2(A, h1, h0)
 	# Q1_pre = orthonormal_design2(h1, Q0)
 	# Q1 = hcat(Q0,Q1_pre) # The purpose of this is to gain numerical accuracy - does it help?
 
-	# A = data.matrix
-
 	# fit models
 	β0 = A*Q0
 	β1 = A*Q1
 
-	# compute residuals
-	ssA = variable_sum_squares(A)
+	# `ssA` (the per-variable sum of squares of A) is computed as a separate cached job and passed in.
 
 	ssβ0 = vec(sum(abs2, β0; dims=2))
 	ssβ1 = vec(sum(abs2, β1; dims=2))
@@ -56,10 +53,10 @@ end
 
 
 
-function ftest_table(matrix, var::DataFrame, h1, h0;
+function ftest_table(matrix, var::DataFrame, h1, h0, ssA;
                      statistic_col=nothing, pvalue_col=nothing,
                      do_sort=true)
-	ssExplained, ssUnexplained, rank0, rank1, _, _ = _linear_test2(matrix, h1, h0)
+	ssExplained, ssUnexplained, rank0, rank1, _, _ = _linear_test2(matrix, h1, h0, ssA)
 	N = size(matrix,2)
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
@@ -83,10 +80,10 @@ function ftest_table(matrix, var::DataFrame, h1, h0;
 end
 
 
-function ttest_table(matrix, var, h1, h1_scale, h0;
+function ttest_table(matrix, var, h1, h1_scale, h0, ssA;
                      statistic_col=nothing, pvalue_col=nothing, difference_col=nothing,
                      do_sort=true)
-	_, ssUnexplained, rank0, rank1, β1, scale = _linear_test2(matrix, h1, h0)
+	_, ssUnexplained, rank0, rank1, β1, scale = _linear_test2(matrix, h1, h0, ssA)
 	N = size(matrix,2)
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
