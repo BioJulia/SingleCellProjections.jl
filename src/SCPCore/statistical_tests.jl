@@ -19,33 +19,25 @@ function orthonormal_design2(X, Q0=nothing; rtol=sqrt(eps()))
 end
 
 
-function _linear_test2(A, ssA, h1, h0)
+function _linear_test2(A, ssA, h1, h0=nothing)
 	@assert size(A,2) == size(h1,1)
-	@assert size(A,2) == size(h0,1)
+	@assert h0 === nothing || size(A,2) == size(h0,1)
 
-	# TODO: Support no null model? (not even intercept)
-	Q0,_ = orthonormal_design2(h0)
-	Q1,scale = orthonormal_design2(h1, Q0)
-	# Q1_pre = orthonormal_design2(h1, Q0)
-	# Q1 = hcat(Q0,Q1_pre) # The purpose of this is to gain numerical accuracy - does it help?
+	# `h0 === nothing` means there is no null model (not even an intercept).
+	Q0 = h0 === nothing ? nothing : orthonormal_design2(h0)[1]
+	Q1,scale = orthonormal_design2(h1, Q0) # orthonormal_design2 skips orthogonalization when Q0===nothing
 
 	# fit models
-	β0 = A*Q0
 	β1 = A*Q1
 
 	# `ssA` (the per-variable sum of squares of A) is computed as a separate cached job and passed in.
 
-	ssβ0 = vec(sum(abs2, β0; dims=2))
+	ssβ0 = Q0 === nothing ? 0.0 : vec(sum(abs2, A*Q0; dims=2))
 	ssβ1 = vec(sum(abs2, β1; dims=2))
 
-	# ssExplained = ssβ1 - ssβ0
-	# ssUnexplained = ssA - ssβ1
-	# rank0 = size(Q0,2)
-	# rank1 = size(Q1,2)
-
 	ssExplained = max.(0.0, ssβ1)
-	ssUnexplained = max.(0.0, ssA - ssβ1 - ssβ0)
-	rank0 = size(Q0,2)
+	ssUnexplained = max.(0.0, ssA .- ssβ1 .- ssβ0)
+	rank0 = Q0 === nothing ? 0 : size(Q0,2)
 	rank1 = size(Q1,2)+rank0
 
 	ssExplained, ssUnexplained, rank0, rank1, β1, scale
@@ -53,7 +45,7 @@ end
 
 
 
-function ftest_table(matrix, var::DataFrame, ssA, h1, h0;
+function ftest_table(matrix, var::DataFrame, ssA, h1, h0=nothing;
                      statistic_col=nothing, pvalue_col=nothing,
                      do_sort=true)
 	ssExplained, ssUnexplained, rank0, rank1, _, _ = _linear_test2(matrix, ssA, h1, h0)
@@ -80,7 +72,7 @@ function ftest_table(matrix, var::DataFrame, ssA, h1, h0;
 end
 
 
-function ttest_table(matrix, var, ssA, h1, h1_scale, h0;
+function ttest_table(matrix, var, ssA, h1, h1_scale, h0=nothing;
                      statistic_col=nothing, pvalue_col=nothing, difference_col=nothing,
                      do_sort=true)
 	_, ssUnexplained, rank0, rank1, β1, scale = _linear_test2(matrix, ssA, h1, h0)

@@ -63,17 +63,17 @@ end
 
 
 
-function ftest_table_pr(action::Action, matrix, var, h1_design, h0_design; do_sort, kwargs...)
+function ftest_table_pr(action::Action, matrix, var, h1_design, h0_design...; do_sort, kwargs...)
 	matrix = action(matrix)
 	ss = row_sum_squared_job(matrix)
 	cached(create_job(SCPCore.ftest_table,
-	                  matrix, action(var), ss, action(h1_design), action(h0_design);
+	                  matrix, action(var), ss, action(h1_design), action.(h0_design)...;
 	                  do_sort, kwargs...,
 	                  __version=v"0.0.1"))
 end
 
-ftest_table_job(matrix, var, h1_design, h0_design; kwargs...) =
-	create_job(Projectable(ftest_table_pr), matrix, var, h1_design, h0_design; kwargs...)
+ftest_table_job(matrix, var, h1_design, h0_design...; kwargs...) =
+	create_job(Projectable(ftest_table_pr), matrix, var, h1_design, h0_design...; kwargs...)
 
 
 function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=nothing, h1_missing=:skip, h0_missing=:error, var_cols=nothing, do_sort=true, kwargs...)
@@ -92,7 +92,11 @@ function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	# Hmm. We want h1 to be mean-zero (if center=true), but we don't want the intercept column.
 	# TODO: Look into has_centering_job fix used by ttest
 	h1_design = SCP.designmatrix(data, h1...; center=false, extra_kwargs...)
-	h0_design = SCP.designmatrix(data, h0...; center, extra_kwargs...)
+
+	# No null model when center=false and h0 is empty (avoid an empty design matrix). `center` is a
+	# plain Bool here (unlike ttest, ftest never turns it into a job).
+	has_h0 = center || !isempty(h0)
+	h0_args = has_h0 ? (SCP.get_matrix(SCP.designmatrix(data, h0...; center, extra_kwargs...)),) : ()
 
 	matrix = SCP.get_matrix(data)
 
@@ -103,7 +107,7 @@ function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 		table_var = SCP.table_hcat(table_var, SCP.get_columns(var, var_cols...))
 	end
 
-	ftest_table_job(matrix, table_var, SCP.get_matrix(h1_design), SCP.get_matrix(h0_design); do_sort, kwargs...)
+	ftest_table_job(matrix, table_var, SCP.get_matrix(h1_design), h0_args...; do_sort, kwargs...)
 end
 
 
@@ -112,19 +116,19 @@ end
 
 
 
-function ttest_table_pr(action::Action, matrix, var, h1_design, h1_scale, h0_design; do_sort, kwargs...)
+function ttest_table_pr(action::Action, matrix, var, h1_design, h1_scale, h0_design...; do_sort, kwargs...)
 	matrix = action(matrix)
 	ss = row_sum_squared_job(matrix)
 	cached(create_job(SCPCore.ttest_table,
 	                  matrix, action(var), ss,
 	                  action(h1_design), prefetched(action(h1_scale)),
-	                  action(h0_design);
+	                  action.(h0_design)...;
 	                  do_sort, kwargs...,
 	                  __version=v"0.0.1"))
 end
 
-ttest_table_job(matrix, var, h1_design, h1_scale, h0_design; kwargs...) =
-	create_job(Projectable(ttest_table_pr), matrix, var, h1_design, h1_scale, h0_design; kwargs...)
+ttest_table_job(matrix, var, h1_design, h1_scale, h0_design...; kwargs...) =
+	create_job(Projectable(ttest_table_pr), matrix, var, h1_design, h1_scale, h0_design...; kwargs...)
 
 
 

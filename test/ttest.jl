@@ -77,6 +77,16 @@ function run_ttest_tests()
 			@test names(r) == [idcol, "t", "pValue"]
 		end
 
+		@testset "center=false" begin
+			# no intercept and no h0 (null model)
+			gtT, gtP, gtβ = ttest_ground_truth(X, obs, "value", (); center=false)
+			r = fetch!(SCP.ttest(l_job, "value"; center=false, do_sort=false))
+			@test names(r) == [idcol, "t", "pValue", "difference"]
+			@test r.t[nzmask] ≈ gtT[nzmask]
+			@test r.pValue[nzmask] ≈ gtP[nzmask]
+			@test r.difference[nzmask] ≈ gtβ[nzmask]
+		end
+
 		@testset "sorting" begin
 			ru = fetch!(SCP.ttest(l_job, "value"; do_sort=false))
 			rs = fetch!(SCP.ttest(l_job, "value")) # do_sort=true (default)
