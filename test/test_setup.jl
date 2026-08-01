@@ -176,24 +176,38 @@ function ftest_ground_truth(A, obs, h1_formula, h0_formula)
 	df.y = zeros(size(A,2))
 	for i in 1:size(A,1)
 		df.y = A[i,:]
-		h0 = lm(h0_formula, df).model # This includes intercept by default.
-		h1 = lm(h1_formula, df).model # (Not posible to turn off?)
-		ft = GLM.ftest(h0, h1)
-		F[i] = ft.fstat[end]
-		p[i] = ft.pval[end]
+		if h0_formula === nothing
+			# TODO: Can we do this in a better way?
+			# No null model (not even an intercept): F-test of h1 (fit without intercept) vs y ~ 0.
+			# GLM.ftest requires an intercept, so compute the F statistic and p-value directly.
+			X1 = modelmatrix(h1_formula, df)
+			h1 = lm(X1, df.y)
+			ν1 = size(X1,2)              # rank(h1); the null model has rank 0
+			ν2 = GLM.dof_residual(h1)        # N - rank(h1)
+			ss1 = GLM.deviance(h1)           # residual SS of h1
+			ss0 = sum(abs2, df.y)        # residual SS of the y~0 null model
+			F[i] = max(0, ((ss0 - ss1)/ν1) / (ss1/ν2))
+			p[i] = GLM.ccdf(GLM.FDist(ν1,ν2), F[i])
+		else
+			h0 = lm(h0_formula, df).model # This includes intercept by default.
+			h1 = lm(h1_formula, df).model # (Not posible to turn off?)
+			ft = GLM.ftest(h0, h1)
+			F[i] = ft.fstat[end]
+			p[i] = ft.pval[end]
+		end
 	end
 
 	F,p
 end
-function ftest_ground_truth(A, obs, h1::Tuple, h0::Tuple)
+function ftest_ground_truth(A, obs, h1::Tuple, h0::Tuple; center=true)
 	# simple unwrapping of Covariates, does not care about types or two-groups
 	h1 = (x->x isa SCPCore.AbstractCovariateDesc ? x.src : x).(h1)
 	h0 = (x->x isa SCPCore.AbstractCovariateDesc ? x.src : x).(h0)
 
 	all(in(h0), h1) && return zeros(size(A,1)), ones(size(A,1))
 
-	h1_formula = _formula(h0..., h1...)
-	h0_formula = _formula(h0...)
+	h1_formula = _formula(h0..., h1...; center)
+	h0_formula = _formula(h0...; center) # `nothing` when center=false and h0 is empty (no null model)
 	return ftest_ground_truth(A, obs, h1_formula, h0_formula)
 end
 

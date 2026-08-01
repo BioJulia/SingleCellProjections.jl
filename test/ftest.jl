@@ -75,11 +75,12 @@ function run_ftest_tests()
 		end
 
 		@testset "center=false" begin
-			# single numerical covariate, no intercept and no h0 (null model) -> F == t^2
-			gtT, _ = ttest_ground_truth(X, obs, "value", (); center=false)
+			# no intercept and no h0 (null model)
+			gtF, gtP = ftest_ground_truth(X, obs, ("value",), (); center=false)
 			r = fetch!(SCP.ftest(l_job, "value"; center=false, do_sort=false))
 			@test names(r) == [idcol, "F", "pValue"]
-			@test r.F[nzmask] ≈ (gtT.^2)[nzmask]
+			@test r.F[nzmask] ≈ gtF[nzmask]
+			@test r.pValue[nzmask] ≈ gtP[nzmask]
 		end
 
 		@testset "sorting" begin
