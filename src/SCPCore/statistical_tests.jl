@@ -56,9 +56,9 @@ end
 
 
 
-function ftest_table2(matrix, var::DataFrame, h1, h0;
-                      statistic_col="F", pvalue_col="pValue",
-                      do_sort=true)
+function ftest_table(matrix, var::DataFrame, h1, h0;
+                     statistic_col="F", pvalue_col="pValue",
+                     do_sort=true)
 	ssExplained, ssUnexplained, rank0, rank1, _, _ = _linear_test2(matrix, h1, h0)
 	N = size(matrix,2)
 	ν1 = (rank1-rank0)
@@ -82,9 +82,9 @@ function ftest_table2(matrix, var::DataFrame, h1, h0;
 end
 
 
-function ttest_table2(matrix, var, h1, h1_scale, h0;
-                      statistic_col="t", pvalue_col="pValue", difference_col="difference",
-                      do_sort=true)
+function ttest_table(matrix, var, h1, h1_scale, h0;
+                     statistic_col="t", pvalue_col="pValue", difference_col="difference",
+                     do_sort=true)
 	_, ssUnexplained, rank0, rank1, β1, scale = _linear_test2(matrix, h1, h0)
 	N = size(matrix,2)
 	ν1 = (rank1-rank0)

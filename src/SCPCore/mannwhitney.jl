@@ -176,7 +176,7 @@ end
 
 
 """
-	mannwhitney_table2(matrix, var, groups; statistic_col="U", pvalue_col="pValue", z_col=nothing, do_sort=true, kwargs...)
+	mannwhitney_table(matrix, var, groups; statistic_col="U", pvalue_col="pValue", z_col=nothing, do_sort=true, kwargs...)
 
 Compute the Mann-Whitney U-test for each variable (row of the sparse `matrix`) given a
 `groups` vector (see [`mannwhitney_groups`](@ref)), and return a copy of the `var` table with
@@ -187,9 +187,9 @@ p-value but never underflows; when `do_sort`, rows are sorted by `|z|` (most sig
 whether or not the `z` column is included. Each of `statistic_col`/`pvalue_col`/`z_col` names an
 output column, or omits it when set to `nothing` (`z` is omitted by default).
 """
-function mannwhitney_table2(matrix, var, groups;
-                            statistic_col="U", pvalue_col="pValue", z_col=nothing,
-                            do_sort=true, kwargs...)
+function mannwhitney_table(matrix, var, groups;
+                           statistic_col="U", pvalue_col="pValue", z_col=nothing,
+                           do_sort=true, kwargs...)
 	U,z,p = mannwhitney_sparse(unblockify(matrix), groups; kwargs...)
 	table = copy(var; copycols=do_sort)
 	statistic_col !== nothing && insertcols!(table, statistic_col=>U; copycols=false)

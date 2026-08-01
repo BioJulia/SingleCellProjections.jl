@@ -64,10 +64,10 @@ end
 
 
 function ftest_table_pr(action::Action, matrix, var, h1_design, h0_design; do_sort)
-	cached(create_job(SCPCore.ftest_table2,
-	                   action(matrix), action(var), action(h1_design), action(h0_design);
-	                   do_sort,
-	                   __version=v"0.0.1"))
+	cached(create_job(SCPCore.ftest_table,
+	                  action(matrix), action(var), action(h1_design), action(h0_design);
+	                  do_sort,
+	                  __version=v"0.0.1"))
 end
 
 ftest_table_job(matrix, var, h1_design, h0_design; kwargs...) =
@@ -110,12 +110,12 @@ end
 
 
 function ttest_table_pr(action::Action, matrix, var, h1_design, h1_scale, h0_design; do_sort)
-	cached(create_job(SCPCore.ttest_table2,
-	                   action(matrix), action(var),
-	                   action(h1_design), prefetched(action(h1_scale)),
-	                   action(h0_design);
-	                   do_sort,
-	                   __version=v"0.0.1"))
+	cached(create_job(SCPCore.ttest_table,
+	                  action(matrix), action(var),
+	                  action(h1_design), prefetched(action(h1_scale)),
+	                  action(h0_design);
+	                  do_sort,
+	                  __version=v"0.0.1"))
 end
 
 ttest_table_job(matrix, var, h1_design, h1_scale, h0_design; kwargs...) =
@@ -193,7 +193,7 @@ mannwhitney_groups_job(cov_data, group_labels...; kwargs...) =
 
 
 mannwhitney_table_pr(action::Action, matrix, var, groups; kwargs...) =
-	cached(create_job(SCPCore.mannwhitney_table2, action(matrix), action(var), action(groups); kwargs..., __version=v"0.0.1"))
+	cached(create_job(SCPCore.mannwhitney_table, action(matrix), action(var), action(groups); kwargs..., __version=v"0.0.1"))
 
 mannwhitney_table_job(matrix, var, groups; kwargs...) =
 	create_job(Projectable(mannwhitney_table_pr), matrix, var, groups; kwargs...)
