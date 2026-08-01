@@ -64,14 +64,6 @@ reused and the test is recomputed on the projected observations.
 
 See also [`ftest`](@ref), [`ttest`](@ref), [`logtransform`](@ref).
 """
-function mannwhitney(data, column, args...; statistic_col="U", pvalue_col="pValue", z_col=nothing, kwargs...)
-	# Translate a `nothing` column name (omit the column) into a flag here, at the API boundary:
-	# `nothing` cannot be stored in a job spec.
-	include_statistic = statistic_col !== nothing
-	include_pvalue = pvalue_col !== nothing
-	include_z = z_col !== nothing
-	create_job(Preprocess(Impl.mannwhitney), data, column, args...;
-	           statistic_col=something(statistic_col, "U"), pvalue_col=something(pvalue_col, "pValue"),
-	           z_col=something(z_col, "z"),
-	           include_statistic, include_pvalue, include_z, kwargs...)
+function mannwhitney(data, column, args...; kwargs...)
+	create_job(Preprocess(Impl.mannwhitney), data, column, args...; kwargs...)
 end

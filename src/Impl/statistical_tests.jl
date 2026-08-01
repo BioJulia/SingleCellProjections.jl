@@ -200,7 +200,6 @@ mannwhitney_table_job(matrix, var, groups; kwargs...) =
 
 
 function mannwhitney(::Preprocessing, data, column, group_a=nothing, group_b=nothing;
-                     statistic_col="U", pvalue_col="pValue", include_statistic=true, include_pvalue=true,
                      h1_missing=:skip, do_sort=true, kwargs...)
 	@assert h1_missing in (:skip,:error)
 
@@ -223,7 +222,7 @@ function mannwhitney(::Preprocessing, data, column, group_a=nothing, group_b=not
 	matrix = SCP.get_matrix(data)
 	var = SCP.id_column(SCP.get_var(data))
 
-	mannwhitney_table_job(matrix, var, groups; statistic_col, pvalue_col, include_statistic, include_pvalue, do_sort, kwargs...)
+	mannwhitney_table_job(matrix, var, groups; do_sort, kwargs...)
 end
 
 
