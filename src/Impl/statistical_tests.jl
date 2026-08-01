@@ -193,7 +193,7 @@ mannwhitney_groups_job(cov_data, group_labels...; kwargs...) =
 
 
 mannwhitney_table_pr(action::Action, matrix, var, groups; kwargs...) =
-	cached(create_job(SCPCore.mannwhitney_table, action(matrix), action(var), action(groups); kwargs..., __version=v"0.0.1"))
+	cached(create_job(SCPCore.mannwhitney_table, action(matrix), action(var), action(groups); kwargs..., __version=v"0.0.2"))
 
 mannwhitney_table_job(matrix, var, groups; kwargs...) =
 	create_job(Projectable(mannwhitney_table_pr), matrix, var, groups; kwargs...)

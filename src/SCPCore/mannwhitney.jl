@@ -176,19 +176,20 @@ end
 
 
 """
-	mannwhitney_table(matrix, var, groups; statistic_col="U", pvalue_col="pValue", z_col=nothing, do_sort=true, kwargs...)
+	mannwhitney_table(matrix, var, groups; statistic_col=nothing, pvalue_col=nothing, z_col=nothing, do_sort=true, kwargs...)
 
 Compute the Mann-Whitney U-test for each variable (row of the sparse `matrix`) given a
-`groups` vector (see [`mannwhitney_groups`](@ref)), and return a copy of the `var` table with
-the U statistics, z-scores and p-values added. `matrix` must be sparse.
+`groups` vector (see [`mannwhitney_groups`](@ref)), and return a copy of the `var` table
+with columns added (see below). `matrix` must be sparse.
 
-The signed z-score `z = (U - n1*n2/2)/σ` is a standardized statistic that is monotone with the
-p-value but never underflows; when `do_sort`, rows are sorted by `|z|` (most significant first)
-whether or not the `z` column is included. Each of `statistic_col`/`pvalue_col`/`z_col` names an
-output column, or omits it when set to `nothing` (`z` is omitted by default).
+* `statistic_col` - The name of the statistic column, or `nothing` to omit.
+* `pvalue_col` - The name of the p-value column, or `nothing` to omit.
+* `z_col` - The name of the z-statistic column, or `nothing` to omit.
+* `do_sort` - If set to true, variables are sorted by `|z|` (most significant first). This is the same as sorting by p-value, but handles numerical issues better.
+
 """
 function mannwhitney_table(matrix, var, groups;
-                           statistic_col="U", pvalue_col="pValue", z_col=nothing,
+                           statistic_col=nothing, pvalue_col=nothing, z_col=nothing,
                            do_sort=true, kwargs...)
 	U,z,p = mannwhitney_sparse(unblockify(matrix), groups; kwargs...)
 	table = copy(var; copycols=do_sort)

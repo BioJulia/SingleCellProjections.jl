@@ -64,6 +64,18 @@ reused and the test is recomputed on the projected observations.
 
 See also [`ftest`](@ref), [`ttest`](@ref), [`logtransform`](@ref).
 """
-function mannwhitney(data, column, args...; kwargs...)
-	create_job(Preprocess(Impl.mannwhitney), data, column, args...; kwargs...)
+function mannwhitney(data, column, args...; statistic_col="U", pvalue_col="pValue", z_col=nothing, kwargs...)
+	col_kwargs = (; )
+
+	if statistic_col !== nothing
+		col_kwargs = (; col_kwargs..., statistic_col)
+	end
+	if pvalue_col !== nothing
+		col_kwargs = (; col_kwargs..., pvalue_col)
+	end
+	if z_col !== nothing
+		col_kwargs = (; col_kwargs..., z_col)
+	end
+
+	create_job(Preprocess(Impl.mannwhitney), data, column, args...; col_kwargs..., kwargs...)
 end
