@@ -221,7 +221,7 @@ mannwhitney_table_job(matrix, var, groups; kwargs...) =
 
 
 function mannwhitney(::Preprocessing, data, column, group_a=nothing, group_b=nothing;
-                     h1_missing=:skip, do_sort=true, kwargs...)
+                     h1_missing=:skip, var_cols=nothing, do_sort=true, kwargs...)
 	@assert h1_missing in (:skip,:error)
 
 	obs = SCP.get_obs(data)
@@ -241,9 +241,15 @@ function mannwhitney(::Preprocessing, data, column, group_a=nothing, group_b=not
 	end
 
 	matrix = SCP.get_matrix(data)
-	var = SCP.id_column(SCP.get_var(data))
 
-	mannwhitney_table_job(matrix, var, groups; do_sort, kwargs...)
+	var = SCP.get_var(data)
+	table_var = SCP.id_column(var)
+	if var_cols !== nothing
+		var_cols = _splattable(var_cols)
+		table_var = SCP.table_hcat(table_var, SCP.get_columns(var, var_cols...))
+	end
+
+	mannwhitney_table_job(matrix, table_var, groups; do_sort, kwargs...)
 end
 
 

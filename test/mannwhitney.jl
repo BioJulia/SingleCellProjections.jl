@@ -73,6 +73,16 @@ function run_mannwhitney_tests()
 			@test_throws Exception fetch!(SCP.mannwhitney(l_job, "group2", "A", "B"; h1_missing=:error))
 		end
 
+		@testset "var_cols" begin
+			# extra var columns are carried through, inserted before the statistic columns
+			r = fetch!(SCP.mannwhitney(l_job, "group", "A", "B"; var_cols="name", do_sort=false))
+			@test names(r) == [idcol, "name", "U", "pValue"]
+			@test isequal(r.name, l.var.name)
+
+			r = fetch!(SCP.mannwhitney(l_job, "group", "A", "B"; var_cols=("name","feature_type"), do_sort=false))
+			@test names(r) == [idcol, "name", "feature_type", "U", "pValue"]
+		end
+
 		@testset "z-score sorting and z_col" begin
 			groups = [g=="A" ? 1 : g=="B" ? 2 : 0 for g in l.obs.group]
 			U, z, p = _mw_ref(X, groups)

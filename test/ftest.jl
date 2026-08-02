@@ -74,6 +74,16 @@ function run_ftest_tests()
 			@test names(r) == [idcol, "F"]
 		end
 
+		@testset "var_cols" begin
+			# extra var columns are carried through, inserted before the statistic columns
+			r = fetch!(SCP.ftest(l_job, "group"; var_cols="name", do_sort=false))
+			@test names(r) == [idcol, "name", "F", "pValue"]
+			@test isequal(r.name, l.var.name)
+
+			r = fetch!(SCP.ftest(l_job, "group"; var_cols=("name","feature_type"), do_sort=false))
+			@test names(r) == [idcol, "name", "feature_type", "F", "pValue"]
+		end
+
 		@testset "center=false" begin
 			# no intercept and no h0 (null model)
 			gtF, gtP = ftest_ground_truth(X, obs, ("value",), (); center=false)
