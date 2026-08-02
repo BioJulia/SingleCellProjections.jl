@@ -1,7 +1,7 @@
-# hblock_job(a, ranges) = create_job(SCPCore.hblock, a; ranges, __version=v"0.0.1")
+# hblock_job(a, ranges) = create_job(SCPCore.hblock, a; ranges, __version=v"1.0.0")
 
 # new version were we ensure ranges is fetched
-hblock_impl_job(a, ranges) = create_job(SCPCore.hblock, a; ranges, __version=v"0.0.1")
+hblock_impl_job(a, ranges) = create_job(SCPCore.hblock, a; ranges, __version=v"1.0.0")
 # hblock_pre(::Preprocessing, a; ranges) = hblock_impl_job(a, ranges)
 
 function hblock_pre(::Preprocessing, a; ranges)
@@ -41,7 +41,7 @@ end
 # TODO: Naming etc
 function blockify_matrix(::Preprocessing, A; kwargs...)
 	hblock_map(A) do x
-		create_job(SCPCore.blockify, x; kwargs..., __version=v"0.1.0")
+		create_job(SCPCore.blockify, x; kwargs..., __version=v"1.0.0")
 	end
 end
 
@@ -62,11 +62,11 @@ function combine_block_ranges(outer_ranges::AbstractVector{T}, inner_ranges) whe
 	reduce(vcat, inner_ranges)
 end
 combine_block_ranges_job(outer_ranges, inner_ranges) =
-	create_job(combine_block_ranges, outer_ranges, inner_ranges; __version=v"0.0.1")
+	create_job(combine_block_ranges, outer_ranges, inner_ranges; __version=v"1.0.0")
 
 
 get_col_ranges_impl_job(A) =
-	create_job(SCPCore.get_col_ranges, A; __version=v"0.0.1")
+	create_job(SCPCore.get_col_ranges, A; __version=v"1.0.0")
 
 function get_col_ranges_pre(::Preprocessing, A)
 	if is_hblock(A)
@@ -85,7 +85,7 @@ get_col_ranges_job(A) =
 
 
 get_row_ranges_impl_job(A) =
-	create_job(SCPCore.get_row_ranges, A; __version=v"0.0.1")
+	create_job(SCPCore.get_row_ranges, A; __version=v"1.0.0")
 
 function get_row_ranges_pre(::Preprocessing, A)
 	if is_hblock(A)
