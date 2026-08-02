@@ -68,6 +68,7 @@ if VERSION >= v"1.11.0-DEV.469"
 			local_outlier_factor,
 			ftest,
 			ttest,
+			mannwhitney,
 			transfer_annotation,
 			create_table,
 			get_colnames,

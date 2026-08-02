@@ -63,18 +63,20 @@ end
 
 
 
-function ftest_table_pr(action::Action, matrix, var, h1_design, h0_design; do_sort)
-	cached(create_job(SCPCore.ftest_table2,
-	                   action(matrix), action(var), action(h1_design), action(h0_design);
-	                   do_sort,
-	                   __version=v"0.0.1"))
+function ftest_table_pr(action::Action, matrix, var, h1_design, h0_design...; do_sort, kwargs...)
+	matrix = action(matrix)
+	ss = row_sum_squared_job(matrix)
+	cached(create_job(SCPCore.ftest_table,
+	                  matrix, action(var), ss, action(h1_design), action.(h0_design)...;
+	                  do_sort, kwargs...,
+	                  __version=v"0.0.1"))
 end
 
-ftest_table_job(matrix, var, h1_design, h0_design; kwargs...) =
-	create_job(Projectable(ftest_table_pr), matrix, var, h1_design, h0_design; kwargs...)
+ftest_table_job(matrix, var, h1_design, h0_design...; kwargs...) =
+	create_job(Projectable(ftest_table_pr), matrix, var, h1_design, h0_design...; kwargs...)
 
 
-function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=nothing, h1_missing=:skip, h0_missing=:error, var_cols=nothing, do_sort=true)
+function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=nothing, h1_missing=:skip, h0_missing=:error, var_cols=nothing, do_sort=true, kwargs...)
 	@assert h1_missing in (:skip,:error)
 	@assert h0_missing in (:skip,:error)
 
@@ -88,8 +90,13 @@ function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	extra_kwargs = max_categories === nothing ? (;) : (; max_categories)
 
 	# Hmm. We want h1 to be mean-zero (if center=true), but we don't want the intercept column.
+	# TODO: Look into has_centering_job fix used by ttest
 	h1_design = SCP.designmatrix(data, h1...; center=false, extra_kwargs...)
-	h0_design = SCP.designmatrix(data, h0...; center, extra_kwargs...)
+
+	# No null model when center=false and h0 is empty (avoid an empty design matrix). `center` is a
+	# plain Bool here (unlike ttest, ftest never turns it into a job).
+	has_h0 = center || !isempty(h0)
+	h0_args = has_h0 ? (SCP.get_matrix(SCP.designmatrix(data, h0...; center, extra_kwargs...)),) : ()
 
 	matrix = SCP.get_matrix(data)
 
@@ -100,7 +107,7 @@ function ftest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 		table_var = SCP.table_hcat(table_var, SCP.get_columns(var, var_cols...))
 	end
 
-	ftest_table_job(matrix, table_var, SCP.get_matrix(h1_design), SCP.get_matrix(h0_design); do_sort)
+	ftest_table_job(matrix, table_var, SCP.get_matrix(h1_design), h0_args...; do_sort, kwargs...)
 end
 
 
@@ -109,22 +116,24 @@ end
 
 
 
-function ttest_table_pr(action::Action, matrix, var, h1_design, h1_scale, h0_design; do_sort)
-	cached(create_job(SCPCore.ttest_table2,
-	                   action(matrix), action(var),
-	                   action(h1_design), prefetched(action(h1_scale)),
-	                   action(h0_design);
-	                   do_sort,
-	                   __version=v"0.0.1"))
+function ttest_table_pr(action::Action, matrix, var, h1_design, h1_scale, h0_design...; do_sort, kwargs...)
+	matrix = action(matrix)
+	ss = row_sum_squared_job(matrix)
+	cached(create_job(SCPCore.ttest_table,
+	                  matrix, action(var), ss,
+	                  action(h1_design), prefetched(action(h1_scale)),
+	                  action.(h0_design)...;
+	                  do_sort, kwargs...,
+	                  __version=v"0.0.1"))
 end
 
-ttest_table_job(matrix, var, h1_design, h1_scale, h0_design; kwargs...) =
-	create_job(Projectable(ttest_table_pr), matrix, var, h1_design, h1_scale, h0_design; kwargs...)
+ttest_table_job(matrix, var, h1_design, h1_scale, h0_design...; kwargs...) =
+	create_job(Projectable(ttest_table_pr), matrix, var, h1_design, h1_scale, h0_design...; kwargs...)
 
 
 
 # TODO: This does not work properly with projections. Fix.
-function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=nothing, h1_missing=:skip, h0_missing=:error, var_cols=nothing, do_sort=true)
+function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=nothing, h1_missing=:skip, h0_missing=:error, var_cols=nothing, do_sort=true, kwargs...)
 	@assert h1_missing in (:skip,:error)
 	@assert h0_missing in (:skip,:error)
 
@@ -153,14 +162,25 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 	h1_cov_annot, h1_cov_desc = h1
 
 
-	center = center || (h1_cov_desc isa TwoGroupCovariateDesc) # Center if h1 requires it
+	center = center || (h1_cov_desc isa SCPCore.TwoGroupCovariateDesc) # Center if h1 requires it
+
+
+	has_h0 = center || !isempty(h0) # NB: We can check this before center becomes a job
+
+
 	if !center # Figure out if h0 requires centering
 		_, h0_cov_descs = setup_covariate_descriptions(obs, h0...)
 		center = fetched(has_centering_job(h0_cov_descs))
 	end
 
 
-	h0_design = SCP.designmatrix(data, h0...; center, extra_kwargs...)
+	if has_h0
+		h0_design = SCP.designmatrix(data, h0...; center, extra_kwargs...)
+		h0_design_mat = SCP.get_matrix(h0_design)
+		h0_args = (h0_design_mat,)
+	else
+		h0_args = ()
+	end
 
 	h1_cov_data = _extract_data_job(obs, h1_cov_annot)
 	ms = mean_and_scale_job(h1_cov_data, h1_cov_desc; center)
@@ -176,7 +196,60 @@ function ttest(::Preprocessing, data, h1; h0=(), center=true, max_categories=not
 		table_var = SCP.table_hcat(table_var, SCP.get_columns(var, var_cols...))
 	end
 
-	ttest_table_job(matrix, table_var, h1_design_mat, h1_scale, SCP.get_matrix(h0_design); do_sort)
+	# ttest_table_job(matrix, table_var, h1_design_mat, h1_scale, SCP.get_matrix(h0_design); do_sort, kwargs...)
+	ttest_table_job(matrix, table_var, h1_design_mat, h1_scale, h0_args...; do_sort, kwargs...)
+end
+
+
+
+
+# groups vector - Projectable so projection recomputes it on the projected obs column, using the frozen group labels.
+# `nothing` (the "group A vs the rest" case) must not be passed as a spec argument, so the group labels are
+# splatted in (see `mannwhitney_groups_job`) - matching how `_group_args` strips a `nothing` group_b in design.jl.
+mannwhitney_groups_pr(action::Action, cov_data, group_labels...; h1_missing) =
+	create_job(SCPCore.mannwhitney_groups, action(cov_data), group_labels...; h1_missing, __version=v"0.1.0")
+
+mannwhitney_groups_job(cov_data, group_labels...; kwargs...) =
+	create_job(Projectable(mannwhitney_groups_pr), cov_data, group_labels...; kwargs...)
+
+
+mannwhitney_table_pr(action::Action, matrix, var, groups; kwargs...) =
+	cached(create_job(SCPCore.mannwhitney_table, action(matrix), action(var), action(groups); kwargs..., __version=v"0.0.2"))
+
+mannwhitney_table_job(matrix, var, groups; kwargs...) =
+	create_job(Projectable(mannwhitney_table_pr), matrix, var, groups; kwargs...)
+
+
+function mannwhitney(::Preprocessing, data, column, group_a=nothing, group_b=nothing;
+                     h1_missing=:skip, var_cols=nothing, do_sort=true, kwargs...)
+	@assert h1_missing in (:skip,:error)
+
+	obs = SCP.get_obs(data)
+	cov_data = _extract_data_job(obs, column)
+
+	if group_a === nothing
+		# Auto-detect the two labels from the base data and freeze them: they are bound to the base
+		# `cov_data` and never `action`-projected, so a projected test reuses them instead of re-inferring.
+		@assert group_b === nothing
+		resolved = create_job(SCPCore.mannwhitney_resolve_groups, cov_data; __version=v"0.1.0")
+		groups = mannwhitney_groups_job(cov_data, fetched(getindex_job(resolved, 1)), fetched(getindex_job(resolved, 2)); h1_missing)
+	elseif group_b === nothing
+		# Group A vs the rest - leave group_b unset (never pass `nothing` into a spec).
+		groups = mannwhitney_groups_job(cov_data, group_a; h1_missing)
+	else
+		groups = mannwhitney_groups_job(cov_data, group_a, group_b; h1_missing)
+	end
+
+	matrix = SCP.get_matrix(data)
+
+	var = SCP.get_var(data)
+	table_var = SCP.id_column(var)
+	if var_cols !== nothing
+		var_cols = _splattable(var_cols)
+		table_var = SCP.table_hcat(table_var, SCP.get_columns(var, var_cols...))
+	end
+
+	mannwhitney_table_job(matrix, table_var, groups; do_sort, kwargs...)
 end
 
 

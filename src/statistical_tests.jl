@@ -8,12 +8,25 @@ model `h0`. Returns a table with test statistics and p-values.
 covariate description. The covariate type (categorical/numerical) is normally autodetected. With
 a single categorical covariate, this is equivalent to a one-way ANOVA.
 
+Keyword arguments:
+* `statistic_col="F"` / `pvalue_col="pValue"` - output column names (set to `nothing` to omit).
+* `do_sort=true` - sort variables by the `F` statistic (most significant first).
+
 (TODO: Examples.)
 
 See also [`ttest`](@ref), [`normalize_matrix`](@ref).
 """
-function ftest(data, h1; kwargs...)
-	create_job(Preprocess(Impl.ftest), data, h1; kwargs...)
+function ftest(data, h1; statistic_col="F", pvalue_col="pValue", kwargs...)
+	col_kwargs = (; )
+
+	if statistic_col !== nothing
+		col_kwargs = (; col_kwargs..., statistic_col)
+	end
+	if pvalue_col !== nothing
+		col_kwargs = (; col_kwargs..., pvalue_col)
+	end
+
+	create_job(Preprocess(Impl.ftest), data, h1; col_kwargs..., kwargs...)
 end
 
 
@@ -24,10 +37,74 @@ Perform a t-test for each variable testing the effect of `h1` while controlling 
 Returns a table with test statistics and p-values. `h1` must be a numerical covariate or a
 two-group covariate.
 
+Keyword arguments:
+* `statistic_col="t"` / `pvalue_col="pValue"` / `difference_col="difference"` - output column names (set to `nothing` to omit).
+* `do_sort=true` - sort variables by `|t|` (most significant first).
+
 (TODO: Examples.)
 
 See also [`ftest`](@ref), [`normalize_matrix`](@ref), [`twogroup_covariate`](@ref).
 """
-function ttest(data, h1; kwargs...)
-	create_job(Preprocess(Impl.ttest), data, h1; kwargs...)
+function ttest(data, h1; statistic_col="t", pvalue_col="pValue", difference_col="difference", kwargs...)
+	col_kwargs = (; )
+
+	if statistic_col !== nothing
+		col_kwargs = (; col_kwargs..., statistic_col)
+	end
+	if pvalue_col !== nothing
+		col_kwargs = (; col_kwargs..., pvalue_col)
+	end
+	if difference_col !== nothing
+		col_kwargs = (; col_kwargs..., difference_col)
+	end
+
+	create_job(Preprocess(Impl.ttest), data, h1; col_kwargs..., kwargs...)
+end
+
+
+"""
+    SCP.mannwhitney(data, column, [group_a, group_b]; h1_missing=:skip, kwargs...) -> Job
+
+Perform a Mann-Whitney U-test (a.k.a. Wilcoxon rank-sum test) between two groups of
+observations, for each variable. The U statistic is corrected for ties, and p-values are
+computed using a normal approximation. Returns a table with variable IDs, U statistics and
+p-values, sorted by significance (see below).
+
+`data` must contain a sparse matrix. It is recommended to first [`logtransform`](@ref) (or
+`tf_idf_transform`) the raw counts.
+
+`column` selects a column in `data.obs` that determines group membership:
+* If neither `group_a` nor `group_b` is given, `column` must have exactly two unique values (ignoring `missing`).
+* If only `group_a` is given, observations equal to `group_a` are compared against all others (ignoring `missing`).
+* If both are given, observations equal to `group_a` are compared against those equal to `group_b`.
+
+Keyword arguments:
+* `h1_missing=:skip` - `:skip` excludes `missing` values in `column`; `:error` throws if any are present.
+* `statistic_col="U"` / `pvalue_col="pValue"` / `z_col=nothing` - output column names (set to `nothing` to omit; `z` is omitted by default).
+* `do_sort=true` - sort variables by `|z|` (most significant first).
+
+Results are sorted by the absolute standardized statistic `|z|`, where `z = (U - n1*n2/2)/σ`. This
+orders variables by significance without the underflow that sorting by `pValue` suffers (p-values
+collapse to `0` for strongly-separated variables). The signed `z` (available via `z_col`) is monotone
+with the p-value and also indicates the direction of the effect.
+
+The test is projectable: when projecting onto other data, the group labels resolved here are
+reused and the test is recomputed on the projected observations.
+
+See also [`ftest`](@ref), [`ttest`](@ref), [`logtransform`](@ref).
+"""
+function mannwhitney(data, column, args...; statistic_col="U", pvalue_col="pValue", z_col=nothing, kwargs...)
+	col_kwargs = (; )
+
+	if statistic_col !== nothing
+		col_kwargs = (; col_kwargs..., statistic_col)
+	end
+	if pvalue_col !== nothing
+		col_kwargs = (; col_kwargs..., pvalue_col)
+	end
+	if z_col !== nothing
+		col_kwargs = (; col_kwargs..., z_col)
+	end
+
+	create_job(Preprocess(Impl.mannwhitney), data, column, args...; col_kwargs..., kwargs...)
 end

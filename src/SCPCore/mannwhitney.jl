@@ -87,16 +87,18 @@ mannwhitney_σ(n1,n2,tie_adjustment) =
 	sqrt(n1*n2/12 * (n1 + n2 + 1 - tie_adjustment/((n1+n2)*(n1+n2-1))))
 
 function mannwhitney_single(X::AbstractSparseMatrix, j, groups, n1, n2)
-	min(n1,n2)==0 && return 0.0, 1.0 # degenerate case
+	min(n1,n2)==0 && return 0.0, 0.0, 1.0 # degenerate case
+
 	U, tie_adjustment = ustatistic_single(X, j, groups, n1, n2)
 
 	m = n1*n2/2
 	σ = mannwhitney_σ(n1,n2,tie_adjustment)
 
 	# TODO: handle directional tests too
-	z = U-m
-	p = min(1, 2*ccdf(Normal(0,σ), abs(z)-0.5)) # 0.5 is the continuity correction factor
-	return U, p
+	d = U-m
+	p = min(1, 2*ccdf(Normal(0,σ), abs(d)-0.5)) # 0.5 is the continuity correction factor
+	z = σ>0 ? d/σ : 0.0 # standardized (signed) statistic - monotone with p, but never underflows
+	return U, z, p
 end
 
 
@@ -108,11 +110,93 @@ function mannwhitney_sparse(X::AbstractSparseMatrix, groups; kwargs...)
 	@assert n2>0
 
 	U = zeros(size(X,1))
+	z = zeros(size(X,1))
 	p = zeros(size(X,1))
 
 	threaded_sparse_row_map(X; kwargs...) do Y, col, i
-		U[i],p[i] = mannwhitney_single(Y,col,groups,n1,n2)
+		U[i],z[i],p[i] = mannwhitney_single(Y,col,groups,n1,n2)
 	end
 
-	U, p
+	U, z, p
+end
+
+
+"""
+	mannwhitney_resolve_groups(v, group_a, group_b=nothing) -> (group_a, group_b)
+
+Resolve the two group labels for a Mann-Whitney U-test from the values `v`.
+
+If `group_a` is not given (`nothing`), `v` must have exactly two unique values (ignoring
+`missing`), which become the two groups. Returns concrete group labels - this is what should
+be frozen when the test is later projected onto other data.
+"""
+function mannwhitney_resolve_groups(v, group_a=nothing, group_b=nothing)
+	if group_a === nothing
+		@assert group_b === nothing
+		uv = unique(skipmissing(v))
+		length(uv)==2 || throw(ArgumentError(string("Expected exactly two unique values, found: ", collect(uv), ".")))
+		group_a, group_b = minmax(uv[1], uv[2])
+	end
+	group_a, group_b
+end
+
+
+"""
+	mannwhitney_groups(v, group_a, group_b=nothing; h1_missing=:skip) -> Vector{Int}
+
+Assign each element of `v` to a group for a Mann-Whitney U-test:
+* `1` - equal to `group_a`.
+* `2` - equal to `group_b`, or (if `group_b===nothing`) anything that is neither `group_a` nor `missing`.
+* `0` - excluded (including `missing`).
+
+If `h1_missing==:error`, an error is thrown if `v` contains any `missing` values.
+"""
+function mannwhitney_groups(v, group_a, group_b=nothing; h1_missing=:skip)
+	@assert h1_missing in (:skip,:error)
+	if h1_missing == :error && any(ismissing, v)
+		throw(ArgumentError("Values contain missing, set `h1_missing=:skip` to skip them."))
+	end
+
+	maskA = isequal.(v, group_a)
+	any(maskA) || throw(ArgumentError(string("Values don't contain group \"", group_a, "\".")))
+
+	if group_b !== nothing
+		maskB = isequal.(v, group_b)
+		any(maskB) || throw(ArgumentError(string("Values don't contain group \"", group_b, "\".")))
+	else
+		maskB = .!isequal.(v, group_a) .& .!ismissing.(v)
+		any(maskB) || throw(ArgumentError(string("Values only contain one group: \"", group_a, "\".")))
+	end
+
+	groups = zeros(Int, length(v))
+	groups[maskA] .= 1
+	groups[maskB] .= 2
+	groups
+end
+
+
+"""
+	mannwhitney_table(matrix, var, groups; statistic_col=nothing, pvalue_col=nothing, z_col=nothing, do_sort=true, kwargs...)
+
+Compute the Mann-Whitney U-test for each variable (row of the sparse `matrix`) given a
+`groups` vector (see [`mannwhitney_groups`](@ref)), and return a copy of the `var` table
+with columns added (see below). `matrix` must be sparse.
+
+* `statistic_col` - The name of the statistic column, or `nothing` to omit.
+* `pvalue_col` - The name of the p-value column, or `nothing` to omit.
+* `z_col` - The name of the z-statistic column, or `nothing` to omit.
+* `do_sort` - If set to true, variables are sorted by `|z|` (most significant first). This is the same as sorting by p-value, but handles numerical issues better.
+
+"""
+function mannwhitney_table(matrix, var, groups;
+                           statistic_col=nothing, pvalue_col=nothing, z_col=nothing,
+                           do_sort=true, kwargs...)
+	U,z,p = mannwhitney_sparse(unblockify(matrix), groups; kwargs...)
+	table = copy(var; copycols=do_sort)
+	statistic_col !== nothing && insertcols!(table, statistic_col=>U; copycols=false)
+	z_col !== nothing && insertcols!(table, z_col=>z; copycols=false)
+	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
+	# Sort by |z| (two-sided significance) regardless of whether z is an output column.
+	do_sort && permute!(table, sortperm(z; by=abs, rev=true))
+	table
 end

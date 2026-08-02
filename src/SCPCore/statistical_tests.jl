@@ -19,36 +19,25 @@ function orthonormal_design2(X, Q0=nothing; rtol=sqrt(eps()))
 end
 
 
-function _linear_test2(A, h1, h0)
+function _linear_test(A, ssA, h1, h0=nothing)
 	@assert size(A,2) == size(h1,1)
-	@assert size(A,2) == size(h0,1)
+	@assert h0 === nothing || size(A,2) == size(h0,1)
 
-	# TODO: Support no null model? (not even intercept)
-	Q0,_ = orthonormal_design2(h0)
-	Q1,scale = orthonormal_design2(h1, Q0)
-	# Q1_pre = orthonormal_design2(h1, Q0)
-	# Q1 = hcat(Q0,Q1_pre) # The purpose of this is to gain numerical accuracy - does it help?
-
-	# A = data.matrix
+	# `h0 === nothing` means there is no null model (not even an intercept).
+	Q0 = h0 === nothing ? nothing : orthonormal_design2(h0)[1]
+	Q1,scale = orthonormal_design2(h1, Q0) # orthonormal_design2 skips orthogonalization when Q0===nothing
 
 	# fit models
-	β0 = A*Q0
 	β1 = A*Q1
 
-	# compute residuals
-	ssA = variable_sum_squares(A)
+	# `ssA` (the per-variable sum of squares of A) is computed as a separate cached job and passed in.
 
-	ssβ0 = vec(sum(abs2, β0; dims=2))
+	ssβ0 = Q0 === nothing ? 0.0 : vec(sum(abs2, A*Q0; dims=2))
 	ssβ1 = vec(sum(abs2, β1; dims=2))
 
-	# ssExplained = ssβ1 - ssβ0
-	# ssUnexplained = ssA - ssβ1
-	# rank0 = size(Q0,2)
-	# rank1 = size(Q1,2)
-
 	ssExplained = max.(0.0, ssβ1)
-	ssUnexplained = max.(0.0, ssA - ssβ1 - ssβ0)
-	rank0 = size(Q0,2)
+	ssUnexplained = max.(0.0, ssA .- ssβ1 .- ssβ0)
+	rank0 = Q0 === nothing ? 0 : size(Q0,2)
 	rank1 = size(Q1,2)+rank0
 
 	ssExplained, ssUnexplained, rank0, rank1, β1, scale
@@ -56,10 +45,10 @@ end
 
 
 
-function ftest_table2(matrix, var::DataFrame, h1, h0;
-                      statistic_col="F", pvalue_col="pValue",
-                      do_sort=true)
-	ssExplained, ssUnexplained, rank0, rank1, _, _ = _linear_test2(matrix, h1, h0)
+function ftest_table(matrix, var::DataFrame, ssA, h1, h0=nothing;
+                     statistic_col=nothing, pvalue_col=nothing,
+                     do_sort=true)
+	ssExplained, ssUnexplained, rank0, rank1, _, _ = _linear_test(matrix, ssA, h1, h0)
 	N = size(matrix,2)
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
@@ -76,16 +65,17 @@ function ftest_table2(matrix, var::DataFrame, h1, h0;
 	statistic_col !== nothing && insertcols!(table, statistic_col=>F; copycols=false)
 	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
 
-	do_sort && sort!(table, statistic_col; rev=true) # TODO: This only works if statistic_col !== nothing - but we can fix that by finding the order based on `F` regardless of whether it is added or not
+	# Sort by F (larger = more significant) regardless of whether the F column is added.
+	do_sort && permute!(table, sortperm(F; rev=true))
 
 	table
 end
 
 
-function ttest_table2(matrix, var, h1, h1_scale, h0;
-                      statistic_col="t", pvalue_col="pValue", difference_col="difference",
-                      do_sort=true)
-	_, ssUnexplained, rank0, rank1, β1, scale = _linear_test2(matrix, h1, h0)
+function ttest_table(matrix, var, ssA, h1, h1_scale, h0=nothing;
+                     statistic_col=nothing, pvalue_col=nothing, difference_col=nothing,
+                     do_sort=true)
+	_, ssUnexplained, rank0, rank1, β1, scale = _linear_test(matrix, ssA, h1, h0)
 	N = size(matrix,2)
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
@@ -106,7 +96,8 @@ function ttest_table2(matrix, var, h1, h1_scale, h0;
 	pvalue_col !== nothing && insertcols!(table, pvalue_col=>p; copycols=false)
 	difference_col !== nothing && insertcols!(table, difference_col=>d; copycols=false)
 
-	do_sort && sort!(table, statistic_col; by=abs, rev=true) # TODO: This only works if statistic_col !== nothing - but we can fix that by finding the order based on `F` regardless of whether it is added or not
+	# Sort by |t| (larger = more significant) regardless of whether the t column is added.
+	do_sort && permute!(table, sortperm(t; by=abs, rev=true))
 
 	table
 end
