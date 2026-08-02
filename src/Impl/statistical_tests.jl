@@ -69,7 +69,7 @@ function ftest_table_pr(action::Action, matrix, var, h1_design, h0_design...; do
 	cached(create_job(SCPCore.ftest_table,
 	                  matrix, action(var), ss, action(h1_design), action.(h0_design)...;
 	                  do_sort, kwargs...,
-	                  __version=v"0.0.1"))
+	                  __version=v"0.0.2"))
 end
 
 ftest_table_job(matrix, var, h1_design, h0_design...; kwargs...) =
@@ -124,7 +124,7 @@ function ttest_table_pr(action::Action, matrix, var, h1_design, h1_scale, h0_des
 	                  action(h1_design), prefetched(action(h1_scale)),
 	                  action.(h0_design)...;
 	                  do_sort, kwargs...,
-	                  __version=v"0.0.1"))
+	                  __version=v"0.0.2"))
 end
 
 ttest_table_job(matrix, var, h1_design, h1_scale, h0_design...; kwargs...) =
