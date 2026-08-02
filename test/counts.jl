@@ -9,8 +9,12 @@ using DataFrames
 
 
 # Navigate a forwarded DataMatrix spec to the job that computes obs column `col`.
+# The forwarded spec is `DataMatrix(matrix, var_table, obs_table)`, where `obs_table` is a
+# `create_table(col => value, ...)` call. Assert that shape before indexing into it.
 function obs_value_spec(fw, col)
+	@assert fw isa SpecRef && fw.f === SCPCore.DataMatrix "expected a forwarded DataMatrix spec, got $fw"
 	obs_tbl = fw.args[end]          # the obs `create_table` call
+	@assert obs_tbl isa SpecRef && obs_tbl.f === Impl.create_table "expected obs create_table, got $obs_tbl"
 	for a in obs_tbl.args
 		a isa Pair && a.first == col && return a.second
 	end
