@@ -4,7 +4,7 @@ import SingleCellProjections as SCP
 using SingleCellProjections: SCPCore
 import SingleCellProjections.Impl as Impl
 using .SCPCore: unblockify, Blocks
-using ReproducibleJobs: fetch!, forward!
+using ReproducibleJobs: fetch!, forward!, SpecRef, get_cached
 using DataFrames
 
 
@@ -17,15 +17,8 @@ function obs_value_spec(fw, col)
 	error("obs column \"$col\" not found in forwarded spec")
 end
 
-_haskids(x) = hasproperty(x, :f) && hasproperty(x, :args)
-
-# Is `v` a single `counts_sum` over the *whole* `hblock` matrix (i.e. NOT block-aware)?
-# Unwraps a `cached(...)` wrapper. A block-aware reduction instead maps over the blocks (a `vcat`
-# of per-block `counts_sum`), for which this returns false.
-function reduces_whole_hblock(v)
-	s = (_haskids(v) && length(v.args) == 1 && _haskids(v.args[1])) ? v.args[1] : v
-	_haskids(s) && s.f === SCPCore.counts_sum && any(Impl.is_hblock, s.args)
-end
+# Unwrap a `cached(...)` wrapper (`cached(job)` == `create_job(get_cached, job)`).
+unwrap_cached(s) = (s isa SpecRef && s.f === get_cached) ? s.args[1] : s
 
 
 function run_counts_tests()
@@ -69,11 +62,11 @@ function run_counts_tests()
 
 		@testset "reduction is mapped over blocks (drives blocking impl)" begin
 			# Look at the forwarded spec: today the "total" column is one `counts_sum` over the whole
-			# `hblock`; once block-aware it is mapped over the blocks. Flip `@test_broken` -> `@test`
-			# when `var_counts_sum` blocking is implemented.
+			# `hblock`; once block-aware it is a `vcat` over per-block `counts_sum`. Flip `@test_broken`
+			# -> `@test` when `var_counts_sum` blocking is implemented.
 			fw = forward!(SCP.var_counts_sum(multi_job, "total"))
-			v = obs_value_spec(fw, "total")
-			@test_broken !reduces_whole_hblock(v)
+			v = unwrap_cached(obs_value_spec(fw, "total"))
+			@test_broken v isa SpecRef && v.f === Impl.vcat_impl
 		end
 	end
 end
