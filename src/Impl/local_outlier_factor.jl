@@ -7,15 +7,15 @@ end
 
 
 neighbor_distances_job(indices, X, DX2, args...) =
-	cached(create_job(neighbor_distances_impl, indices, X, DX2, args...; __version=v"0.1.0"))
+	cached(create_job(neighbor_distances_impl, indices, X, DX2, args...; __version=v"1.0.0"))
 
 
 local_reachability_density_job(indices, dists, kdists) =
-	cached(create_job(SCPCore.local_reachability_density, indices, dists, kdists; __version=v"0.1.0"))
+	cached(create_job(SCPCore.local_reachability_density, indices, dists, kdists; __version=v"1.0.0"))
 
 
 local_outlier_factor_impl_job(indices, lrd, args...) =
-	cached(create_job(SCPCore.local_outlier_factor, indices, lrd, args...; __version=v"0.1.0"))
+	cached(create_job(SCPCore.local_outlier_factor, indices, lrd, args...; __version=v"1.0.0"))
 
 
 

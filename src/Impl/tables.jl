@@ -59,7 +59,7 @@ function get_colnames(::Preprocessing{E}, table, args...; kwargs...) where E
 	elseif E
 		create_job(Preprocess{false}(get_colnames), table, args...; kwargs...)
 	else
-		create_job(get_colnames_fallback, table, args...; kwargs..., __version=v"0.1.0")
+		create_job(get_colnames_fallback, table, args...; kwargs..., __version=v"1.0.0")
 	end
 end
 
@@ -91,7 +91,7 @@ function get_columns(::Preprocessing{E}, table, colnames...; kwargs...) where E
 	elseif E
 		create_job(Preprocess{false}(get_columns), table, colnames...; kwargs...)
 	else
-		create_job(get_columns_fallback, table, colnames...; kwargs..., __version=v"0.1.0")
+		create_job(get_columns_fallback, table, colnames...; kwargs..., __version=v"1.0.0")
 	end
 end
 
@@ -124,7 +124,7 @@ function column_data(::Preprocessing{E}, table, col; kwargs...) where E
 	elseif E
 		create_job(Preprocess{false}(column_data), table, col; kwargs...)
 	else
-		create_job(column_data_fallback, table, col; kwargs..., __version=v"0.1.0")
+		create_job(column_data_fallback, table, col; kwargs..., __version=v"1.0.0")
 	end
 end
 
@@ -150,7 +150,7 @@ function table_ncol(::Preprocessing{E}, table) where E
 	elseif E
 		create_job(Preprocess{false}(table_ncol), table)
 	else
-		create_job(table_ncol_fallback, table; __version=v"0.1.0")
+		create_job(table_ncol_fallback, table; __version=v"1.0.0")
 	end
 end
 
@@ -181,7 +181,7 @@ function add_column(::Preprocessing{E}, table, name, column) where E
 	elseif E
 		create_job(Preprocess{false}(add_column), table, name, column)
 	else
-		create_job(add_column_fallback, table, name, column; __version=v"0.1.0")
+		create_job(add_column_fallback, table, name, column; __version=v"1.0.0")
 	end
 end
 
@@ -211,7 +211,7 @@ function table_hcat(::Preprocessing{E}, args...) where E
 	elseif E
 		create_job(Preprocess{false}(table_hcat), args...) # try again with late preprocessing (i.e. after projectables has been hanlded)
 	else
-		create_job(table_hcat_fallback, args...; __version=v"0.1.0")
+		create_job(table_hcat_fallback, args...; __version=v"1.0.0")
 	end
 end
 
@@ -246,7 +246,7 @@ function table_getindex(::Preprocessing{E}, table, ind) where E
 	elseif E # early is before projection, so we need to handle the projection
 		table_getindex_pr_job(table, ind)
 	else
-		create_job(table_getindex_fallback, table, ind; __version=v"0.1.0")
+		create_job(table_getindex_fallback, table, ind; __version=v"1.0.0")
 	end
 
 
@@ -258,7 +258,7 @@ function table_getindex(::Preprocessing{E}, table, ind) where E
 	# elseif ind == Colon() # Projections have been handled, so indexing by `:` will not be transformed to something else
 	# 	table
 	# else
-	# 	create_job(table_getindex_fallback, table, ind; __version=v"0.1.0")
+	# 	create_job(table_getindex_fallback, table, ind; __version=v"1.0.0")
 	# end
 end
 table_getindex_job(table, ind) = create_job(Preprocess(table_getindex), table, ind)
@@ -297,7 +297,7 @@ function table_leftjoin(::Preprocessing{E}, a, b) where E
 	elseif E
 		create_job(Preprocess{false}(table_leftjoin), a, b) # try again with late preprocessing (i.e. after projectables has been hanlded)
 	else
-		create_job(table_leftjoin_fallback, a, b; __version=v"0.1.0")
+		create_job(table_leftjoin_fallback, a, b; __version=v"1.0.0")
 	end
 end
 
@@ -313,7 +313,7 @@ function combine_column_values(::Preprocessing{E}, table; kwargs...) where E
 	elseif E
 		create_job(Preprocess{false}(combine_column_values), table; kwargs...)
 	else
-		create_job(combine_column_values_fallback, table; kwargs..., __version=v"0.1.0")
+		create_job(combine_column_values_fallback, table; kwargs..., __version=v"1.0.0")
 	end
 end
 
@@ -329,7 +329,7 @@ function repeat_columns(::Preprocessing{E}, table; kwargs...) where E
 	elseif E
 		create_job(Preprocess{false}(repeat_columns), table; kwargs...)
 	else
-		create_job(repeat_columns_fallback, table; kwargs..., __version=v"0.1.0")
+		create_job(repeat_columns_fallback, table; kwargs..., __version=v"1.0.0")
 	end
 end
 
@@ -365,7 +365,7 @@ function intersect_ids(::Preprocessing{E}, a, b) where E
 	elseif E
 		create_job(Preprocess{false}(intersect_ids), a, b)
 	else
-		create_job(intersect_ids_fallback, a, b; __version=v"0.1.0")
+		create_job(intersect_ids_fallback, a, b; __version=v"1.0.0")
 	end
 end
 intersect_ids_job(a, b) = create_job(Preprocess(intersect_ids), a, b)
@@ -386,6 +386,6 @@ function transform_annotation(::Preprocessing{E}, f, table; kwargs...) where E
 	elseif E
 		create_job(Preprocess{false}(transform_annotation), f, table; kwargs...)
 	else
-		create_job(transform_annotation_fallback, f, table; kwargs..., __version=v"0.1.0")
+		create_job(transform_annotation_fallback, f, table; kwargs..., __version=v"1.0.0")
 	end
 end

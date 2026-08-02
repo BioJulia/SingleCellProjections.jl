@@ -2,7 +2,7 @@ function actual_nsv_pr(::Action, data, nsv)
 	# NB: nsv is determined completely by the base case, so we do not project
 	P = SCP.nvar(data)
 	N = SCP.nobs(data)
-	create_job(min, nsv, P, N; __version=v"0.1.0")
+	create_job(min, nsv, P, N; __version=v"1.0.0")
 end
 actual_nsv_job(data, nsv) = create_job(Projectable(actual_nsv_pr), data, nsv)
 
@@ -19,16 +19,16 @@ function implicitsvd_job(matrix;
                           niter = 3,
                           stabilize_sign = true,
                           kwargs...)
-	create_job(implicitsvd_impl, matrix; nsv, seed, subspacedims, niter, stabilize_sign, kwargs..., __version=v"0.1.1") # must be used with cached() to handle the CompoundResult
+	create_job(implicitsvd_impl, matrix; nsv, seed, subspacedims, niter, stabilize_sign, kwargs..., __version=v"1.0.0") # must be used with cached() to handle the CompoundResult
 end
 
 svd_projected_svt_job(U, X) =
-	cached(create_job(SCPCore.svd_projected_svt, U, X; __version=v"0.1.0"))
+	cached(create_job(SCPCore.svd_projected_svt, U, X; __version=v"1.0.0"))
 
 svd_project_mul_sinv_job(ΣVt, S) =
-	cached(create_job(SCPCore.svd_project_mul_sinv, ΣVt, S; __version=v"0.1.0"))
+	cached(create_job(SCPCore.svd_project_mul_sinv, ΣVt, S; __version=v"1.0.0"))
 
-assemble_svd(U, S, Vt) = create_job(LinearAlgebra.SVD, U, S, Vt; __version=v"0.1.0")
+assemble_svd(U, S, Vt) = create_job(LinearAlgebra.SVD, U, S, Vt; __version=v"1.0.0")
 
 
 # helpers
@@ -60,7 +60,7 @@ svd(f::Union{Var,Obs}, data; kwargs...) = get_job(f, data)
 
 
 compute_components(S, Vt) = LinearAlgebra.Diagonal(S)*Vt
-compute_components_job(S, Vt) = create_job(compute_components, S, Vt; __version=v"0.1.0")
+compute_components_job(S, Vt) = create_job(compute_components, S, Vt; __version=v"1.0.0")
 
 function pca_pr(action::Action, matrix; kwargs...)
 	# First SVD of unprojected
@@ -109,7 +109,7 @@ end
 
 # embed_points(weighted_adj, matrix) = matrix*weighted_adj
 # create_embed_points_job(weighted_adj, matrix) =
-# 	cached(create_job(embed_points, weighted_adj, matrix; __version=v"0.1.0"))
+# 	cached(create_job(embed_points, weighted_adj, matrix; __version=v"1.0.0"))
 
 function embed_points(f, base_data, base_reduced::AbstractMatrix{T}, data, indices) where T
 	base_N = size(base_data,2)
@@ -138,7 +138,7 @@ function embed_points(f, base_data, base_reduced::AbstractMatrix{T}, data, indic
 	out
 end
 create_embed_points_job(f, base_data, base_reduced, data, indices) =
-	cached(create_job(embed_points, f, base_data, base_reduced, data, indices; __version=v"0.2.0"))
+	cached(create_job(embed_points, f, base_data, base_reduced, data, indices; __version=v"1.0.0"))
 
 
 function force_layout_impl(args...; kwargs...)
@@ -181,7 +181,7 @@ function force_layout(action::Action, matrix;
 	                             initialAlpha, finalAlpha,
 	                             initialScale,
 	                             seed,
-	                             __version=v"0.1.0",
+	                             __version=v"1.0.0",
 	                            ))
 
 	if action isa Eval

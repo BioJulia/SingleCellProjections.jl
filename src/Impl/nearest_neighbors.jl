@@ -19,14 +19,14 @@ function find_nearest_neighbors_job(X, args...; k=nothing, k_fraction=nothing, k
 	@assert (k===nothing) != (k_fraction===nothing) "Exactly one of `k` and `k_fraction` must be specified."
 	k = k===nothing ? (;) : (;k)
 	k_fraction = k_fraction===nothing ? (;) : (;k_fraction)
-	create_job(find_nearest_neighbors_impl, X, args...; k..., k_fraction..., kwargs..., __version=v"0.1.3")
+	create_job(find_nearest_neighbors_impl, X, args...; k..., k_fraction..., kwargs..., __version=v"1.0.0")
 end
 
 
 
 
 adjacency_matrix_job(indices; kwargs...) =
-	create_job(SCPCore.adjacency_matrix, indices; kwargs..., __version=v"0.1.0")
+	create_job(SCPCore.adjacency_matrix, indices; kwargs..., __version=v"1.0.0")
 
 
 # # NB: If we change how InvDistSquared works, we must change its stable_hash too.
@@ -48,7 +48,7 @@ adjacency_matrix_job(indices; kwargs...) =
 
 # # Deprecated, we should recompute distances on the fly when we need them. (Instead of caching them to disk, because it's too much data.)
 # weighted_adjacency_matrix_job(f, indices, dists; kwargs...) =
-# 	create_job(SCPCore.weighted_adjacency_matrix, f, indices, dists; kwargs..., __version=v"0.1.0")
+# 	create_job(SCPCore.weighted_adjacency_matrix, f, indices, dists; kwargs..., __version=v"1.0.0")
 
 
 # NB: If we change how InvMax works, we must change its stable_hash too.

@@ -1,4 +1,4 @@
-adjoint_matrix_job(X) = create_job(LinearAlgebra.adjoint, X; __version=v"0.1.0")
+adjoint_matrix_job(X) = create_job(LinearAlgebra.adjoint, X; __version=v"1.0.0")
 
 # TODO: Should we do unwrapping of adjoint(adjoint(X)) should probably be done as a late preprocessing step.
 function adjoint(::Mat, data)

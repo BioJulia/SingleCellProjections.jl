@@ -40,7 +40,7 @@ function tsne(action::Action, matrix;
               kwargs...
              )
 	# t-SNE of unprojected
-	tsne_job = cached(create_job(tsne_impl, matrix; ndim, max_iter, perplexity, __version=v"0.1.0"))
+	tsne_job = cached(create_job(tsne_impl, matrix; ndim, max_iter, perplexity, __version=v"1.0.0"))
 
 	if action isa Eval
 		return tsne_job

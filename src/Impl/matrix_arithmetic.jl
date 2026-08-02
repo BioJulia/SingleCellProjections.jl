@@ -6,7 +6,7 @@ _get_value(x::Any) = x
 
 
 matrix_product_impl_job(args...) =
-	create_job(SCPCore.matrixproduct, args...; __version=v"0.1.1")
+	create_job(SCPCore.matrixproduct, args...; __version=v"1.0.0")
 
 # TODO: check that the inner var/obs IDs match!
 matrix_product(::Mat, args...) = matrix_product_impl_job(_map_value.(SCP.get_matrix, args)...)
@@ -19,7 +19,7 @@ end
 
 
 matrix_sum_impl_job(args...) =
-	create_job(SCPCore.matrixsum, args...; __version=v"0.1.1")
+	create_job(SCPCore.matrixsum, args...; __version=v"1.0.0")
 
 # TODO: check that the inner var/obs IDs match!
 matrix_sum(::Mat, args...) = matrix_sum_impl_job(_map_value.(SCP.get_matrix, args)...)
@@ -33,4 +33,4 @@ end
 
 # TODO: Do we need these?
 # matrix_ref(name, matrix) = SCPCore.MatrixRef(name, matrix)
-# matrix_ref_job(name, matrix) = create_job(matrix_ref, name, matrix; __version=v"0.1.0")
+# matrix_ref_job(name, matrix) = create_job(matrix_ref, name, matrix; __version=v"1.0.0")

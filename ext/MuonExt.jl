@@ -51,7 +51,7 @@ function load_h5ad_var_impl(filepath)
 		table_to_compound_result(df)
 	end
 end
-load_h5ad_var_job(filepath) = create_job(load_h5ad_var_impl, filepath; __version=v"0.1.0")
+load_h5ad_var_job(filepath) = create_job(load_h5ad_var_impl, filepath; __version=v"1.0.0")
 
 function load_h5ad_obs_impl(filepath)
 	_read_h5ad(filepath) do ann
@@ -59,7 +59,7 @@ function load_h5ad_obs_impl(filepath)
 		table_to_compound_result(df)
 	end
 end
-load_h5ad_obs_job(filepath) = create_job(load_h5ad_obs_impl, filepath; __version=v"0.1.0")
+load_h5ad_obs_job(filepath) = create_job(load_h5ad_obs_impl, filepath; __version=v"1.0.0")
 
 function load_h5ad_matrix_impl(filepath; T, layer=nothing, obsm=nothing, obsp=nothing, varm=nothing, varp=nothing, row_block_size=1024, col_block_size=1024)
 	_read_h5ad(filepath) do ann
@@ -87,7 +87,7 @@ function load_h5ad_matrix_impl(filepath; T, layer=nothing, obsm=nothing, obsp=no
 		X
 	end
 end
-load_h5ad_matrix_job(filepath; kwargs...) = create_job(load_h5ad_matrix_impl, filepath; T=Any, kwargs..., __version=v"0.1.0")
+load_h5ad_matrix_job(filepath; kwargs...) = create_job(load_h5ad_matrix_impl, filepath; T=Any, kwargs..., __version=v"1.0.0")
 
 
 load_h5ad(::Mat, filepath; kwargs...) = load_h5ad_matrix_job(filepath; kwargs...)

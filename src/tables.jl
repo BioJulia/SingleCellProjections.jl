@@ -3,7 +3,7 @@
 
 Create a new table `Job` from column name/value pairs.
 """
-create_table(args...) = create_job(Impl.create_table, args...; __version=v"0.1.0")
+create_table(args...) = create_job(Impl.create_table, args...; __version=v"1.0.0")
 
 """
     SCP.get_colnames(table; kwargs...) -> Job

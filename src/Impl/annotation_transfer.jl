@@ -1,17 +1,9 @@
-# function transfer_annotation_impl(wadj, annot_data, ::SCPCore.CategoricalCovariateDesc)
-# 	transferred, score = SCPCore.transfer_categorical_annotation(wadj, annot_data)
-# 	CompoundResult(; transferred, score)
-# end
-# transfer_annotation_impl_job(adj, annot_data, desc) =
-# 	create_job(transfer_annotation_impl, adj, annot_data, desc; __version=v"0.1.0")
-
-
 function transfer_annotation_impl(f, base_data, base_annot, data, indices, ::SCPCore.CategoricalCovariateDesc)
 	transferred, score = SCPCore.transfer_categorical_annotation(f, base_data, base_annot, data, indices)
 	CompoundResult(; transferred, score)
 end
 transfer_annotation_impl_job(f, base_data, base_annot, data, indices, desc) =
-	create_job(transfer_annotation_impl, f, base_data, base_annot, data, indices, desc; __version=v"0.2.0")
+	create_job(transfer_annotation_impl, f, base_data, base_annot, data, indices, desc; __version=v"1.0.0")
 
 
 
@@ -27,7 +19,7 @@ function update_name(old_name; new_name=nothing, new_suffix=nothing)
 	end
 end
 update_name_job(old_name; kwargs...) =
-	create_job(update_name, old_name; kwargs..., __version=v"0.1.0")
+	create_job(update_name, old_name; kwargs..., __version=v"1.0.0")
 
 
 function transfer_annotation(::Preprocessing, base, new, covariate; k, weight_fun=InvMax(1e-12), kwargs...)

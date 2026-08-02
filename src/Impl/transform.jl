@@ -15,7 +15,7 @@ create_remap_var_job(model_var, var_ids) = create_job(Projectable(remap_var), mo
 
 function logtransform_matrix(::Preprocessing, T, matrix; scale_factor)
 	hblock_map(matrix) do x
-		create_job(SCPCore.logtransform_matrix, T, x; scale_factor, __version=v"0.2.0")
+		create_job(SCPCore.logtransform_matrix, T, x; scale_factor, __version=v"1.0.0")
 	end
 end
 
@@ -37,7 +37,7 @@ logtransform(::Obs, ::DataType, data; kwargs...) = SCP.get_obs(data)
 # 	feature_mask[var_ind] .= true
 # 	SCTransform.logcellcounts(X, feature_mask)
 # end
-# logcellcounts_job(X, var_ind) = create_job(logcellcounts_impl, X, var_ind; __version=v"0.1.0")
+# logcellcounts_job(X, var_ind) = create_job(logcellcounts_impl, X, var_ind; __version=v"1.0.0")
 
 function logcellcounts_impl(X, var_ind)
 	s = SCPCore.counts_sum(identity, X, var_ind; dims=1)
@@ -45,7 +45,7 @@ function logcellcounts_impl(X, var_ind)
 end
 function logcellcounts_blocked(::Preprocessing, X, var_ind)
 	hblock_map(X; wrap=(a,_)->vcat_job(a)) do x
-		create_job(logcellcounts_impl, x, var_ind; __version=v"0.1.1")
+		create_job(logcellcounts_impl, x, var_ind; __version=v"1.0.0")
 	end
 end
 logcellcounts_job(X, var_ind) = create_job(Preprocess{false}(logcellcounts_blocked), X, var_ind)
@@ -58,7 +58,7 @@ function loggenemean_impl(X)
 	s = SCPCore.counts_sum(log1p, X, obs_ind; dims=2) # TODO: Avoid passing ind since we want all
 	log10.(expm1.(s./N))
 end
-loggenemean_job(X) = create_job(loggenemean_impl, X; __version=v"0.1.0")
+loggenemean_job(X) = create_job(loggenemean_impl, X; __version=v"1.0.0")
 
 
 function scparams_impl(::Type{Tv}, ::Type{Ti}, matrix; var_ind, log_cell_counts::ROVec, log_gene_mean::ROVec) where {Tv,Ti}
@@ -78,7 +78,7 @@ scparams_impl(matrix::Blocks{SparseMatrixCSC{Tv,Ti}}; kwargs...) where {Tv,Ti} =
 
 
 create_scparams_impl_job(matrix; var_ind, log_cell_counts, log_gene_mean) =
-	table_from_compound_result(create_job(scparams_impl, matrix; var_ind=prefetched(var_ind), log_cell_counts, log_gene_mean, __version=v"0.1.2"))
+	table_from_compound_result(create_job(scparams_impl, matrix; var_ind=prefetched(var_ind), log_cell_counts, log_gene_mean, __version=v"1.0.0"))
 
 
 function scparams(action::Action, matrix, var, var_ind; log_cell_counts)
@@ -101,7 +101,7 @@ create_scparams_job(matrix, var, var_ind; log_cell_counts) =
 
 
 sctransformsparse_a_job(T, matrix, params, var_ind, log_cell_counts; kwargs...) =
-	create_job(SCPCore.sctransformsparse_a, T, matrix, params, var_ind, log_cell_counts; kwargs..., __version=v"0.1.0")
+	create_job(SCPCore.sctransformsparse_a, T, matrix, params, var_ind, log_cell_counts; kwargs..., __version=v"1.0.0")
 
 
 function sctransform_matrix_a_impl(::Preprocessing, T, matrix, params, var_ind, log_cell_counts; kwargs...)
@@ -115,12 +115,12 @@ function sctransform_matrix_a_impl(::Preprocessing, T, matrix, params, var_ind, 
 		for i in 1:n
 			X = matrix.args[1][i]
 			lcc = log_cell_counts.args[1][i]
-			# samples[i] = create_job(SCPCore.sctransformsparse_a, T, X, params, var_ind, lcc; kwargs..., __version=v"0.1.0")
+			# samples[i] = create_job(SCPCore.sctransformsparse_a, T, X, params, var_ind, lcc; kwargs..., __version=v"1.0.0")
 			samples[i] = sctransformsparse_a_job(T, X, params, var_ind, lcc; kwargs...)
 		end
 		hblock_job(samples, _get_kwarg(matrix, :ranges))
 	else
-		# create_job(SCPCore.sctransformsparse_a, T, matrix, params, var_ind, log_cell_counts; kwargs..., __version=v"0.1.0")
+		# create_job(SCPCore.sctransformsparse_a, T, matrix, params, var_ind, log_cell_counts; kwargs..., __version=v"1.0.0")
 		sctransformsparse_a_job(T, matrix, params, var_ind, log_cell_counts; kwargs...)
 	end
 end
@@ -131,7 +131,7 @@ end
 function sctransform_matrix_pr(action::Action, T, matrix, params, log_cell_counts; var_ind, nobs=nothing, clip=nothing, rtol=1e-3, atol=0.0)
 	@assert nobs !== nothing || clip !== nothing "Must specify either nobs or clip"
 	clip = @something clip sqrt(nobs/30)
-	# create_job(SCPCore.sctransform_matrix, T, action(matrix), action(params), action(var_ind), action(log_cell_counts); clip, rtol, atol, __version=v"0.1.0")
+	# create_job(SCPCore.sctransform_matrix, T, action(matrix), action(params), action(var_ind), action(log_cell_counts); clip, rtol, atol, __version=v"1.0.0")
 
 	matrix = action(matrix)
 	params = action(params)
@@ -144,8 +144,8 @@ function sctransform_matrix_pr(action::Action, T, matrix, params, log_cell_count
 	row_ranges = get_row_ranges_job(a_job)
 	col_ranges = get_col_ranges_job(a_job)
 
-	# b_job = create_job(SCPCore.sctransformsparse_b, params, log_cell_counts; rtol, atol, __version=v"0.1.2")
-	b_job = create_job(SCPCore.sctransformsparse_b, params, log_cell_counts; row_ranges, col_ranges, rtol, atol, __version=v"0.1.2")
+	# b_job = create_job(SCPCore.sctransformsparse_b, params, log_cell_counts; rtol, atol, __version=v"1.0.0")
+	b_job = create_job(SCPCore.sctransformsparse_b, params, log_cell_counts; row_ranges, col_ranges, rtol, atol, __version=v"1.0.0")
 	matrix_sum_impl_job(:A=>a_job, b_job)
 end
 
@@ -188,12 +188,12 @@ sctransform(::Obs, ::DataType, counts; kwargs...) = SCP.get_obs(counts)
 
 # --- TF-IDF -------------------------------------------------------------------
 
-idf_job(rowsum; nobs) = create_job(SCPCore.compute_idf, rowsum; nobs, __version=v"0.1.0")
+idf_job(rowsum; nobs) = create_job(SCPCore.compute_idf, rowsum; nobs, __version=v"1.0.0")
 
 
 function tf_idf_matrix_impl(::Preprocessing, T, matrix, idf, var_ind; scale_factor)
 	hblock_map(matrix) do x
-		create_job(SCPCore.tf_idf_matrix, T, x, idf, var_ind; scale_factor, __version=v"0.1.0")
+		create_job(SCPCore.tf_idf_matrix, T, x, idf, var_ind; scale_factor, __version=v"1.0.0")
 	end
 end
 function tf_idf_matrix_pr(action::Action, T, matrix, idf, var_ind; scale_factor)

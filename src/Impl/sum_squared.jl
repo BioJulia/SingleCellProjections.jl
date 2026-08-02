@@ -1,11 +1,11 @@
 col_sum_squared_job(X) =
-	cached(create_job(SCPCore.col_sum_squared, X; __version=v"0.1.1"))
+	cached(create_job(SCPCore.col_sum_squared, X; __version=v"1.0.0"))
 row_sum_squared_job(X) =
-	cached(create_job(SCPCore.row_sum_squared, X; __version=v"0.1.1"))
+	cached(create_job(SCPCore.row_sum_squared, X; __version=v"1.0.0"))
 
 
 sum_squared_to_var_job(s2, n) =
-	create_job(SCPCore.sum_squared_to_var, s2, n; __version=v"0.1.0")
+	create_job(SCPCore.sum_squared_to_var, s2, n; __version=v"1.0.0")
 
 
 function compute_variance(action::Action, X; assume_centered::Bool, col="variance", project=:no)

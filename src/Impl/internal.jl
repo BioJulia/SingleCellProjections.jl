@@ -13,23 +13,23 @@ function combine_vectors_impl(args...; delim=nothing)
 	end
 	string.(args...)
 end
-combine_vectors_job(args...; kwargs...) = create_job(combine_vectors_impl, args...; kwargs..., __version=v"0.1.0")
+combine_vectors_job(args...; kwargs...) = create_job(combine_vectors_impl, args...; kwargs..., __version=v"1.0.0")
 
 
 
 
 
 _getindex_error(ind) = throw(ArgumentError("Raw indices not allowed when projecting (unless containers are identical). Got indices: $ind."))
-_getindex_error_job(ind) = create_job(_getindex_error, ind; __version=v"0.1.0")
+_getindex_error_job(ind) = create_job(_getindex_error, ind; __version=v"1.0.0")
 
-# getindex_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_job(getindex, v, ind; __version=v"0.1.0")
+# getindex_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_job(getindex, v, ind; __version=v"1.0.0")
 # function getindex_impl(::Preprocessing{E}, v, ind) where E
 # 	if ind === Colon()
 # 		v
 # 	elseif E
 # 		create_job(Preprocess{false}(getindex_impl), v, fetched(ind)) # NB: This way we fetch after projections are handled!
 # 	else
-# 		create_job(getindex, v, ind; __version=v"0.1.0")
+# 		create_job(getindex, v, ind; __version=v"1.0.0")
 # 	end
 # end
 
@@ -38,9 +38,9 @@ function getindex_impl(::Preprocessing, v, ind)
 		v # Projections have been handled, so indexing by `:` is OK
 	elseif v isa SpecRef && v.f === getindex
 		# Collapse nested getindex calls which is important for getting canonical representations
-		create_job(getindex, v.args[1], compose_ind(v.args[2], ind); __version=v"0.1.0")
+		create_job(getindex, v.args[1], compose_ind(v.args[2], ind); __version=v"1.0.0")
 	else
-		create_job(getindex, v, ind; __version=v"0.1.0")
+		create_job(getindex, v, ind; __version=v"1.0.0")
 	end
 end
 getindex_impl_job(v, ind) = create_job(Preprocess{false}(getindex_impl), v, fetched(ind))
@@ -71,7 +71,7 @@ function getindex_or_missing(v::AbstractVector{Tv}, ind::AbstractVector{Ti}) whe
 	end
 end
 
-getindex_or_missing_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_job(getindex_or_missing, v, ind; __version=v"0.1.1")
+getindex_or_missing_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_job(getindex_or_missing, v, ind; __version=v"1.0.0")
 getindex_or_missing_impl_job(v, ind) = create_job(Preprocess(getindex_or_missing_impl), v, fetched(ind))
 
 function getindex_or_missing_pr(action, v, ind)
@@ -89,31 +89,28 @@ getindex_or_missing_job(v, ind) = create_job(Projectable(getindex_or_missing_pr)
 
 
 
-intersect_job(a, b, args...) = create_job(intersect, a, b, args...; __version=v"0.1.0")
-length_job(x) = create_job(length, x; __version=v"0.1.0")
-unique_job(x) = create_job(unique, x; __version=v"0.1.0")
-join_job(x, args...) = create_job(join, x, args...; __version=v"0.1.0")
-reshape_job(A, args...) = create_job(reshape, A, args...; __version=v"0.1.0")
-repeat_job(A, args...; kwargs...) = create_job(repeat, A, args...; kwargs..., __version=v"0.1.0")
-prod_job(args...; kwargs...) = create_job(prod, args...; kwargs..., __version=v"0.1.0")
-allequal_job(x) = create_job(allequal, x; __version=v"0.1.0")
-
-# vcat_job(args...; kwargs...) = create_job(vcat, args...; kwargs..., __version=v"0.1.0")
-# hcat_job(args...; kwargs...) = create_job(hcat, args...; kwargs..., __version=v"0.1.0")
+intersect_job(a, b, args...) = create_job(intersect, a, b, args...; __version=v"1.0.0")
+length_job(x) = create_job(length, x; __version=v"1.0.0")
+unique_job(x) = create_job(unique, x; __version=v"1.0.0")
+join_job(x, args...) = create_job(join, x, args...; __version=v"1.0.0")
+reshape_job(A, args...) = create_job(reshape, A, args...; __version=v"1.0.0")
+repeat_job(A, args...; kwargs...) = create_job(repeat, A, args...; kwargs..., __version=v"1.0.0")
+prod_job(args...; kwargs...) = create_job(prod, args...; kwargs..., __version=v"1.0.0")
+allequal_job(x) = create_job(allequal, x; __version=v"1.0.0")
 
 vcat_impl(v; kwargs...) = reduce(vcat, v; kwargs...)
-vcat_job(v; kwargs...) = create_job(vcat_impl, v; kwargs..., __version=v"0.1.0")
+vcat_job(v; kwargs...) = create_job(vcat_impl, v; kwargs..., __version=v"1.0.0")
 
 hcat_impl(v; kwargs...) = reduce(hcat, v; kwargs...)
-hcat_job(v; kwargs...) = create_job(hcat_impl, v; kwargs..., __version=v"0.1.0")
+hcat_job(v; kwargs...) = create_job(hcat_impl, v; kwargs..., __version=v"1.0.0")
 
 
 
 apply_impl(f, args...; kwargs...) = f(args...; kwargs...)
-apply_job(f, args...; kwargs...) = create_job(apply_impl, f, args...; kwargs..., __version=v"0.1.0")
+apply_job(f, args...; kwargs...) = create_job(apply_impl, f, args...; kwargs..., __version=v"1.0.0")
 
 apply_broadcasted(f, args...; kwargs...) = f.(args...; kwargs...)
-apply_broadcasted_job(f, args...; kwargs...) = create_job(apply_broadcasted, f, args...; kwargs..., __version=v"0.1.0")
+apply_broadcasted_job(f, args...; kwargs...) = create_job(apply_broadcasted, f, args...; kwargs..., __version=v"1.0.0")
 
 
 
@@ -128,7 +125,7 @@ function intersect_ind(::Preprocessing{E}, a, b) where E
 	a == Colon() && return b
 	b == Colon() && return a
 	E && return create_job(Preprocess{false}(intersect_ind), a, b)
-	return create_job(intersect_ind_impl, a, b; __version=v"0.1.0")
+	return create_job(intersect_ind_impl, a, b; __version=v"1.0.0")
 end
 
 """
@@ -153,7 +150,7 @@ function isequal_pre(::Preprocessing{E}, x, y) where E
 	elseif E
 		create_job(Preprocess{false}(isequal_pre), x, y)
 	else
-		create_job(isequal, x, y; __version=v"0.1.0")
+		create_job(isequal, x, y; __version=v"1.0.0")
 	end
 end
 isequal_job(x, y) = create_job(Preprocess(isequal_pre), x, y)
@@ -189,7 +186,7 @@ function indexin_impl(a::DataFrame, b::DataFrame; not_found)
 	indexin_impl(a[!,1], b[!,1]; not_found)
 end
 
-indexin_job(a, b; not_found=:error) = create_job(indexin_impl, a, b; not_found, __version=v"0.1.2")
+indexin_job(a, b; not_found=:error) = create_job(indexin_impl, a, b; not_found, __version=v"1.0.0")
 
 
 
@@ -200,11 +197,11 @@ indexin_job(a, b; not_found=:error) = create_job(indexin_impl, a, b; not_found, 
 # These are for situations were we cannot avoid using size on the materialized matrix.
 # Prefer SCP.nvar/SCP.nobs or other smart ways to get size when possible.
 compute_size(X, dim) = size(X, dim)
-compute_size_job(X, dim) = create_job(compute_size, X, dim; __version=v"0.1.0")
+compute_size_job(X, dim) = create_job(compute_size, X, dim; __version=v"1.0.0")
 
 
 
-find_matching_ind_impl_job(f, df) = create_job(SCPCore.find_matching_ind, f, df; __version=v"0.1.4")
+find_matching_ind_impl_job(f, df) = create_job(SCPCore.find_matching_ind, f, df; __version=v"1.0.0")
 
 
 function find_matching_ind(action::Action, f, df; project_ids::Symbol)
@@ -284,7 +281,7 @@ function _colon_to_single_ind(x)
 	n = _nrow(x)
 	n==1 ? 1 : error("Expected a single element, got $n.")
 end
-_colon_to_single_ind_job(x) = create_job(_colon_to_single_ind, x; __version=v"0.1.0")
+_colon_to_single_ind_job(x) = create_job(_colon_to_single_ind, x; __version=v"1.0.0")
 
 function find_single_ind(::Preprocessing, f, df; project_id::Symbol)
 	ind = create_find_matching_ind_job(f, df; project_ids=project_id)
@@ -310,7 +307,7 @@ find_single_ind_job(f, df; project_id) =
 
 
 matrix_getindex_impl(matrix; kwargs...) =
-	create_job(SCPCore.matrix_getindex, matrix; kwargs..., __version=v"0.1.0")
+	create_job(SCPCore.matrix_getindex, matrix; kwargs..., __version=v"1.0.0")
 
 
 function compose_ind(inner::Union{Colon, AbstractVector{<:Integer}}, outer::Union{Colon, AbstractVector{<:Integer}})
@@ -452,9 +449,9 @@ function get_matrix_col(matrix, ind::Integer)
 	convert(Vector, res) # ensure it's dense
 end
 get_matrix_row_job(matrix, ind) =
-	create_job(get_matrix_row, matrix, ind; __version=v"0.1.0")
+	create_job(get_matrix_row, matrix, ind; __version=v"1.0.0")
 get_matrix_col_job(matrix, ind) =
-	create_job(get_matrix_col, matrix, ind; __version=v"0.1.0")
+	create_job(get_matrix_col, matrix, ind; __version=v"1.0.0")
 
 
 
@@ -462,7 +459,7 @@ get_matrix_col_job(matrix, ind) =
 
 prefixed_id_values(prefix::String, n) = string.(prefix, 1:n)
 function prefixed_ids(::Preprocessing, col::String, prefix, n)
-	col_data = create_job(prefixed_id_values, prefix, n; __version=v"0.1.0")
+	col_data = create_job(prefixed_id_values, prefix, n; __version=v"1.0.0")
 	SCP.create_table(col=>col_data)
 end
 prefixed_ids_job(col, prefix, n) =

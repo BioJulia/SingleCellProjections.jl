@@ -61,12 +61,12 @@ end
 
 function umap_impl(action::Action, matrix; ndim, seed, kwargs...)
 	# First create UMAP model
-	umap_model_job = cached(create_job(umap_model, matrix; ndim, seed, kwargs..., __version=v"0.3.0"))
+	umap_model_job = cached(create_job(umap_model, matrix; ndim, seed, kwargs..., __version=v"1.0.0"))
 
 	if action isa Eval
-		return create_job(umap_embedding, umap_model_job; __version=v"0.3.0")
+		return create_job(umap_embedding, umap_model_job; __version=v"1.0.0")
 	else# if action isa Projection
-		return cached(create_job(umap_project, umap_model_job, action(matrix); seed, __version=v"0.3.0"))
+		return cached(create_job(umap_project, umap_model_job, action(matrix); seed, __version=v"1.0.0"))
 	end
 end
 

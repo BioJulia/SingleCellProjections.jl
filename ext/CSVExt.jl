@@ -21,7 +21,7 @@ function parse_csv_impl(filepath; kwargs...)
 	table_to_compound_result(df)
 end
 parse_csv_job(filepath; kwargs...) =
-	create_job(parse_csv_impl, filepath; kwargs..., __version=v"0.0.3")
+	create_job(parse_csv_impl, filepath; kwargs..., __version=v"1.0.0")
 
 
 

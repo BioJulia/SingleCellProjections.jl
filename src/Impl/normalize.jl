@@ -1,5 +1,5 @@
 negative_regression_matrix_impl(::Action, data, dm; kwargs...) =
-	cached(create_job(SCPCore.negative_regression_matrix, data, dm; kwargs..., __version=v"0.1.0")) # NB: No action, always use original
+	cached(create_job(SCPCore.negative_regression_matrix, data, dm; kwargs..., __version=v"1.0.0")) # NB: No action, always use original
 negative_regression_matrix_impl_job(data, dm; kwargs...) =
 	create_job(Projectable(negative_regression_matrix_impl), data, dm; kwargs...)
 

@@ -1,7 +1,7 @@
 detect_covariate_desc(::AbstractVector{<:Union{Missing,Number}}) = SCP.numerical_covariate()
 detect_covariate_desc(::AbstractVector) = SCP.categorical_covariate()
 
-detect_covariate_desc_job(values) = create_job(detect_covariate_desc, values; __version=v"0.1.0")
+detect_covariate_desc_job(values) = create_job(detect_covariate_desc, values; __version=v"1.0.0")
 
 
 # TODO: Move this to internal? It can be used in many places.
@@ -63,7 +63,7 @@ function twogroup_values(v, group_a, group_b=nothing)
 	end
 end
 twogroup_values_job(v, group_a, args...) =
-	create_job(twogroup_values, v, group_a, args...; __version=v"0.1.0")
+	create_job(twogroup_values, v, group_a, args...; __version=v"1.0.0")
 
 
 
@@ -73,7 +73,7 @@ intercept_covariate_matrix(n) = ones(n, 1) # Use Float64s because that is more l
 
 
 
-mean_and_scale_job(v; center) = create_job(SCPCore.mean_and_scale, v; center, __version=v"0.1.0")
+mean_and_scale_job(v; center) = create_job(SCPCore.mean_and_scale, v; center, __version=v"1.0.0")
 mean_and_scale_job(v, ::SCPCore.NumericalCovariateDesc; center) = mean_and_scale_job(v; center)
 mean_and_scale_job(v, desc::SCPCore.TwoGroupCovariateDesc; center) =
 	mean_and_scale_job(twogroup_values_job(v, _group_args(desc)...); center)
@@ -83,7 +83,7 @@ mean_and_scale_job(v, desc::SCPCore.TwoGroupCovariateDesc; center) =
 
 # categories_job(v) = unique_job(v) # Doesn't work - because it accepts `missing` as a value
 categories_impl(v) = unique(skipmissing(v)) # removes missing and narrows type
-categories_job(v) = create_job(categories_impl, v; __version=v"0.1.1")
+categories_job(v) = create_job(categories_impl, v; __version=v"1.0.0")
 
 # TODO: These might be useful if we want support for TwoGroup in pseudobulk
 # categories_job(v, desc::SCPCore.CategoricalCovariateDesc) = categories_job(v)
@@ -105,7 +105,7 @@ function numerical_covariate_matrix_impl(v, (m,s))
 	(x .- m)./s
 end
 numerical_covariate_matrix_impl_job(v, ms) =
-	create_job(numerical_covariate_matrix_impl, v, ms; __version=v"0.1.0")
+	create_job(numerical_covariate_matrix_impl, v, ms; __version=v"1.0.0")
 function numerical_covariate_matrix(action::Action, data; center)
 	ms = fetched(mean_and_scale_job(data; center)) # model - not affected by action
 	numerical_covariate_matrix_impl_job(action(data), ms)
@@ -119,7 +119,7 @@ function categorical_covariate_matrix_impl(ind, n_categories)
 	X
 end
 categorical_covariate_matrix_impl_job(ind, n_categories) =
-	create_job(categorical_covariate_matrix_impl, ind, n_categories; __version=v"0.1.0")
+	create_job(categorical_covariate_matrix_impl, ind, n_categories; __version=v"1.0.0")
 
 _too_many_categories_error(len, max_categories) =
 	throw(ArgumentError("$len categories in categorical variable, was this intended? Change max_categories (", max_categories, ") if you want to increase the number of allowed categories."))
@@ -140,7 +140,7 @@ end
 
 
 
-intercept_covariate_matrix_job(n) = create_job(intercept_covariate_matrix, n; __version=v"0.1.2")
+intercept_covariate_matrix_job(n) = create_job(intercept_covariate_matrix, n; __version=v"1.0.0")
 numerical_covariate_matrix_job(data; center) = create_job(Projectable(numerical_covariate_matrix), data; center)
 categorical_covariate_matrix_job(data; kwargs...) = create_job(Projectable(categorical_covariate_matrix), data; kwargs...)
 

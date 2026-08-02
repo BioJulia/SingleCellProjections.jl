@@ -4,14 +4,14 @@ function load_var_impl(filename)
 	filename = string(filename)
 	SingleCell10x.read10x_features(filename, DataFrame)
 end
-load_var_job(filename) = create_job(load_var_impl, filename; __version=v"0.1.0")
+load_var_job(filename) = create_job(load_var_impl, filename; __version=v"1.0.0")
 
 function load_barcodes_impl(filename)
 	@assert filename isa ChecksummedFilePath
 	filename = string(filename)
 	SingleCell10x.read10x_barcodes(filename)
 end
-load_barcodes_job(filename; kwargs...) = create_job(load_barcodes_impl, filename; kwargs..., __version=v"0.1.0")
+load_barcodes_job(filename; kwargs...) = create_job(load_barcodes_impl, filename; kwargs..., __version=v"1.0.0")
 
 
 function vcat_tables(tables; kwargs...)
@@ -19,7 +19,7 @@ function vcat_tables(tables; kwargs...)
 	df = reduce(vcat, tables)
 	table_to_compound_result(df)
 end
-vcat_tables_job(tables; kwargs...) = create_job(vcat_tables, tables; kwargs..., __version=v"0.1.0")
+vcat_tables_job(tables; kwargs...) = create_job(vcat_tables, tables; kwargs..., __version=v"1.0.0")
 
 
 function combine_obs(::Preprocessing, filenames, sample_names)
@@ -44,7 +44,7 @@ end
 
 
 function combine_var(::Preprocessing, vars; kwargs...)
-	combined = create_job(combine_var_impl, vars; kwargs..., __version=v"0.1.1")
+	combined = create_job(combine_var_impl, vars; kwargs..., __version=v"1.0.0")
 	table_from_compound_result(combined)
 end
 
@@ -54,7 +54,7 @@ combine_var_job(vars; kwargs...) =
 
 
 sample_var_indices_job(sample_var, var; kwargs...) =
-	cached(create_job(SCPCore.sample_var_indices, sample_var, var; kwargs..., __version=v"0.1.0"))
+	cached(create_job(SCPCore.sample_var_indices, sample_var, var; kwargs..., __version=v"1.0.0"))
 
 function load_sample_matrix_metadata_impl(filename, var_ind)
 	@assert filename isa ChecksummedFilePath
@@ -62,7 +62,7 @@ function load_sample_matrix_metadata_impl(filename, var_ind)
 	SCPCore.load_sample_matrix_metadata(filename, var_ind)
 end
 load_sample_matrix_metadata_job(filename, var_ind; kwargs...) =
-	cached(create_job(load_sample_matrix_metadata_impl, filename, var_ind; kwargs..., __version=v"0.1.0"))
+	cached(create_job(load_sample_matrix_metadata_impl, filename, var_ind; kwargs..., __version=v"1.0.0"))
 
 
 
@@ -77,7 +77,7 @@ load_sample_matrix_metadata_job(filename, var_ind; kwargs...) =
 # 	if Tv != Int || Ti != Int32
 # 		kwargs = (; Tv, Ti)
 # 	end
-# 	create_job(load_hcat_sample_matrices_impl, filenames, matrix_metadatas, var_inds; kwargs..., __version=v"0.1.0")
+# 	create_job(load_hcat_sample_matrices_impl, filenames, matrix_metadatas, var_inds; kwargs..., __version=v"1.0.0")
 # end
 
 # function load_counts(f::Union{Mat,Var}, filename_specs; sample_names, prefilter, extra_id_cols, kwargs...)
@@ -119,7 +119,7 @@ function load_sample_matrix_impl(filename::ChecksummedFilePath, var_ind; Tv=Int,
 	SCPCore.blockify(X; row_block_size, col_block_size)
 end
 load_sample_matrix_job(filename, var_ind; row_block_size=1024, col_block_size=1024, kwargs...) =
-	create_job(load_sample_matrix_impl, filename, var_ind; row_block_size, col_block_size, kwargs..., __version=v"0.1.0")
+	create_job(load_sample_matrix_impl, filename, var_ind; row_block_size, col_block_size, kwargs..., __version=v"1.0.0")
 
 
 function metadata_to_hblock_ranges(metadata::AbstractVector{Tuple{Int,Int,Int}})
@@ -127,7 +127,7 @@ function metadata_to_hblock_ranges(metadata::AbstractVector{Tuple{Int,Int,Int}})
 	SCPCore.block_sizes_to_ranges(Ns)
 end
 metadata_to_hblock_ranges_job(metadata) =
-	create_job(metadata_to_hblock_ranges, metadata; __version=v"0.0.1")
+	create_job(metadata_to_hblock_ranges, metadata; __version=v"1.0.0")
 
 
 function load_counts(f::Union{Mat,Var}, matrix_specs;

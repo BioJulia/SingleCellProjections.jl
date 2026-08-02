@@ -31,7 +31,7 @@ end
 
 # TODO: This one should probably be a projectable
 pseudobulk_linear_indices_job(cov_data, cov_descs) =
-	create_job(pseudobulk_linear_indices, cov_data, cov_descs; __version=v"0.1.0")
+	create_job(pseudobulk_linear_indices, cov_data, cov_descs; __version=v"1.0.0")
 
 
 
@@ -41,7 +41,7 @@ pseudobulk_linear_indices_job(cov_data, cov_descs) =
 # 	repeat(categories; outer, inner)
 # end
 # repeat_categories_job(categories, outer, inner) =
-# 	create_job(repeat_categories, categories, outer, inner; __version=v"0.1.1")
+# 	create_job(repeat_categories, categories, outer, inner; __version=v"1.0.0")
 
 
 
@@ -97,7 +97,7 @@ function pseudobulk_dm(::Mat, data, obs_cov_categories, obs_cov_ind, ::Any;
 	linear_ind_job = pseudobulk_linear_indices_job(cov_ind, n_categories)
 
 	n_combinations = prefetched(prod_job(n_categories))
-	mat = create_job(pseudobulk_mat, SCP.get_matrix(data), linear_ind_job, n_combinations; __version=v"0.1.0")
+	mat = create_job(pseudobulk_mat, SCP.get_matrix(data), linear_ind_job, n_combinations; __version=v"1.0.0")
 
 	# reshape if needed
 	if new_var_cov_categories !== nothing
@@ -261,7 +261,7 @@ function population_matrix_dm(::Mat, obs_cov_categories, obs_cov_ind, ::Any;
 	n_combinations = prefetched(prod_job(n_categories))
 	n_obs_combinations = prefetched(prod_job(length_job.(obs_cov_categories)))
 
-	mat = create_job(population_matrix_mat, linear_ind_job, n_combinations, n_obs_combinations; __version=v"0.1.0")
+	mat = create_job(population_matrix_mat, linear_ind_job, n_combinations, n_obs_combinations; __version=v"1.0.0")
 	cached(mat)
 end
 function population_matrix_dm(::Var, args...;

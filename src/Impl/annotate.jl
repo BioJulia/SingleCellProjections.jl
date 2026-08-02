@@ -18,10 +18,10 @@ add_obs_column(::Obs, data, name, column) = SCP.add_column(SCP.get_obs(data), na
 
 
 counts_fraction_impl_job(counts, sub_ind, tot_ind; dims) =
-	create_job(SCPCore.counts_fraction, counts, sub_ind, tot_ind; dims, __version=v"0.1.0")
+	create_job(SCPCore.counts_fraction, counts, sub_ind, tot_ind; dims, __version=v"1.0.0")
 
 counts_sum_impl_job(f, counts, ind; dims) =
-	create_job(SCPCore.counts_sum, f, counts, ind; dims, __version=v"0.1.0")
+	create_job(SCPCore.counts_sum, f, counts, ind; dims, __version=v"1.0.0")
 
 
 var_counts_fraction(::Mat, counts, args...; kwargs...) = SCP.get_matrix(counts)
