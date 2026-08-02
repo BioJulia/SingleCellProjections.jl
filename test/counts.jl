@@ -64,13 +64,25 @@ function run_counts_tests()
 			@test rm.obs.total[rm.obs.sample_name .== "a"] ≈ rs.obs.total
 		end
 
-		@testset "reduction is mapped over blocks (drives blocking impl)" begin
-			# Look at the forwarded spec: today the "total" column is one `counts_sum` over the whole
-			# `hblock`; once block-aware it is a `vcat` over per-block `counts_sum`. Flip `@test_broken`
-			# -> `@test` when `var_counts_sum` blocking is implemented.
+		@testset "reduction is mapped over blocks" begin
+			# In the forwarded spec, the "total" column is a `vcat` over per-block `counts_sum` (one
+			# job per block), rather than a single `counts_sum` over the whole `hblock`.
 			fw = forward!(SCP.var_counts_sum(multi_job, "total"))
 			v = unwrap_cached(obs_value_spec(fw, "total"))
-			@test_broken v isa SpecRef && v.f === Impl.vcat_impl
+			@test v isa SpecRef && v.f === Impl.vcat_impl
+			@test !isequal(v.args[1][1], v.args[1][2])   # distinct samples -> distinct per-block jobs
+		end
+
+		@testset "shared sample block is deduplicated (cache reuse)" begin
+			# The point of block support: loading the same sample twice yields identical block specs,
+			# so the per-block reduction is a single (deduplicated) job reused for both blocks - i.e. a
+			# recurring sample reuses its cached block result instead of recomputing.
+			dup_job = SCP.load_counts([h5_path, h5_path]; sample_names=["a","b"])
+			v = unwrap_cached(obs_value_spec(forward!(SCP.var_counts_sum(dup_job, "total")), "total"))
+			@test v.f === Impl.vcat_impl
+			blocks = v.args[1]                     # per-block reduction jobs
+			@test length(blocks) == 2
+			@test blocks[1] === blocks[2]          # repeated sample -> shared, deduplicated job
 		end
 	end
 end
