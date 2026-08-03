@@ -30,7 +30,7 @@ counts_fraction_combine_job(sub, tot) = create_job(counts_fraction_combine, sub,
 # disjoint per-obs results with `vcat`. dims=2 (per-var result): `ind` selects obs (columns), so it is
 # split per block (block-local) via `ind_to_blocked_ind` and the partial per-var sums are combined
 # element-wise with `sum` (apply_job). Falls back to a single cached job when the spec is not block-structured.
-function counts_sum_blocked(::Preprocessing, f, X, ind; dims)
+function counts_sum(::Preprocessing, f, X, ind; dims)
 	@assert dims in (1,2)
 	if dims == 1
 		# `ind` is the row (var) mask, identical for every column block; combine disjoint per-obs results.
@@ -47,8 +47,8 @@ function counts_sum_blocked(::Preprocessing, f, X, ind; dims)
 end
 # For dims=2, `ind` must be a concrete value during preprocessing (so it can be split per block), hence
 # `fetched`; for dims=1 it stays a lazy job argument.
-counts_sum_blocked_job(f, X, ind; dims) =
-	create_job(Preprocess{false}(counts_sum_blocked), f, X, dims==1 ? ind : fetched(ind); dims)
+counts_sum_job(f, X, ind; dims) =
+	create_job(Preprocess{false}(counts_sum), f, X, dims==1 ? ind : fetched(ind); dims)
 
 
 
@@ -65,8 +65,8 @@ function var_counts_fraction(::Obs, counts, col, sub_filter, tot_filter; project
 	# fraction = (sum over sub vars) / (sum over tot vars), reusing the block-aware counts_sum for both
 	# so the per-block sums cache/dedup (the denominator in particular is often shared across calls).
 	X = SCP.get_matrix(counts)
-	sub = counts_sum_blocked_job(identity, X, sub_ind; dims=1)
-	tot = counts_sum_blocked_job(identity, X, tot_ind; dims=1)
+	sub = counts_sum_job(identity, X, sub_ind; dims=1)
+	tot = counts_sum_job(identity, X, tot_ind; dims=1)
 	SCP.add_column(SCP.get_obs(counts), col, counts_fraction_combine_job(sub, tot))
 end
 
@@ -75,7 +75,7 @@ var_counts_sum(::Mat, counts, args...; kwargs...) = SCP.get_matrix(counts)
 var_counts_sum(::Var, counts, args...; kwargs...) = SCP.get_var(counts)
 function var_counts_sum(::Obs, counts, col, filter; project_ids, f=identity)
 	ind = prefetched(create_find_matching_ind_job(filter, SCP.get_var(counts); project_ids))
-	values_job = counts_sum_blocked_job(f, SCP.get_matrix(counts), ind; dims=1)
+	values_job = counts_sum_job(f, SCP.get_matrix(counts), ind; dims=1)
 	SCP.add_column(SCP.get_obs(counts), col, values_job)
 end
 
@@ -92,8 +92,8 @@ function obs_counts_fraction(::Var, counts, col, sub_filter, tot_filter; project
 
 	# fraction = (sum over sub obs) / (sum over tot obs), reusing the block-aware counts_sum for both.
 	X = SCP.get_matrix(counts)
-	sub = counts_sum_blocked_job(identity, X, sub_ind; dims=2)
-	tot = counts_sum_blocked_job(identity, X, tot_ind; dims=2)
+	sub = counts_sum_job(identity, X, sub_ind; dims=2)
+	tot = counts_sum_job(identity, X, tot_ind; dims=2)
 	SCP.add_column(SCP.get_var(counts), col, counts_fraction_combine_job(sub, tot))
 end
 obs_counts_fraction(::Obs, counts, args...; kwargs...) = SCP.get_obs(counts)
@@ -103,7 +103,7 @@ obs_counts_fraction(::Obs, counts, args...; kwargs...) = SCP.get_obs(counts)
 obs_counts_sum(::Mat, counts, args...; kwargs...) = SCP.get_matrix(counts)
 function obs_counts_sum(::Var, counts, col, filter; project_ids, f=identity)
 	ind = prefetched(create_find_matching_ind_job(filter, SCP.get_obs(counts); project_ids))
-	values_job = counts_sum_blocked_job(f, SCP.get_matrix(counts), ind; dims=2)
+	values_job = counts_sum_job(f, SCP.get_matrix(counts), ind; dims=2)
 	SCP.add_column(SCP.get_var(counts), col, values_job)
 end
 obs_counts_sum(::Obs, counts, args...; kwargs...) = SCP.get_obs(counts)

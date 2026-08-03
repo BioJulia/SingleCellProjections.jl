@@ -146,10 +146,10 @@ function run_sum_squared_tests()
 			mat = SCP.get_matrix(multi_job)
 
 			# correctness on blocked input (holds before and after the per-block refactor)
-			@test fetch!(Impl.col_sum_squared_blocked_job(mat)) ≈ vec(sum(abs2, X; dims=1))
+			@test fetch!(Impl.col_sum_squared_job(mat)) ≈ vec(sum(abs2, X; dims=1))
 
 			# per-block structure: a vcat over one (cached) col_sum_squared job per block
-			fw = forward!(Impl.col_sum_squared_blocked_job(mat))
+			fw = forward!(Impl.col_sum_squared_job(mat))
 			@test fw.f === Impl.vcat_impl
 			blocks = fw.args[1]
 			@test length(blocks) == 2
@@ -158,7 +158,7 @@ function run_sum_squared_tests()
 
 			# cross-dataset dedup: same sample twice -> shared, deduplicated per-block job
 			dup = SCP.get_matrix(SCP.load_counts([h5_path, h5_path]; sample_names=["a","b"]))
-			bd = forward!(Impl.col_sum_squared_blocked_job(dup)).args[1]
+			bd = forward!(Impl.col_sum_squared_job(dup)).args[1]
 			@test bd[1] === bd[2]
 		end
 
@@ -172,10 +172,10 @@ function run_sum_squared_tests()
 			mat = SCP.get_matrix(multi_job)
 
 			# correctness on blocked input (holds before and after the per-block refactor)
-			@test fetch!(Impl.row_sum_squared_blocked_job(mat)) ≈ vec(sum(abs2, X; dims=2))
+			@test fetch!(Impl.row_sum_squared_job(mat)) ≈ vec(sum(abs2, X; dims=2))
 
 			# per-block structure: an element-wise `sum` over one (cached) row_sum_squared job per block
-			fw = forward!(Impl.row_sum_squared_blocked_job(mat))
+			fw = forward!(Impl.row_sum_squared_job(mat))
 			@test fw.f === Impl.apply_impl && fw.args[1] === sum
 			blocks = fw.args[2]
 			@test length(blocks) == 2
@@ -184,7 +184,7 @@ function run_sum_squared_tests()
 
 			# cross-dataset dedup: same sample twice -> shared, deduplicated per-block job
 			dup = SCP.get_matrix(SCP.load_counts([h5_path, h5_path]; sample_names=["a","b"]))
-			bd = forward!(Impl.row_sum_squared_blocked_job(dup)).args[2]
+			bd = forward!(Impl.row_sum_squared_job(dup)).args[2]
 			@test bd[1] === bd[2]
 		end
 

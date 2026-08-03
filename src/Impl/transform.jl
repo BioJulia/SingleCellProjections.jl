@@ -43,12 +43,12 @@ function logcellcounts_impl(X, var_ind)
 	s = SCPCore.counts_sum(identity, X, var_ind; dims=1)
 	log10.(max.(1,s))
 end
-function logcellcounts_blocked(::Preprocessing, X, var_ind)
+function logcellcounts(::Preprocessing, X, var_ind)
 	hblock_map(X; wrap=(a,_)->vcat_job(a)) do x
 		create_job(logcellcounts_impl, x, var_ind; __version=v"1.0.0")
 	end
 end
-logcellcounts_job(X, var_ind) = create_job(Preprocess{false}(logcellcounts_blocked), X, var_ind)
+logcellcounts_job(X, var_ind) = create_job(Preprocess{false}(logcellcounts), X, var_ind)
 
 
 
@@ -57,7 +57,7 @@ logcellcounts_job(X, var_ind) = create_job(Preprocess{false}(logcellcounts_block
 # (N) is passed in (cheap, from the obs table) rather than derived from the matrix size.
 loggenemean_post_impl(s, N) = log10.(expm1.(s ./ N))
 function loggenemean_job(X, nobs)
-	s = counts_sum_blocked_job(log1p, X, :; dims=2)
+	s = counts_sum_job(log1p, X, :; dims=2)
 	create_job(loggenemean_post_impl, s, nobs; __version=v"1.0.0")
 end
 
@@ -163,7 +163,7 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=:, min_cel
 	log_cell_counts = logcellcounts_job(matrix_job, var_ind_logcellcounts)
 
 	# min_cells
-	nnz_cells = counts_sum_blocked_job(!iszero, matrix_job, :; dims=2) # per-var nonzero-cell count, per block
+	nnz_cells = counts_sum_job(!iszero, matrix_job, :; dims=2) # per-var nonzero-cell count, per block
 	var_nnz_cells = SCP.add_column(SCP.id_column(var_job), "nnzCells", nnz_cells)
 	var_ind_min_cells = create_find_matching_ind_job("nnzCells"=>>=(min_cells), var_nnz_cells; project_ids=:yes)
 
@@ -212,7 +212,7 @@ function tf_idf_transform(f::Union{Mat,Var}, ::Type{T}, counts; scale_factor=10_
 	var_ind = prefetched(create_find_matching_ind_job(:, var_job; project_ids=:intersect))
 
 	nobs = fetched(SCP.nobs(counts)) # base nobs, frozen - must **not** be affected by projection
-	rowsum = counts_sum_blocked_job(identity, matrix_job, :; dims=2) # per-var sum over obs, per block
+	rowsum = counts_sum_job(identity, matrix_job, :; dims=2) # per-var sum over obs, per block
 	idf = idf_job(rowsum; nobs)
 	idf = create_remap_var_job(idf, SCP.id_column(var_job))
 
