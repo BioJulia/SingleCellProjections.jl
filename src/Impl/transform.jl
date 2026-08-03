@@ -54,8 +54,7 @@ logcellcounts_job(X, var_ind) = create_job(Preprocess{false}(logcellcounts_block
 
 function loggenemean_impl(X)
 	N = size(X,2)
-	obs_ind = 1:size(X,2)
-	s = SCPCore.counts_sum(log1p, X, obs_ind; dims=2) # TODO: Avoid passing ind since we want all
+	s = SCPCore.counts_sum(log1p, X, :; dims=2) # TODO: Avoid passing ind since we want all
 	log10.(expm1.(s./N))
 end
 loggenemean_job(X) = create_job(loggenemean_impl, X; __version=v"1.0.0")
