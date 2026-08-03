@@ -15,6 +15,17 @@ end
 col_sum_squared_blocked_job(X) = create_job(Preprocess{false}(col_sum_squared_blocked), X)
 
 
+# Block-aware row_sum_squared (per-var result): each column block yields a partial per-var sum of
+# squares, combined element-wise with `sum`. dims=2 row reduction with no mask, so (unlike counts_sum
+# dims=2) no obs index splitting; falls back to a single job when X is not block-structured.
+function row_sum_squared_blocked(::Preprocessing, X)
+	hblock_map(X; wrap=(a,_)->apply_job(sum, a)) do x
+		row_sum_squared_job(x)
+	end
+end
+row_sum_squared_blocked_job(X) = create_job(Preprocess{false}(row_sum_squared_blocked), X)
+
+
 sum_squared_to_var_job(s2, n) =
 	create_job(SCPCore.sum_squared_to_var, s2, n; __version=v"1.0.0")
 
@@ -26,7 +37,7 @@ function compute_variance(action::Action, X; assume_centered::Bool, col="varianc
 	assume_centered || throw(ArgumentError("assume_centered must be `true`: Consider using `normalize_matrix` to compute variance/std/relative_std."))
 	project == :yes && (X = action(X))
 	matrix = SCP.get_matrix(X)
-	s2 = row_sum_squared_job(matrix)
+	s2 = row_sum_squared_blocked_job(matrix)
 	n = fetched(SCP.nobs(X))
 	values = cached(sum_squared_to_var_job(s2, n))
 	SCP.table_hcat(SCP.id_column(SCP.get_var(X)), SCP.create_table(col => values))
