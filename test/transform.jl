@@ -162,6 +162,23 @@ function run_transform_tests()
 		end
 
 
+		# tf-idf on a genuinely block-structured (multi-sample) matrix: the per-var rowsum feeding `idf`
+		# is computed per block, so this guards that wiring end-to-end (correctness is unchanged vs the
+		# whole-matrix computation). The blocked counts_sum itself is spec-tested in test/counts.jl.
+		@testset "tf_idf_transform blocked" begin
+			multi_job = SCP.load_counts([h5_path, mtx_path]; sample_names=["a","b"])
+			mdata = fetch!(multi_job)
+			@test mdata.matrix isa SingleCellProjections.SCPCore.Blocks    # guard: input really is blocked
+			Xm = convert(Matrix{Float64}, unblockify(materialize(mdata)))
+			idf_m = simple_idf(Xm)
+			tf_ref = simple_tf_idf_transform(Xm, idf_m, 10_000)
+
+			tf = fetch!(SCP.tf_idf_transform(multi_job; annotate=true))
+			@test unblockify(tf.matrix) ≈ tf_ref
+			@test tf.var.idf ≈ idf_m
+		end
+
+
 		@testset "sctransform T=$T annotate=$annotate" for T in (Float64,Float32), annotate in (false,true)
 			T_args = T==Float64 ? () : (T,)
 			kwargs = annotate ? (; annotate) : (;)

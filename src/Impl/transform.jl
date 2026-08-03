@@ -211,7 +211,7 @@ function tf_idf_transform(f::Union{Mat,Var}, ::Type{T}, counts; scale_factor=10_
 	var_ind = prefetched(create_find_matching_ind_job(:, var_job; project_ids=:intersect))
 
 	nobs = fetched(SCP.nobs(counts)) # base nobs, frozen - must **not** be affected by projection
-	rowsum = cached(counts_sum_impl_job(identity, matrix_job, :; dims=2))
+	rowsum = counts_sum_blocked_job(identity, matrix_job, :; dims=2) # per-var sum over obs, per block
 	idf = idf_job(rowsum; nobs)
 	idf = create_remap_var_job(idf, SCP.id_column(var_job))
 
