@@ -67,8 +67,6 @@ _counts_sum_zero(counts::Blocks{T}) where T = zero(eltype(T))
 
 """
 	counts_sum(f, counts, ind; dims)
-
-See also: [`counts_fraction`](@ref)
 """
 function counts_sum(f::F, counts, ind; dims::Integer, f0=f(_counts_sum_zero(counts))) where F
 	@assert dims in (1,2)

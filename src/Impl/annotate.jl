@@ -17,14 +17,11 @@ add_obs_column(::Obs, data, name, column) = SCP.add_column(SCP.get_obs(data), na
 
 
 
-counts_fraction_impl_job(counts, sub_ind, tot_ind; dims) =
-	create_job(SCPCore.counts_fraction, counts, sub_ind, tot_ind; dims, __version=v"1.0.0")
-
 counts_sum_impl_job(f, counts, ind; dims) =
 	create_job(SCPCore.counts_sum, f, counts, ind; dims, __version=v"1.0.0")
 
 # Combine per-obs (or per-var) sub/tot count vectors into a fraction, flooring the denominator at 1 to
-# avoid division by zero (matches SCPCore.counts_fraction).
+# avoid division by zero.
 counts_fraction_combine(sub, tot) = sub ./ max.(1, tot)
 counts_fraction_combine_job(sub, tot) = create_job(counts_fraction_combine, sub, tot; __version=v"1.0.0")
 
