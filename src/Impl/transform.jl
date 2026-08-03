@@ -43,22 +43,23 @@ function logcellcounts_impl(X, var_ind)
 	s = SCPCore.counts_sum(identity, X, var_ind; dims=1)
 	log10.(max.(1,s))
 end
-function logcellcounts_blocked(::Preprocessing, X, var_ind)
+function logcellcounts(::Preprocessing, X, var_ind)
 	hblock_map(X; wrap=(a,_)->vcat_job(a)) do x
 		create_job(logcellcounts_impl, x, var_ind; __version=v"1.0.0")
 	end
 end
-logcellcounts_job(X, var_ind) = create_job(Preprocess{false}(logcellcounts_blocked), X, var_ind)
+logcellcounts_job(X, var_ind) = create_job(Preprocess{false}(logcellcounts), X, var_ind)
 
 
 
-function loggenemean_impl(X)
-	N = size(X,2)
-	obs_ind = 1:size(X,2)
-	s = SCPCore.counts_sum(log1p, X, obs_ind; dims=2) # TODO: Avoid passing ind since we want all
-	log10.(expm1.(s./N))
+# log gene mean = log10(expm1( mean over obs of log1p(counts) )). The inner per-var Σlog1p is a plain
+# dims=2 sum, so compute it block-aware; the log10/expm1/÷N post-step runs on the combined sum. `nobs`
+# (N) is passed in (cheap, from the obs table) rather than derived from the matrix size.
+loggenemean_post_impl(s, N) = log10.(expm1.(s ./ N))
+function loggenemean_job(X, nobs)
+	s = counts_sum_job(log1p, X, :; dims=2)
+	create_job(loggenemean_post_impl, s, nobs; __version=v"1.0.0")
 end
-loggenemean_job(X) = create_job(loggenemean_impl, X; __version=v"1.0.0")
 
 
 function scparams_impl(::Type{Tv}, ::Type{Ti}, matrix; var_ind, log_cell_counts::ROVec, log_gene_mean::ROVec) where {Tv,Ti}
@@ -81,9 +82,9 @@ create_scparams_impl_job(matrix; var_ind, log_cell_counts, log_gene_mean) =
 	table_from_compound_result(create_job(scparams_impl, matrix; var_ind=prefetched(var_ind), log_cell_counts, log_gene_mean, __version=v"1.0.0"))
 
 
-function scparams(action::Action, matrix, var, var_ind; log_cell_counts)
+function scparams(action::Action, matrix, var, var_ind; log_cell_counts, nobs)
 	# The inference is always done for the "eval" case
-	log_gene_mean = loggenemean_job(matrix)
+	log_gene_mean = loggenemean_job(matrix, nobs)
 	params = create_scparams_impl_job(matrix; var_ind, log_cell_counts, log_gene_mean) # DataFrame, but without IDs
 
 	if action isa Eval
@@ -95,8 +96,8 @@ function scparams(action::Action, matrix, var, var_ind; log_cell_counts)
 		return table_getindex_job(params, prefetched(var_ind_proj))
 	end
 end
-create_scparams_job(matrix, var, var_ind; log_cell_counts) =
-	create_job(Projectable(scparams), matrix, var, var_ind; log_cell_counts)
+create_scparams_job(matrix, var, var_ind; log_cell_counts, nobs) =
+	create_job(Projectable(scparams), matrix, var, var_ind; log_cell_counts, nobs)
 
 
 
@@ -162,12 +163,13 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=:, min_cel
 	log_cell_counts = logcellcounts_job(matrix_job, var_ind_logcellcounts)
 
 	# min_cells
-	nnz_cells = cached(counts_sum_impl_job(!iszero, matrix_job, :; dims=2)) # returns vector
+	nnz_cells = counts_sum_job(!iszero, matrix_job, :; dims=2) # per-var nonzero-cell count (feeds the cached min_cells find_matching_ind, so no outer cache here)
 	var_nnz_cells = SCP.add_column(SCP.id_column(var_job), "nnzCells", nnz_cells)
 	var_ind_min_cells = create_find_matching_ind_job("nnzCells"=>>=(min_cells), var_nnz_cells; project_ids=:yes)
 
 	var_ind = prefetched(intersect_ind_job(var_ind_logcellcounts, var_ind_min_cells))
-	params_job = create_scparams_job(matrix_job, var_job, var_ind; log_cell_counts)
+	nobs = fetched(SCP.nobs(counts)) # base nobs (cheap: obs table nrow); frozen - must **not** be affected by projection
+	params_job = create_scparams_job(matrix_job, var_job, var_ind; log_cell_counts, nobs)
 
 	if f isa Var
 		var_out = table_getindex_job(var_job, var_ind)
@@ -176,7 +178,6 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=:, min_cel
 		end
 		return var_out
 	else # if f isa Mat
-		nobs = fetched(SCP.nobs(counts)) # fetch since we need the value now and the value should **not** be affected by projecion
 		return sctransform_matrix_job(T, matrix_job, params_job, log_cell_counts; var_ind, nobs, kwargs...)
 	end
 end
@@ -211,7 +212,7 @@ function tf_idf_transform(f::Union{Mat,Var}, ::Type{T}, counts; scale_factor=10_
 	var_ind = prefetched(create_find_matching_ind_job(:, var_job; project_ids=:intersect))
 
 	nobs = fetched(SCP.nobs(counts)) # base nobs, frozen - must **not** be affected by projection
-	rowsum = cached(counts_sum_impl_job(identity, matrix_job, :; dims=2))
+	rowsum = cached(counts_sum_job(identity, matrix_job, :; dims=2)) # per-var sum over obs, per block
 	idf = idf_job(rowsum; nobs)
 	idf = create_remap_var_job(idf, SCP.id_column(var_job))
 

@@ -162,6 +162,35 @@ function run_transform_tests()
 		end
 
 
+		# tf-idf on a genuinely block-structured (multi-sample) matrix: the per-var rowsum feeding `idf`
+		# is computed per block, so this guards that wiring end-to-end (correctness is unchanged vs the
+		# whole-matrix computation). The blocked counts_sum itself is spec-tested in test/counts.jl.
+		@testset "tf_idf_transform blocked" begin
+			multi_job = SCP.load_counts([h5_path, mtx_path]; sample_names=["a","b"])
+			mdata = fetch!(multi_job)
+			@test mdata.matrix isa SingleCellProjections.SCPCore.Blocks    # guard: input really is blocked
+			Xm = convert(Matrix{Float64}, unblockify(materialize(mdata)))
+			idf_m = simple_idf(Xm)
+			tf_ref = simple_tf_idf_transform(Xm, idf_m, 10_000)
+
+			tf = fetch!(SCP.tf_idf_transform(multi_job; annotate=true))
+			@test unblockify(tf.matrix) ≈ tf_ref
+			@test tf.var.idf ≈ idf_m
+		end
+
+
+		# loggenemean = log10(expm1( mean over obs of log1p(counts) )). The inner per-var Σlog1p is a
+		# plain dims=2 sum, computed per block; the log10/expm1/÷N post-step runs on the combined sum.
+		@testset "loggenemean blocked" begin
+			multi_job = SCP.load_counts([h5_path, mtx_path]; sample_names=["a","b"])
+			mdata = fetch!(multi_job)
+			@test mdata.matrix isa SingleCellProjections.SCPCore.Blocks   # guard: input really is blocked
+			Xm = convert(Matrix{Float64}, unblockify(materialize(mdata)))
+			ref = log10.(expm1.(vec(sum(log1p, Xm; dims=2)) ./ size(Xm,2)))
+			@test fetch!(SingleCellProjections.Impl.loggenemean_job(SCP.get_matrix(multi_job), size(Xm,2))) ≈ ref
+		end
+
+
 		@testset "sctransform T=$T annotate=$annotate" for T in (Float64,Float32), annotate in (false,true)
 			T_args = T==Float64 ? () : (T,)
 			kwargs = annotate ? (; annotate) : (;)
@@ -309,6 +338,30 @@ function run_transform_tests()
 					@test materialize(p.matrix) ≈ Xs rtol=1e-3
 				end
 			end
+		end
+
+
+		# End-to-end sctransform on a genuinely block-structured (multi-sample) matrix. sctransform now
+		# composes several block-aware reductions (logcellcounts, loggenemean, nnz_cells) plus its own
+		# hblock handling in sctransform_matrix_a_impl, so this guards the whole composition against a
+		# reference computed (via SCTransform.jl) on the concatenated dense matrix.
+		@testset "sctransform blocked" begin
+			multi_job = SCP.load_counts([h5_path, mtx_path]; sample_names=["a","b"])
+			mdata = fetch!(multi_job)
+			@test mdata.matrix isa SingleCellProjections.SCPCore.Blocks   # guard: input really is blocked
+
+			Xcat = sparse(convert(Matrix{Float64}, unblockify(materialize(mdata))))
+			var_ref = DataFrame(id=mdata.var.id, name=mdata.var.name, feature_type=mdata.var.feature_type)
+			pm = scparams(Xcat, var_ref; use_cache=false)   # reference params (min_cells=5, matching SCP default)
+			Xref = sctransform(Xcat, mdata.var, pm)
+
+			sct = fetch!(SCP.sctransform(multi_job; annotate=true))
+			@test size(sct.matrix) == size(Xref)
+			@test materialize(sct.matrix) ≈ Xref rtol=1e-3
+			@test sct.var.logGeneMean ≈ pm.logGeneMean
+			@test sct.var.beta0 ≈ pm.beta0
+			@test sct.var.beta1 ≈ pm.beta1
+			@test sct.var.theta ≈ pm.theta
 		end
 
 

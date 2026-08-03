@@ -26,12 +26,17 @@ is_hblock(x::SpecRef) = x.f == SCPCore.hblock
 is_hblock(::Any) = false
 
 
-# Convenience function for applying a function to each block in a hblock spec (or to a single spec that is not wrapped in hblock)
-function hblock_map(f, spec; wrap=hblock_job)
+# Convenience function for applying a function to each block in a hblock spec (or to a single spec that
+# is not wrapped in hblock). Any additional `args` are vectors with one element per block; element i is
+# passed to `f` alongside block i. With no extra args this is the plain `f(block)` map. In the non-block
+# case each arg must have length 1.
+function hblock_map(f, spec, args...; wrap=hblock_job)
 	if is_hblock(spec)
-		wrap([f(x) for x in spec.args[1]], _get_kwarg(spec, :ranges)) # NB: this strips any wrapping like Prefetch
+		blocks = spec.args[1]
+		@assert all(a -> length(a) == length(blocks), args)
+		wrap([f(x, getindex.(args, i)...) for (i,x) in enumerate(blocks)], _get_kwarg(spec, :ranges)) # NB: this strips any wrapping like Prefetch
 	else
-		f(spec)
+		f(spec, only.(args)...)
 	end
 end
 

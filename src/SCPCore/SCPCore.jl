@@ -73,7 +73,6 @@ include("design.jl")
 include("normalize.jl")
 include("reduce.jl")
 include("statistical_tests.jl")
-include("counts_fraction.jl")
 include("counts_sum.jl")
 
 include("annotation_transfer.jl")

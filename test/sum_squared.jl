@@ -1,5 +1,8 @@
 using Test
 using SingleCellProjections
+using SingleCellProjections: SCPCore
+import SingleCellProjections.Impl as Impl
+using .SCPCore: Blocks
 using ReproducibleJobs: fetch!, forward!
 using DataFrames
 
@@ -132,6 +135,58 @@ function run_sum_squared_tests()
 			end
 		end
 
+
+		# col_sum_squared (per-obs sum of squares, dims=1, no mask) computed per block and vcat'd, so a
+		# recurring sample reuses its cached block result. Internal helper (used by local_outlier_factor).
+		@testset "col_sum_squared blocked" begin
+			multi_job = SCP.load_counts([h5_path, mtx_path]; sample_names=["a","b"])
+			data = fetch!(multi_job)
+			@test data.matrix isa Blocks
+			X = convert(Matrix{Float64}, unblockify(materialize(data)))
+			mat = SCP.get_matrix(multi_job)
+
+			# correctness on blocked input (holds before and after the per-block refactor)
+			@test fetch!(Impl.col_sum_squared_job(mat)) ≈ vec(sum(abs2, X; dims=1))
+
+			# per-block structure: a vcat over one (cached) col_sum_squared job per block
+			fw = forward!(Impl.col_sum_squared_job(mat))
+			@test fw.f === Impl.vcat_impl
+			blocks = fw.args[1]
+			@test length(blocks) == 2
+			@test blocks[1].args[1].f === SCPCore.col_sum_squared   # inner job, under the `cached` wrapper
+			@test !isequal(blocks[1], blocks[2])                    # distinct samples -> distinct jobs
+
+			# cross-dataset dedup: same sample twice -> shared, deduplicated per-block job
+			dup = SCP.get_matrix(SCP.load_counts([h5_path, h5_path]; sample_names=["a","b"]))
+			bd = forward!(Impl.col_sum_squared_job(dup)).args[1]
+			@test bd[1] === bd[2]
+		end
+
+		# row_sum_squared (per-var sum of squares, dims=2, no mask): each column block yields a partial
+		# per-var sum of squares, combined element-wise with `sum`. Internal helper (used by variance/std).
+		@testset "row_sum_squared blocked" begin
+			multi_job = SCP.load_counts([h5_path, mtx_path]; sample_names=["a","b"])
+			data = fetch!(multi_job)
+			@test data.matrix isa Blocks
+			X = convert(Matrix{Float64}, unblockify(materialize(data)))
+			mat = SCP.get_matrix(multi_job)
+
+			# correctness on blocked input (holds before and after the per-block refactor)
+			@test fetch!(Impl.row_sum_squared_job(mat)) ≈ vec(sum(abs2, X; dims=2))
+
+			# per-block structure: an element-wise `sum` over one (cached) row_sum_squared job per block
+			fw = forward!(Impl.row_sum_squared_job(mat))
+			@test fw.f === Impl.apply_impl && fw.args[1] === sum
+			blocks = fw.args[2]
+			@test length(blocks) == 2
+			@test blocks[1].args[1].f === SCPCore.row_sum_squared   # inner job, under the `cached` wrapper
+			@test !isequal(blocks[1], blocks[2])                    # distinct samples -> distinct jobs
+
+			# cross-dataset dedup: same sample twice -> shared, deduplicated per-block job
+			dup = SCP.get_matrix(SCP.load_counts([h5_path, h5_path]; sample_names=["a","b"]))
+			bd = forward!(Impl.row_sum_squared_job(dup)).args[2]
+			@test bd[1] === bd[2]
+		end
 
 	end
 end
