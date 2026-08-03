@@ -31,16 +31,16 @@ counts_sum_impl_job(f, counts, ind; dims) =
 function counts_sum_blocked(::Preprocessing, f, X, ind; dims)
 	@assert dims in (1,2)
 	if dims == 1
+		# `ind` is the row (var) mask, identical for every column block; combine disjoint per-obs results.
 		hblock_map(X; wrap=(a,_)->vcat_job(a)) do x
 			cached(counts_sum_impl_job(f, x, ind; dims))
 		end
-	elseif is_hblock(X)
-		blocks = X.args[1]
-		ranges = _get_kwarg(X, :ranges)
-		block_ind, _ = SCPCore.ind_to_blocked_ind(ind, ranges) # per-block, block-local obs selection
-		vsum_job([cached(counts_sum_impl_job(f, b, I; dims)) for (b,I) in zip(blocks, block_ind)])
 	else
-		cached(counts_sum_impl_job(f, X, ind; dims))
+		# `ind` selects obs (columns): split it per block (block-local) and sum the partial per-var results.
+		block_ind = is_hblock(X) ? first(SCPCore.ind_to_blocked_ind(ind, _get_kwarg(X, :ranges))) : [ind]
+		hblock_map(X, block_ind; wrap=(a,_)->vsum_job(a)) do x, I
+			cached(counts_sum_impl_job(f, x, I; dims))
+		end
 	end
 end
 # For dims=2, `ind` must be a concrete value during preprocessing (so it can be split per block), hence
