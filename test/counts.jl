@@ -138,5 +138,27 @@ function run_counts_tests()
 			@test length(blocks) == 2
 			@test blocks[1] === blocks[2]          # repeated sample -> shared, deduplicated job
 		end
+
+
+		# --- var_counts_fraction: per-obs (sum over sub vars) / max(1, sum over tot vars) ------------
+		# Correctness only: this will be reimplemented in terms of the (already block-tested) counts_sum,
+		# so no per-block spec/dedup assertions are needed here. `sub` must be a subset of `tot`.
+		@testset "var_counts_fraction" begin
+			sub = Set(data.var.name[2:2:20])
+			submask = in(sub).(data.var.name)
+
+			# default tot_filter = all vars
+			r = fetch!(SCP.var_counts_fraction(multi_job, "frac", "name"=>in(sub)))
+			@test r isa DataMatrix
+			@test "frac" in names(r.obs)
+			@test r.obs.frac ≈ vec(sum(X[submask, :]; dims=1)) ./ max.(1, vec(sum(X; dims=1)))
+
+			# explicit tot_filter (a superset of sub, so sub ⊆ tot holds)
+			tot = Set(data.var.name[1:30])
+			totmask = in(tot).(data.var.name)
+			@test all(submask .<= totmask)   # guard: sub ⊆ tot
+			r2 = fetch!(SCP.var_counts_fraction(multi_job, "frac2", "name"=>in(sub), "name"=>in(tot)))
+			@test r2.obs.frac2 ≈ vec(sum(X[submask, :]; dims=1)) ./ max.(1, vec(sum(X[totmask, :]; dims=1)))
+		end
 	end
 end
