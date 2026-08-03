@@ -163,7 +163,7 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=:, min_cel
 	log_cell_counts = logcellcounts_job(matrix_job, var_ind_logcellcounts)
 
 	# min_cells
-	nnz_cells = cached(counts_sum_impl_job(!iszero, matrix_job, :; dims=2)) # returns vector
+	nnz_cells = counts_sum_blocked_job(!iszero, matrix_job, :; dims=2) # per-var nonzero-cell count, per block
 	var_nnz_cells = SCP.add_column(SCP.id_column(var_job), "nnzCells", nnz_cells)
 	var_ind_min_cells = create_find_matching_ind_job("nnzCells"=>>=(min_cells), var_nnz_cells; project_ids=:yes)
 
