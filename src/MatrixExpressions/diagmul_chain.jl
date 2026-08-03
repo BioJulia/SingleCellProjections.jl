@@ -40,8 +40,10 @@ function (op::DiagMulOperation)(A,B)
 	U = op.child_adj[1] ? A' : A
 	V = op.child_adj[2] ? B' : B
 
-	@assert U isa Adjoint
-	@assert !(V isa Adjoint)
+	# @assert U isa Adjoint
+	# @assert !(V isa Adjoint)
+	@assert _is_adjoint(U)
+	@assert !_is_adjoint(V)
 
 	# @show size(U), size(V)
 	# @show typeof(U), typeof(V)

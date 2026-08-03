@@ -74,9 +74,6 @@ function _apply_chain(co::ChainOrder, ind)
 		R = r_ind < 0 ? co.factors[-r_ind].matrix : _apply_chain(co, r_ind)
 		op(L,R)
 	end
-	# @info "applied op $(typeof(op))"
-	# @show typeof(X)
-	# @show size(X)
 	X
 end
 
@@ -105,7 +102,7 @@ printnode_op(io::IO, op) = print(io, op)
 
 function AbstractTrees.printnode(io::IO, (co,ind)::Tuple{ChainOrder,Int})
 	if ind<0
-		print(co.factors[-ind])
+		print(io, co.factors[-ind])
 	else
 		left,right,op,cost = co.operations[ind]
 		printnode_op(io, op)

@@ -1,0 +1,383 @@
+[Lilljebjorn2025_AML10]
+git-tree-sha1 = "16cbcbfa8da74034293e66aa0f7cd60474fc81cb"
+lazy = true
+
+    [[Lilljebjorn2025_AML10.download]]
+    sha256 = "6cbdeac98669a75d08191b863f70ffb6e720310848d6d6ed8f0a92ec1ab2d766"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML10.tar.gz"
+
+[Lilljebjorn2025_AML104]
+git-tree-sha1 = "833588b31a9c44a5fd73ee8bc0ce3f396e390ea9"
+lazy = true
+
+    [[Lilljebjorn2025_AML104.download]]
+    sha256 = "a9c96e05678054f3a561f1434acf43fecdbc92377ee1b05ca78dfa3222fdd782"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML104.tar.gz"
+
+[Lilljebjorn2025_AML105]
+git-tree-sha1 = "8e7dc3439e4c2e516dbd66b8064af1ba4a84dab6"
+lazy = true
+
+    [[Lilljebjorn2025_AML105.download]]
+    sha256 = "1c723d56008b9fd16830355fa4f03f16c46bc4618b9fa3488221abebc0bd3022"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML105.tar.gz"
+
+[Lilljebjorn2025_AML110]
+git-tree-sha1 = "e17c1edb80f8b14def0433ddfa5fced056702ba5"
+lazy = true
+
+    [[Lilljebjorn2025_AML110.download]]
+    sha256 = "6010a37476f15060691a392399ceca7f8f47a1540f952141d716c2d6a2235530"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML110.tar.gz"
+
+[Lilljebjorn2025_AML111]
+git-tree-sha1 = "31e1b9226a80b4b7c3cf65325835461c06567aa0"
+lazy = true
+
+    [[Lilljebjorn2025_AML111.download]]
+    sha256 = "584759da2fc74cda762a42d39ac712a757a596b96b77e17cb525a8ac9da61b6b"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML111.tar.gz"
+
+[Lilljebjorn2025_AML117]
+git-tree-sha1 = "a951576603d2e9bef1fe68659ef9335e3397c0b4"
+lazy = true
+
+    [[Lilljebjorn2025_AML117.download]]
+    sha256 = "fbd8bb75db83b954ebf52a858d66f6584627dd8bb41b1a3bc6e448aed0cd44b9"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML117.tar.gz"
+
+[Lilljebjorn2025_AML123]
+git-tree-sha1 = "f4ee56d268fda5fe7e90f043c2bbdd911eff47bb"
+lazy = true
+
+    [[Lilljebjorn2025_AML123.download]]
+    sha256 = "72b89f8eadc9dea344a46eb753cf651d4a190d7c5c746d2b21826f130dc206a0"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML123.tar.gz"
+
+[Lilljebjorn2025_AML124]
+git-tree-sha1 = "20e3a6d2d70a6fac732895f75df6356901f45c78"
+lazy = true
+
+    [[Lilljebjorn2025_AML124.download]]
+    sha256 = "a6285dd71e437a3472c0ae033d82f315f8e8b9fb321023d5196797cfe3f281aa"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML124.tar.gz"
+
+[Lilljebjorn2025_AML126]
+git-tree-sha1 = "578e8e4dd324433a803e08a57d30b19ffbdde45b"
+lazy = true
+
+    [[Lilljebjorn2025_AML126.download]]
+    sha256 = "fbfea88ef3b393a5d65fed556a81a650feba864c67cc97079edb22082494d7ad"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML126.tar.gz"
+
+[Lilljebjorn2025_AML136]
+git-tree-sha1 = "e2672501e0b8c8f447c8e95602ee39836d50a265"
+lazy = true
+
+    [[Lilljebjorn2025_AML136.download]]
+    sha256 = "c04c32ff9ce12bacedc061a7436d48855429f6cc8c0605088a87de1451be8457"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML136.tar.gz"
+
+[Lilljebjorn2025_AML138]
+git-tree-sha1 = "edf112177a12f2197583dea18b7eb85e7c21b165"
+lazy = true
+
+    [[Lilljebjorn2025_AML138.download]]
+    sha256 = "b962dccf7cbed9cd15d5b8017e84c1ee73d3c2c364202e3207f69e40ac96fa7d"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML138.tar.gz"
+
+[Lilljebjorn2025_AML151]
+git-tree-sha1 = "e0dc8a86135d9e19122f3e7ab6b1c6643e9ca8f6"
+lazy = true
+
+    [[Lilljebjorn2025_AML151.download]]
+    sha256 = "52d05710dc12939c5cd22790b666a5bb35331db34ee688e1646883d2f26147c0"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML151.tar.gz"
+
+[Lilljebjorn2025_AML155]
+git-tree-sha1 = "9a81e9ec18d83df2e5000c15cae4f6ad1a9860cb"
+lazy = true
+
+    [[Lilljebjorn2025_AML155.download]]
+    sha256 = "dd3af48fa701d57a3bb233dad91fefbe477eac487dbea78a96aebcdb6652d769"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML155.tar.gz"
+
+[Lilljebjorn2025_AML157]
+git-tree-sha1 = "3f1e649893305d5e0d1ee2bdc9342c045aa80d6a"
+lazy = true
+
+    [[Lilljebjorn2025_AML157.download]]
+    sha256 = "ff24cc340caeda51fd50369e39c9986d44fdff6e6984a89c04cbec8785ae5205"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML157.tar.gz"
+
+[Lilljebjorn2025_AML161]
+git-tree-sha1 = "fa332adf901101b357af919f4b84f715593f46cd"
+lazy = true
+
+    [[Lilljebjorn2025_AML161.download]]
+    sha256 = "fa462919894a1e1388cfb6072a83c8331d81eac09b1ea65e4d13f7287c30a05b"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML161.tar.gz"
+
+[Lilljebjorn2025_AML172]
+git-tree-sha1 = "ec3b4791c4e604f4db413427c65c2514ba4fcd66"
+lazy = true
+
+    [[Lilljebjorn2025_AML172.download]]
+    sha256 = "153a93598c0098df18f4c5eab28929c05938ae93c3b8ff3e650e082939c4b589"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML172.tar.gz"
+
+[Lilljebjorn2025_AML21]
+git-tree-sha1 = "73a4c8318067163aeb4c8e9d0bb74d019865120b"
+lazy = true
+
+    [[Lilljebjorn2025_AML21.download]]
+    sha256 = "848abe211d70d17d8bc58da51311fdaa1a48ca202a6c015eba82107b8eff0ba0"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML21.tar.gz"
+
+[Lilljebjorn2025_AML23]
+git-tree-sha1 = "39a2911af6353b08279497af2e274f593160c209"
+lazy = true
+
+    [[Lilljebjorn2025_AML23.download]]
+    sha256 = "6f19ee56c31a077af82dc07f967c2e789ecbed6eee19038f872f5ff4f7c63308"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML23.tar.gz"
+
+[Lilljebjorn2025_AML24]
+git-tree-sha1 = "0d22ce1ae56e06da75cc74af81fdef1532e3e66f"
+lazy = true
+
+    [[Lilljebjorn2025_AML24.download]]
+    sha256 = "c2d5a13d71364e8aea5ba476d5b19012f54e63a33d5b3df58167e1063adee21b"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML24.tar.gz"
+
+[Lilljebjorn2025_AML25]
+git-tree-sha1 = "b20aa5244911e62a658cdcf15ece08a1dc00749a"
+lazy = true
+
+    [[Lilljebjorn2025_AML25.download]]
+    sha256 = "d02465d5648f2da260c8a6009dd97f09adb6139dfd0b2b0586daf1573c982b94"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML25.tar.gz"
+
+[Lilljebjorn2025_AML27]
+git-tree-sha1 = "48b3a5f7512107205d615ee20576f4464d526aa8"
+lazy = true
+
+    [[Lilljebjorn2025_AML27.download]]
+    sha256 = "279c5457d53f4ddd46ebe2e4d92905358437e050e371e35688a73e163aa44fe5"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML27.tar.gz"
+
+[Lilljebjorn2025_AML28]
+git-tree-sha1 = "7987a2db3cfc3f0da54226a4fcaf52dc91dee65e"
+lazy = true
+
+    [[Lilljebjorn2025_AML28.download]]
+    sha256 = "c660105380613ff2716af6cded86080ac24201c88e790ddae0811435c891c96b"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML28.tar.gz"
+
+[Lilljebjorn2025_AML32]
+git-tree-sha1 = "4f29a952297e5e1019d2ee0bb3ecd9e3ae7c712d"
+lazy = true
+
+    [[Lilljebjorn2025_AML32.download]]
+    sha256 = "2621f178f35ba515c8d8681849068989dfc79bee74c6f25d05b5d25d140df5fd"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML32.tar.gz"
+
+[Lilljebjorn2025_AML33]
+git-tree-sha1 = "95ac28017d75205ba0b22f59dabf421e1dc510a2"
+lazy = true
+
+    [[Lilljebjorn2025_AML33.download]]
+    sha256 = "ee5b8a3cbc5465c6c754469f9a696a44b90afaffad2c78808c5a77f3712ef2bd"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML33.tar.gz"
+
+[Lilljebjorn2025_AML34]
+git-tree-sha1 = "b206323aa30e2931a890a83ab9d1b98e0930114c"
+lazy = true
+
+    [[Lilljebjorn2025_AML34.download]]
+    sha256 = "3f9ef871a1bb81c697a70cd96d4d5091e382d268a8f81bfabe0c8f6f2680c7f9"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML34.tar.gz"
+
+[Lilljebjorn2025_AML37]
+git-tree-sha1 = "4a768803b5c6102ccfa08d8e793480be6fe8f4ee"
+lazy = true
+
+    [[Lilljebjorn2025_AML37.download]]
+    sha256 = "54a776afebaadcc3f9c79445962c674fa28cc914fe1ad63b96ddf65f71280951"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML37.tar.gz"
+
+[Lilljebjorn2025_AML48]
+git-tree-sha1 = "49ea4e56da45ab0cb15e179c4495c66a2eb118b4"
+lazy = true
+
+    [[Lilljebjorn2025_AML48.download]]
+    sha256 = "c51bffdb3ae1eecb73077c7dc54f6a0907028fe74bfdac8330016e063002056c"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML48.tar.gz"
+
+[Lilljebjorn2025_AML55]
+git-tree-sha1 = "bc578de31a9d46f36c26c2e55b4eb941b7baf2a2"
+lazy = true
+
+    [[Lilljebjorn2025_AML55.download]]
+    sha256 = "b345d8c3620cf90dd5df33b535c8726e105e14b9221671bbd5674efded9932f3"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML55.tar.gz"
+
+[Lilljebjorn2025_AML61]
+git-tree-sha1 = "6773cc768af9f2a5c7a3f7303a3e880bb43c324d"
+lazy = true
+
+    [[Lilljebjorn2025_AML61.download]]
+    sha256 = "77b67f86a877de3475f219951aa475ab5fdddcd9b2893344ab48f590b47fb7c9"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML61.tar.gz"
+
+[Lilljebjorn2025_AML62]
+git-tree-sha1 = "1acf1b0a68638efe150d8711fa93093913df9965"
+lazy = true
+
+    [[Lilljebjorn2025_AML62.download]]
+    sha256 = "5262a0a14db311098e3ce2f10d89745a6efafcae75fec58be3f7c7ee8cd8656c"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML62.tar.gz"
+
+[Lilljebjorn2025_AML7]
+git-tree-sha1 = "088b4e446bbea93aff60f5392d351236af2fab22"
+lazy = true
+
+    [[Lilljebjorn2025_AML7.download]]
+    sha256 = "e834f3bf0c4b6138e29fa2ec8745d663efa30d61774a2aa42976f88cc064add8"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML7.tar.gz"
+
+[Lilljebjorn2025_AML79]
+git-tree-sha1 = "d99c7e8527fd7f6dc4d6e1b5b3d5e3204928a860"
+lazy = true
+
+    [[Lilljebjorn2025_AML79.download]]
+    sha256 = "85714aed39ef0b521235d52ffcb6242686352f47571c24f47184966ae73aed8d"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML79.tar.gz"
+
+[Lilljebjorn2025_AML80]
+git-tree-sha1 = "67127d1f29ec92662171c534f53d3939cf18d90b"
+lazy = true
+
+    [[Lilljebjorn2025_AML80.download]]
+    sha256 = "5128fbf5c18cc45b349701de7fdcbd53b94b975a948dba61cb7ac36f9e287dbb"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML80.tar.gz"
+
+[Lilljebjorn2025_AML83]
+git-tree-sha1 = "154bd03c10bd1f1e8b519ab5a076ddc7c2d62724"
+lazy = true
+
+    [[Lilljebjorn2025_AML83.download]]
+    sha256 = "0f7df69c884427fdb516710054e3ada5bc15e36e7fa62f8c67d045a191f42600"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML83.tar.gz"
+
+[Lilljebjorn2025_AML85D]
+git-tree-sha1 = "adc7c387c1d5a7ca64264e805f28cb217fddd232"
+lazy = true
+
+    [[Lilljebjorn2025_AML85D.download]]
+    sha256 = "64f1ca9a7184b919f27718f03e4cc9a69bb70269a713193b5d7d6974c5a3837c"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML85D.tar.gz"
+
+[Lilljebjorn2025_AML85R]
+git-tree-sha1 = "8be9d2c604fb0978f2833a9d9359419115f628ef"
+lazy = true
+
+    [[Lilljebjorn2025_AML85R.download]]
+    sha256 = "6b0fd0a0b2ae1d479af0c784eba9b53b866efe5de552688592f28c2fe614c4c0"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML85R.tar.gz"
+
+[Lilljebjorn2025_AML9]
+git-tree-sha1 = "48af152fcf9b4ec767dbf852f07bf8b1f8cdd021"
+lazy = true
+
+    [[Lilljebjorn2025_AML9.download]]
+    sha256 = "6573d204658e9e533e313752ffe54bb3e3db1db23f2d96b9d410d3f540913469"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML9.tar.gz"
+
+[Lilljebjorn2025_AML97]
+git-tree-sha1 = "e75a13a270d0adb514e17256b286485343496898"
+lazy = true
+
+    [[Lilljebjorn2025_AML97.download]]
+    sha256 = "4d0da558d5ae42105cc5a50be8e5a7ab6007518f872dffef6113982f338b3fc5"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/AML97.tar.gz"
+
+[Lilljebjorn2025_NBM10-CD34]
+git-tree-sha1 = "b9c6d6f819fdf24967aeb476bd99a8872b38e6c6"
+lazy = true
+
+    [[Lilljebjorn2025_NBM10-CD34.download]]
+    sha256 = "162cdb79c5184a01abcba116f8764c6dfd8690c9c48499602b7060580aa4632b"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/NBM10-CD34.tar.gz"
+
+[Lilljebjorn2025_NBM10-MNC]
+git-tree-sha1 = "c64f90b01eb51761316be0db48aba19ab36c330f"
+lazy = true
+
+    [[Lilljebjorn2025_NBM10-MNC.download]]
+    sha256 = "8904ed88f31273e443e071617ef7ca4ca8f1e0455e25a3bf2973714dae659c28"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/NBM10-MNC.tar.gz"
+
+[Lilljebjorn2025_NBM11-CD34]
+git-tree-sha1 = "be202cfacbf4e2b1e4bd6f6a760959ecc6e7be38"
+lazy = true
+
+    [[Lilljebjorn2025_NBM11-CD34.download]]
+    sha256 = "b2cc2ba4b811632ea5cee6ff8d375db1ae6d4a9fe5fb55a0c9bda9ec9f0f4c9e"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/NBM11-CD34.tar.gz"
+
+[Lilljebjorn2025_NBM11-MNC]
+git-tree-sha1 = "342d8fa663ca6dbc4d26e914c7fa97113c54e272"
+lazy = true
+
+    [[Lilljebjorn2025_NBM11-MNC.download]]
+    sha256 = "e48e62ef1ca13416957d9fd911aa1a2241f0857ee756c2979e963e6c77e88f16"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/NBM11-MNC.tar.gz"
+
+[Lilljebjorn2025_NBM4-MNC]
+git-tree-sha1 = "cdfee7fbb1f079e82c87aff81a6464adee50dee8"
+lazy = true
+
+    [[Lilljebjorn2025_NBM4-MNC.download]]
+    sha256 = "fc285926f8df5c26a4aea3c598c57384c55d480ba7e47b1eacbe195c17a4d184"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/NBM4-MNC.tar.gz"
+
+[Lilljebjorn2025_NBM7-MNC]
+git-tree-sha1 = "bc15a05e80a6e6c9a147dec0183bf5ce3bd526b7"
+lazy = true
+
+    [[Lilljebjorn2025_NBM7-MNC.download]]
+    sha256 = "6bba5631cd6f9d1b3e3b0c849df3b63cd4bd8134df76faa4074d641822ec5042"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/NBM7-MNC.tar.gz"
+
+[Lilljebjorn2025_NBM8-CD34]
+git-tree-sha1 = "73d7ffd20deb61a1feccf9ce88e78491a92067b7"
+lazy = true
+
+    [[Lilljebjorn2025_NBM8-CD34.download]]
+    sha256 = "5ef5a808733d1771fe0c45ffbb1f96689ad9255396789d72378794e9b369561a"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/NBM8-CD34.tar.gz"
+
+[Lilljebjorn2025_NBM8-MNC]
+git-tree-sha1 = "1a6f89000034fbbaff0f41fcdd45a8fdf49eedd2"
+lazy = true
+
+    [[Lilljebjorn2025_NBM8-MNC.download]]
+    sha256 = "dd09bbd5e855c3ce89c11dd0c6130a4c33c167296b030cd080bf75f1d80ed67f"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/NBM8-MNC.tar.gz"
+
+[Lilljebjorn2025_mutation_status]
+git-tree-sha1 = "715fb658976c1aedddb2a2040fd954ebdd06df8a"
+lazy = true
+
+    [[Lilljebjorn2025_mutation_status.download]]
+    sha256 = "eabbe8ce5aef33fb24fbfc5e01a383dfbec94f1825443687067f91b96058af48"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/mutation_status.tar.gz"
+
+[Lilljebjorn2025_scRNA_AML]
+git-tree-sha1 = "9fd2978170498071bc3dd184473ddde4716d337f"
+lazy = true
+
+    [[Lilljebjorn2025_scRNA_AML.download]]
+    sha256 = "512785ee32cdcaf0fbe15783c2ab4127d6b67a2b0b279cba0949ae3f0349e908"
+    url = "https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/scRNA_AML.tar.gz"

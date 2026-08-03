@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking
+
+* Major refactoring of the interface, with focus on reproducibility.
+
 ## [0.4.5] - 2026-06-22
 
 ### Fixed

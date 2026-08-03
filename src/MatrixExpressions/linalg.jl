@@ -1,7 +1,8 @@
 LinearAlgebra.adjoint(X::MatrixRef) = MatrixRef(X.name, adjoint(X.matrix))
 function LinearAlgebra.adjoint(X::MatrixProduct)
-	f = reverse(X.factors) # copies vector and keeps eltype
-	MatrixProduct(map!(adjoint,f,f))
+	# f = reverse(X.factors) # copies vector and keeps eltype
+	# MatrixProduct(map!(adjoint,f,f))
+	MatrixProduct(map(adjoint, reverse(X.factors)))
 end
 LinearAlgebra.adjoint(X::MatrixSum) = MatrixSum(adjoint.(X.terms))
 
@@ -11,6 +12,10 @@ Base.:*(X::AbstractVecOrMat, A::MatrixRef) = X*A.matrix
 Base.:*(A::MatrixExpression, X::AbstractVecOrMat) = compute(matrixproduct(A, :X=>X))
 Base.:*(X::AbstractVecOrMat, A::MatrixExpression) = compute(matrixproduct(:X=>X ,A))
 
+
+function Base.convert(::Type{T}, A::MatrixExpression) where T<:Matrix
+	convert(T, compute(A))
+end
 
 # ------------------------------------------------------------------------------
 # First implementation of computations.
@@ -34,13 +39,38 @@ function compute(A::MatrixProduct)
 end
 
 
-compute(A::MatrixSum) = sum(compute, A.terms)
+function addto!(dest, src::T) where {T<:AbstractMatrix}
+	dest .+= src
+end
+
+# compute(A::MatrixSum) = sum(compute, A.terms)
+function compute(A::MatrixSum)
+	# This will get rid of any blocking. Is that what we want?
+	dest = Matrix{Float64}(undef, size(A))
+	first = true
+	for term in A.terms
+		c = compute(term)
+
+		if first
+			copyto!(dest, c)
+			first = false
+		else
+			addto!(dest, c)
+		end
+
+	end
+
+	dest
+end
 
 
-# Should be fast in Julia 1.7+ for different matrix types - TEST!
-# But we probably want to support Julia 1.6. So maybe some additional methods are needed.
-compute_diaggram(A::AbstractMatrix) = vec(sum(abs2, A; dims=1))
+compute(A::MatrixRef) = A.matrix
 
+
+# # Should be fast in Julia 1.7+ for different matrix types - TEST!
+# compute_diaggram(A::AbstractMatrix) = vec(sum(abs2, A; dims=1))
+
+compute_diaggram(A) = colsum(abs2, A)
 
 
 
@@ -62,10 +92,10 @@ end
 
 
 # TODO: do not assume Float64
-compute_diagmul(A,B) = Float64[dot(view(A,i,:), view(B,:,i)) for i=1:size(A,1)] # generic fallback
+compute_diagmul(A::AbstractMatrix, B::AbstractMatrix) = Float64[dot(view(A,i,:), view(B,:,i)) for i=1:size(A,1)] # generic fallback
 # compute_diagmul(A::Adjoint{<:Any,<:AbstractSparseMatrix},B::AbstractSparseMatrix) =
 # 	Float64[dot(view(A.parent,:,i), view(B,:,i)) for i=1:size(A,1)]
-compute_diagmul(A::Adjoint,B) =
+compute_diagmul(A::Adjoint, B::AbstractMatrix) =
 	Float64[dot(view(A.parent,:,i), view(B,:,i)) for i=1:size(A,1)] # TODO: thread?
 
 # TODO: Not currently used by diag_chain_mul, we might want to enable it?
