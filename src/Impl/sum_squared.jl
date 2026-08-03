@@ -1,14 +1,15 @@
 col_sum_squared_impl_job(X) =
-	cached(create_job(SCPCore.col_sum_squared, X; __version=v"1.0.0"))
+	create_job(SCPCore.col_sum_squared, X; __version=v"1.0.0")
 row_sum_squared_impl_job(X) =
-	cached(create_job(SCPCore.row_sum_squared, X; __version=v"1.0.0"))
+	create_job(SCPCore.row_sum_squared, X; __version=v"1.0.0")
 
 
-# Block-aware col_sum_squared (per-obs result): compute (and cache) col_sum_squared per block and vcat.
-# dims=1 column reduction with no mask, so no index splitting; falls back to a single job when X is not
-# block-structured. Lets a recurring sample reuse its cached block result.
+# Block-aware col_sum_squared (per-obs result): compute col_sum_squared per block and vcat. dims=1
+# column reduction with no mask, so no index splitting. The per-block results are cached (in the wrap,
+# for recurring-sample dedup); the combine is uncached and the non-block fallback returns the uncached
+# leaf, so the caller decides whether to cache the combined result (matches counts_sum).
 function col_sum_squared(::Preprocessing, X)
-	hblock_map(X; wrap=(a,_)->vcat_job(a)) do x
+	hblock_map(X; wrap=(a,_)->vcat_job(cached.(a))) do x
 		col_sum_squared_impl_job(x)
 	end
 end
@@ -17,9 +18,9 @@ col_sum_squared_job(X) = create_job(Preprocess{false}(col_sum_squared), X)
 
 # Block-aware row_sum_squared (per-var result): each column block yields a partial per-var sum of
 # squares, combined element-wise with `sum`. dims=2 row reduction with no mask, so (unlike counts_sum
-# dims=2) no obs index splitting; falls back to a single job when X is not block-structured.
+# dims=2) no obs index splitting. Caching as for col_sum_squared above.
 function row_sum_squared(::Preprocessing, X)
-	hblock_map(X; wrap=(a,_)->apply_job(sum, a)) do x
+	hblock_map(X; wrap=(a,_)->apply_job(sum, cached.(a))) do x
 		row_sum_squared_impl_job(x)
 	end
 end

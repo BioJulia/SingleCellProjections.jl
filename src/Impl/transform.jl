@@ -163,7 +163,7 @@ function sctransform(f::Union{Mat,Var}, ::Type{T}, counts; var_filter=:, min_cel
 	log_cell_counts = logcellcounts_job(matrix_job, var_ind_logcellcounts)
 
 	# min_cells
-	nnz_cells = counts_sum_job(!iszero, matrix_job, :; dims=2) # per-var nonzero-cell count, per block
+	nnz_cells = counts_sum_job(!iszero, matrix_job, :; dims=2) # per-var nonzero-cell count (feeds the cached min_cells find_matching_ind, so no outer cache here)
 	var_nnz_cells = SCP.add_column(SCP.id_column(var_job), "nnzCells", nnz_cells)
 	var_ind_min_cells = create_find_matching_ind_job("nnzCells"=>>=(min_cells), var_nnz_cells; project_ids=:yes)
 
@@ -212,7 +212,7 @@ function tf_idf_transform(f::Union{Mat,Var}, ::Type{T}, counts; scale_factor=10_
 	var_ind = prefetched(create_find_matching_ind_job(:, var_job; project_ids=:intersect))
 
 	nobs = fetched(SCP.nobs(counts)) # base nobs, frozen - must **not** be affected by projection
-	rowsum = counts_sum_job(identity, matrix_job, :; dims=2) # per-var sum over obs, per block
+	rowsum = cached(counts_sum_job(identity, matrix_job, :; dims=2)) # per-var sum over obs, per block
 	idf = idf_job(rowsum; nobs)
 	idf = create_remap_var_job(idf, SCP.id_column(var_job))
 
