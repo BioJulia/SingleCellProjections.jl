@@ -20,11 +20,6 @@ add_obs_column(::Obs, data, name, column) = SCP.add_column(SCP.get_obs(data), na
 counts_sum_impl_job(f, counts, ind; dims) =
 	create_job(SCPCore.counts_sum, f, counts, ind; dims, __version=v"1.0.0")
 
-# Combine per-obs (or per-var) sub/tot count vectors into a fraction, flooring the denominator at 1 to
-# avoid division by zero.
-counts_fraction_combine(sub, tot) = sub ./ max.(1, tot)
-counts_fraction_combine_job(sub, tot) = create_job(counts_fraction_combine, sub, tot; __version=v"1.0.0")
-
 # Block-aware reduction, computing (and caching) `counts_sum` per block for cross-dataset cache reuse.
 # dims=1 (per-obs result): the row (var) mask `ind` is identical for every column block; combine the
 # disjoint per-obs results with `vcat`. dims=2 (per-var result): `ind` selects obs (columns), so it is
@@ -55,6 +50,10 @@ counts_sum_job(f, X, ind; dims) =
 	create_job(Preprocess{false}(counts_sum), f, X, dims==1 ? ind : fetched(ind); dims)
 
 
+# Combine per-obs (or per-var) sub/tot count vectors into a fraction, flooring the denominator at 1 to
+# avoid division by zero.
+counts_fraction_combine(sub, tot) = sub ./ max.(1, tot)
+counts_fraction_combine_job(sub, tot) = create_job(counts_fraction_combine, sub, tot; __version=v"1.0.0")
 
 
 var_counts_fraction(::Mat, counts, args...; kwargs...) = SCP.get_matrix(counts)
