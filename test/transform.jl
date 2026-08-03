@@ -341,5 +341,29 @@ function run_transform_tests()
 		end
 
 
+		# End-to-end sctransform on a genuinely block-structured (multi-sample) matrix. sctransform now
+		# composes several block-aware reductions (logcellcounts, loggenemean, nnz_cells) plus its own
+		# hblock handling in sctransform_matrix_a_impl, so this guards the whole composition against a
+		# reference computed (via SCTransform.jl) on the concatenated dense matrix.
+		@testset "sctransform blocked" begin
+			multi_job = SCP.load_counts([h5_path, mtx_path]; sample_names=["a","b"])
+			mdata = fetch!(multi_job)
+			@test mdata.matrix isa SingleCellProjections.SCPCore.Blocks   # guard: input really is blocked
+
+			Xcat = sparse(convert(Matrix{Float64}, unblockify(materialize(mdata))))
+			var_ref = DataFrame(id=mdata.var.id, name=mdata.var.name, feature_type=mdata.var.feature_type)
+			pm = scparams(Xcat, var_ref; use_cache=false)   # reference params (min_cells=5, matching SCP default)
+			Xref = sctransform(Xcat, mdata.var, pm)
+
+			sct = fetch!(SCP.sctransform(multi_job; annotate=true))
+			@test size(sct.matrix) == size(Xref)
+			@test materialize(sct.matrix) ≈ Xref rtol=1e-3
+			@test sct.var.logGeneMean ≈ pm.logGeneMean
+			@test sct.var.beta0 ≈ pm.beta0
+			@test sct.var.beta1 ≈ pm.beta1
+			@test sct.var.theta ≈ pm.theta
+		end
+
+
 	end
 end
