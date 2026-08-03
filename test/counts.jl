@@ -160,5 +160,27 @@ function run_counts_tests()
 			r2 = fetch!(SCP.var_counts_fraction(multi_job, "frac2", "name"=>in(sub), "name"=>in(tot)))
 			@test r2.obs.frac2 ≈ vec(sum(X[submask, :]; dims=1)) ./ max.(1, vec(sum(X[totmask, :]; dims=1)))
 		end
+
+		# --- obs_counts_fraction: per-var (sum over sub obs) / max(1, sum over tot obs) --------------
+		# dims=2 analogue of var_counts_fraction; correctness only (reimplemented via counts_sum).
+		@testset "obs_counts_fraction" begin
+			sub = Set(data.obs.cell_id[2:2:end])   # spans both blocks
+			submask = in(sub).(data.obs.cell_id)
+
+			# default tot_filter = all obs
+			r = fetch!(SCP.obs_counts_fraction(multi_job, "frac", "cell_id"=>in(sub)))
+			@test r isa DataMatrix
+			@test "frac" in names(r.var)
+			@test r.var.frac ≈ vec(sum(X[:, submask]; dims=2)) ./ max.(1, vec(sum(X; dims=2)))
+
+			# explicit tot_filter (a superset of sub, so sub ⊆ tot holds)
+			tot = Set(data.obs.cell_id[1:800])
+			totmask = in(tot).(data.obs.cell_id)
+			sub2 = Set(data.obs.cell_id[2:2:800])
+			sub2mask = in(sub2).(data.obs.cell_id)
+			@test all(sub2mask .<= totmask)   # guard: sub ⊆ tot
+			r2 = fetch!(SCP.obs_counts_fraction(multi_job, "frac2", "cell_id"=>in(sub2), "cell_id"=>in(tot)))
+			@test r2.var.frac2 ≈ vec(sum(X[:, sub2mask]; dims=2)) ./ max.(1, vec(sum(X[:, totmask]; dims=2)))
+		end
 	end
 end

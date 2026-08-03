@@ -62,6 +62,9 @@ function var_counts_fraction(::Obs, counts, col, sub_filter, tot_filter; project
 	var_job = SCP.get_var(counts)
 	sub_ind = prefetched(create_find_matching_ind_job(sub_filter, var_job; project_ids))
 	tot_ind = prefetched(create_find_matching_ind_job(tot_filter, var_job; project_ids))
+
+	# TODO: Consider enforcing that sub_ind are a subset of tot_ind.
+
 	# fraction = (sum over sub vars) / (sum over tot vars), reusing the block-aware counts_sum for both
 	# so the per-block sums cache/dedup (the denominator in particular is often shared across calls).
 	X = SCP.get_matrix(counts)
@@ -88,8 +91,13 @@ function obs_counts_fraction(::Var, counts, col, sub_filter, tot_filter; project
 	sub_ind = prefetched(create_find_matching_ind_job(sub_filter, obs_job; project_ids))
 	tot_ind = prefetched(create_find_matching_ind_job(tot_filter, obs_job; project_ids))
 
-	values_job = cached(counts_fraction_impl_job(SCP.get_matrix(counts), sub_ind, tot_ind; dims=2))
-	SCP.add_column(SCP.get_var(counts), col, values_job)
+	# TODO: Consider enforcing that sub_ind are a subset of tot_ind.
+
+	# fraction = (sum over sub obs) / (sum over tot obs), reusing the block-aware counts_sum for both.
+	X = SCP.get_matrix(counts)
+	sub = counts_sum_blocked_job(identity, X, sub_ind; dims=2)
+	tot = counts_sum_blocked_job(identity, X, tot_ind; dims=2)
+	SCP.add_column(SCP.get_var(counts), col, counts_fraction_combine_job(sub, tot))
 end
 obs_counts_fraction(::Obs, counts, args...; kwargs...) = SCP.get_obs(counts)
 
