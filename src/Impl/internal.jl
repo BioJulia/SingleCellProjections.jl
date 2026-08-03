@@ -101,6 +101,11 @@ allequal_job(x) = create_job(allequal, x; __version=v"1.0.0")
 vcat_impl(v; kwargs...) = reduce(vcat, v; kwargs...)
 vcat_job(v; kwargs...) = create_job(vcat_impl, v; kwargs..., __version=v"1.0.0")
 
+# Element-wise sum of a collection of (equal-length) vectors. Used to combine per-block partial
+# results of a row reduction (dims=2), where each block covers a disjoint subset of the obs summed over.
+vsum_impl(v; kwargs...) = reduce(+, v; kwargs...)
+vsum_job(v; kwargs...) = create_job(vsum_impl, v; kwargs..., __version=v"1.0.0")
+
 hcat_impl(v; kwargs...) = reduce(hcat, v; kwargs...)
 hcat_job(v; kwargs...) = create_job(hcat_impl, v; kwargs..., __version=v"1.0.0")
 
