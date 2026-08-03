@@ -21,7 +21,7 @@ local_outlier_factor_impl_job(indices, lrd, args...) =
 
 function local_outlier_factor(action::Action, mat, full_mat; k)
 	knn_indices = find_nearest_neighbors_job(mat; k)
-	sum_squared = col_sum_squared_job(full_mat)
+	sum_squared = col_sum_squared_blocked_job(full_mat)
 	full_dists = neighbor_distances_job(knn_indices, full_mat, sum_squared)
 
 	kdists = cached(apply_job(maximum, full_dists; dims=1))
@@ -35,7 +35,7 @@ function local_outlier_factor(action::Action, mat, full_mat; k)
 		full_mat2 = action(full_mat)
 
 		knn_indices2 = find_nearest_neighbors_job(mat, mat2; k)
-		sum_squared2 = col_sum_squared_job(full_mat2)
+		sum_squared2 = col_sum_squared_blocked_job(full_mat2)
 		full_dists2 = neighbor_distances_job(knn_indices2, full_mat, sum_squared, full_mat2, sum_squared2)
 		lrd2 = local_reachability_density_job(knn_indices2, full_dists2, kdists) # NB: kdists are from the base case
 

@@ -4,6 +4,17 @@ row_sum_squared_job(X) =
 	cached(create_job(SCPCore.row_sum_squared, X; __version=v"1.0.0"))
 
 
+# Block-aware col_sum_squared (per-obs result): compute (and cache) col_sum_squared per block and vcat.
+# dims=1 column reduction with no mask, so no index splitting; falls back to a single job when X is not
+# block-structured. Lets a recurring sample reuse its cached block result.
+function col_sum_squared_blocked(::Preprocessing, X)
+	hblock_map(X; wrap=(a,_)->vcat_job(a)) do x
+		col_sum_squared_job(x)
+	end
+end
+col_sum_squared_blocked_job(X) = create_job(Preprocess{false}(col_sum_squared_blocked), X)
+
+
 sum_squared_to_var_job(s2, n) =
 	create_job(SCPCore.sum_squared_to_var, s2, n; __version=v"1.0.0")
 
