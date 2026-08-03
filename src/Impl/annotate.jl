@@ -23,18 +23,19 @@ counts_fraction_impl_job(counts, sub_ind, tot_ind; dims) =
 counts_sum_impl_job(f, counts, ind; dims) =
 	create_job(SCPCore.counts_sum, f, counts, ind; dims, __version=v"1.0.0")
 
-
-# Block-aware column reduction (per-obs result): compute `counts_sum(f, ·, ind; dims=1)` per block,
-# caching each block's result, and vcat the per-obs results. `hblock_map` falls back to a single
-# cached job when the matrix is not block-structured. Computing (and caching) per block lets a sample
-# that recurs across datasets reuse its cached block result instead of recomputing.
-function counts_sum_dims1_blocked(::Preprocessing, f, X, ind)
+# Block-aware column reduction (per-obs result): compute cached `counts_sum(f, ·, ind; dims)` per
+# block, vcat the results. `hblock_map` falls back to a single job when the spec is not
+# block-structured.
+function counts_sum_blocked(::Preprocessing, f, X, ind; dims)
+	@assert dims == 1
 	hblock_map(X; wrap=(a,_)->vcat_job(a)) do x
-		cached(counts_sum_impl_job(f, x, ind; dims=1))
+		cached(counts_sum_impl_job(f, x, ind; dims))
 	end
 end
-counts_sum_dims1_blocked_job(f, X, ind) =
-	create_job(Preprocess{false}(counts_sum_dims1_blocked), f, X, ind)
+counts_sum_blocked_job(f, X, ind; dims) =
+	create_job(Preprocess{false}(counts_sum_blocked), f, X, ind; dims)
+
+
 
 
 var_counts_fraction(::Mat, counts, args...; kwargs...) = SCP.get_matrix(counts)
@@ -52,7 +53,7 @@ var_counts_sum(::Mat, counts, args...; kwargs...) = SCP.get_matrix(counts)
 var_counts_sum(::Var, counts, args...; kwargs...) = SCP.get_var(counts)
 function var_counts_sum(::Obs, counts, col, filter; project_ids, f=identity)
 	ind = prefetched(create_find_matching_ind_job(filter, SCP.get_var(counts); project_ids))
-	values_job = counts_sum_dims1_blocked_job(f, SCP.get_matrix(counts), ind)
+	values_job = counts_sum_blocked_job(f, SCP.get_matrix(counts), ind; dims=1)
 	SCP.add_column(SCP.get_obs(counts), col, values_job)
 end
 

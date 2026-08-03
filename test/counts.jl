@@ -34,9 +34,9 @@ function run_counts_tests()
 		single_job = SCP.load_counts(h5_path; sample_names="a")
 
 		data = fetch!(multi_job)
-		@test data.matrix isa Blocks              # guard: the input really is blocked
+		@test data.matrix isa Blocks              # guard: the input really is blocked - RH, not enough, a single sample can get blocked as well, but this happens later. Testing at the spec level is what matters here.
 		nblocks = size(data.matrix.blocks, 2)
-		@test nblocks == 2
+		@test nblocks == 2 # same
 		X = convert(Matrix{Float64}, unblockify(materialize(data)))  # P×2N dense reference
 
 		@testset "var_counts_sum on blocked input" begin
@@ -51,7 +51,7 @@ function run_counts_tests()
 			@test r2.obs.nnz ≈ vec(sum(!iszero, X; dims=1))
 
 			# variable subset (the row mask is identical for every column block)
-			sub = Set(data.var.name[1:10])
+			sub = Set(data.var.name[2:2:20])
 			mask = in(sub).(data.var.name)
 			r3 = fetch!(SCP.var_counts_sum(multi_job, "sub", "name"=>in(sub)))
 			@test r3.obs.sub ≈ vec(sum(X[mask, :]; dims=1))
