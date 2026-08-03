@@ -38,7 +38,7 @@ function counts_sum_blocked(::Preprocessing, f, X, ind; dims)
 	else
 		# `ind` selects obs (columns): split it per block (block-local) and sum the partial per-var results.
 		block_ind = is_hblock(X) ? first(SCPCore.ind_to_blocked_ind(ind, _get_kwarg(X, :ranges))) : [ind]
-		hblock_map(X, block_ind; wrap=(a,_)->vsum_job(a)) do x, I
+		hblock_map(X, block_ind; wrap=(a,_)->apply_job(sum, a)) do x, I
 			cached(counts_sum_impl_job(f, x, I; dims))
 		end
 	end

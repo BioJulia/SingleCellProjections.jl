@@ -220,6 +220,7 @@ include("annotation_transfer.jl")
 # include("precompile.jl")
 
 function register_scp_functions!(scheduler::ReproducibleJobs.Scheduler)
+	ReproducibleJobs.register_function!(scheduler, sum)
 	ReproducibleJobs.register_function!(scheduler, mean)
 	ReproducibleJobs.register_function!(scheduler, /)
 end

@@ -121,19 +121,20 @@ function run_counts_tests()
 		end
 
 		@testset "obs_counts_sum reduction is mapped over blocks" begin
-			# The var "total" column is an element-wise `vsum` over per-block `counts_sum(dims=2)` jobs
-			# (one partial per-var sum per block), not a single `counts_sum` over the whole `hblock`.
+			# The var "total" column is an element-wise `sum` (apply_impl(sum, ·)) over per-block
+			# `counts_sum(dims=2)` jobs (one partial per-var sum per block), not a single `counts_sum`
+			# over the whole `hblock`.
 			fw = forward!(SCP.obs_counts_sum(multi_job, "total"))
 			v = unwrap_cached(var_value_spec(fw, "total"))
-			@test v isa SpecRef && v.f === Impl.vsum_impl
-			@test !isequal(v.args[1][1], v.args[1][2])   # distinct samples -> distinct per-block jobs
+			@test v isa SpecRef && v.f === Impl.apply_impl && v.args[1] === sum
+			@test !isequal(v.args[2][1], v.args[2][2])   # distinct samples -> distinct per-block jobs
 		end
 
 		@testset "obs_counts_sum shared sample block is deduplicated (cache reuse)" begin
 			dup_job = SCP.load_counts([h5_path, h5_path]; sample_names=["a","b"])
 			v = unwrap_cached(var_value_spec(forward!(SCP.obs_counts_sum(dup_job, "total")), "total"))
-			@test v.f === Impl.vsum_impl
-			blocks = v.args[1]                     # per-block reduction jobs
+			@test v.f === Impl.apply_impl && v.args[1] === sum
+			blocks = v.args[2]                     # per-block reduction jobs
 			@test length(blocks) == 2
 			@test blocks[1] === blocks[2]          # repeated sample -> shared, deduplicated job
 		end
