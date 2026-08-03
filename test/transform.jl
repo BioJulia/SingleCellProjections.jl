@@ -179,6 +179,18 @@ function run_transform_tests()
 		end
 
 
+		# loggenemean = log10(expm1( mean over obs of log1p(counts) )). The inner per-var Σlog1p is a
+		# plain dims=2 sum, computed per block; the log10/expm1/÷N post-step runs on the combined sum.
+		@testset "loggenemean blocked" begin
+			multi_job = SCP.load_counts([h5_path, mtx_path]; sample_names=["a","b"])
+			mdata = fetch!(multi_job)
+			@test mdata.matrix isa SingleCellProjections.SCPCore.Blocks   # guard: input really is blocked
+			Xm = convert(Matrix{Float64}, unblockify(materialize(mdata)))
+			ref = log10.(expm1.(vec(sum(log1p, Xm; dims=2)) ./ size(Xm,2)))
+			@test fetch!(SingleCellProjections.Impl.loggenemean_job(SCP.get_matrix(multi_job), size(Xm,2))) ≈ ref
+		end
+
+
 		@testset "sctransform T=$T annotate=$annotate" for T in (Float64,Float32), annotate in (false,true)
 			T_args = T==Float64 ? () : (T,)
 			kwargs = annotate ? (; annotate) : (;)
