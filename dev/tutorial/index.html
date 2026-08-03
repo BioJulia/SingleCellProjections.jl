@@ -1,77 +1,358 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Tutorial · SingleCellProjections.jl</title><meta name="title" content="Tutorial · SingleCellProjections.jl"/><meta property="og:title" content="Tutorial · SingleCellProjections.jl"/><meta property="twitter:title" content="Tutorial · SingleCellProjections.jl"/><meta name="description" content="Documentation for SingleCellProjections.jl."/><meta property="og:description" content="Documentation for SingleCellProjections.jl."/><meta property="twitter:description" content="Documentation for SingleCellProjections.jl."/><meta property="og:url" content="https://BioJulia.github.io/SingleCellProjections.jl/tutorial/"/><meta property="twitter:url" content="https://BioJulia.github.io/SingleCellProjections.jl/tutorial/"/><link rel="canonical" href="https://BioJulia.github.io/SingleCellProjections.jl/tutorial/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">SingleCellProjections.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li class="is-active"><a class="tocitem" href>Tutorial</a><ul class="internal"><li><a class="tocitem" href="#Loading-Data"><span>Loading Data</span></a></li><li><a class="tocitem" href="#Cell-Annotations"><span>Cell Annotations</span></a></li><li><a class="tocitem" href="#Transformation"><span>Transformation</span></a></li><li><a class="tocitem" href="#Normalization"><span>Normalization</span></a></li><li><a class="tocitem" href="#Filtering"><span>Filtering</span></a></li><li><a class="tocitem" href="#Principal-Component-Analysis-(PCA)"><span>Principal Component Analysis (PCA)</span></a></li><li><a class="tocitem" href="#Visualization"><span>Visualization</span></a></li><li><a class="tocitem" href="#Projections"><span>Projections</span></a></li></ul></li><li><a class="tocitem" href="../datamatrices/">Data Matrices</a></li><li><a class="tocitem" href="../matrixexpressions/">Matrix Expressions</a></li><li><a class="tocitem" href="../interface/">Interface</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Tutorial</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Tutorial</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/BioJulia/SingleCellProjections.jl/blob/main/docs/src/tutorial.md#" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Tutorial"><a class="docs-heading-anchor" href="#Tutorial">Tutorial</a><a id="Tutorial-1"></a><a class="docs-heading-anchor-permalink" href="#Tutorial" title="Permalink"></a></h1><p>For this example we will use PBMC (Peripheral Blood Mononuclear Cell) data from the paper <a href="https://www.sciencedirect.com/science/article/pii/S0092867421005833">Integrated analysis of multimodal single-cell data</a> by Hao et al. You can find the original data <a href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE164378">here</a>, in MatrixMarker (.mtx) format. For convenience, you can <a href="https://github.com/rasmushenningsson/SingleCellExampleData">download the samples recompressed as .h5 files</a>. Direct links:</p><ul><li><a href="https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P.csv.gz">Cell annotations (.csv.gz)</a></li><li><a href="https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P1.h5">Donor P1 (.h5)</a></li><li><a href="https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P2.h5">Donor P2 (.h5)</a></li><li><a href="https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P3.h5">Donor P3 (.h5)</a></li><li><a href="https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P4.h5">Donor P4 (.h5)</a></li><li><a href="https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P5.h5">Donor P5 (.h5)</a></li><li><a href="https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P6.h5">Donor P6 (.h5)</a></li><li><a href="https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P7.h5">Donor P7 (.h5)</a></li><li><a href="https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/GSE164378_RNA_ADT_3P_v2/GSE164378_RNA_ADT_3P_P8.h5">Donor P8 (.h5)</a></li></ul><p>First we load <code>SingleCellProjections</code> and the packages <code>DataFrames</code> and <code>CSV</code> for handling annotations.</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; using SingleCellProjections, DataFrames, CSV</code></pre><h2 id="Loading-Data"><a class="docs-heading-anchor" href="#Loading-Data">Loading Data</a><a id="Loading-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Loading-Data" title="Permalink"></a></h2><p>Then we load samples &quot;P1&quot; and &quot;P2&quot;, by specifiying the paths to the files and naming them.</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; base_path = &quot;/path/to/downloads/&quot;;</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; sample_paths = joinpath.(base_path, [&quot;GSE164378_RNA_ADT_3P_P1.h5&quot;, &quot;GSE164378_RNA_ADT_3P_P2.h5&quot;]);</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; counts = load_counts(sample_paths; sample_names=[&quot;P1&quot;,&quot;P2&quot;])</code><code class="nohighlight hljs ansi" style="display:block;">DataMatrix (33766 variables and 35340 observations)
-  SparseMatrixCSC{Int64, Int32}
-  Variables: <span class="sgr4">id</span>, feature_type, name, genome, read, pattern, sequence
-  Observations: <span class="sgr4">cell_id</span>, sampleName, barcode</code></pre><p>Data sets in <code>SingleCellProjections</code> are represented as <code>DataMatrix</code> objects, which are matrices with annotations for <code>var</code> (variables/genes/features) and <code>obs</code> (observations, typically cells). Above, <code>counts</code> is a <code>DataMatrix</code> where the counts are stored in a sparse matrix. You can also see the available annotations for variables and observations. To access the different parts, use:</p><ul><li><code>counts.matrix</code> - For the matrix</li><li><code>counts.var</code> - Variable annotations (<code>DataFrame</code>)</li><li><code>counts.obs</code> - Observation annotations (<code>DataFrame</code>)</li></ul><h2 id="Cell-Annotations"><a class="docs-heading-anchor" href="#Cell-Annotations">Cell Annotations</a><a id="Cell-Annotations-1"></a><a class="docs-heading-anchor-permalink" href="#Cell-Annotations" title="Permalink"></a></h2><p>Here we compute a new <code>obs</code> annotation where we count the fraction of reads coming from Mitochondrial genes for each cell:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; var_counts_fraction!(counts, &quot;name&quot;=&gt;startswith(&quot;MT-&quot;), &quot;feature_type&quot;=&gt;isequal(&quot;Gene Expression&quot;), &quot;fraction_mt&quot;)</code><code class="nohighlight hljs ansi" style="display:block;">DataMatrix (33766 variables and 35340 observations)
-  SparseMatrixCSC{Int64, Int32}
-  Variables: <span class="sgr4">id</span>, feature_type, name, genome, read, pattern, sequence
-  Observations: <span class="sgr4">cell_id</span>, sampleName, barcode, fraction_mt
-  Models: VarCountsFractionModel(subset_size=13, total_size=33538, col=&quot;fraction_mt&quot;)</code></pre><p>Note that the new annotation <code>fraction_mt</code> is present in the output.</p><p>We will also load some more cell annotations from the provided file.</p><pre><code class="language-julia-repl hljs">julia&gt; cell_annotations = CSV.read(joinpath(base_path, &quot;GSE164378_RNA_ADT_3P.csv.gz&quot;), DataFrame);</code></pre><p>To merge, we use the <code>DataFrames</code> function <code>leftjoin!</code>, since it takes care of matching the cells in <code>counts</code> to the cells in <code>cell_annotations</code> based on the <code>:barcode</code> column.</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; leftjoin!(counts.obs, cell_annotations; on=:barcode);</code></pre><p>Let&#39;s look at some annotations for the first few cells:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; counts.obs[1:5,[&quot;cell_id&quot;,&quot;sampleName&quot;,&quot;barcode&quot;,&quot;fraction_mt&quot;,&quot;celltype.l1&quot;]]</code><code class="nohighlight hljs ansi" style="display:block;"><span class="sgr1">5×5 DataFrame</span>
-<span class="sgr1"> Row </span>│<span class="sgr1"> cell_id                 sampleName  barcode              fraction_mt  celltype.l1 </span>
-<span class="sgr1">     </span>│<span class="sgr90"> String                  String      String               Float64      String7?    </span>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Tutorial · SingleCellProjections.jl</title><meta name="title" content="Tutorial · SingleCellProjections.jl"/><meta property="og:title" content="Tutorial · SingleCellProjections.jl"/><meta property="twitter:title" content="Tutorial · SingleCellProjections.jl"/><meta name="description" content="Documentation for SingleCellProjections.jl."/><meta property="og:description" content="Documentation for SingleCellProjections.jl."/><meta property="twitter:description" content="Documentation for SingleCellProjections.jl."/><meta property="og:url" content="https://BioJulia.github.io/SingleCellProjections.jl/tutorial/"/><meta property="twitter:url" content="https://BioJulia.github.io/SingleCellProjections.jl/tutorial/"/><link rel="canonical" href="https://BioJulia.github.io/SingleCellProjections.jl/tutorial/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">SingleCellProjections.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li class="is-active"><a class="tocitem" href>Tutorial</a><ul class="internal"><li><a class="tocitem" href="#Loading-Data"><span>Loading Data</span></a></li><li><a class="tocitem" href="#Quality-Filtering"><span>Quality Filtering</span></a></li><li><a class="tocitem" href="#Transformation"><span>Transformation</span></a></li><li><a class="tocitem" href="#Normalization"><span>Normalization</span></a></li><li><a class="tocitem" href="#Principal-Component-Analysis"><span>Principal Component Analysis</span></a></li><li><a class="tocitem" href="#Annotations"><span>Annotations</span></a></li><li><a class="tocitem" href="#Visualization"><span>Visualization</span></a></li><li><a class="tocitem" href="#Projections"><span>Projections</span></a></li></ul></li><li><a class="tocitem" href="../userguide/">User Guide</a></li><li><a class="tocitem" href="../datamatrices/">Data Matrices</a></li><li><a class="tocitem" href="../matrixexpressions/">Matrix Expressions</a></li><li><a class="tocitem" href="../interface/">Interface</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Tutorial</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Tutorial</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/BioJulia/SingleCellProjections.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/BioJulia/SingleCellProjections.jl/blob/main/docs/src/tutorial.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Tutorial"><a class="docs-heading-anchor" href="#Tutorial">Tutorial</a><a id="Tutorial-1"></a><a class="docs-heading-anchor-permalink" href="#Tutorial" title="Permalink"></a></h1><p>The goals of this tutorial are to:</p><ol><li>Show a standard workflow for analyzing single cell RNA-seq data.</li><li>Provide a brief overview of how <code>SingleCellProjections.jl</code> and <code>ReproducibleJobs.jl</code> work.</li><li>Show how to easily project one data set onto another.</li></ol><p>We will use an <a href="https://en.wikipedia.org/wiki/Acute_myeloid_leukemia">Acute Myeloid Leukemia (AML)</a> data set from the paper:</p><blockquote><p>Henrik Lilljebjörn, Pablo Peña-Martínez, Hanna Thorsson, Rasmus Henningsson, Marianne Rissler, Niklas Landberg, Noelia Puente-Moncada, Sofia von Palffy, Vendela Rissler, Petr Stanek, Jonathan Desponds, Xiangfu Zhong, Gunnar Juliusson, Vladimir Lazarevic, Sören Lehmann, Magnus Fontes, Helena Ågerstam, Carl Sandén, Christina Orsmark-Pietras, Thoas Fioretos. &quot;<a href="https://doi.org/10.1038/s41467-025-66546-6">The AML cellular state space unveils <em>NPM1</em> immune evasion subtypes with distinct clinical outcomes</a>&quot;. Nat Commun 16, 10592 (2025).</p></blockquote><p>You can download the data here:</p><ul><li><a href="https://doi.org/10.17044/scilifelab.23715648">Single Cell RNA-seq Data</a> - for this tutorial, we will use some of the .h5 files.</li><li><a href="https://github.com/rasmushenningsson/SingleCellExampleData/releases/download/Lilljebjorn2025/scRNA_AML.tar.gz">Cell annotations</a></li></ul><p>The data set contains 38 patient samples and 8 samples from healthy donors. The samples contain ~6000 cells on average, with measurements from 32738 genes.</p><p>First, we will load <a href="https://BioJulia.github.io/SingleCellProjections.jl">SingleCellProjections.jl</a> and some other useful packages:</p><ul><li><a href="https://github.com/rasmushenningsson/ReproducibleJobs.jl">ReproducibleJobs.jl</a> provides a framework used by <code>SingleCellProjections</code> to handle computations, caching etc.</li><li><a href="https://github.com/JuliaData/DataFrames.jl">DataFrames.jl</a> and <a href="https://github.com/JuliaData/CSV.jl">CSV.jl</a> we use for handling and loading tabular data.</li><li><a href="https://github.com/JuliaSparse/SparseArrays.jl">SparseArrays.jl</a> is used under the hood by SingleCellProjections. We just load it here so we can inspect some of the raw data.</li></ul><pre><code class="language-julia hljs">using SingleCellProjections
+import SingleCellProjections as SCP
+using ReproducibleJobs
+using CSV
+using DataFrames
+using SparseArrays</code></pre><h2 id="Loading-Data"><a class="docs-heading-anchor" href="#Loading-Data">Loading Data</a><a id="Loading-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Loading-Data" title="Permalink"></a></h2><p>Let&#39;s start by loading two healthy Normal Bone Marrow (NBM) samples. These samples are from the same donor, but one has been enriched for immature (CD34 positive) cells. This was done because AML patients have more immature cells in their bone marrow than a healthy person. Combined, the NBM samples make a good reference when looking at AML samples later.</p><p>You&#39;ll need to change the paths to wherever you have downloaded your files.</p><pre><code class="language-julia hljs">nbm_names = [&quot;NBM10-CD34&quot;, &quot;NBM10-MNC&quot;]
+nbm_paths = joinpath.(&quot;samples&quot;, string.(nbm_names, &quot;.h5&quot;))</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{String}:
+ &quot;samples/NBM10-CD34.h5&quot;
+ &quot;samples/NBM10-MNC.h5&quot;</code></pre><p>Loading is done using <code>SCP.load_counts</code>.</p><pre><code class="language-julia hljs">raw_counts = SCP.load_counts(nbm_paths; sample_names=nbm_names)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32">load_counts</span> <span class="sgr90">(DataMatrixFunction)</span>
+├─ <span class="sgr35">Vector</span>
+│  ├─ <span class="sgr32">checksummedfilepath</span> <span class="sgr90">(prefetch)</span> <span class="sgr32">(cached)</span>
+│  │  └─ samples/NBM10-CD34.h5<span class="sgr90">@2026-08-03T15:54:02.253</span>
+│  └─ <span class="sgr32">checksummedfilepath</span> <span class="sgr90">(prefetch)</span> <span class="sgr32">(cached)</span>
+│     └─ samples/NBM10-MNC.h5<span class="sgr90">@2026-08-03T15:54:05.654</span>
+├─ <span class="sgr34">extra_id_cols:</span> &quot;feature_type&quot;
+├─ <span class="sgr34">prefilter:</span> &quot;feature_type&quot; =&gt; <span class="sgr36">Base.Fix2</span>(<span class="sgr36">isequal</span>, &quot;Gene Expression&quot;)
+└─ <span class="sgr34">sample_names:</span> [&quot;NBM10-CD34&quot;, &quot;NBM10-MNC&quot;]
+</code></pre><p>This creates a <code>Job</code>, which is a kind of specification or recipe for what to compute. <code>Job</code>s are the cornerstone of <code>ReproducibleJobs.jl</code> since it makes it possible to reason about computations without performing them. Importantly, some results are cached, so when we come back another day, we do not need to recompute everything again. This mostly happens under the hood, and it will not be the focus of this tutorial.</p><p>To actually retrieve the data, we need to use <code>fetch!</code>.</p><div class="admonition is-warning" id="fetch!-a02d1f398b558675"><header class="admonition-header">fetch!<a class="admonition-anchor" href="#fetch!-a02d1f398b558675" title="Permalink"></a></header><div class="admonition-body"><p>Calling <code>fetch!</code> forces a computation (or loading from the cache), and it should thus only be used when needed. Often, the <code>ReproducibleJobs.jl</code> machinery can avoid computing/loading results from intermediate steps altogether, so if you only use an end result, only call <code>fetch!</code> on that job.</p></div></div><pre><code class="language-julia hljs">c = fetch!(raw_counts)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">DataMatrix (32738 variables and 13223 observations)
+  Block Matrix (32×14)
+  Variables: <span class="sgr4">id</span>, name, feature_type, genome, read, pattern, sequence
+  Observations: <span class="sgr4">cell_id</span>, sample_name, barcode</code></pre><p>The result is a <code>DataMatrix</code> (read more about them here: <a href="../datamatrices/#Data-Matrices">Data Matrices</a>). Here we have a <code>DataMatrix</code> where the rows (variables) are genes and the columns (observations) are cells. Inside, there is a matrix with the raw counts, and annotation tables for the genes and the cells.</p><p>Here are the first few cells and genes:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; c.obs[1:6,:]</code><code class="nohighlight hljs ansi" style="display:block;"><span class="sgr1">6×3 DataFrame</span>
+<span class="sgr1"> Row </span>│<span class="sgr1"> cell_id                        sample_name  barcode            </span>
+<span class="sgr1">     </span>│<span class="sgr90"> String                         String       String             </span>
+─────┼────────────────────────────────────────────────────────────────
+   1 │ NBM10-CD34_AAACCCAAGCGTATGG-1  NBM10-CD34   AAACCCAAGCGTATGG-1
+   2 │ NBM10-CD34_AAACCCAAGCGTTACT-1  NBM10-CD34   AAACCCAAGCGTTACT-1
+   3 │ NBM10-CD34_AAACCCAGTGACTAAA-1  NBM10-CD34   AAACCCAGTGACTAAA-1
+   4 │ NBM10-CD34_AAACCCAGTTTCGACA-1  NBM10-CD34   AAACCCAGTTTCGACA-1
+   5 │ NBM10-CD34_AAACGAAAGTCATGCT-1  NBM10-CD34   AAACGAAAGTCATGCT-1
+   6 │ NBM10-CD34_AAACGAACACTACCCT-1  NBM10-CD34   AAACGAACACTACCCT-1</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; c.var[1:6,:]</code><code class="nohighlight hljs ansi" style="display:block;"><span class="sgr1">6×7 DataFrame</span>
+<span class="sgr1"> Row </span>│<span class="sgr1"> id               name          feature_type     genome  read    pattern  sequence </span>
+<span class="sgr1">     </span>│<span class="sgr90"> String           String        String           String  String  String   String   </span>
 ─────┼───────────────────────────────────────────────────────────────────────────────────
-   1 │ P1_L1_AAACCCAAGACATACA  P1          L1_AAACCCAAGACATACA    0.0330832  CD4 T
-   2 │ P1_L1_AAACCCACATCGGTTA  P1          L1_AAACCCACATCGGTTA    0.0649309  Mono
-   3 │ P1_L1_AAACCCAGTGGAACAC  P1          L1_AAACCCAGTGGAACAC    0.0541372  NK
-   4 │ P1_L1_AAACCCATCTGCGGAC  P1          L1_AAACCCATCTGCGGAC    0.0712244  CD4 T
-   5 │ P1_L1_AAACGAAAGTTACTCG  P1          L1_AAACGAAAGTTACTCG    0.0625228  CD4 T</code></pre><h2 id="Transformation"><a class="docs-heading-anchor" href="#Transformation">Transformation</a><a id="Transformation-1"></a><a class="docs-heading-anchor-permalink" href="#Transformation" title="Permalink"></a></h2><p>The raw counts data is not suitable for analyses like PCA, since the data is far from normally distributed. A common strategy to handle this is to transform the data. Here we will use <a href="https://github.com/rasmushenningsson/SCTransform.jl">SCTransform</a> (see also <a href="https://github.com/satijalab/sctransform">original sctransform implementation in R</a>).</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; transformed = sctransform(counts)</code><code class="nohighlight hljs ansi" style="display:block;">DataMatrix (20239 variables and 35340 observations)
+   1 │ ENSG00000243485  MIR1302-10    Gene Expression  hg19
+   2 │ ENSG00000237613  FAM138A       Gene Expression  hg19
+   3 │ ENSG00000186092  OR4F5         Gene Expression  hg19
+   4 │ ENSG00000238009  RP11-34P13.7  Gene Expression  hg19
+   5 │ ENSG00000239945  RP11-34P13.8  Gene Expression  hg19
+   6 │ ENSG00000237683  AL627309.1    Gene Expression  hg19</code></pre><p>You rarely need to access the raw count matrix directly. It is stored in a blocked format that&#39;s efficient for the computations that SingleCellProjections needs. But to take a look, we can convert it to a regular sparse matrix and show a small part of it:</p><pre><code class="language-julia hljs">convert(SparseMatrixCSC, c.matrix)[1:100,1:100]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">100×100 SparseMatrixCSC{Int64, Int32} with 766 stored entries:
+⎡⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⎤
+⎢⠈⠀⠀⠈⠀⠀⠀⠈⠀⠈⠈⠈⠀⠀⠀⠈⠀⠁⠀⠈⠀⠀⠁⠀⎥
+⎢⠠⠀⠀⠆⢀⠀⠀⠀⠂⢀⠠⠤⢂⠄⠐⠀⠀⢠⠀⠠⠀⠠⠠⠀⎥
+⎢⠈⠀⠀⠀⠨⠁⠂⠀⠀⠀⠀⠁⠑⠀⠀⠀⠁⠀⠀⠀⠀⠀⠀⠀⎥
+⎢⠀⠒⠐⠒⠀⠒⠂⠊⠒⠒⠐⠂⠐⠂⠒⠐⠂⠐⠐⠀⠐⠐⠀⠐⎥
+⎢⠀⠉⠀⠈⠁⠁⠀⠀⠈⠈⠅⠀⠀⠈⠍⠀⠄⠀⠈⠈⠈⠀⠀⠀⎥
+⎢⣔⣦⣶⣖⢲⡦⣚⠤⡂⣴⠖⡶⣆⡔⣴⢒⡐⣔⢀⠄⠐⡶⢆⣆⎥
+⎢⠐⡒⠱⠙⡛⠚⡐⠒⠶⠷⢙⡓⢒⡖⠒⠖⠐⠜⠑⠵⠂⡲⠐⠂⎥
+⎢⠋⠛⠟⠛⠙⠛⠋⠙⠓⠟⠻⠛⠛⠛⠛⠚⠊⠻⠛⠟⠛⠙⠙⠛⎥
+⎢⠤⡦⠤⢤⠤⡦⠆⢥⡦⢶⡶⡦⠴⢶⢄⡠⠠⢔⢤⢴⢤⢴⠢⠀⎥
+⎢⡚⡗⣌⣵⢍⣅⡡⠉⣨⢕⢝⣚⡒⠆⠌⣣⠈⠲⢱⣀⠡⡏⠘⡈⎥
+⎣⠐⠛⠒⠛⠚⠀⠂⠐⠱⢓⠛⠊⠒⠁⠂⠘⠐⠛⠒⠚⠘⠓⠒⠒⎦</code></pre><h2 id="Quality-Filtering"><a class="docs-heading-anchor" href="#Quality-Filtering">Quality Filtering</a><a id="Quality-Filtering-1"></a><a class="docs-heading-anchor-permalink" href="#Quality-Filtering" title="Permalink"></a></h2><p>Some of the cells in the data set are of poor quality, and we want to get rid of them before continuing the analysis. Commonly used quality measures are the fraction of reads from Mitochondrial genes, the total read count per cell, and the number of genes with non-zero counts. A high fraction of Mitochondrial reads can indicate that a cell is dying. The total read count and number of expressed genes help determine whether there is enough data for a meaningful analysis.</p><p>We set up the quality annotations like this:</p><pre><code class="language-julia hljs">counts = SCP.var_counts_fraction(raw_counts, &quot;fraction_mt&quot;, &quot;name&quot;=&gt;startswith(&quot;MT-&quot;))
+counts = SCP.var_counts_sum(counts, &quot;total_RNA_count&quot;)
+counts = SCP.var_counts_sum(!iszero, counts, &quot;nonzero_RNA_count&quot;)
+counts = SCP.obs_counts_sum(!iszero, counts, &quot;nonzero_cell_count&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32">obs_counts_sum</span> <span class="sgr90">(DataMatrixFunction)</span>
+├─ <span class="sgr32">var_counts_sum</span> <span class="sgr90">(DataMatrixFunction)</span>
+│  ├─ <span class="sgr32">var_counts_sum</span> <span class="sgr90">(DataMatrixFunction)</span>
+│  │  ├─ <span class="sgr32">var_counts_fraction</span> <span class="sgr90">(DataMatrixFunction)</span>
+│  │  │  ├─ <span class="sgr32">load_counts</span> <span class="sgr90">(DataMatrixFunction)</span>
+│  │  │  │  ├─ <span class="sgr35">Vector</span>
+│  │  │  │  │  ⋮
+│  │  │  │  │  
+│  │  │  │  ├─ <span class="sgr34">extra_id_cols:</span> &quot;feature_type&quot;
+│  │  │  │  ├─ <span class="sgr34">prefilter:</span> &quot;feature_type&quot; =&gt; <span class="sgr36">Base.Fix2</span>(<span class="sgr36">isequal</span>, &quot;Gene Expression&quot;)
+│  │  │  │  └─ <span class="sgr34">sample_names:</span> [&quot;NBM10-CD34&quot;, &quot;NBM10-MNC&quot;]
+│  │  │  ├─ &quot;fraction_mt&quot;
+│  │  │  ├─ &quot;name&quot; =&gt; <span class="sgr36">Base.Fix2</span>(<span class="sgr36">startswith</span>, &quot;MT-&quot;)
+│  │  │  ├─ <span class="sgr36">Returns(</span>true<span class="sgr36">)</span>
+│  │  │  └─ <span class="sgr34">project_ids:</span> :intersect
+│  │  ├─ &quot;total_RNA_count&quot;
+│  │  ├─ <span class="sgr36">Returns(</span>true<span class="sgr36">)</span>
+│  │  ├─ <span class="sgr34">f:</span> <span class="sgr36">identity</span>
+│  │  └─ <span class="sgr34">project_ids:</span> :intersect
+│  ├─ &quot;nonzero_RNA_count&quot;
+│  ├─ <span class="sgr36">Returns(</span>true<span class="sgr36">)</span>
+│  ├─ <span class="sgr34">f:</span> <span class="sgr36">!iszero</span>
+│  └─ <span class="sgr34">project_ids:</span> :intersect
+├─ &quot;nonzero_cell_count&quot;
+├─ <span class="sgr36">Returns(</span>true<span class="sgr36">)</span>
+├─ <span class="sgr34">f:</span> <span class="sgr36">!iszero</span>
+└─ <span class="sgr34">project_ids:</span> :no
+</code></pre><p>And apply filtering:</p><pre><code class="language-julia hljs">filtered = SCP.filter_obs(&quot;fraction_mt&quot; =&gt; &lt;(0.15), counts)
+filtered = SCP.filter_obs(&quot;total_RNA_count&quot; =&gt; &gt;(1000), filtered)
+filtered = SCP.filter_obs(&quot;nonzero_RNA_count&quot; =&gt; &gt;(500), filtered)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32">filter_matrix</span> <span class="sgr90">(Preprocess)</span>
+├─ <span class="sgr32">filter_matrix</span> <span class="sgr90">(Preprocess)</span>
+│  ├─ <span class="sgr32">filter_matrix</span> <span class="sgr90">(Preprocess)</span>
+│  │  ├─ <span class="sgr32">obs_counts_sum</span> <span class="sgr90">(DataMatrixFunction)</span>
+│  │  │  ├─ <span class="sgr32">var_counts_sum</span> <span class="sgr90">(DataMatrixFunction)</span>
+│  │  │  │  ├─ <span class="sgr32">var_counts_sum</span> <span class="sgr90">(DataMatrixFunction)</span>
+│  │  │  │  │  ⋮
+│  │  │  │  │  
+│  │  │  │  ├─ &quot;nonzero_RNA_count&quot;
+│  │  │  │  ├─ <span class="sgr36">Returns(</span>true<span class="sgr36">)</span>
+│  │  │  │  ├─ <span class="sgr34">f:</span> <span class="sgr36">!iszero</span>
+│  │  │  │  └─ <span class="sgr34">project_ids:</span> :intersect
+│  │  │  ├─ &quot;nonzero_cell_count&quot;
+│  │  │  ├─ <span class="sgr36">Returns(</span>true<span class="sgr36">)</span>
+│  │  │  ├─ <span class="sgr34">f:</span> <span class="sgr36">!iszero</span>
+│  │  │  └─ <span class="sgr34">project_ids:</span> :no
+│  │  └─ <span class="sgr34">fobs:</span> &quot;fraction_mt&quot; =&gt; <span class="sgr36">Base.Fix2</span>(<span class="sgr36">&lt;</span>, 0.15)
+│  └─ <span class="sgr34">fobs:</span> &quot;total_RNA_count&quot; =&gt; <span class="sgr36">Base.Fix2</span>(<span class="sgr36">&gt;</span>, 1000)
+└─ <span class="sgr34">fobs:</span> &quot;nonzero_RNA_count&quot; =&gt; <span class="sgr36">Base.Fix2</span>(<span class="sgr36">&gt;</span>, 500)
+</code></pre><p>And if we <code>fetch!</code> the result:</p><pre><code class="language-julia hljs">fetch!(filtered)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">DataMatrix (32738 variables and 11969 observations)
+  Block Matrix (32×14)
+  Variables: <span class="sgr4">id</span>, name, feature_type, genome, read, pattern, sequence, nonzero_cell_count
+  Observations: <span class="sgr4">cell_id</span>, sample_name, barcode, fraction_mt, total_RNA_count, nonzero_RNA_count</code></pre><p>We see that filtering reduced the number of cells from 13223 to 11969, and that the new annotations are present in the data matrix.</p><h2 id="Transformation"><a class="docs-heading-anchor" href="#Transformation">Transformation</a><a id="Transformation-1"></a><a class="docs-heading-anchor-permalink" href="#Transformation" title="Permalink"></a></h2><p>The raw counts data is not suitable for analyses like PCA, since the data is far from normally distributed. A common strategy to handle this is to transform the data. Here we will use <a href="https://github.com/rasmushenningsson/SCTransform.jl">SCTransform</a> (see also <a href="https://github.com/satijalab/sctransform">original sctransform implementation in R</a>).</p><pre><code class="language-julia hljs">transformed = SCP.sctransform(filtered)
+fetch!(transformed)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">DataMatrix (19371 variables and 11969 observations)
   A+B₁B₂B₃
-  Variables: <span class="sgr4">id</span>, feature_type, name, genome, read, pattern, sequence, logGeneMean, outlier, ...
-  Observations: <span class="sgr4">cell_id</span>, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, ...
-  Models: SCTransformModel(nvar=20239, clip=34.32), VarCountsFraction</code></pre><p>From the output, we see that the number of variables have been reduced, since the default <code>sctransform</code> options remove variables present in very few cells and only keeps variables with <code>feature_type</code> set to <code>&quot;Gene Expression&quot;</code>.</p><p>The matrix is now shown as <code>A+B₁B₂B₃</code>. This is normally not very important from the user&#39;s point of view, but it is critical for explaining how <code>SingleCellProjections</code> can be fast and not use too much memory. Instead of storing the SCTransformed matrix as a huge dense matrix, it is stored in memory as a <code>MatrixExpression</code>, in this case a sparse matrix <code>A</code> plus a product of three smaller matrices <code>B₁</code>,<code>B₂</code> and <code>B₃</code>.</p><h2 id="Normalization"><a class="docs-heading-anchor" href="#Normalization">Normalization</a><a id="Normalization-1"></a><a class="docs-heading-anchor-permalink" href="#Normalization" title="Permalink"></a></h2><p>After transformation we always want to normalize the data. At the very least, data should be centered for PCA to work properly, this can be achieved by just running <code>normalize_matrix</code> with the default parameters. Here, we also want to regress out <code>&quot;fraction_mt&quot;</code>. You can add more <code>obs</code> annotations (categorical and/or numerical) to regress out if you need.</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; normalized = normalize_matrix(transformed, &quot;fraction_mt&quot;)</code><code class="nohighlight hljs ansi" style="display:block;">DataMatrix (20239 variables and 35340 observations)
+  Variables: <span class="sgr4">id</span>, name, feature_type, genome, read, pattern, sequence, nonzero_cell_count
+  Observations: <span class="sgr4">cell_id</span>, sample_name, barcode, fraction_mt, total_RNA_count, nonzero_RNA_count</code></pre><p>From the output, we see that the number of variables has been reduced, since by default, <code>sctransform</code> removes variables present in very few cells.</p><p>The matrix is now shown as <code>A+B₁B₂B₃</code>. This is normally not very important from the user&#39;s point of view, but it is critical for explaining how <code>SingleCellProjections</code> can be fast and not use too much memory. Instead of storing the SCTransformed matrix as a huge dense matrix, it is stored in memory as a <code>MatrixExpression</code>, in this case a sparse matrix <code>A</code> plus a product of three smaller matrices <code>B₁</code>,<code>B₂</code> and <code>B₃</code>.</p><h2 id="Normalization"><a class="docs-heading-anchor" href="#Normalization">Normalization</a><a id="Normalization-1"></a><a class="docs-heading-anchor-permalink" href="#Normalization" title="Permalink"></a></h2><p>After transformation we always want to normalize the data. At the very least, data should be centered for PCA to work properly. This can be achieved by just running <code>SCP.normalize_matrix</code> with the default parameters. Here, we also want to regress out <code>&quot;fraction_mt&quot;</code>. You can add more <code>obs</code> annotations (categorical and/or numerical) to regress out if needed.</p><pre><code class="language-julia hljs">normalized = SCP.normalize_matrix(transformed, &quot;fraction_mt&quot;)
+fetch!(normalized)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">DataMatrix (19371 variables and 11969 observations)
   A+B₁B₂B₃+(-β)X&#39;
-  Variables: <span class="sgr4">id</span>, feature_type, name, genome, read, pattern, sequence, logGeneMean, outlier, ...
-  Observations: <span class="sgr4">cell_id</span>, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, ...
-  Models: NormalizationModel(rank=2, ~1+num(fraction_mt)), SCTransform, VarCountsFraction</code></pre><p>Now the matrix is shown as <code>A+B₁B₂B₃+(-β)X&#39;</code>, i.e. another low-rank term was added to handle the normalization/regression. The first two terms are reused to make sure memory is not wasted.</p><h2 id="Filtering"><a class="docs-heading-anchor" href="#Filtering">Filtering</a><a id="Filtering-1"></a><a class="docs-heading-anchor-permalink" href="#Filtering" title="Permalink"></a></h2><p>It is possible to filter variables and observations. Here we keep all cells that are not labeled as <code>&quot;other&quot;</code>.</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; filtered = filter_obs(&quot;celltype.l1&quot;=&gt;!isequal(&quot;other&quot;), normalized)</code><code class="nohighlight hljs ansi" style="display:block;">DataMatrix (20239 variables and 34639 observations)
-  Aᵣ+B₁B₂B₃ᵣ+(-β)Xₗ&#39;
-  Variables: <span class="sgr4">id</span>, feature_type, name, genome, read, pattern, sequence, logGeneMean, outlier, ...
-  Observations: <span class="sgr4">cell_id</span>, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, ...
-  Models: FilterModel(:, &quot;celltype.l1&quot;=&gt;!Fix2{typeof(isequal), String}(isequal, &quot;other&quot;)), Normalization, SCTransform, VarCountsFraction</code></pre><h2 id="Principal-Component-Analysis-(PCA)"><a class="docs-heading-anchor" href="#Principal-Component-Analysis-(PCA)">Principal Component Analysis (PCA)</a><a id="Principal-Component-Analysis-(PCA)-1"></a><a class="docs-heading-anchor-permalink" href="#Principal-Component-Analysis-(PCA)" title="Permalink"></a></h2><p>Now we are ready to perform Principal Component Analysis (PCA). This is computed by the Singular Value Decomposition (SVD), so we should call the <code>svd</code> function. The number of dimensions is specified using the <code>nsv</code> parameter.</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; reduced = svd(filtered; nsv=20)</code><code class="nohighlight hljs ansi" style="display:block;">DataMatrix (20239 variables and 34639 observations)
-  SVD (20 dimensions)
-  Variables: <span class="sgr4">id</span>, feature_type, name, genome, read, pattern, sequence, logGeneMean, outlier, ...
-  Observations: <span class="sgr4">cell_id</span>, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, ...
-  Models: SVDModel(nsv=20), Filter, Normalization, SCTransform, VarCountsFraction</code></pre><p>The matrix is now stored as an <code>SVD</code> object, which includes low dimensional representations of the observations and variables. To retrieve the low dimensional coordinates, use <code>obs_coordinates</code> and <code>var_coordinates</code> respectively.</p><p><img src="https://user-images.githubusercontent.com/16546530/228492439-7e31d4d1-1edd-493e-9e96-48fd2583b93d.svg" alt="Principal Component Analysis"/></p><p><a href="https://github.com/rasmushenningsson/SingleCellProjections.jl/files/11099039/svd.zip">Download interactive PCA plot</a>.</p><h2 id="Visualization"><a class="docs-heading-anchor" href="#Visualization">Visualization</a><a id="Visualization-1"></a><a class="docs-heading-anchor-permalink" href="#Visualization" title="Permalink"></a></h2><details>
-<summary>Expand this to show some example PlotlyJS plotting code.</summary><p>You can of course use your own favorite plotting library instead. Use <code>obs_coordinates</code> to get the coordinates for each cell, and <code>data.obs</code> to access cell annotations for coloring.</p><pre><code class="language-julia hljs">using PlotlyJS
-function plot_categorical_3d(data, annotation; marker_size=3)
-    points = obs_coordinates(data)
-    traces = GenericTrace[]
-    for sub in groupby(data.obs, annotation; sort=true)
-        value = sub[1,annotation]
-        ind = parentindices(sub)[1]
-        push!(traces, scatter3d(;x=points[1,ind], y=points[2,ind], z=points[3,ind], mode=&quot;markers&quot;, marker_size, name=value))
+  Variables: <span class="sgr4">id</span>, name, feature_type, genome, read, pattern, sequence, nonzero_cell_count
+  Observations: <span class="sgr4">cell_id</span>, sample_name, barcode, fraction_mt, total_RNA_count, nonzero_RNA_count</code></pre><p>Now the matrix is shown as <code>A+B₁B₂B₃+(-β)X&#39;</code>, i.e. another low-rank term was added to handle the normalization/regression. Since all <code>ReproducibleJobs.jl</code> results are read-only, the first two terms can be reused, ensuring that memory is not wasted.</p><h2 id="Principal-Component-Analysis"><a class="docs-heading-anchor" href="#Principal-Component-Analysis">Principal Component Analysis</a><a id="Principal-Component-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Principal-Component-Analysis" title="Permalink"></a></h2><p>Principal Component Analysis (PCA) is commonly used for single cell expression data for two major reasons:</p><ol><li>It accurately finds a more compact representation of the data. This is important computationally, since it greatly reduces computation time for downstream analyses.</li><li>It reduces noise by keeping only the common variations in the data set.</li></ol><pre><code class="language-julia hljs">reduced = SCP.pca(normalized; nsv=40)
+fetch!(reduced)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">DataMatrix (40 variables and 11969 observations)
+  ReadOnlyArrays.ReadOnlyMatrix{Float64, Matrix{Float64}}
+  Variables: <span class="sgr4">PC_id</span>
+  Observations: <span class="sgr4">cell_id</span>, sample_name, barcode, fraction_mt, total_RNA_count, nonzero_RNA_count</code></pre><p>Now, the data set has been reduced to 40 variables (the top 40 principal components, ranked by variance explained), and is represented as a single dense matrix. The cell (observation) annotations are left untouched.</p><h2 id="Annotations"><a class="docs-heading-anchor" href="#Annotations">Annotations</a><a id="Annotations-1"></a><a class="docs-heading-anchor-permalink" href="#Annotations" title="Permalink"></a></h2><p>In preparation for the visualization below (or other analyses), we also load some cell-level annotations for our data set.</p><pre><code class="language-julia hljs">annots_path = &quot;annotations/scRNA_AML.tsv&quot;
+annots = SCP.load_csv(annots_path)
+reduced = SCP.annotate_obs(reduced, annots)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32"><span class="sgr1"> Downloading</span></span> artifact: Lilljebjorn2025_scRNA_AML
+<span class="sgr31"><span class="sgr1">     Failure</span></span> artifact: Lilljebjorn2025_scRNA_AML
+<span class="sgr32"><span class="sgr1"> Downloading</span></span> artifact: Lilljebjorn2025_scRNA_AML</code></pre><h2 id="Visualization"><a class="docs-heading-anchor" href="#Visualization">Visualization</a><a id="Visualization-1"></a><a class="docs-heading-anchor-permalink" href="#Visualization" title="Permalink"></a></h2><p>Analyses should generally be performed on the normalized or PCA-reduced data, not on visualization embeddings. However, for visualization purposes, we want to reduce to 2 or 3 dimensions.</p><details>
+<summary>Expand this to show some simple example <a href="https://github.com/MakieOrg/Makie.jl">Makie.jl</a> plotting code that is used below to produce the plots.</summary><p>You can of course use your own favorite plotting library instead.</p><pre><code class="language-julia hljs">using Colors
+using WGLMakie
+
+function scatter_3d(job)
+    matrix = fetch!(SCP.get_matrix(job))
+    fig = Figure(; size=(768, 768))
+    ax = LScene(fig[1, 1])
+    scatter!(ax, matrix; color = :black, markersize = 4)
+    fig
+end
+
+function scatter_categorical_3d(job, annot_name; bg=nothing, colors=nothing)
+    matrix = fetch!(SCP.get_matrix(job))
+    annot = fetch!(SCP.value_column_data(SCP.annotation(SCP.get_obs(job), annot_name)))
+
+    fig = Figure(; size=(768, 768))
+    ax = LScene(fig[1, 1])
+
+    if bg !== nothing
+        bg_matrix = fetch!(SCP.get_matrix(bg))
+        scatter!(ax, bg_matrix; color=colorant&quot;#BFCCE6&quot;, markersize=2)
     end
-    plot(traces, Layout(;legend=attr(itemsizing=&quot;constant&quot;)))
-end</code></pre><p>Use it like this:</p><pre><code class="language-julia-repl hljs">julia&gt; plot_categorical_3d(reduced, &quot;celltype.l1&quot;)</code></pre></details>
-<br><p>For visualization purposes, it is often useful to further reduce the dimension after running PCA. (In contrast, analyses are generally run on the PCA/normalized/original data, since the methods below necessarily distort the data to force it down to 2 or 3 dimensions.)</p><h3 id="Force-Layout"><a class="docs-heading-anchor" href="#Force-Layout">Force Layout</a><a id="Force-Layout-1"></a><a class="docs-heading-anchor-permalink" href="#Force-Layout" title="Permalink"></a></h3><p>Force Layout plots (also known as SPRING Plots) are created like this:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; fl = force_layout(reduced; ndim=3, k=100)</code><code class="nohighlight hljs ansi" style="display:block;">DataMatrix (3 variables and 34639 observations)
-  Matrix{Float64}
-  Variables: <span class="sgr4">id</span>
-  Observations: <span class="sgr4">cell_id</span>, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, ...
-  Models: NearestNeighborModel(base=&quot;force_layout&quot;, k=10), SVD, Filter, Normalization, SCTransform, ...</code></pre><p><img src="https://user-images.githubusercontent.com/16546530/228492990-14c31888-28e1-4f3c-8062-f10682e55430.svg" alt="force_layout"/></p><p><a href="https://github.com/rasmushenningsson/SingleCellProjections.jl/files/11099049/force_layout.zip">Download interactive Force Layout plot</a>.</p><h3 id="UMAP"><a class="docs-heading-anchor" href="#UMAP">UMAP</a><a id="UMAP-1"></a><a class="docs-heading-anchor-permalink" href="#UMAP" title="Permalink"></a></h3><p><code>SingleCellProjections</code> can be used together with <a href="https://github.com/dillondaudert/UMAP.jl">UMAP.jl</a>:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; using UMAP</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; umapped = umap(reduced, 3)</code><code class="nohighlight hljs ansi" style="display:block;">DataMatrix (3 variables and 34639 observations)
-  Matrix{Float64}
-  Variables: <span class="sgr4">id</span>
-  Observations: <span class="sgr4">cell_id</span>, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, ...
-  Models: UMAPModel(n_components=3), SVD, Filter, Normalization, SCTransform, ...</code></pre><p><img src="https://user-images.githubusercontent.com/16546530/228493039-588cafde-86fc-4fae-ae58-fa65cf59e929.svg" alt="umap"/></p><p><a href="https://github.com/rasmushenningsson/SingleCellProjections.jl/files/11099051/umap.zip">Download interactive UMAP plot</a>.</p><h3 id="t-SNE"><a class="docs-heading-anchor" href="#t-SNE">t-SNE</a><a id="t-SNE-1"></a><a class="docs-heading-anchor-permalink" href="#t-SNE" title="Permalink"></a></h3><p>Similarly, t-SNE plots are supported using <a href="https://github.com/lejon/TSne.jl">TSne.jl</a>. In this example, we just run it one every 10ᵗʰ cell, because t-SNE doesn&#39;t scale very well with the number of cells:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; using TSne</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; t = tsne(reduced[:,1:10:end], 3)</code><code class="nohighlight hljs ansi" style="display:block;">DataMatrix (3 variables and 3464 observations)
-  Matrix{Float64}
-  Variables: <span class="sgr4">id</span>
-  Observations: <span class="sgr4">cell_id</span>, sampleName, barcode, fraction_mt, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, ...
-  Models: NearestNeighborModel(base=&quot;tsne&quot;, k=10), Filter, SVD, Filter, Normalization, ...</code></pre><p><img src="https://user-images.githubusercontent.com/16546530/228493090-06cc9f32-4e11-4441-a9b3-8da93d503a83.svg" alt="t-SNE"/></p><p><a href="https://github.com/rasmushenningsson/SingleCellProjections.jl/files/11099055/t-SNE.zip">Download interactive t-SNE plot</a>.</p><h3 id="Other"><a class="docs-heading-anchor" href="#Other">Other</a><a id="Other-1"></a><a class="docs-heading-anchor-permalink" href="#Other" title="Permalink"></a></h3><p>It is of course possible to use your own favorite dimension reduction method/package. The natural input for most cases are the coordinates after dimension reduction by PCA (<code>obs_coordinates(reduced)</code>).</p><h2 id="Projections"><a class="docs-heading-anchor" href="#Projections">Projections</a><a id="Projections-1"></a><a class="docs-heading-anchor-permalink" href="#Projections" title="Permalink"></a></h2><p><code>SingleCellProjections</code> is built to make it very easy to project one dataset onto another.</p><p>Let&#39;s load count data for two more samples:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; sample_paths_proj = joinpath.(base_path, [&quot;GSE164378_RNA_ADT_3P_P5.h5&quot;, &quot;GSE164378_RNA_ADT_3P_P6.h5&quot;]);</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; counts_proj = load_counts(sample_paths_proj; sample_names=[&quot;P5&quot;,&quot;P6&quot;]);</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; leftjoin!(counts_proj.obs, cell_annotations; on=:barcode);</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; counts_proj</code><code class="nohighlight hljs ansi" style="display:block;">DataMatrix (33766 variables and 42553 observations)
-  SparseMatrixCSC{Int64, Int32}
-  Variables: <span class="sgr4">id</span>, feature_type, name, genome, read, pattern, sequence
-  Observations: <span class="sgr4">cell_id</span>, sampleName, barcode, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, lane, ...</code></pre><p>And project them onto the Force Layout we created above:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; fl_proj = project(counts_proj, fl)</code><code class="nohighlight hljs ansi" style="display:block;"><span class="sgr36"><span class="sgr1">[ Info: </span></span>Projecting onto VarCountsFractionModel(subset_size=13, total_size=33538, col=&quot;fraction_mt&quot;)
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>Projecting onto SCTransformModel(nvar=20239, clip=34.32)
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>- Removed 13527 variables that were not found in Model
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>Projecting onto NormalizationModel(rank=2, ~1+num(fraction_mt))
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>Projecting onto FilterModel(:, &quot;celltype.l1&quot;=&gt;!Fix2{typeof(isequal), String}(isequal, &quot;other&quot;))
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>Projecting onto SVDModel(nsv=20)
-<span class="sgr36"><span class="sgr1">[ Info: </span></span>Projecting onto NearestNeighborModel(base=&quot;force_layout&quot;, k=10)
-DataMatrix (3 variables and 41095 observations)
-  Matrix{Float64}
-  Variables: <span class="sgr4">id</span>
-  Observations: <span class="sgr4">cell_id</span>, sampleName, barcode, nCount_ADT, nFeature_ADT, nCount_RNA, nFeature_RNA, orig.ident, lane, ...
-  Models: NearestNeighborModel(base=&quot;force_layout&quot;, k=10), SVD, Filter, Normalization, SCTransform, ...</code></pre><p>The result looks similar to the force layout plot above, since the donors &quot;P5&quot; and &quot;P6&quot; are similar to donors &quot;P1&quot; and &quot;P2&quot;.</p><p><img src="https://user-images.githubusercontent.com/16546530/228493122-bfdee02b-e6fb-4219-88d1-31ab4e323ca9.svg" alt="force_layout_projected"/></p><p><a href="https://github.com/rasmushenningsson/SingleCellProjections.jl/files/11099059/force_layout_projected.zip">Download interactive Force Layout projection plot</a>.</p><p>Under the hood, <code>SingleCellProjections</code> recorded a <code>ProjectionModel</code> for every step of the analysis leading up to the Force Layout. Let&#39;s take a look:</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; fl.models</code><code class="nohighlight hljs ansi" style="display:block;">6-element Vector{ProjectionModel}:
- VarCountsFractionModel(subset_size=13, total_size=33538, col=&quot;fraction_mt&quot;)
- SCTransformModel(nvar=20239, clip=34.32)
- NormalizationModel(rank=2, ~1+num(fraction_mt))
- FilterModel(:, &quot;celltype.l1&quot;=&gt;!Fix2{typeof(isequal), String}(isequal, &quot;other&quot;))
- SVDModel(nsv=20)
- NearestNeighborModel(base=&quot;force_layout&quot;, k=10)</code></pre><p>When projecting, these models are applied one by one (C.f. output from <code>project</code> above), ensuring that the projected data is processed correctly. In most cases, projecting is <strong>not</strong> the same as running the same analysis independently, since information about the data set is recorded in the model.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../datamatrices/">Data Matrices »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 22 June 2026 08:13">Monday 22 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+
+    if colors !== nothing
+        unique_annotations = unique(annot)
+        unique_annotations_set = Set(unique_annotations)
+        colors = filter(x-&gt;x[1] in unique_annotations_set, colors)
+
+        categories = first.(colors)
+        @assert isempty(setdiff(unique_annotations, categories)) # ensure all categories have colors specified
+
+        plots = [scatter!(ax, matrix[:,isequal.(annot, cat)]; markersize=5, color) for (cat,color) in colors]
+    else
+        categories = unique(annot)
+        plots = [scatter!(ax, matrix[:,isequal.(annot, cat)]; markersize=5) for cat in categories]
+    end
+
+    axislegend(ax, plots .=&gt; Ref((;markersize=16)), categories) # use a larger markersize in the legend
+    fig
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">scatter_categorical_3d (generic function with 1 method)</code></pre><p>Use it like this:</p><pre><code class="language-julia hljs">scatter_3d(data)
+scatter_categorical_3d(data, &quot;celltype.aml&quot;)</code></pre></details><h3 id="Force-Layout"><a class="docs-heading-anchor" href="#Force-Layout">Force Layout</a><a id="Force-Layout-1"></a><a class="docs-heading-anchor-permalink" href="#Force-Layout" title="Permalink"></a></h3><p>To embed the points in 2 or 3 dimensions using a Force Layout (also known as a SPRING plot), we set it up like this:</p><pre><code class="language-julia hljs">fl = SCP.force_layout(reduced; ndim = 3,
+                                seed = 4567,
+                                k = 100,
+                                k_projection = 25)
+scatter_3d(fl)</code></pre><div><div class="bonito-fragment" id="fa9f8bfc-515c-4081-ad87-ee94080b6bfa" data-jscall-id="root" style="display:contents"><div style="display:contents"><script src="bonito/js/Bonito.bundled12977803111238366018.js" type="module"></script><style></style><style>@media (prefers-color-scheme: light) {
+  :root {
+    --bonito-widget-fg: #1a1a1a;
+    --bonito-widget-accent: #3182bb;
+    --bonito-widget-bg: #ffffff;
+    --bonito-widget-border: #9ca3af;
+    --bonito-widget-hover-bg: #f3f4f6;
+    --bonito-widget-muted-bg: #f3f4f6;
+    accent-color: #3182bb;
+    color-scheme: light;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bonito-widget-fg: #e8e8ea;
+    --bonito-widget-accent: #6ea8e0;
+    --bonito-widget-bg: #2a2a2e;
+    --bonito-widget-border: #52525b;
+    --bonito-widget-hover-bg: #3a3a40;
+    --bonito-widget-muted-bg: #36363c;
+    accent-color: #6ea8e0;
+    color-scheme: dark;
+  }
+}
+html .noUi-target {
+  border-color: var(--bonito-widget-border, #d3d3d3);
+  box-shadow: none;
+  background: var(--bonito-widget-muted-bg, #fafafa);
+}
+html .noUi-connects {
+  background: var(--bonito-widget-muted-bg, #fafafa);
+}
+html .noUi-connect {
+  background: var(--bonito-widget-accent, #3182bb);
+}
+html .noUi-handle {
+  border-color: var(--bonito-widget-border, #d3d3d3);
+  box-shadow: none;
+  background: var(--bonito-widget-bg, #fff);
+}
+html .noUi-handle::before {
+  background: var(--bonito-widget-border, #d3d3d3);
+}
+html .noUi-handle::after {
+  background: var(--bonito-widget-border, #d3d3d3);
+}
+html .noUi-tooltip {
+  border-color: var(--bonito-widget-border, #d3d3d3);
+  color: var(--bonito-widget-fg, #000);
+  background: var(--bonito-widget-bg, #fff);
+}
+html .noUi-marker {
+  background: var(--bonito-widget-border, #ccc);
+}
+html .noUi-value {
+  color: var(--bonito-widget-fg, inherit);
+}
+</style></div><div style="display:contents"><script type="module">Bonito.init_session("fa9f8bfc-515c-4081-ad87-ee94080b6bfa", Bonito.fetch_binary('bonito/bin/afd5ef10110446ded74e6c065673ec170048421f-1101924694980326212.bin'), "root", false);
+</script><div></div></div></div><div class="bonito-fragment" id="2670d07d-4b61-418f-a1aa-05efaf83cabd" data-jscall-id="subsession-application-dom" style="display:contents"><div style="display:contents"><style></style><style>.wglmakie-spinner {
+  left: 50%;
+  z-index: 1000;
+  height: 40px;
+  position: absolute;
+  border-radius: 50%;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  animation: wglmakie-spin 1.0s linear infinite;
+  top: 50%;
+  border-top: 4px solid currentColor;
+  width: 40px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+@keyframes wglmakie-spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+</style><script src="bonito/js/WGLMakie.bundled14196690323180320639.js" type="module"></script></div><div style="display:contents"><script type="module">Bonito.init_session("2670d07d-4b61-418f-a1aa-05efaf83cabd", Bonito.fetch_binary('bonito/bin/ce475bab32a74fdf74b0cbec86dc2a9692eb5164-18078587860654120299.bin'), "sub", false);
+</script><div style="width: 100%; height: 100%; position: relative;" data-jscall-id="1"><canvas height="768px" data-jp-suppress-context-menu style="display: block" data-jscall-id="2" data-lm-suppress-shortcuts="true" width="768px" tabindex="0"></canvas><div class="wglmakie-spinner" data-jscall-id="3"></div></div></div></div></div><p>To make a nicer visualization, we use a celltype annotation from the downloaded data to color the plot, and apply a utility function to rotate it such that the most immature cells (Hematopoietic Stem Cells, or HSCs for short) move to the top.</p><pre><code class="language-julia hljs">transform = SCP.find_optimal_coord_transform(fl, &quot;celltype.aml&quot;=&gt;isequal(&quot;HSC&quot;), &quot;celltype.aml&quot;=&gt;isequal(&quot;T-cells&quot;), &quot;celltype.aml&quot;=&gt;isequal(&quot;B-cells&quot;))
+fl = SCP.transform_coords(fl, transform; keep_var=true)
+colors = [&quot;AML Immature&quot; =&gt; colorant&quot;#fec44f&quot;, &quot;HSC&quot; =&gt; colorant&quot;#66b266&quot;, &quot;Monocytes&quot; =&gt; colorant&quot;#fa9fb5&quot;, &quot;GMP&quot; =&gt; colorant&quot;#008000&quot;, &quot;Megakaryocytic cells&quot; =&gt; colorant&quot;#e5687e&quot;, &quot;LMPP&quot; =&gt; colorant&quot;#756bb1&quot;, &quot;Erythroid cells&quot; =&gt; colorant&quot;#a7241d&quot;, &quot;B-cells&quot; =&gt; colorant&quot;#a64ca6&quot;, &quot;T-cells&quot; =&gt; colorant&quot;#7fb4e5&quot;, &quot;NK-cells&quot; =&gt; colorant&quot;#196fbe&quot;, &quot;Dendritic cells&quot; =&gt; colorant&quot;#ff4d00&quot;]
+scatter_categorical_3d(fl, &quot;celltype.aml&quot;; colors)</code></pre><div class="bonito-fragment" id="8a237c1e-b2c7-434d-998c-3f1d9886a554" data-jscall-id="subsession-application-dom" style="display:contents"><div style="display:contents"><style></style><style>.wglmakie-spinner {
+  left: 50%;
+  z-index: 1000;
+  height: 40px;
+  position: absolute;
+  border-radius: 50%;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  animation: wglmakie-spin 1.0s linear infinite;
+  top: 50%;
+  border-top: 4px solid currentColor;
+  width: 40px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+@keyframes wglmakie-spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+</style><script src="bonito/js/WGLMakie.bundled14196690323180320639.js" type="module"></script></div><div style="display:contents"><script type="module">Bonito.init_session("8a237c1e-b2c7-434d-998c-3f1d9886a554", Bonito.fetch_binary('bonito/bin/d0009d5c450dd68d9e133b1e627669d885ced53d-12469676236496653478.bin'), "sub", false);
+</script><div style="width: 100%; height: 100%; position: relative;" data-jscall-id="4"><canvas height="768px" data-jp-suppress-context-menu style="display: block" data-jscall-id="5" data-lm-suppress-shortcuts="true" width="768px" tabindex="0"></canvas><div class="wglmakie-spinner" data-jscall-id="6"></div></div></div></div><h3 id="UMAP"><a class="docs-heading-anchor" href="#UMAP">UMAP</a><a id="UMAP-1"></a><a class="docs-heading-anchor-permalink" href="#UMAP" title="Permalink"></a></h3><pre><code class="language-julia hljs">using UMAP
+umapped = SCP.umap(reduced; ndim=3)
+scatter_categorical_3d(umapped, &quot;celltype.aml&quot;; colors)</code></pre><div class="bonito-fragment" id="73307afc-9623-4487-be32-b8f98c34603c" data-jscall-id="subsession-application-dom" style="display:contents"><div style="display:contents"><style></style><style>.wglmakie-spinner {
+  left: 50%;
+  z-index: 1000;
+  height: 40px;
+  position: absolute;
+  border-radius: 50%;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  animation: wglmakie-spin 1.0s linear infinite;
+  top: 50%;
+  border-top: 4px solid currentColor;
+  width: 40px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+@keyframes wglmakie-spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+</style><script src="bonito/js/WGLMakie.bundled14196690323180320639.js" type="module"></script></div><div style="display:contents"><script type="module">Bonito.init_session("73307afc-9623-4487-be32-b8f98c34603c", Bonito.fetch_binary('bonito/bin/21c90d33003574cb8d7189b861e5e31cc08cb58b-17792319776088957753.bin'), "sub", false);
+</script><div style="width: 100%; height: 100%; position: relative;" data-jscall-id="7"><canvas height="768px" data-jp-suppress-context-menu style="display: block" data-jscall-id="8" data-lm-suppress-shortcuts="true" width="768px" tabindex="0"></canvas><div class="wglmakie-spinner" data-jscall-id="9"></div></div></div></div><h3 id="t-SNE"><a class="docs-heading-anchor" href="#t-SNE">t-SNE</a><a id="t-SNE-1"></a><a class="docs-heading-anchor-permalink" href="#t-SNE" title="Permalink"></a></h3><p>t-SNE is also supported, just run:</p><pre><code class="language-julia hljs">using TSne
+tsne_job = SCP.tsne(reduced; ndim=3)</code></pre><h2 id="Projections"><a class="docs-heading-anchor" href="#Projections">Projections</a><a id="Projections-1"></a><a class="docs-heading-anchor-permalink" href="#Projections" title="Permalink"></a></h2><p><code>SingleCellProjections</code> is built to make it very easy to project one dataset onto another. This is useful for comparing new samples against an established reference.</p><p>First, we just choose one or more samples to project:</p><pre><code class="language-julia hljs"># Name and location of AML file
+proj_name = &quot;AML28&quot;
+proj_path = joinpath(&quot;samples&quot;, string(proj_name, &quot;.h5&quot;))
+proj_raw_counts = SCP.load_counts(proj_path; sample_names=proj_name)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr32">load_counts</span> <span class="sgr90">(DataMatrixFunction)</span>
+├─ <span class="sgr35">Vector</span>
+│  └─ <span class="sgr32">checksummedfilepath</span> <span class="sgr90">(prefetch)</span> <span class="sgr32">(cached)</span>
+│     └─ samples/AML28.h5<span class="sgr90">@2026-08-03T15:53:06.252</span>
+├─ <span class="sgr34">extra_id_cols:</span> &quot;feature_type&quot;
+├─ <span class="sgr34">prefilter:</span> &quot;feature_type&quot; =&gt; <span class="sgr36">Base.Fix2</span>(<span class="sgr36">isequal</span>, &quot;Gene Expression&quot;)
+└─ <span class="sgr34">sample_names:</span> [&quot;AML28&quot;]
+</code></pre><p>Then, a single call to <code>SCP.project</code> sets up the entire analysis pipeline and projects the AML sample onto the reference map created from the NBM samples.</p><pre><code class="language-julia hljs">proj_fl = SCP.project(fl, raw_counts=&gt;proj_raw_counts)
+scatter_categorical_3d(proj_fl, &quot;celltype.aml&quot;; bg=fl, colors)</code></pre><div class="bonito-fragment" id="87c7e2cb-627e-4dc4-8804-e9b4dfc3b797" data-jscall-id="subsession-application-dom" style="display:contents"><div style="display:contents"><style></style><style>.wglmakie-spinner {
+  left: 50%;
+  z-index: 1000;
+  height: 40px;
+  position: absolute;
+  border-radius: 50%;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  animation: wglmakie-spin 1.0s linear infinite;
+  top: 50%;
+  border-top: 4px solid currentColor;
+  width: 40px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+@keyframes wglmakie-spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+</style><script src="bonito/js/WGLMakie.bundled14196690323180320639.js" type="module"></script></div><div style="display:contents"><script type="module">Bonito.init_session("87c7e2cb-627e-4dc4-8804-e9b4dfc3b797", Bonito.fetch_binary('bonito/bin/0cc6bb6ac0b63cee05a34a3525077ed286168baa-15822880936214507601.bin'), "sub", false);
+</script><div style="width: 100%; height: 100%; position: relative;" data-jscall-id="10"><canvas height="768px" data-jp-suppress-context-menu style="display: block" data-jscall-id="11" data-lm-suppress-shortcuts="true" width="768px" tabindex="0"></canvas><div class="wglmakie-spinner" data-jscall-id="12"></div></div></div></div><p>And here is the projection onto the UMAP embedding of the NBM samples:</p><pre><code class="language-julia hljs">proj_umapped = SCP.project(umapped, raw_counts=&gt;proj_raw_counts)
+scatter_categorical_3d(proj_umapped, &quot;celltype.aml&quot;; bg=umapped, colors)</code></pre><div class="bonito-fragment" id="947cf3b8-fb41-43fd-ab6f-1414ba5dd37c" data-jscall-id="subsession-application-dom" style="display:contents"><div style="display:contents"><style></style><style>.wglmakie-spinner {
+  left: 50%;
+  z-index: 1000;
+  height: 40px;
+  position: absolute;
+  border-radius: 50%;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  animation: wglmakie-spin 1.0s linear infinite;
+  top: 50%;
+  border-top: 4px solid currentColor;
+  width: 40px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+@keyframes wglmakie-spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+</style><script src="bonito/js/WGLMakie.bundled14196690323180320639.js" type="module"></script></div><div style="display:contents"><script type="module">Bonito.init_session("947cf3b8-fb41-43fd-ab6f-1414ba5dd37c", Bonito.fetch_binary('bonito/bin/0f0b40e0e9b9f9e80e1262fbb825faa5908a90ef-9456526877113251460.bin'), "sub", false);
+</script><div style="width: 100%; height: 100%; position: relative;" data-jscall-id="13"><canvas height="768px" data-jp-suppress-context-menu style="display: block" data-jscall-id="14" data-lm-suppress-shortcuts="true" width="768px" tabindex="0"></canvas><div class="wglmakie-spinner" data-jscall-id="15"></div></div></div></div></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../userguide/">User Guide »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 3 August 2026 16:02">Monday 3 August 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
