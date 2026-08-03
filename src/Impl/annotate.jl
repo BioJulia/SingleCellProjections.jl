@@ -23,11 +23,16 @@ counts_fraction_impl_job(counts, sub_ind, tot_ind; dims) =
 counts_sum_impl_job(f, counts, ind; dims) =
 	create_job(SCPCore.counts_sum, f, counts, ind; dims, __version=v"1.0.0")
 
+# Combine per-obs (or per-var) sub/tot count vectors into a fraction, flooring the denominator at 1 to
+# avoid division by zero (matches SCPCore.counts_fraction).
+counts_fraction_combine(sub, tot) = sub ./ max.(1, tot)
+counts_fraction_combine_job(sub, tot) = create_job(counts_fraction_combine, sub, tot; __version=v"1.0.0")
+
 # Block-aware reduction, computing (and caching) `counts_sum` per block for cross-dataset cache reuse.
 # dims=1 (per-obs result): the row (var) mask `ind` is identical for every column block; combine the
 # disjoint per-obs results with `vcat`. dims=2 (per-var result): `ind` selects obs (columns), so it is
 # split per block (block-local) via `ind_to_blocked_ind` and the partial per-var sums are combined
-# element-wise with `vsum`. Falls back to a single cached job when the spec is not block-structured.
+# element-wise with `sum` (apply_job). Falls back to a single cached job when the spec is not block-structured.
 function counts_sum_blocked(::Preprocessing, f, X, ind; dims)
 	@assert dims in (1,2)
 	if dims == 1
@@ -57,8 +62,12 @@ function var_counts_fraction(::Obs, counts, col, sub_filter, tot_filter; project
 	var_job = SCP.get_var(counts)
 	sub_ind = prefetched(create_find_matching_ind_job(sub_filter, var_job; project_ids))
 	tot_ind = prefetched(create_find_matching_ind_job(tot_filter, var_job; project_ids))
-	values_job = cached(counts_fraction_impl_job(SCP.get_matrix(counts), sub_ind, tot_ind; dims=1))
-	SCP.add_column(SCP.get_obs(counts), col, values_job)
+	# fraction = (sum over sub vars) / (sum over tot vars), reusing the block-aware counts_sum for both
+	# so the per-block sums cache/dedup (the denominator in particular is often shared across calls).
+	X = SCP.get_matrix(counts)
+	sub = counts_sum_blocked_job(identity, X, sub_ind; dims=1)
+	tot = counts_sum_blocked_job(identity, X, tot_ind; dims=1)
+	SCP.add_column(SCP.get_obs(counts), col, counts_fraction_combine_job(sub, tot))
 end
 
 
