@@ -83,6 +83,7 @@ makedocs(;
 		edit_link = "main",
 		assets = String[],
 		ansicolor = true, # for underlining to work in REPL output
+		size_threshold_ignore = ["tutorial.md"], # interactive WGLMakie plots inline a lot of data
 	),
 	pages=[
 		"Home" => "index.md",
