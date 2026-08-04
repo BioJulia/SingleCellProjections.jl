@@ -15,6 +15,13 @@ module SingleCellDocUtils
 	using Pkg.Artifacts
 	using LazyArtifacts
 
+	# Symlinks we create in the Documenter workdir so the docs can show short, tidy paths. They
+	# point into the Julia artifact depot (absolute targets), so they must be removed before
+	# deploying — otherwise GitHub Pages' build resolves realpaths and fails on the dangling
+	# links. Keys are absolute link paths (the workdir CWD at creation time differs from make.jl's
+	# CWD at cleanup time); values are the intended targets, kept for diagnostics.
+	const _created_links = Dict{String,String}()
+
 	function _lilljebjorn_dir(name)
 		ap = joinpath(@__DIR__, "Artifacts.toml")
 		artifact_name = "Lilljebjorn2025_$name"
@@ -33,10 +40,24 @@ module SingleCellDocUtils
 		p = joinpath(_lilljebjorn_dir(name), string(name, '.', extension))
 		@static if !Sys.iswindows()
 			symlink(p, link_name)
+			_created_links[abspath(link_name)] = p
 			link_name
 		else
 			p
 		end
+	end
+
+	# Remove the symlinks created above. Verify each is really a symlink before deleting, so we
+	# never touch a real file if something unexpected is on disk.
+	function cleanup_links()
+		for (link, target) in _created_links
+			if islink(link)
+				rm(link)
+			else
+				@warn "Expected a symlink; leaving it in place" link target
+			end
+		end
+		empty!(_created_links)
 	end
 
 
@@ -73,6 +94,11 @@ makedocs(;
 	],
 	# pagesonly = true, # This restricts doc generation to the md files provided above
 )
+
+# Drop the artifact-depot symlinks before deploying (see SingleCellDocUtils above): they are only
+# needed while the @example blocks run, and publishing dangling absolute links breaks the GitHub
+# Pages build.
+SingleCellDocUtils.cleanup_links()
 
 deploydocs(;
 	repo="github.com/BioJulia/SingleCellProjections.jl",
