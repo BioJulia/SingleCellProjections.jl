@@ -56,7 +56,7 @@ using Bonito
 using WGLMakie
 WGLMakie.activate!()
 Makie.inline!(true)   # inline into the page instead of opening a browser
-Page()
+Page(exportable=true, offline=true)   # inline assets+data so plots render on the static (server-less) site
 ```
 
 ## Loading Data
