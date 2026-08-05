@@ -8,6 +8,19 @@ on:
       lookback:
         description: "[DEPRECATED] No longer has any effect"
         default: "3"
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  deployments: read
+  discussions: read
+  issues: write
+  packages: read
+  pages: read
+  pull-requests: read
+  repository-projects: read
+  security-events: read
+  statuses: read
 jobs:
   TagBot:
     if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
