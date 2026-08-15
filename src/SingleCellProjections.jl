@@ -217,8 +217,6 @@ include("statistical_tests.jl")
 include("annotation_transfer.jl")
 
 
-# include("precompile.jl")
-
 function register_scp_functions!(scheduler::ReproducibleJobs.Scheduler)
 	ReproducibleJobs.register_function!(scheduler, sum)
 	ReproducibleJobs.register_function!(scheduler, mean)
@@ -232,5 +230,7 @@ function __init__()
 	register_scp_functions!()
 end
 
+
+include("precompile.jl")
 
 end
