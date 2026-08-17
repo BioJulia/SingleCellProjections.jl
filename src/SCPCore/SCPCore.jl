@@ -44,6 +44,7 @@ const Index = Union{AbstractVector, Colon}
 include("blocks.jl")
 
 
+include("utils.jl")
 include("random.jl")
 include("table_utils.jl")
 include("threaded_sparse_row_map.jl")

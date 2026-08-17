@@ -1,3 +1,6 @@
+# Keyword arguments forwarded to `SCPCore.implicitsvd`, shared by svd/pca/loadings.
+const SVD_KWARGS = (:subspacedims, :niter, :stabilize_sign)
+
 """
     SCP.svd(data; nsv, seed=1234, kwargs...) -> Job
 
@@ -13,6 +16,7 @@ Keyword arguments controlling the iterative procedure:
 See also [`pca`](@ref), [`loadings`](@ref).
 """
 function svd(matrix; nsv, seed=1234, kwargs...)
+	check_kwargs(kwargs, SVD_KWARGS...)
 	create_job(DataMatrixFunction(Impl.svd), matrix; nsv, seed, kwargs...)
 end
 
@@ -42,6 +46,7 @@ julia> SCP.pca(normalized; nsv=100)
 See also [`svd`](@ref), [`loadings`](@ref), [`normalize_matrix`](@ref).
 """
 function pca(data; nsv, seed=1234, kwargs...)
+	check_kwargs(kwargs, SVD_KWARGS...)
 	create_job(DataMatrixFunction(Impl.pca), data; nsv, seed, kwargs...)
 end
 
@@ -64,6 +69,7 @@ julia> SCP.loadings(normalized; nsv=100)
 See also [`pca`](@ref), [`svd`](@ref).
 """
 function loadings(args...; nsv, seed=1234, kwargs...)
+	check_kwargs(kwargs, SVD_KWARGS...)
 	create_job(DataMatrixFunction(Impl.loadings), args...; nsv, seed, kwargs...)
 end
 
@@ -96,5 +102,11 @@ julia> SCP.force_layout(reduced; ndim=3, seed=4567, k=100, k_projection=25)
 See also [`transform_coords`](@ref), [`find_optimal_coord_transform`](@ref), [`umap`](@ref), [`tsne`](@ref).
 """
 function force_layout(args...; ndim=3, kwargs...)
+	check_kwargs(kwargs, :k, :k_fraction, :make_symmetric, :niter,
+	                     :link_distance, :link_strength,
+	                     :charge, :charge_min_distance, :theta,
+	                     :center_strength, :velocity_decay,
+	                     :initialAlpha, :finalAlpha, :initialScale,
+	                     :seed, :k_projection, :min_dist2_projection)
 	create_job(DataMatrixFunction(Impl.force_layout), args...; ndim, kwargs...)
 end

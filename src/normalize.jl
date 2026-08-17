@@ -7,6 +7,7 @@ by `SCP.normalize_matrix`.
 See also [`normalize_matrix`](@ref), [`designmatrix`](@ref).
 """
 function negative_regression_matrix(args...; kwargs...)
+	check_kwargs(kwargs, :rtol)
 	Impl.negative_regression_matrix_job(args...; kwargs...)
 end
 
@@ -51,5 +52,8 @@ julia> SCP.normalize_matrix(transformed; variance_col="my_variance_column")
 See also [`sctransform`](@ref), [`logtransform`](@ref), [`designmatrix`](@ref).
 """
 function normalize_matrix(data, args...; kwargs...)
+	check_kwargs(kwargs, :center, :rtol,
+	                     :annotate_variance, :annotate_std, :annotate_relative_std,
+	                     :variance_col, :std_col, :relative_std_col)
 	create_job(Preprocess(Impl.normalize_matrix), data, args...; kwargs...)
 end

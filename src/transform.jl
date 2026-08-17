@@ -1,5 +1,5 @@
 """
-    SCP.logtransform([T=Float64,] counts; scale_factor=10_000, kwargs...) -> Job
+    SCP.logtransform([T=Float64,] counts; scale_factor=10_000) -> Job
 
 Apply log transformation: `log(1 + x * scale_factor / total_counts)`. Returns a
 `DataMatrix` with the transformed matrix. The element type of the resulting matrix is `T`.
@@ -8,8 +8,8 @@ Apply log transformation: `log(1 + x * scale_factor / total_counts)`. Returns a
 
 See also [`sctransform`](@ref), [`normalize_matrix`](@ref).
 """
-function logtransform(T::DataType, counts; scale_factor=10_000, kwargs...)
-	create_job(DataMatrixFunction(Impl.logtransform), T, counts; scale_factor, kwargs...)
+function logtransform(T::DataType, counts; scale_factor=10_000)
+	create_job(DataMatrixFunction(Impl.logtransform), T, counts; scale_factor)
 end
 logtransform(counts; kwargs...) = logtransform(Float64, counts; kwargs...)
 
@@ -35,6 +35,7 @@ julia> SCP.sctransform(counts)
 See also [`logtransform`](@ref), [`normalize_matrix`](@ref).
 """
 function sctransform(T::DataType, counts; kwargs...)
+	check_kwargs(kwargs, :var_filter, :min_cells, :annotate, :clip, :rtol, :atol)
 	create_job(DataMatrixFunction(Impl.sctransform), T, counts; kwargs...)
 end
 sctransform(counts; kwargs...) = sctransform(Float64, counts; kwargs...)
@@ -60,6 +61,7 @@ Keyword arguments:
 See also [`logtransform`](@ref), [`sctransform`](@ref), [`normalize_matrix`](@ref).
 """
 function tf_idf_transform(T::DataType, counts; scale_factor=10_000, kwargs...)
+	check_kwargs(kwargs, :annotate)
 	create_job(DataMatrixFunction(Impl.tf_idf_transform), T, counts; scale_factor, kwargs...)
 end
 tf_idf_transform(counts; kwargs...) = tf_idf_transform(Float64, counts; kwargs...)

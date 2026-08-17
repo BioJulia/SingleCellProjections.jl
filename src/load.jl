@@ -1,7 +1,7 @@
 _is_h5(filename) = lowercase(splitext(filename)[2]) == ".h5"
 
 """
-    SCP.load_counts(filenames; sample_names, feature_filenames=nothing, barcode_filenames=nothing, prefilter="feature_type"=>isequal("Gene Expression"), extra_id_cols="feature_type", kwargs...) -> Job
+    SCP.load_counts(filenames; sample_names, feature_filenames=nothing, barcode_filenames=nothing, prefilter="feature_type"=>isequal("Gene Expression"), extra_id_cols="feature_type") -> Job
 
 Load raw count matrices from one or more 10x files. Returns a `Job` whose result is a
 `DataMatrix` with genes as variables and cells as observations.
@@ -40,8 +40,7 @@ function load_counts(filenames;
                      feature_filenames = nothing,
                      barcode_filenames = nothing,
                      prefilter = "feature_type"=>isequal("Gene Expression"),
-                     extra_id_cols = "feature_type", # TODO: Remove this default value?
-                     kwargs...)
+                     extra_id_cols = "feature_type") # TODO: Remove this default value?
 	filenames isa AbstractArray || (filenames = [filenames])
 	sample_names isa AbstractArray || (sample_names = [sample_names])
 
@@ -68,5 +67,5 @@ function load_counts(filenames;
 
 		extra_kwargs = (; feature_specs, barcode_specs)
 	end
-	create_job(DataMatrixFunction(Impl.load_counts), matrix_specs; sample_names, prefilter, extra_id_cols, extra_kwargs..., kwargs...)
+	create_job(DataMatrixFunction(Impl.load_counts), matrix_specs; sample_names, prefilter, extra_id_cols, extra_kwargs...)
 end

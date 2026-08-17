@@ -1,5 +1,5 @@
 """
-    SCP.annotate_var(data, df; kwargs...) -> Job
+    SCP.annotate_var(data, df) -> Job
 
 Add variable annotations by left-joining `df` onto `data.var`.
 The first column of `df` should contain IDs matching the first column in `data.var`.
@@ -7,11 +7,11 @@ The IDs are used as the key when joining the tables.
 
 See also [`annotate_obs`](@ref), [`add_var_column`](@ref).
 """
-annotate_var(data, df; kwargs...) =
-	create_job(DataMatrixFunction(Impl.annotate), data; kwargs..., var=df)
+annotate_var(data, df) =
+	create_job(DataMatrixFunction(Impl.annotate), data; var=df)
 
 """
-    SCP.annotate_obs(data, df; kwargs...) -> Job
+    SCP.annotate_obs(data, df) -> Job
 
 Add observation annotations by left-joining `df` onto `data.obs`.
 The first column of `df` should contain IDs matching the first column in `data.obs`.
@@ -19,8 +19,8 @@ The IDs are used as the key when joining the tables.
 
 See also [`annotate_var`](@ref), [`add_obs_column`](@ref).
 """
-annotate_obs(data, df; kwargs...) =
-	create_job(DataMatrixFunction(Impl.annotate), data; kwargs..., obs=df)
+annotate_obs(data, df) =
+	create_job(DataMatrixFunction(Impl.annotate), data; obs=df)
 
 """
     SCP.add_var_column(data, name, column) -> Job
@@ -95,7 +95,10 @@ See also [`var_counts_fraction`](@ref), [`obs_counts_sum`](@ref), [`load_counts`
 function var_counts_sum(f, counts, col::String, filter=Returns(true); project_ids=:intersect)
 	create_job(DataMatrixFunction(Impl.var_counts_sum), counts, col, filter; f, project_ids)
 end
-var_counts_sum(counts, col::String, args...; kwargs...) = var_counts_sum(identity, counts, col, args...; kwargs...)
+function var_counts_sum(counts, col::String, args...; kwargs...)
+	check_kwargs(kwargs, :project_ids)
+	var_counts_sum(identity, counts, col, args...; kwargs...)
+end
 
 
 """
@@ -132,4 +135,7 @@ See also [`obs_counts_fraction`](@ref), [`var_counts_sum`](@ref).
 function obs_counts_sum(f, counts, col::String, filter=Returns(true); project_ids=:no)
 	create_job(DataMatrixFunction(Impl.obs_counts_sum), counts, col, filter; f, project_ids)
 end
-obs_counts_sum(counts, col::String, args...; kwargs...) = obs_counts_sum(identity, counts, col, args...; kwargs...)
+function obs_counts_sum(counts, col::String, args...; kwargs...)
+	check_kwargs(kwargs, :project_ids)
+	obs_counts_sum(identity, counts, col, args...; kwargs...)
+end

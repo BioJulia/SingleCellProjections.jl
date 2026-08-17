@@ -10,5 +10,6 @@ with IDs and the signature scores in a column named `out_col_name`.
 See also [`pca`](@ref), [`loadings`](@ref).
 """
 function signature(data, var_filter, out_col_name; kwargs...)
+	check_kwargs(kwargs, :loadings, :extra_cols, :seed, :nsv, SVD_KWARGS...)
 	create_job(Preprocess(Impl.signature_pre), data, var_filter, out_col_name; kwargs...)
 end
