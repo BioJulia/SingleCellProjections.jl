@@ -16,3 +16,20 @@ function check_kwargs(kwargs, allowed::Symbol...)
 	isempty(unknown) && return nothing
 	throw(ArgumentError("Unknown keyword argument(s): $(join(keys(unknown), ", ")). Accepted: $(join(allowed, ", "))."))
 end
+
+
+"""
+	kwargs_of(f, argtypes...)
+
+The keyword names accepted by the method of `f` that would be called for `argtypes`.
+
+Used by the extensions to derive a [`check_kwargs`](@ref) allow-list from the third-party function
+they forward to, so that the list follows that package's version instead of going stale. Errors if
+the method slurps `kwargs...`, since then there is nothing to enumerate.
+"""
+function kwargs_of(f, argtypes...)
+	kw = Base.kwarg_decl(which(f, Tuple{argtypes...}))
+	any(k->endswith(String(k), "..."), kw) &&
+		error("$f($(join(argtypes, ", "))) slurps keyword arguments, cannot derive an allow-list.")
+	Tuple(kw)
+end

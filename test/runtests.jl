@@ -23,6 +23,7 @@ include("ttest.jl")
 include("umap.jl")
 include("tsne.jl")
 include("muon.jl")
+include("kwargs.jl")
 include("SCPCore/runtests.jl")
 include("MatrixExpressions/runtests.jl")
 
@@ -51,6 +52,7 @@ let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 				run_muon_tests()
 			end
 		end
+		run_kwargs_tests()
 		run_core_tests()
 		run_matrix_expressions_tests()
 	end

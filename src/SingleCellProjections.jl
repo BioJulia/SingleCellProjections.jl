@@ -94,7 +94,7 @@ end
 
 include("SCPCore/SCPCore.jl")
 
-using .SCPCore: DataMatrix, Blocks, check_kwargs
+using .SCPCore: DataMatrix, Blocks, check_kwargs, kwargs_of
 
 import SCTransform
 import SingleCell10x
@@ -184,7 +184,15 @@ function umap end
 Compute a t-SNE embedding of `data` with `ndim` dimensions. Returns a `DataMatrix` with
 t-SNE dimensions as variables. Requires the `TSne` package to be loaded.
 
-Additional keyword arguments (`max_iter`, `perplexity`, etc.) are forwarded to `TSne.tsne`.
+Keyword arguments:
+- `max_iter` — number of t-SNE iterations (default `1000`).
+- `perplexity` — t-SNE perplexity (default `30`).
+- `k_projection` — neighbors used when projecting onto this embedding (default `10`).
+- `min_dist2_projection` — distance regularization used when projecting (default `1e-12`).
+
+`max_iter` and `perplexity` are passed to `TSne.tsne`, as are its other keyword arguments
+(`distance`, `eta`, `theta`, `rng`, …). `pca_init`, `progress` and `extended_output` are set
+by this package and cannot be overridden.
 
 See also [`force_layout`](@ref), [`umap`](@ref).
 """

@@ -28,7 +28,12 @@ parse_csv_job(filepath; kwargs...) =
 
 load_csv(::Preprocessing, filepath; kwargs...) =
 	table_from_compound_result(parse_csv_job(filepath; kwargs...))
+# Keyword arguments forwarded to `CSV.read`, which passes everything but `copycols` on to
+# `CSV.File`. Derived rather than copied, so the list follows the installed CSV.jl version.
+const CSV_KWARGS = (:copycols, SCP.kwargs_of(CSV.File, String)...)
+
 function SCP.load_csv(filepath::Union{String,TimestampedFilePath}; kwargs...)
+	SCP.check_kwargs(kwargs, CSV_KWARGS...)
 	filepath_job = checksummedfilepath_job(filepath)
 	create_job(Preprocess(load_csv), filepath_job; kwargs...)
 end
