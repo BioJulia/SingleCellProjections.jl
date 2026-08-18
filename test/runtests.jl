@@ -50,9 +50,9 @@ let tmp = mktempdir() # Cleanup when Julia process exits - useful for inspecting
 				run_umap_tests()
 				run_tsne_tests()
 				run_muon_tests()
+				run_kwargs_tests()
 			end
 		end
-		run_kwargs_tests()
 		run_core_tests()
 		run_matrix_expressions_tests()
 	end

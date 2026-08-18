@@ -94,7 +94,7 @@ end
 
 include("SCPCore/SCPCore.jl")
 
-using .SCPCore: DataMatrix, Blocks, check_kwargs, kwargs_of
+using .SCPCore: DataMatrix, Blocks, check_kwargs
 
 import SCTransform
 import SingleCell10x

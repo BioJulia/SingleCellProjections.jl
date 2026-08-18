@@ -79,12 +79,7 @@ umap(::Obs, data; ndim, kwargs...) = get_job(Obs(), data)
 umap(::Var, data; ndim, kwargs...) = prefixed_ids_job("id", "UMAP ", ndim)
 
 
-# Keyword arguments forwarded all the way to `UMAP.fit`. Derived from its signature rather than
-# copied, so the list follows the installed UMAP.jl version instead of going stale.
-const UMAP_KWARGS = SCP.kwargs_of(UMAP.fit, Any, Any)
-
 function SCP.umap(data; ndim, seed=1234, kwargs...)
-	SCP.check_kwargs(kwargs, UMAP_KWARGS...)
 	create_job(DataMatrixFunction(umap), data; ndim, seed, kwargs...)
 end
 

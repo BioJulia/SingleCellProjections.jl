@@ -60,19 +60,7 @@ end
 tsne(::Obs, data; kwargs...) = get_job(Obs(), data)
 tsne(::Var, data; ndim, kwargs...) = prefixed_ids_job("id", "t-SNE ", ndim)
 
-# `pca_init` and `progress` are set by `tsne_impl`, and `extended_output` would make `TSne.tsne`
-# return a tuple instead of the matrix we embed. Passing any of them is an error, not a choice.
-const TSNE_FIXED_KWARGS = (:pca_init, :progress, :extended_output)
-
-# `max_iter` and `perplexity` are positional arguments of `TSne.tsne`; `k_projection` and
-# `min_dist2_projection` are ours, used when projecting onto an existing embedding. The rest are
-# derived from `TSne.tsne` so the list follows the installed TSne.jl version.
-const TSNE_KWARGS = (:max_iter, :perplexity, :k_projection, :min_dist2_projection,
-                     setdiff(SCP.kwargs_of(TSne.tsne, AbstractMatrix, Integer, Integer, Integer, Number),
-                             TSNE_FIXED_KWARGS)...)
-
 function SCP.tsne(args...; ndim=3, kwargs...)
-	SCP.check_kwargs(kwargs, TSNE_KWARGS...)
 	create_job(DataMatrixFunction(tsne), args...; ndim, kwargs...)
 end
 
