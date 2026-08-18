@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 * Precompilation of basic workflow
+* Improved kwarg handling. Supplying unused kwargs will now typically error at spec construction instead of silently changing the hash but not the computation.
+* Some (uncommon) kwargs to force_layout used camelCase. These are now in snake_case.
+* tnse now properly forward kwargs to the implementation.
 
 ## [0.5.0] - 2026-08-05
 

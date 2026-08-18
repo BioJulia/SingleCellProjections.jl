@@ -89,8 +89,8 @@ Keyword arguments:
 - `charge`, `charge_min_distance`, `theta` — repulsion parameters (defaults `40`, `1`, `0.9`).
 - `center_strength` — centering force (default `0.05`).
 - `velocity_decay` — velocity damping (default `0.9`).
-- `initialAlpha`, `finalAlpha` — simulation temperature schedule (defaults `1.0`, `1e-3`).
-- `initialScale` — initial coordinate scale (default `10`).
+- `initial_alpha`, `final_alpha` — simulation temperature schedule (defaults `1.0`, `1e-3`).
+- `initial_scale` — initial coordinate scale (default `10`).
 - `k_projection` — neighbors used when projecting onto this layout (default `10`).
 
 # Examples
@@ -106,7 +106,7 @@ function force_layout(args...; ndim=3, seed=1234, kwargs...)
 	                     :link_distance, :link_strength,
 	                     :charge, :charge_min_distance, :theta,
 	                     :center_strength, :velocity_decay,
-	                     :initialAlpha, :finalAlpha, :initialScale,
+	                     :initial_alpha, :final_alpha, :initial_scale,
 	                     :k_projection, :min_dist2_projection)
 	create_job(DataMatrixFunction(Impl.force_layout), args...; ndim, seed, kwargs...)
 end

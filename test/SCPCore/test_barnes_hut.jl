@@ -1,36 +1,36 @@
-function validate_barnes_hut_tree_rec(tree::BarnesHutTree{N1,N2}, points, depth, nodeInd, mins, maxes, pointRange) where {N1,N2}
-	node = tree.nodes[nodeInd]
-	@assert node.centerOfGravity ≈ mean(points[tree.pointIndices[pointRange]])
+function validate_barnes_hut_tree_rec(tree::BarnesHutTree{N1,N2}, points, depth, node_ind, mins, maxes, point_range) where {N1,N2}
+	node = tree.nodes[node_ind]
+	@assert node.center_of_gravity ≈ mean(points[tree.point_indices[point_range]])
 	mid = (mins+maxes)/2
 
-	@assert all(>=(0), node.childLengths)
-	@assert sum(node.childLengths) == length(pointRange)
+	@assert all(>=(0), node.child_lengths)
+	@assert sum(node.child_lengths) == length(point_range)
 
 	# for each child
-	firstPointInd = first(pointRange)
-	childNodeInd = nodeInd+1
-	for (childInd,cartesianInd) in enumerate(CartesianIndices(ntuple(i->2,N1)))
-		childMask = Tuple(cartesianInd) .== 2 # false/true for each dimension
-		childMins  = SVector(ntuple(i->childMask[i] ? mid[i]   : mins[i], N1))
-		childMaxes = SVector(ntuple(i->childMask[i] ? maxes[i] : mid[i] , N1))
+	first_point_ind = first(point_range)
+	child_node_ind = node_ind+1
+	for (child_ind,cartesian_ind) in enumerate(CartesianIndices(ntuple(i->2,N1)))
+		child_mask = Tuple(cartesian_ind) .== 2 # false/true for each dimension
+		child_mins  = SVector(ntuple(i->child_mask[i] ? mid[i]   : mins[i], N1))
+		child_maxes = SVector(ntuple(i->child_mask[i] ? maxes[i] : mid[i] , N1))
 
-		endPointInd = firstPointInd + node.childLengths[childInd]
-		childRange = firstPointInd:endPointInd-1
+		end_point_ind = first_point_ind + node.child_lengths[child_ind]
+		child_range = first_point_ind:end_point_ind-1
 
 		# check that all child points are within the child node
-		for p in points[tree.pointIndices[childRange]]
-			@assert all(p.>=childMins)
-			@assert all(p.<=childMaxes)
+		for p in points[tree.point_indices[child_range]]
+			@assert all(p.>=child_mins)
+			@assert all(p.<=child_maxes)
 		end
 
-		if depth<tree.maxDepth && length(childRange)>tree.leafSize
-			validate_barnes_hut_tree_rec(tree, points, depth+1, childNodeInd, childMins, childMaxes, childRange)
-			childNodeInd = tree.nodes[childNodeInd].skipPointer
+		if depth<tree.max_depth && length(child_range)>tree.leaf_size
+			validate_barnes_hut_tree_rec(tree, points, depth+1, child_node_ind, child_mins, child_maxes, child_range)
+			child_node_ind = tree.nodes[child_node_ind].skip_pointer
 		end
 
-		firstPointInd = endPointInd
+		first_point_ind = end_point_ind
 	end
-	@assert firstPointInd-1 == last(pointRange)
+	@assert first_point_ind-1 == last(point_range)
 end
 
 function validate_barnes_hut_tree(tree, points)
@@ -49,7 +49,7 @@ function run_barnes_hut_tests()
 				points = randn(rng, SVector{d,Float64}, N)
 
 				tree = BarnesHutTree(d)
-				build!(tree, points; leafSize=2)
+				build!(tree, points; leaf_size=2)
 				validate_barnes_hut_tree(tree, points)
 				@test true
 			catch err
