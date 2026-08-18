@@ -9,6 +9,7 @@ Compute the variance of each variable in `data`, returning a table with IDs and 
 See also [`std`](@ref), [`relative_std`](@ref), [`normalize_matrix`](@ref).
 """
 function variance(X; kwargs...)
+	check_kwargs(kwargs, :assume_centered, :col, :project)
 	create_job(Projectable(Impl.compute_variance), X; kwargs...)
 end
 
@@ -24,6 +25,7 @@ Compute the standard deviation of each variable in `data`, returning a table wit
 See also [`variance`](@ref), [`relative_std`](@ref), [`normalize_matrix`](@ref).
 """
 function std(X; kwargs...)
+	check_kwargs(kwargs, :assume_centered, :col, :project)
 	create_job(Preprocess(Impl.compute_std), X; kwargs...)
 end
 
@@ -44,5 +46,6 @@ only variables whose std is at least a fraction `f` of the highest-std variable.
 See also [`variance`](@ref), [`std`](@ref), [`normalize_matrix`](@ref).
 """
 function relative_std(X; kwargs...)
+	check_kwargs(kwargs, :assume_centered, :col, :project)
 	create_job(Preprocess(Impl.compute_relative_std), X; kwargs...)
 end

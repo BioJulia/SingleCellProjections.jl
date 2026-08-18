@@ -17,6 +17,7 @@ Keyword arguments:
 See also [`ttest`](@ref), [`normalize_matrix`](@ref).
 """
 function ftest(data, h1; statistic_col="F", pvalue_col="pValue", kwargs...)
+	check_kwargs(kwargs, :h0, :center, :max_categories, :h1_missing, :h0_missing, :var_cols, :do_sort)
 	col_kwargs = (; )
 
 	if statistic_col !== nothing
@@ -46,6 +47,7 @@ Keyword arguments:
 See also [`ftest`](@ref), [`normalize_matrix`](@ref), [`twogroup_covariate`](@ref).
 """
 function ttest(data, h1; statistic_col="t", pvalue_col="pValue", difference_col="difference", kwargs...)
+	check_kwargs(kwargs, :h0, :center, :max_categories, :h1_missing, :h0_missing, :var_cols, :do_sort)
 	col_kwargs = (; )
 
 	if statistic_col !== nothing
@@ -94,6 +96,7 @@ reused and the test is recomputed on the projected observations.
 See also [`ftest`](@ref), [`ttest`](@ref), [`logtransform`](@ref).
 """
 function mannwhitney(data, column, args...; statistic_col="U", pvalue_col="pValue", z_col=nothing, kwargs...)
+	check_kwargs(kwargs, :h1_missing, :var_cols, :do_sort, :chunk_size, :nworkers, :channel_size)
 	col_kwargs = (; )
 
 	if statistic_col !== nothing

@@ -7,12 +7,14 @@ using Statistics
 
 using .SCPCore: BarnesHutTree, build!
 
+include("utils.jl")
 include("datamatrix.jl")
 include("test_barnes_hut.jl")
 
 function run_core_tests()
 	@testset "SCPCore.jl" begin
 		# include("ranktests.jl")
+		run_utils_tests()
 		run_datamatrix_tests()
 		# include("duplicate_var_ids.jl")
 		# include("ftest_tests.jl")

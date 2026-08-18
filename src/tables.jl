@@ -12,7 +12,10 @@ Return the column names of `table`.
 
 See also [`get_id_colname`](@ref), [`get_value_colname`](@ref).
 """
-get_colnames(table, args...; kwargs...) = create_job(Preprocess(Impl.get_colnames), table, args...; kwargs...)
+function get_colnames(table, args...; kwargs...)
+	check_kwargs(kwargs, :require_n_cols)
+	create_job(Preprocess(Impl.get_colnames), table, args...; kwargs...)
+end
 
 """
     SCP.get_id_colname(table) -> Job
@@ -40,7 +43,10 @@ Select specific columns from `table` by name or index.
 
 See also [`id_column`](@ref), [`value_column`](@ref).
 """
-get_columns(table, colname1, colnames...; kwargs...) = create_job(Preprocess(Impl.get_columns), table, colname1, colnames...; kwargs...)
+function get_columns(table, colname1, colnames...; kwargs...)
+	check_kwargs(kwargs, :require_n_cols)
+	create_job(Preprocess(Impl.get_columns), table, colname1, colnames...; kwargs...)
+end
 
 """
     SCP.id_column(table) -> Job
@@ -75,7 +81,10 @@ Return the values of column `col` from `table` as a vector.
 
 See also [`id_column_data`](@ref), [`value_column_data`](@ref).
 """
-column_data(table, col; kwargs...) = create_job(Preprocess(Impl.column_data), table, col; kwargs...)
+function column_data(table, col; kwargs...)
+	check_kwargs(kwargs, :require_n_cols)
+	create_job(Preprocess(Impl.column_data), table, col; kwargs...)
+end
 
 """
     SCP.id_column_data(table) -> Job
@@ -152,4 +161,7 @@ Use `new_name` to rename the value column.
 
 (TODO: Example.)
 """
-transform_annotation(f, table; kwargs...) = create_job(Preprocess(Impl.transform_annotation), f, table; kwargs...)
+function transform_annotation(f, table; kwargs...)
+	check_kwargs(kwargs, :new_name)
+	create_job(Preprocess(Impl.transform_annotation), f, table; kwargs...)
+end

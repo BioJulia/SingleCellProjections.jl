@@ -28,6 +28,7 @@ parse_csv_job(filepath; kwargs...) =
 
 load_csv(::Preprocessing, filepath; kwargs...) =
 	table_from_compound_result(parse_csv_job(filepath; kwargs...))
+
 function SCP.load_csv(filepath::Union{String,TimestampedFilePath}; kwargs...)
 	filepath_job = checksummedfilepath_job(filepath)
 	create_job(Preprocess(load_csv), filepath_job; kwargs...)

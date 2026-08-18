@@ -29,7 +29,7 @@ end
 Available: `run_projectables_tests`, `run_tables_tests`, `run_load_tests`,
 `run_transform_tests`, `run_reduce_tests`, `run_filter_tests`, `run_subset_tests`,
 `run_sum_squared_tests`, `run_umap_tests`, `run_tsne_tests`, `run_muon_tests`,
-`run_core_tests`, `run_matrix_expressions_tests`.
+`run_kwargs_tests`, `run_core_tests`, `run_matrix_expressions_tests`.
 
 `test/test_setup.jl` uses `__revise_mode__ = :evalassign` so Revise picks up changes
 to both helper functions and global variables in that file.

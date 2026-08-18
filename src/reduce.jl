@@ -1,3 +1,6 @@
+# Keyword arguments forwarded to `SCPCore.implicitsvd`, shared by svd/pca/loadings.
+const SVD_KWARGS = (:subspacedims, :niter, :stabilize_sign)
+
 """
     SCP.svd(data; nsv, seed=1234, kwargs...) -> Job
 
@@ -13,6 +16,7 @@ Keyword arguments controlling the iterative procedure:
 See also [`pca`](@ref), [`loadings`](@ref).
 """
 function svd(matrix; nsv, seed=1234, kwargs...)
+	check_kwargs(kwargs, SVD_KWARGS...)
 	create_job(DataMatrixFunction(Impl.svd), matrix; nsv, seed, kwargs...)
 end
 
@@ -42,6 +46,7 @@ julia> SCP.pca(normalized; nsv=100)
 See also [`svd`](@ref), [`loadings`](@ref), [`normalize_matrix`](@ref).
 """
 function pca(data; nsv, seed=1234, kwargs...)
+	check_kwargs(kwargs, SVD_KWARGS...)
 	create_job(DataMatrixFunction(Impl.pca), data; nsv, seed, kwargs...)
 end
 
@@ -64,17 +69,19 @@ julia> SCP.loadings(normalized; nsv=100)
 See also [`pca`](@ref), [`svd`](@ref).
 """
 function loadings(args...; nsv, seed=1234, kwargs...)
+	check_kwargs(kwargs, SVD_KWARGS...)
 	create_job(DataMatrixFunction(Impl.loadings), args...; nsv, seed, kwargs...)
 end
 
 
 """
-    SCP.force_layout(data; ndim=3, kwargs...) -> Job
+    SCP.force_layout(data; ndim=3, seed=1234, kwargs...) -> Job
 
 Compute a force-directed layout embedding of `data`. Returns a `DataMatrix` with `ndim`
 layout dimensions as variables.
 
 Keyword arguments:
+- `seed` — random seed.
 - `k` — number of nearest neighbors for the graph.
 - `k_fraction` — alternative to `k`, specify neighbors as a fraction of observations.
 - `niter` — number of force simulation iterations (default `100`).
@@ -82,9 +89,8 @@ Keyword arguments:
 - `charge`, `charge_min_distance`, `theta` — repulsion parameters (defaults `40`, `1`, `0.9`).
 - `center_strength` — centering force (default `0.05`).
 - `velocity_decay` — velocity damping (default `0.9`).
-- `initialAlpha`, `finalAlpha` — simulation temperature schedule (defaults `1.0`, `1e-3`).
-- `initialScale` — initial coordinate scale (default `10`).
-- `seed` — random seed (default `1234`).
+- `initial_alpha`, `final_alpha` — simulation temperature schedule (defaults `1.0`, `1e-3`).
+- `initial_scale` — initial coordinate scale (default `10`).
 - `k_projection` — neighbors used when projecting onto this layout (default `10`).
 
 # Examples
@@ -95,6 +101,12 @@ julia> SCP.force_layout(reduced; ndim=3, seed=4567, k=100, k_projection=25)
 
 See also [`transform_coords`](@ref), [`find_optimal_coord_transform`](@ref), [`umap`](@ref), [`tsne`](@ref).
 """
-function force_layout(args...; ndim=3, kwargs...)
-	create_job(DataMatrixFunction(Impl.force_layout), args...; ndim, kwargs...)
+function force_layout(args...; ndim=3, seed=1234, kwargs...)
+	check_kwargs(kwargs, :k, :k_fraction, :make_symmetric, :niter,
+	                     :link_distance, :link_strength,
+	                     :charge, :charge_min_distance, :theta,
+	                     :center_strength, :velocity_decay,
+	                     :initial_alpha, :final_alpha, :initial_scale,
+	                     :k_projection, :min_dist2_projection)
+	create_job(DataMatrixFunction(Impl.force_layout), args...; ndim, seed, kwargs...)
 end

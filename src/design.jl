@@ -44,5 +44,6 @@ Construct a design matrix from observation covariates. Covariates can be column 
 See also [`normalize_matrix`](@ref), [`negative_regression_matrix`](@ref).
 """
 function designmatrix(data, args...; center=true, kwargs...)
+	check_kwargs(kwargs, :max_categories)
 	create_job(Preprocess(Impl.designmatrix), data, args...; center, kwargs...)
 end

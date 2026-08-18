@@ -156,8 +156,8 @@ function covariate_matrix_job(data, desc::SCPCore.CategoricalCovariateDesc; max_
 	kw = max_categories !== nothing ? (; max_categories) : (;)
 	categorical_covariate_matrix_job(data; kw...)
 end
-covariate_matrix_job(data, desc::SCPCore.TwoGroupCovariateDesc; kwargs...) =
-	twogroup_covariate_matrix_job(data, _group_args(desc)...; kwargs...)
+covariate_matrix_job(data, desc::SCPCore.TwoGroupCovariateDesc; center, kwargs...) =
+	twogroup_covariate_matrix_job(data, _group_args(desc)...; center)
 
 
 extract_covariate_names(::Preprocessing, ::Any, ::SCPCore.NumericalCovariateDesc, basename) = basename

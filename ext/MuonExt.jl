@@ -115,6 +115,7 @@ function load_h5ad(::Obs, filepath; varm=nothing, varp=nothing, kwargs...)
 end
 
 function SCP.load_h5ad(filepath; kwargs...)
+	SCP.check_kwargs(kwargs, :T, :layer, :obsm, :obsp, :varm, :varp, :row_block_size, :col_block_size)
 	if count(key->haskey(kwargs,key), (:layer, :obsm, :obsp, :varm, :varp)) > 1
 		throw(ArgumentError("At most one of layer, obsm, obsp, varm, varp can be specified."))
 	end

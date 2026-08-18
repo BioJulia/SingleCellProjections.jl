@@ -1,9 +1,9 @@
 
 # split into one vector for each instead?
 struct BarnesHutNode{N1,N2}
-	childLengths::NTuple{N2,Int}
-	centerOfGravity::SVector{N1,Float64}
-	skipPointer::Int
+	child_lengths::NTuple{N2,Int}
+	center_of_gravity::SVector{N1,Float64}
+	skip_pointer::Int
 end
 
 BarnesHutNode(N1,N2) = BarnesHutNode{N1,N2}(ntuple(i->0,N2), (@SVector zeros(N1)), 0)
@@ -11,11 +11,11 @@ BarnesHutNode(N1,N2) = BarnesHutNode{N1,N2}(ntuple(i->0,N2), (@SVector zeros(N1)
 
 # this is a quadtree/octree/etc with additional info stored
 mutable struct BarnesHutTree{N1,N2} # make immutable?
-	maxDepth::Int
-	leafSize::Int
+	max_depth::Int
+	leaf_size::Int
 	mins::SVector{N1,Float64}
 	maxes::SVector{N1,Float64}
-	pointIndices::Vector{Int}
+	point_indices::Vector{Int}
 	nodes::Vector{BarnesHutNode{N1,N2}}
 	# scratch spaces
 	scratch1::Vector{Int}
@@ -50,95 +50,95 @@ childind(p::SVector{N,T}, mid::SVector{N,T}) where {N,T} = 1+sum((p.>=mid).*SVec
 
 
 
-function buildrec!(tree::BarnesHutTree{N1,N2}, points::AbstractVector, pointRange::UnitRange{Int}, mins::SVector{N1,Float64}, maxes::SVector{N1,Float64}, depth::Int) where {N1,N2}
+function buildrec!(tree::BarnesHutTree{N1,N2}, points::AbstractVector, point_range::UnitRange{Int}, mins::SVector{N1,Float64}, maxes::SVector{N1,Float64}, depth::Int) where {N1,N2}
 	mid = (mins+maxes)/2
 
 	push!(tree.nodes, BarnesHutNode(N1,N2)) # dummy initialization to reserve space
-	thisNodeInd = length(tree.nodes)
+	this_node_ind = length(tree.nodes)
 
 	# setup scratch spaces
-	pointIndices = tree.scratch1
-	resize!(pointIndices, length(pointRange))
-	pointIndices .= view(tree.pointIndices,pointRange)
+	point_indices = tree.scratch1
+	resize!(point_indices, length(point_range))
+	point_indices .= view(tree.point_indices,point_range)
 
-	childScratch = tree.scratch2
-	resize!(childScratch,N2)
-	childScratch .= 0
+	child_scratch = tree.scratch2
+	resize!(child_scratch,N2)
+	child_scratch .= 0
 
-	childIds = tree.scratch3
-	resize!(childIds, length(pointIndices))
+	child_ids = tree.scratch3
+	resize!(child_ids, length(point_indices))
 
-	for (i,i2) in enumerate(pointIndices)
-		bucketId = childind(points[i2],mid)
-		childIds[i] = bucketId
-		childScratch[bucketId] += 1
+	for (i,i2) in enumerate(point_indices)
+		bucket_id = childind(points[i2],mid)
+		child_ids[i] = bucket_id
+		child_scratch[bucket_id] += 1
 	end
-	childLengths = ntuple(i->childScratch[i], N2)
+	child_lengths = ntuple(i->child_scratch[i], N2)
 
-	w = first(pointRange)
+	w = first(point_range)
 	for i=1:N2 # for each bucket
-		childLength = childScratch[i]
-		childScratch[i] = w
-		w += childLength
+		child_length = child_scratch[i]
+		child_scratch[i] = w
+		w += child_length
 	end
-	@assert w == last(pointRange)+1
+	@assert w == last(point_range)+1
 
-	for (i,bucketInd) in enumerate(childIds)
-		w = childScratch[bucketInd]
-		tree.pointIndices[w] = pointIndices[i]
-		childScratch[bucketInd] = w+1
+	for (i,bucket_ind) in enumerate(child_ids)
+		w = child_scratch[bucket_ind]
+		tree.point_indices[w] = point_indices[i]
+		child_scratch[bucket_ind] = w+1
 	end
 
 
 
-	pointSum = @SVector zeros(N1) # used to compute centerOfGravity
+	point_sum = @SVector zeros(N1) # used to compute center_of_gravity
 
 	# recurse
-	if depth<tree.maxDepth
-		k1 = first(pointRange)
+	if depth<tree.max_depth
+		k1 = first(point_range)
 		for i=1:N2 # for each child
-			k2 = k1 + childLengths[i]
-			childRange = k1:k2-1
+			k2 = k1 + child_lengths[i]
+			child_range = k1:k2-1
 
-			if length(childRange)>tree.leafSize
-				childMins  = SVector(ntuple(j->((i-1)&(1<<(j-1))==0 ? mins[j] : mid[j]  ), N1))
-				childMaxes = SVector(ntuple(j->((i-1)&(1<<(j-1))==0 ? mid[j]  : maxes[j]), N1))
-				pointSum += buildrec!(tree, points, childRange, childMins, childMaxes, depth+1)
-			elseif !isempty(childRange)
-				pointSum += sum(p->points[tree.pointIndices[p]], childRange)
+			if length(child_range)>tree.leaf_size
+				child_mins  = SVector(ntuple(j->((i-1)&(1<<(j-1))==0 ? mins[j] : mid[j]  ), N1))
+				child_maxes = SVector(ntuple(j->((i-1)&(1<<(j-1))==0 ? mid[j]  : maxes[j]), N1))
+				point_sum += buildrec!(tree, points, child_range, child_mins, child_maxes, depth+1)
+			elseif !isempty(child_range)
+				point_sum += sum(p->points[tree.point_indices[p]], child_range)
 			end
 
 			k1 = k2
 		end
 	else
-		pointSum = sum(p->points[tree.pointIndices[p]], pointRange)
+		point_sum = sum(p->points[tree.point_indices[p]], point_range)
 	end
 
-	centerOfGravity = pointSum/max(1,length(pointRange)) # max to avoid div by zero
-	tree.nodes[thisNodeInd] = BarnesHutNode(childLengths, centerOfGravity, length(tree.nodes)+1)
+	center_of_gravity = point_sum/max(1,length(point_range)) # max to avoid div by zero
+	tree.nodes[this_node_ind] = BarnesHutNode(child_lengths, center_of_gravity, length(tree.nodes)+1)
 
-	pointSum
+	point_sum
 end
 
 
-function build!(tree::BarnesHutTree{N1,N2}, points::AbstractVector; maxDepth::Int=20, leafSize::Int=10) where {N1,N2}
-	nbrPoints = length(points)
+function build!(tree::BarnesHutTree{N1,N2}, points::AbstractVector; max_depth::Int=20, leaf_size::Int=10) where {N1,N2}
+	nbr_points = length(points)
 
 	# clear existing tree, but reuse memory
-	resize!(tree.pointIndices, nbrPoints)
-	tree.pointIndices .= 1:nbrPoints
+	resize!(tree.point_indices, nbr_points)
+	tree.point_indices .= 1:nbr_points
 	empty!(tree.nodes)
 
 	# set params
-	tree.maxDepth = maxDepth
-	tree.leafSize = leafSize
+	tree.max_depth = max_depth
+	tree.leaf_size = leaf_size
 
 	# compute bounding box
 	boundingbox!(tree, points)
 
 	if !isempty(points)
 		@assert N1==length(points[1])
-		buildrec!(tree, points, 1:nbrPoints, tree.mins, tree.maxes, 0)
+		buildrec!(tree, points, 1:nbr_points, tree.mins, tree.maxes, 0)
 	end
 	tree
 end

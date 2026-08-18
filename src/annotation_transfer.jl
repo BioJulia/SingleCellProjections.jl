@@ -9,5 +9,7 @@ Returns a table with the transferred labels and confidence scores.
 
 (TODO: Add example - maybe I need to construct one? It should be about celltype transfer.)
 """
-transfer_annotation(base, new, covariate; k, kwargs...) =
+function transfer_annotation(base, new, covariate; k, kwargs...)
+	check_kwargs(kwargs, :weight_fun, :new_name, :new_suffix)
 	create_job(Preprocess(Impl.transfer_annotation), base, new, covariate; k, kwargs...)
+end

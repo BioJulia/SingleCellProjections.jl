@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 * Precompilation of basic workflow
+* Improved kwarg handling. Supplying unused kwargs will now typically error at spec construction instead of silently changing the hash but not the computation.
+* Some (uncommon) kwargs to force_layout used camelCase. These are now in snake_case. This changes the hash of `force_layout` jobs, so they will be recomputed.
+* `tsne` now properly forwards kwargs to `TSne.tsne`. Previously only `max_iter` and `perplexity` had any effect and all other kwargs were silently ignored.
+* `designmatrix` failed when a two-group covariate was combined with `max_categories`, since `max_categories` was passed on to all covariates regardless of type.
 
 ## [0.5.0] - 2026-08-05
 

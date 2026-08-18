@@ -21,45 +21,45 @@ end
 
 
 # This function is based on d3-force: https://github.com/d3/d3-force, also see LICENSE.md.
-function charge_forces_rec!(vel::AbstractVector, pos::AbstractVector, pointInd, tree::BarnesHutTree{N1,N2}, depth, nodeInd, firstPointInd, nodeDiameter2, charge, charge_min_distance2, alpha, theta2) where {N1,N2}
-    node = tree.nodes[nodeInd]
+function charge_forces_rec!(vel::AbstractVector, pos::AbstractVector, point_ind, tree::BarnesHutTree{N1,N2}, depth, node_ind, first_point_ind, node_diameter2, charge, charge_min_distance2, alpha, theta2) where {N1,N2}
+    node = tree.nodes[node_ind]
     # for each child
-    childNodeInd = nodeInd+1
+    child_node_ind = node_ind+1
     for i=1:N2
-        endPointInd = firstPointInd + node.childLengths[i]
-        childRange = firstPointInd:endPointInd-1
+        end_point_ind = first_point_ind + node.child_lengths[i]
+        child_range = first_point_ind:end_point_ind-1
 
-        p = pos[pointInd]
-        if depth+1>=tree.maxDepth || length(childRange)<=tree.leafSize
+        p = pos[point_ind]
+        if depth+1>=tree.max_depth || length(child_range)<=tree.leaf_size
             # leaf, process all points
-            for k in childRange
-                pointInd2 = tree.pointIndices[k]
-                pointInd==pointInd2 && continue # skip self
-                u = p - pos[pointInd2]
+            for k in child_range
+                point_ind2 = tree.point_indices[k]
+                point_ind==point_ind2 && continue # skip self
+                u = p - pos[point_ind2]
                 denom = sum(abs2,u)
                 denom<charge_min_distance2 && (denom = max(1e-9,sqrt(charge_min_distance2*denom))) # limit force for points very close to each other
-                vel[pointInd] += alpha*charge/denom * u
+                vel[point_ind] += alpha*charge/denom * u
             end
         else
             # internal node
-            childNode = tree.nodes[childNodeInd]
-            u = p-childNode.centerOfGravity
+            child_node = tree.nodes[child_node_ind]
+            u = p-child_node.center_of_gravity
             d2 = sum(abs2,u)
 
             # approximate?
-            if nodeDiameter2 < theta2*d2
+            if node_diameter2 < theta2*d2
                 denom = d2
                 denom<charge_min_distance2 && (denom = max(1e-9,sqrt(charge_min_distance2*denom))) # limit force for points very close to each other
-                vel[pointInd] += length(childRange)*alpha*charge/denom * u
+                vel[point_ind] += length(child_range)*alpha*charge/denom * u
             else
                 # otherwise recurse
-                charge_forces_rec!(vel, pos, pointInd, tree, depth+1, childNodeInd, firstPointInd, nodeDiameter2/4, charge, charge_min_distance2, alpha, theta2)
+                charge_forces_rec!(vel, pos, point_ind, tree, depth+1, child_node_ind, first_point_ind, node_diameter2/4, charge, charge_min_distance2, alpha, theta2)
             end
-            childNodeInd = childNode.skipPointer
+            child_node_ind = child_node.skip_pointer
         end
 
 
-        firstPointInd = endPointInd
+        first_point_ind = end_point_ind
     end
 end
 
@@ -90,13 +90,13 @@ end
 # This function is based on d3-force: https://github.com/d3/d3-force, also see LICENSE.md.
 function link_forces!(vel::AbstractVector, pos::AbstractVector, adj; link_distance, link_strength, alpha)
     N = length(pos)
-    adjR = rowvals(adj)
-    adjV = nonzeros(adj)
+    adj_r = rowvals(adj)
+    adj_v = nonzeros(adj)
     for j=2:N
         for k in nzrange(adj,j)
-            i = adjR[k]
+            i = adj_r[k]
             i>=j && break # only upper triangular part
-            adjV[k]==false && continue # handle zeros that are not structural?
+            adj_v[k]==false && continue # handle zeros that are not structural?
             u = (pos[j].+vel[j]) .- (pos[i].+vel[i])
             d = sqrt(sum(abs2,u))
             Fl = alpha*link_strength*(d-link_distance)/(2*d) * u
@@ -115,8 +115,8 @@ function force_layout(::Val{ndim}, adj::AbstractMatrix;
                       charge=5, charge_min_distance=1, theta = 0.9,
                       center_strength=0.05,
                       velocity_decay=0.9,
-                      initialAlpha = 1.0, finalAlpha = 1e-3,
-                      initialScale = 10,
+                      initial_alpha = 1.0, final_alpha = 1e-3,
+                      initial_scale = 10,
                       seed = nothing,
                       rng = seed !== nothing ? seed2rng(seed) : Random.default_rng(),
                       progress = nothing,
@@ -125,11 +125,11 @@ function force_layout(::Val{ndim}, adj::AbstractMatrix;
     @assert size(adj,2)==N
     @assert issymmetric(adj) # TODO: support upper triangular adj matrix too?
 
-    @assert initialAlpha >= finalAlpha
-    @assert finalAlpha > 0
-    beta = -log(finalAlpha/initialAlpha)/niter
+    @assert initial_alpha >= final_alpha
+    @assert final_alpha > 0
+    beta = -log(final_alpha/initial_alpha)/niter
 
-    pos = _randinit(Val(ndim), rng, N, initialScale)
+    pos = _randinit(Val(ndim), rng, N, initial_scale)
     vel = zeros(SVector{ndim,Float64},N)
 
     tree = BarnesHutTree(ndim)
@@ -138,7 +138,7 @@ function force_layout(::Val{ndim}, adj::AbstractMatrix;
     isnothing(progress) || progress(niter) # initialize
 
     for iter = 1:niter
-        alpha = initialAlpha*exp(-beta*iter)
+        alpha = initial_alpha*exp(-beta*iter)
 
         charge != 0 && charge_forces!(vel, pos, tree; charge=charge, charge_min_distance=charge_min_distance, alpha=alpha, theta=theta)
         isnothing(tick) || tick()

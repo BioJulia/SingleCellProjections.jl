@@ -34,8 +34,10 @@ Filter both variables and observations simultaneously.
 
 See also [`filter_var`](@ref), [`filter_obs`](@ref).
 """
-filter_matrix(fvar, fobs, data; kwargs...) =
+function filter_matrix(fvar, fobs, data; kwargs...)
+	check_kwargs(kwargs, :project_var_ids, :project_obs_ids)
 	create_job(Preprocess(Impl.filter_matrix), data; kwargs..., fvar, fobs)
+end
 """
     SCP.filter_var(fvar, data; kwargs...) -> Job
 
@@ -46,8 +48,10 @@ Filter variables by the predicate `fvar`. `fvar` can be:
 
 See also [`filter_obs`](@ref), [`filter_matrix`](@ref), [`subset_var`](@ref).
 """
-filter_var(fvar, data; kwargs...) =
+function filter_var(fvar, data; kwargs...)
+	check_kwargs(kwargs, :project_var_ids, :project_obs_ids)
 	create_job(Preprocess(Impl.filter_matrix), data; kwargs..., fvar)
+end
 """
     SCP.filter_obs(fobs, data; kwargs...) -> Job
 
@@ -60,5 +64,7 @@ Filter observations by the predicate `fobs`. `fobs` can be:
 
 See also [`filter_var`](@ref), [`filter_matrix`](@ref), [`subset_obs`](@ref).
 """
-filter_obs(fobs, data; kwargs...) =
+function filter_obs(fobs, data; kwargs...)
+	check_kwargs(kwargs, :project_var_ids, :project_obs_ids)
 	create_job(Preprocess(Impl.filter_matrix), data; kwargs..., fobs)
+end
