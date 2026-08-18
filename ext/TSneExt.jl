@@ -61,6 +61,10 @@ tsne(::Obs, data; kwargs...) = get_job(Obs(), data)
 tsne(::Var, data; ndim, kwargs...) = prefixed_ids_job("id", "t-SNE ", ndim)
 
 function SCP.tsne(args...; ndim=3, kwargs...)
+	# To keep things simpler, we do not allow these three kwargs. With some work, they could be supported. Open an issue if you want them. :)
+	:pca_init in keys(kwargs) && throw(ArgumentError("pca_init kwarg is not supported."))
+	:distance in keys(kwargs) && throw(ArgumentError("distance kwarg is not supported."))
+	:extended_output in keys(kwargs) && throw(ArgumentError("extended_output kwarg is not supported."))
 	create_job(DataMatrixFunction(tsne), args...; ndim, kwargs...)
 end
 

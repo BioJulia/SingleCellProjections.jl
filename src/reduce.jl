@@ -75,12 +75,13 @@ end
 
 
 """
-    SCP.force_layout(data; ndim=3, kwargs...) -> Job
+    SCP.force_layout(data; ndim=3, seed=1234, kwargs...) -> Job
 
 Compute a force-directed layout embedding of `data`. Returns a `DataMatrix` with `ndim`
 layout dimensions as variables.
 
 Keyword arguments:
+- `seed` — random seed.
 - `k` — number of nearest neighbors for the graph.
 - `k_fraction` — alternative to `k`, specify neighbors as a fraction of observations.
 - `niter` — number of force simulation iterations (default `100`).
@@ -90,7 +91,6 @@ Keyword arguments:
 - `velocity_decay` — velocity damping (default `0.9`).
 - `initialAlpha`, `finalAlpha` — simulation temperature schedule (defaults `1.0`, `1e-3`).
 - `initialScale` — initial coordinate scale (default `10`).
-- `seed` — random seed (default `1234`).
 - `k_projection` — neighbors used when projecting onto this layout (default `10`).
 
 # Examples
@@ -101,12 +101,12 @@ julia> SCP.force_layout(reduced; ndim=3, seed=4567, k=100, k_projection=25)
 
 See also [`transform_coords`](@ref), [`find_optimal_coord_transform`](@ref), [`umap`](@ref), [`tsne`](@ref).
 """
-function force_layout(args...; ndim=3, kwargs...)
+function force_layout(args...; ndim=3, seed=1234, kwargs...)
 	check_kwargs(kwargs, :k, :k_fraction, :make_symmetric, :niter,
 	                     :link_distance, :link_strength,
 	                     :charge, :charge_min_distance, :theta,
 	                     :center_strength, :velocity_decay,
 	                     :initialAlpha, :finalAlpha, :initialScale,
-	                     :seed, :k_projection, :min_dist2_projection)
-	create_job(DataMatrixFunction(Impl.force_layout), args...; ndim, kwargs...)
+	                     :k_projection, :min_dist2_projection)
+	create_job(DataMatrixFunction(Impl.force_layout), args...; ndim, seed, kwargs...)
 end

@@ -191,8 +191,10 @@ Keyword arguments:
 - `min_dist2_projection` — distance regularization used when projecting (default `1e-12`).
 
 `max_iter` and `perplexity` are passed to `TSne.tsne`, as are its other keyword arguments
-(`distance`, `eta`, `theta`, `rng`, …). `pca_init`, `progress` and `extended_output` are set
-by this package and cannot be overridden.
+(`eta`, `theta`, …).
+
+The `pca_init` kwarg is set to `true` and cannot be changed by the caller.
+`distance` and `extended_output` are not supported.
 
 See also [`force_layout`](@ref), [`umap`](@ref).
 """

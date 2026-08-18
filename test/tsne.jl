@@ -35,6 +35,12 @@ function run_tsne_tests()
 		@test tsne_dm.matrix ≈ tsne_ans
 
 
+		@testset "Unsupported kwargs" begin
+			@test_throws "pca_init kwarg is not supported" SCP.tsne(pca_job; ndim=2, pca_init=false)
+			@test_throws "distance kwarg is not supported" SCP.tsne(pca_job; ndim=2, distance=true)
+			@test_throws "extended_output kwarg is not supported" SCP.tsne(pca_job; ndim=2, extended_output=true)
+		end
+
 		# TODO: Test projection
 	end
 end

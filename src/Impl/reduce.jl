@@ -151,7 +151,8 @@ function force_layout(action::Action, matrix;
                       k = nothing,
                       k_fraction = nothing,
                       make_symmetric=true,
-                      ndim = 3,
+                      ndim,
+                      seed,
                       niter = 100,
                       link_distance = 40,
                       link_strength = 0.05,
@@ -162,7 +163,6 @@ function force_layout(action::Action, matrix;
                       velocity_decay=0.9,
                       initialAlpha = 1.0, finalAlpha = 1e-3,
                       initialScale = 10,
-                      seed = 1234,
                       k_projection = 10, # TODO: support _fraction here as well.
                       min_dist2_projection = 1e-12,
                      )
