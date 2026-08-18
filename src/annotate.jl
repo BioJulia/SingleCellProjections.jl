@@ -96,7 +96,6 @@ function var_counts_sum(f, counts, col::String, filter=Returns(true); project_id
 	create_job(DataMatrixFunction(Impl.var_counts_sum), counts, col, filter; f, project_ids)
 end
 function var_counts_sum(counts, col::String, args...; kwargs...)
-	check_kwargs(kwargs, :project_ids)
 	var_counts_sum(identity, counts, col, args...; kwargs...)
 end
 
@@ -136,6 +135,5 @@ function obs_counts_sum(f, counts, col::String, filter=Returns(true); project_id
 	create_job(DataMatrixFunction(Impl.obs_counts_sum), counts, col, filter; f, project_ids)
 end
 function obs_counts_sum(counts, col::String, args...; kwargs...)
-	check_kwargs(kwargs, :project_ids)
 	obs_counts_sum(identity, counts, col, args...; kwargs...)
 end
