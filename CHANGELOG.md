@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Precompilation of basic workflow
 * Improved kwarg handling. Supplying unused kwargs will now typically error at spec construction instead of silently changing the hash but not the computation.
-* Some (uncommon) kwargs to force_layout used camelCase. These are now in snake_case.
-* tnse now properly forward kwargs to the implementation.
+* Some (uncommon) kwargs to force_layout used camelCase. These are now in snake_case. This changes the hash of `force_layout` jobs, so they will be recomputed.
+* `tsne` now properly forwards kwargs to `TSne.tsne`. Previously only `max_iter` and `perplexity` had any effect and all other kwargs were silently ignored.
 
 ## [0.5.0] - 2026-08-05
 
