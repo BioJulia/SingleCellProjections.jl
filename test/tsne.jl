@@ -5,13 +5,15 @@ import TSne
 using Random
 
 
-tsne_reference_impl(matrix; ndim) =
-	permutedims(TSne.tsne(matrix', ndim, 0; pca_init=true))
+tsne_reference_impl(matrix; ndim, max_iter) =
+	permutedims(TSne.tsne(matrix', ndim, 0, max_iter; pca_init=true, progress=false))
 
 function run_tsne_tests()
 	@testset "t-SNE" begin
 		counts_job = SCP.load_counts(h5_path; sample_names="a")
-		counts_sub_job = SCP.load_counts(h5_subset_path; sample_names="p")
+
+		# t-SNE scales as O(ncells^2) so subset to speed up tests.
+		counts_job = SCP.filter_obs(1:100, counts_job)
 
 		# TODO: test forwarding
 		# TODO: test hash stability
@@ -22,13 +24,13 @@ function run_tsne_tests()
 
 		pca_dm = fetch!(pca_job)
 
-		tsne_job = SCP.tsne(pca_job; ndim=2)
+		tsne_job = SCP.tsne(pca_job; ndim=2, max_iter=250)
 		tsne_dm = fetch!(tsne_job)
 
 		@test tsne_dm.obs === pca_dm.obs
 
 
-		tsne_ans = tsne_reference_impl(pca_dm.matrix; ndim=2)
+		tsne_ans = tsne_reference_impl(pca_dm.matrix; ndim=2, max_iter=250)
 
 
 		# TODO: Update. What can we expect here???
