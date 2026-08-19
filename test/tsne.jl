@@ -19,7 +19,7 @@ function run_tsne_tests()
 		# TODO: test hash stability
 
 		transformed_job = SCP.logtransform(counts_job)
-		normalized_job = SCP.normalize_matrix(counts_job)
+		normalized_job = SCP.normalize_matrix(transformed_job)
 		pca_job = SCP.pca(normalized_job; nsv=10)
 
 		pca_dm = fetch!(pca_job)
