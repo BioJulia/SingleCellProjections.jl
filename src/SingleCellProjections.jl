@@ -127,7 +127,7 @@ See also [`load_counts`](@ref).
 function load_csv end
 
 """
-    SCP.load_h5ad([T], filepath; layer=nothing, obsm=nothing, obsp=nothing, varm=nothing, varp=nothing, kwargs...) -> Job
+    SCP.load_h5ad([T], filepath; layer=nothing, obsm=nothing, obsp=nothing, varm=nothing, varp=nothing, raw=false, kwargs...) -> Job
 
 Load a .h5ad (AnnData) file as a `DataMatrix` `Job`. Requires the `Muon` package to be loaded.
 
@@ -141,6 +141,9 @@ kwargs to load from a different source:
 * `obsp` — observation pairwise matrix, both var and obs are set to obs annotations
 * `varm` — variable embeddings, obs is set to synthetic dimension IDs
 * `varp` — variable pairwise matrix, both var and obs are set to var annotations
+* `raw` — the AnnData `raw` slot (`raw/X`, `raw/var`), typically unfiltered/unnormalized data
+  kept alongside the main matrix. Shares `obs` with the main data, but `var` may cover a
+  different set of variables. Errors if the file has no `raw` slot.
 
 # Examples
 
@@ -157,6 +160,11 @@ julia> SCP.load_h5ad(Int, "data.h5ad"; layer="raw_counts")
 Load a UMAP embedding.
 ```julia
 julia> SCP.load_h5ad("data.h5ad"; obsm="X_umap")
+```
+
+Load the raw (unfiltered) data kept in the AnnData `raw` slot.
+```julia
+julia> SCP.load_h5ad("data.h5ad"; raw=true)
 ```
 
 See also [`load_counts`](@ref), [`load_csv`](@ref).

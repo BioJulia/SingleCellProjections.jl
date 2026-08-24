@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* `SCP.load_h5ad` gained a `raw` kwarg to load data from the AnnData `raw` slot (`raw/X`, `raw/var`).
+
 ## [0.5.1] - 2026-08-19
 
 ### Fixed
