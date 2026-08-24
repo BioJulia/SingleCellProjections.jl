@@ -78,7 +78,7 @@ function load_h5ad_obs_impl(filepath)
 end
 load_h5ad_obs_job(filepath) = create_job(load_h5ad_obs_impl, filepath; __version=v"1.0.0")
 
-function load_h5ad_matrix_impl(filepath; T, layer=nothing, obsm=nothing, obsp=nothing, varm=nothing, varp=nothing, raw=false, row_block_size=1024, col_block_size=1024)
+function load_h5ad_matrix_impl(filepath; T, layer=nothing, obsm=nothing, obsp=nothing, varm=nothing, varp=nothing, raw=nothing, row_block_size=1024, col_block_size=1024)
 	_read_h5ad(filepath) do ann
 		# X and layers are lazy (backed) and need read(), obsm/obsp/varm/varp are eagerly loaded
 		X = if layer !== nothing
@@ -91,7 +91,8 @@ function load_h5ad_matrix_impl(filepath; T, layer=nothing, obsm=nothing, obsp=no
 			ann.varm[varm]
 		elseif varp !== nothing
 			ann.varp[varp]
-		elseif raw
+		elseif raw !== nothing
+			@assert raw "If raw is specified, the value must be true, got $raw."
 			read(Muon.backed_matrix(_raw_group(ann)["X"]))
 		else
 			read(ann.X)
@@ -111,13 +112,14 @@ load_h5ad_matrix_job(filepath; kwargs...) = create_job(load_h5ad_matrix_impl, fi
 
 load_h5ad(::Mat, filepath; kwargs...) = load_h5ad_matrix_job(filepath; kwargs...)
 
-function load_h5ad(::Var, filepath; obsm=nothing, obsp=nothing, raw=false, kwargs...)
+function load_h5ad(::Var, filepath; obsm=nothing, obsp=nothing, raw=nothing, kwargs...)
 	if obsm !== nothing
 		mat_job = load_h5ad(Mat(), filepath; obsm, kwargs...)
 		prefixed_ids_job("id", "Dim", prefetched(compute_size_job(mat_job, 1)))
 	elseif obsp !== nothing
 		table_from_compound_result(cached(load_h5ad_obs_job(filepath)))
-	elseif raw
+	elseif raw !== nothing
+		@assert raw "If raw is specified, the value must be true, got $raw."
 		table_from_compound_result(cached(load_h5ad_raw_var_job(filepath)))
 	else
 		table_from_compound_result(cached(load_h5ad_var_job(filepath)))
@@ -137,9 +139,7 @@ end
 
 function SCP.load_h5ad(filepath; kwargs...)
 	SCP.check_kwargs(kwargs, :T, :layer, :obsm, :obsp, :varm, :varp, :raw, :row_block_size, :col_block_size)
-	n_exclusive = count(key->haskey(kwargs,key), (:layer, :obsm, :obsp, :varm, :varp)) +
-	              (get(kwargs, :raw, false) ? 1 : 0)
-	if n_exclusive > 1
+	if count(key->haskey(kwargs,key), (:layer, :obsm, :obsp, :varm, :varp, :raw)) > 1
 		throw(ArgumentError("At most one of layer, obsm, obsp, varm, varp, raw can be specified."))
 	end
 

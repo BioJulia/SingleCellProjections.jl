@@ -127,7 +127,7 @@ See also [`load_counts`](@ref).
 function load_csv end
 
 """
-    SCP.load_h5ad([T], filepath; layer=nothing, obsm=nothing, obsp=nothing, varm=nothing, varp=nothing, raw=false, kwargs...) -> Job
+    SCP.load_h5ad([T], filepath; layer=nothing, obsm=nothing, obsp=nothing, varm=nothing, varp=nothing, raw=nothing, kwargs...) -> Job
 
 Load a .h5ad (AnnData) file as a `DataMatrix` `Job`. Requires the `Muon` package to be loaded.
 
@@ -152,7 +152,7 @@ Load the main matrix `X`.
 julia> SCP.load_h5ad("data.h5ad")
 ```
 
-Load raw counts. Note that we want to specify the eltype `Int`, because h5ad typically stores counts as Float32.
+Load the raw counts layer. Note that we want to specify the eltype `Int`, because h5ad typically stores counts as Float32.
 ```julia
 julia> SCP.load_h5ad(Int, "data.h5ad"; layer="raw_counts")
 ```
@@ -162,9 +162,9 @@ Load a UMAP embedding.
 julia> SCP.load_h5ad("data.h5ad"; obsm="X_umap")
 ```
 
-Load the raw (unfiltered) data kept in the AnnData `raw` slot.
+Load the raw (unfiltered) data kept in the AnnData `raw` slot, changing the eltype to `Int`.
 ```julia
-julia> SCP.load_h5ad("data.h5ad"; raw=true)
+julia> SCP.load_h5ad(Int, "data.h5ad"; raw=true)
 ```
 
 See also [`load_counts`](@ref), [`load_csv`](@ref).

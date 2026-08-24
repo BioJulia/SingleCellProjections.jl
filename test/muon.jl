@@ -18,7 +18,7 @@ function create_test_h5ad(path)
 	X = sprand(Float32, nobs, nvar, 0.3)
 	raw_counts = sprand(nobs, nvar, 0.3, k->rand(1:100,k))
 	dense = rand(Float32, nobs, nvar)
-	raw_X = sprand(Float32, nobs, nvar_raw, 0.3)
+	raw_X = sprand(nobs, nvar_raw, 0.3, k->rand(1:100,k))
 
 	obs = DataFrame(cell_type=rand(["A","B","C"], nobs))
 	obs_names = ["cell_$i" for i in 1:nobs]
@@ -26,8 +26,8 @@ function create_test_h5ad(path)
 	var = DataFrame(gene_name=["gene_$i" for i in 1:nvar])
 	var_names = ["GENE$i" for i in 1:nvar]
 
-	raw_var = DataFrame(gene_name=["raw_gene_$i" for i in 1:nvar_raw])
-	raw_var_names = ["RAWGENE$i" for i in 1:nvar_raw]
+	raw_var = DataFrame(gene_name=["gene_$i" for i in 1:nvar_raw])
+	raw_var_names = ["GENE$i" for i in 1:nvar_raw]
 
 	obsm = Dict("X_umap" => rand(Float64, nobs, ndim))
 	varm = Dict("PCs" => rand(Float64, nvar, ndim))
@@ -47,7 +47,7 @@ function create_test_h5ad(path)
 	# MuonExt.jl's raw reading code expects.
 	h5open(path, "r+") do fid
 		rawgroup = create_group(fid, "raw")
-		Muon.write_attr(rawgroup, "X", raw_X)
+		Muon.write_attr(rawgroup, "X", Float32.(raw_X))
 		Muon.write_attr(rawgroup, "var", raw_var; index=raw_var_names)
 	end
 
@@ -153,23 +153,26 @@ function run_muon_tests()
 		end
 
 		@testset "raw" begin
-			job = SCP.load_h5ad(h5ad_path; raw=true)
+			job = SCP.load_h5ad(Int, h5ad_path; raw=true)
 			dm = fetch!(job)
 
 			@test size(dm) == (ground_truth.nvar_raw, ground_truth.nobs)
 			@test unblockify(dm.matrix) ≈ ground_truth.raw_X'
-			@test eltype(dm.matrix) == Float32
+			@test eltype(dm.matrix) == Int
 
 			@test dm.var.id == ground_truth.raw_var_names
 			@test dm.var.gene_name == ground_truth.raw_var.gene_name
 			@test dm.obs.cell_id == ground_truth.obs_names
 			@test dm.obs.cell_type == ground_truth.obs.cell_type
+
+			job2 = SCP.load_h5ad(h5ad_path; raw=false)
+			@test_throws "the value must be true" fetch!(job2)
 		end
 
 		@testset "mutually exclusive kwargs" begin
 			@test_throws ArgumentError SCP.load_h5ad(h5ad_path; layer="raw_counts", obsm="X_umap")
-			@test_throws ArgumentError SCP.load_h5ad(h5ad_path; raw=true, layer="raw_counts")
-			@test (SCP.load_h5ad(h5ad_path; raw=false, layer="raw_counts"); true) # explicit raw=false must not count as "specified"
+			@test_throws ArgumentError SCP.load_h5ad(h5ad_path; raw=true, obsp="distances")
+			@test_throws ArgumentError SCP.load_h5ad(h5ad_path; raw=false, varm="PCs")
 		end
 
 		@testset "var/obs sharing across sources" begin
@@ -177,9 +180,9 @@ function run_muon_tests()
 			var = forward!(SCP.get_var(job_x))
 			obs = forward!(SCP.get_obs(job_x))
 
-			job_raw = SCP.load_h5ad(h5ad_path; layer="raw_counts")
-			@test forward!(SCP.get_var(job_raw)) === var
-			@test forward!(SCP.get_obs(job_raw)) === obs
+			job_layer_raw = SCP.load_h5ad(h5ad_path; layer="raw_counts")
+			@test forward!(SCP.get_var(job_layer_raw)) === var
+			@test forward!(SCP.get_obs(job_layer_raw)) === obs
 
 			job_obsp = SCP.load_h5ad(h5ad_path; obsp="distances")
 			@test forward!(SCP.get_var(job_obsp)) === obs
@@ -195,9 +198,9 @@ function run_muon_tests()
 			job_varm = SCP.load_h5ad(h5ad_path; varm="PCs")
 			@test forward!(SCP.get_var(job_varm)) === var
 
-			job_rawslot = SCP.load_h5ad(h5ad_path; raw=true)
-			@test forward!(SCP.get_obs(job_rawslot)) === obs
-			@test forward!(SCP.get_var(job_rawslot)) !== var # raw has its own var table, distinct from main var
+			job_raw = SCP.load_h5ad(h5ad_path; raw=true)
+			@test forward!(SCP.get_obs(job_raw)) === obs
+			@test forward!(SCP.get_var(job_raw)) !== var # raw has its own var table, distinct from main var
 		end
 	end
 end
