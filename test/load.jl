@@ -115,5 +115,9 @@ function run_load_tests()
 			msg = "The number of filenames (1) and sample names (2) are not equal."
 			@test_throws msg fetch!(SCP.load_counts([h5_path]; sample_names=["a","b"]))
 		end
+
+		@testset "Duplicate cell IDs" begin
+			@test_throws "is not unique" fetch!(SCP.load_counts([h5_path, h5_path]; sample_names=["a","a"]))
+		end
 	end
 end
