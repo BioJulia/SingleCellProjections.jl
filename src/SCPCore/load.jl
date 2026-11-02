@@ -59,6 +59,16 @@ function combine_var(var::AbstractVector{DataFrame};
 	all_cols = names(c)
 	result = combine(g, all_cols .=> _value_or_ambiguous; renamecols=false)
 	select!(result, all_cols) # keep original order which combine changes because it puts the ID columns first...
+
+	ids = result[!,1]
+	dups = unique(ids[nonunique(result, 1)])
+	if !isempty(dups)
+		throw(ArgumentError(string("Found ", length(dups), " variable IDs that are not unique (such as ",
+		                           string.(dups[1:min(3,end)]), "). This can happen when there are several ",
+		                           "feature types with overlapping IDs. Use `prefilter` to keep a single ",
+		                           "feature type.")))
+	end
+	result
 end
 
 # WIP.

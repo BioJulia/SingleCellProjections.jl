@@ -48,7 +48,7 @@ end
 
 
 function combine_var(::Preprocessing, vars; kwargs...)
-	combined = create_job(combine_var_impl, vars; kwargs..., __version=v"1.0.0")
+	combined = create_job(combine_var_impl, vars; kwargs..., __version=v"1.0.1")
 	table_from_compound_result(combined)
 end
 
