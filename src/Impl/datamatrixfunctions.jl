@@ -16,7 +16,7 @@ end
 
 
 create_datamatrix_job(matrix, var, obs) =
-	create_job(SCPCore.DataMatrix, matrix, var, obs; duplicate_obs=:error, __version=v"1.0.0")
+	create_job(SCPCore.DataMatrix, matrix, var, obs; duplicate_var=:error, duplicate_obs=:error, __version=v"1.0.0")
 
 
 

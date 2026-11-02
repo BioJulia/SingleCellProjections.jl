@@ -119,5 +119,13 @@ function run_load_tests()
 		@testset "Duplicate cell IDs" begin
 			@test_throws "is not unique" fetch!(SCP.load_counts([h5_path, h5_path]; sample_names=["a","a"]))
 		end
+
+		@testset "Duplicate variable IDs" begin
+			# gene and antibody IDs collide in this file (e.g. "CD34")
+			prefilter = "feature_type"=>Returns(true)
+			@test_throws "is not unique" fetch!(SCP.load_counts(rna_adt_h5_path; sample_names="a", prefilter))
+			adt = fetch!(SCP.load_counts(rna_adt_h5_path; sample_names="a", prefilter="feature_type"=>isequal("Antibody Capture")))
+			@test allunique(adt.var.id)
+		end
 	end
 end

@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 * `load_counts` errors if the numbers of sample names and files differ, instead of silently using one name for all files.
-* Jobs returning a `DataMatrix` error on duplicate obs IDs, instead of warning.
+* Jobs returning a `DataMatrix` error on duplicate var or obs IDs, instead of warning. E.g. loading RNA and ADT with colliding IDs; use `prefilter` to keep a single feature type.
 
 ## [0.5.2] - 2026-08-24
 
