@@ -23,6 +23,10 @@ vcat_tables_job(tables; kwargs...) = create_job(vcat_tables, tables; kwargs..., 
 
 
 function combine_obs(::Preprocessing, filenames, sample_names)
+	nf = length(filenames)
+	ns = length(sample_names)
+	nf != ns && throw(ArgumentError("The number of filenames ($nf) and sample names ($ns) are not equal."))
+
 	sample_barcodes_specs = load_barcodes_job.(filenames)
 	sample_id_specs = combine_vectors_job.(sample_names, '_', sample_barcodes_specs)
 	sample_obs_specs = SCP.create_table.("cell_id" .=> sample_id_specs,
@@ -44,7 +48,7 @@ end
 
 
 function combine_var(::Preprocessing, vars; kwargs...)
-	combined = create_job(combine_var_impl, vars; kwargs..., __version=v"1.0.0")
+	combined = create_job(combine_var_impl, vars; kwargs..., __version=v"1.0.1")
 	table_from_compound_result(combined)
 end
 
