@@ -108,5 +108,12 @@ function run_load_tests()
 			@test M[:, mixed.obs.sample_name .== "a"] == expected_mat
 			@test M[:, mixed.obs.sample_name .== "b"] == expected_mat
 		end
+
+		@testset "Mismatched number of sample names" begin
+			msg = "The number of filenames (2) and sample names (1) are not equal."
+			@test_throws msg fetch!(SCP.load_counts([h5_path, mtx_path]; sample_names=["a"]))
+			msg = "The number of filenames (1) and sample names (2) are not equal."
+			@test_throws msg fetch!(SCP.load_counts([h5_path]; sample_names=["a","b"]))
+		end
 	end
 end

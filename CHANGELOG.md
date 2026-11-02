@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+* `load_counts` errors if the numbers of sample names and files differ, instead of silently using one name for all files.
+
 ## [0.5.2] - 2026-08-24
 
 ### Added

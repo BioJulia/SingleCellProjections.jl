@@ -10,7 +10,7 @@ Each file can be a 10x HDF5 (`.h5`) file, or a CellRanger Matrix Market matrix
 (`.mtx[.gz]`). For a `.mtx` file, the matching feature and barcode files are found in the same
 folder (following the CellRanger naming convention), or can be given explicitly.
 
-* `sample_names` is required and assigns a name to each sample.
+* `sample_names` is required, one per file. A name may repeat if the cell IDs stay unique (e.g. a sample split across files).
 * `feature_filenames` / `barcode_filenames` — explicit feature/barcode files (a single filename or a vector matching `filenames`). When `nothing` (default), they are guessed from each `.mtx` filename; for a `.h5` file the file itself is used.
 * `prefilter` selects which features to keep (defaults to Gene Expression only).
 * `extra_id_cols` specifies additional columns used (together with the first column) to uniquely identify variables when merging samples. Variables with matching ID columns are combined.
