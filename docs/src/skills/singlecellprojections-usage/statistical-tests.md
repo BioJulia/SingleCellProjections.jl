@@ -57,9 +57,12 @@ SCP.ttest(transformed, "age")                                          # numeric
 ```
 
 * `h1` is the tested covariate, either an obs column name or `column => covariate description`.
-  The type (categorical or numerical) is detected from the column, or given by
-  `categorical_covariate()`, `numerical_covariate()` or `twogroup_covariate(group_a, [group_b])`.
-* `h0` gives covariates to control for, e.g. `h0="fraction_mt"`.
+  * F-test: the type (categorical or numerical) is detected from the column, or given by
+    `categorical_covariate()` or `numerical_covariate()`.
+  * t-test: a column name is always treated as numerical. To compare two groups, give
+    `column => twogroup_covariate(group_a, [group_b])`; categorical covariates are rejected.
+* `h0` gives covariates to control for, e.g. `h0="fraction_mt"`, with the type detected as for
+  the F-test.
   The null model also includes an intercept (`center=true`).
 * The t-test result includes a `difference` column, the estimated effect.
 
