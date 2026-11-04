@@ -113,6 +113,7 @@ end
 
 
 function categorical_covariate_matrix_impl(ind, n_categories)
+	ind === Colon() && (ind = 1:n_categories) # `:` means each observation has its own category
 	N = length(ind)
 	X = falses(N, n_categories)
 	X[CartesianIndex.(1:N, ind)] .= true

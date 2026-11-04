@@ -20,6 +20,9 @@ end
 function pseudobulk_linear_indices(cov_ind, n_categories)
 	@assert length(cov_ind) == length(n_categories)
 
+	# `:` means each observation has its own category
+	cov_ind = [ind === Colon() ? (1:n) : ind for (ind,n) in zip(cov_ind, n_categories)]
+
 	# Assuming we typically put sample_name as the first covariate, this leads to better cache locality when we use the sparse matrix created below.
 	cov_ind = reverse(cov_ind)
 	n_categories = reverse(n_categories)

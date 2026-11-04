@@ -59,6 +59,16 @@ function run_tables_tests()
 		CSV.write(csv_filename_right, df_right)
 		csv_table_right = SCP.load_csv(csv_filename_right)
 
+		# For leftjoin with the same IDs in the same order
+		col_args_same = ("id"=>string.("id_",1:n),
+		                 "w"=>n:-1:1)
+		basic_table_same = SCP.create_table(col_args_same...)
+		df_same = DataFrame(col_args_same...)
+
+		csv_filename_same = tempname()*".csv"
+		CSV.write(csv_filename_same, df_same)
+		csv_table_same = SCP.load_csv(csv_filename_same)
+
 
 
 		@testset "$name" for (name,table) in (("DataFrame",df), ("create_table",basic_table), ("CSV",csv_table))
@@ -130,6 +140,11 @@ function run_tables_tests()
 				table2 = SCP.table_leftjoin(table, table_right)
 				@test isequal(fetch!(table2), leftjoin(df, df_right; on=:id, order=:left))
 				@test fetch!(SCP.table_ncol(table2)) == 5
+			end
+
+			@testset "Leftjoin with $name, same IDs" for (name,table_same) in (("DataFrame",df_same), ("create_table",basic_table_same), ("CSV",csv_table_same))
+				table2 = SCP.table_leftjoin(table, table_same)
+				@test isequal(fetch!(table2), leftjoin(df, df_same; on=:id, order=:left))
 			end
 		end
 

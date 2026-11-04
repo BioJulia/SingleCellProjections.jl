@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `load_counts` errors if the numbers of sample names and files differ, instead of silently using one name for all files.
 * Jobs returning a `DataMatrix` error on duplicate var or obs IDs, instead of warning. E.g. loading RNA and ADT with colliding IDs; use `prefilter` to keep a single feature type.
 * Clearer `load_counts` error for feature types with overlapping IDs. The job combining the var tables is recomputed once.
+* `annotate_obs`, `annotate_var` and `table_leftjoin` failed when the table had the same IDs in the same order.
+* `pseudobulk`, `population_matrix` and `designmatrix` (and thus e.g. `ftest`) failed for a categorical covariate with a different value for every observation.
 
 ## [0.5.2] - 2026-08-24
 

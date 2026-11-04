@@ -70,6 +70,7 @@ function getindex_or_missing(v::AbstractVector{Tv}, ind::AbstractVector{Ti}) whe
 		v[ind]
 	end
 end
+getindex_or_missing(v::AbstractVector, ::Colon) = v
 
 getindex_or_missing_impl(::Preprocessing, v, ind) = ind===Colon() ? v : create_job(getindex_or_missing, v, ind; __version=v"1.0.0")
 getindex_or_missing_impl_job(v, ind) = create_job(Preprocess(getindex_or_missing_impl), v, fetched(ind))
