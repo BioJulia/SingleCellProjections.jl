@@ -6,8 +6,8 @@ returns a table with one row per variable, most significant first.
 | Test | Use for | Data |
 | --- | --- | --- |
 | `SCP.mannwhitney` | Two groups (Wilcoxon rank-sum test) | Sparse: `SCP.logtransform`ed counts |
-| `SCP.ftest` | Several groups (one-way ANOVA), or comparing models | `SCP.sctransform`ed or normalized data |
-| `SCP.ttest` | Two groups, or a numerical covariate | `SCP.sctransform`ed or normalized data |
+| `SCP.ftest` | Several groups (one-way ANOVA), or comparing models | Transformed, not normalized: `SCP.logtransform`ed or `SCP.sctransform`ed counts |
+| `SCP.ttest` | Two groups, or a numerical covariate | Transformed, not normalized: `SCP.logtransform`ed or `SCP.sctransform`ed counts |
 
 
 ## Workflow
@@ -28,7 +28,7 @@ result = fetch!(SCP.mannwhitney(transformed, "stage", "early", "late"))
 ```
 
 Change to an F-test if there are multiple groups, or to a t-test for a numerical covariate.
-They need other data than the Mann-Whitney test (see the table above).
+They take the same log-transformed data, or sctransformed data.
 
 
 ## Mann-Whitney U-test
@@ -50,20 +50,22 @@ Add `z_col="z"` to get the signed standardized statistic, which shows the direct
 ## F-test and t-test
 
 ```julia
-transformed = SCP.sctransform(data)
+transformed = SCP.logtransform(data)  # or SCP.sctransform(data)
 SCP.ftest(transformed, "celltype")                                     # one-way ANOVA
 SCP.ttest(transformed, "stage" => twogroup_covariate("early", "late")) # two groups
 SCP.ttest(transformed, "age")                                          # numerical covariate
 ```
 
-Log-transformed counts must be normalized first (`SCP.normalize_matrix`); the F-test and
-t-test don't accept the sparse matrix directly.
-
 * `h1` is the tested covariate, either an obs column name or `column => covariate description`.
   The type (categorical or numerical) is detected from the column, or given by
   `categorical_covariate()`, `numerical_covariate()` or `twogroup_covariate(group_a, [group_b])`.
 * `h0` gives covariates to control for, e.g. `h0="fraction_mt"`.
+  The null model also includes an intercept (`center=true`).
 * The t-test result includes a `difference` column, the estimated effect.
+
+Don't `SCP.normalize_matrix` the data first; give covariates in `h0` instead.
+Regressing covariates out beforehand removes them without the test knowing, so the degrees of
+freedom are wrong and the p-values too small.
 
 
 ## Options for all tests

@@ -116,8 +116,8 @@ The parameter values are starting points; suitable values depend on the dataset.
   Cells missing from the table get `missing`, which the predicate must handle
   (e.g. `<=(0.65) ∘ Base.Fix2(coalesce, 0.0)`).
 * **Transformation** - `SCP.sctransform` is the default choice.
-  `SCP.logtransform` (`log(1 + x * scale_factor / total_counts)`) keeps the matrix sparse, as the
-  Mann-Whitney test needs.
+  `SCP.logtransform` (`log(1 + x * scale_factor / total_counts)`) keeps the matrix sparse, which
+  the Mann-Whitney test needs.
 * **Normalization** - always normalize before PCA; at the very least the data must be centered.
   More obs annotations (numerical or categorical) can be regressed out.
 * **PCA** - `nsv` is the number of components, typically 40-100.
@@ -132,6 +132,8 @@ The parameter values are starting points; suitable values depend on the dataset.
 
 Analyses should be performed on the normalized or PCA-reduced data, not on embeddings.
 Embeddings are for visualization.
+Statistical tests are the exception: they take transformed data that isn't normalized (see
+[statistical-tests.md](statistical-tests.md)).
 
 
 ## Projections
