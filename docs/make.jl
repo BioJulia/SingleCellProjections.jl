@@ -92,6 +92,10 @@ makedocs(;
 		"Data Matrices" => "datamatrices.md",
 		"Matrix Expressions" => "matrixexpressions.md",
 		"Interface" => "interface.md",
+		"Skills" => [
+			"skills/singlecellprojections-usage/SKILL.md",
+			"skills/singlecellprojections-usage/sample-tables.md",
+		],
 	],
 	# pagesonly = true, # This restricts doc generation to the md files provided above
 )
