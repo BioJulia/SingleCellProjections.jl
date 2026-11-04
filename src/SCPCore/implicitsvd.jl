@@ -55,7 +55,7 @@ function implicitsvd(::Type{T}, P, N, A, AT;
 			isnothing(progress) || progress() # step
 
 			# @show typeof(Ω), size(Ω)
-			Yj = A*Ω
+			Yj = convert(Matrix, A*Ω) # get rid of Blocks
 			# @show typeof(Yj), size(Yj)
 			isnothing(tick) || tick()
 			isnothing(progress) || progress() # step
@@ -65,12 +65,12 @@ function implicitsvd(::Type{T}, P, N, A, AT;
 			isnothing(tick) || tick()
 			isnothing(progress) || progress() # step
 
-			Zj = AT*Q
+			Zj = convert(Matrix, AT*Q) # get rid of Blocks
 			# @show typeof(Zj), size(Zj)
 			isnothing(tick) || tick()
 			isnothing(progress) || progress() # step
 		end
-		B = convert(Matrix,Zj)'
+		B = Zj'
 		isnothing(tick) || tick()
 		isnothing(progress) || progress() # step
 	end

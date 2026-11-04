@@ -9,6 +9,7 @@ using .SCPCore: BarnesHutTree, build!
 
 include("utils.jl")
 include("datamatrix.jl")
+include("blocked_products.jl")
 include("test_barnes_hut.jl")
 
 function run_core_tests()
@@ -16,6 +17,7 @@ function run_core_tests()
 		# include("ranktests.jl")
 		run_utils_tests()
 		run_datamatrix_tests()
+		run_blocked_products_tests()
 		# include("duplicate_var_ids.jl")
 		# include("ftest_tests.jl")
 		# include("ttest_tests.jl")

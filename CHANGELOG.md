@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Clearer `load_counts` error for feature types with overlapping IDs. The job combining the var tables is recomputed once.
 * `annotate_obs`, `annotate_var` and `table_leftjoin` failed when the table had the same IDs in the same order.
 * `pseudobulk`, `population_matrix` and `designmatrix` (and thus e.g. `ftest`) failed for a categorical covariate with a different value for every observation.
+* `ftest` and `ttest` failed on `logtransform`ed counts with more than 1024 variables. `svd` and `pca` also failed on `logtransform`ed counts with more than 1024 cells or several samples, and on `tf_idf_transform`ed counts with several samples.
 
 ## [0.5.2] - 2026-08-24
 

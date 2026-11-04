@@ -32,8 +32,8 @@ function _linear_test(A, ssA, h1, h0=nothing)
 
 	# `ssA` (the per-variable sum of squares of A) is computed as a separate cached job and passed in.
 
-	ssβ0 = Q0 === nothing ? 0.0 : vec(sum(abs2, A*Q0; dims=2))
-	ssβ1 = vec(sum(abs2, β1; dims=2))
+	ssβ0 = Q0 === nothing ? 0.0 : rowsum(abs2, A*Q0) # rowsum handles Blocks
+	ssβ1 = rowsum(abs2, β1)
 
 	ssExplained = max.(0.0, ssβ1)
 	ssUnexplained = max.(0.0, ssA .- ssβ1 .- ssβ0)
@@ -76,6 +76,7 @@ function ttest_table(matrix, var, ssA, h1, h1_scale, h0=nothing;
                      statistic_col=nothing, pvalue_col=nothing, difference_col=nothing,
                      do_sort=true)
 	_, ssUnexplained, rank0, rank1, β1, scale = _linear_test(matrix, ssA, h1, h0)
+	β1 = convert(Matrix, β1) # get rid of Blocks
 	N = size(matrix,2)
 	ν1 = (rank1-rank0)
 	ν2 = (N-rank1)
