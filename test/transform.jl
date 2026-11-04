@@ -176,6 +176,23 @@ function run_transform_tests()
 			tf = fetch!(SCP.tf_idf_transform(multi_job; annotate=true))
 			@test unblockify(tf.matrix) ≈ tf_ref
 			@test tf.var.idf ≈ idf_m
+
+			# The blocks within a sample are kept (the test samples are smaller than the default block size)
+			@testset "within-sample blocks" begin
+				Xb = SCPCore.blockify(expected_sparse; row_block_size=16, col_block_size=100)
+				idf = simple_idf(expected_mat)
+				tf_b = SCPCore.tf_idf_matrix(Xb, idf, :; scale_factor=10_000)
+				@test tf_b isa SingleCellProjections.SCPCore.Blocks
+				@test size(tf_b.blocks) == size(Xb.blocks)
+				@test unblockify(tf_b) == SCPCore.tf_idf_matrix(expected_sparse, idf, :; scale_factor=10_000)
+
+				# Variable subsets, as when projecting. Unsorted indices can't keep the blocks.
+				@testset "var_ind $name" for (name,var_ind,blocked) in (("sorted",collect(3:2:50),true), ("unsorted",[7,2,40,3,25],false))
+					tf_b = SCPCore.tf_idf_matrix(Xb, idf[var_ind], var_ind; scale_factor=10_000)
+					@test (tf_b isa SingleCellProjections.SCPCore.Blocks) == blocked
+					@test unblockify(tf_b) == SCPCore.tf_idf_matrix(expected_sparse, idf[var_ind], var_ind; scale_factor=10_000)
+				end
+			end
 		end
 
 

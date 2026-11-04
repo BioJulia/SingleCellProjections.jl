@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+* `tf_idf_transform` keeps the blocking of the counts matrix, instead of copying each sample into a single sparse matrix. The values are unchanged, but cached results are recomputed once.
+
 ### Fixed
 
 * `load_counts` errors if the numbers of sample names and files differ, instead of silently using one name for all files.

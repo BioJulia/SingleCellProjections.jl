@@ -194,7 +194,7 @@ idf_job(rowsum; nobs) = create_job(SCPCore.compute_idf, rowsum; nobs, __version=
 
 function tf_idf_matrix_impl(::Preprocessing, T, matrix, idf, var_ind; scale_factor)
 	hblock_map(matrix) do x
-		create_job(SCPCore.tf_idf_matrix, T, x, idf, var_ind; scale_factor, __version=v"1.0.0")
+		create_job(SCPCore.tf_idf_matrix, T, x, idf, var_ind; scale_factor, __version=v"1.1.0")
 	end
 end
 function tf_idf_matrix_pr(action::Action, T, matrix, idf, var_ind; scale_factor)

@@ -195,21 +195,41 @@ compute_idf(rowsum; nobs) = nobs ./ max.(1, rowsum)
 # `idf` is aligned to the selected rows. Formula: log(1 + scale_factor * tf * idf), with term
 # frequency tf = xᵢⱼ / max(1, ∑ᵢ xᵢⱼ), where the column sum is taken over the selected variables.
 function tf_idf_matrix(::Type{T}, X, idf, var_ind; scale_factor) where T
-	Xs = unblockify(X)
-	var_ind !== Colon() && (Xs = Xs[var_ind, :])
-	P,N = size(Xs)
-	s = max.(1, vec(sum(Xs; dims=1)))
+	if var_ind !== Colon()
+		# Blocks need sorted indices (unsorted if the projected variables are in a different order)
+		issorted(var_ind) || (X = unblockify(X))
+		X = _subsetmatrix(X, var_ind, :)
+	end
+	s = max.(1, colsum(X))
+	_tf_idf_matrix(T, X, s, idf; scale_factor)
+end
 
-	R = rowvals(Xs)
-	nzval = nonzeros(Xs)
-	nzval_out = zeros(T, nnz(Xs))
+function _tf_idf_matrix(::Type{T}, X::SparseMatrixCSC, s, idf; scale_factor) where T
+	P,N = size(X)
+	R = rowvals(X)
+	nzval = nonzeros(X)
+	nzval_out = zeros(T, nnz(X))
 	for j in 1:N
 		nf = scale_factor / s[j]
-		for k in nzrange(Xs,j)
+		for k in nzrange(X,j)
 			i = R[k]
 			nzval_out[k] = convert(T, log(1 + nzval[k]*nf*idf[i]))
 		end
 	end
-	SparseMatrixCSC(P, N, copy(Xs.colptr), copy(Xs.rowval), nzval_out)
+	SparseMatrixCSC(P, N, copy(X.colptr), copy(X.rowval), nzval_out)
+end
+
+function _tf_idf_matrix(::Type{T}, A::Blocks, s, idf; scale_factor) where T
+	row_ranges = get_row_ranges(A)
+	col_ranges = get_col_ranges(A)
+
+	blocks = tmap(eachindex(A.blocks)) do linear_ind
+		i,j = Tuple(CartesianIndices(A.blocks)[linear_ind])
+		_tf_idf_matrix(T, A.blocks[i,j], @view(s[col_ranges[j]]), @view(idf[row_ranges[i]]); scale_factor)
+	end
+
+	blocks = reshape(blocks, size(A.blocks))
+	blocks = convert(Matrix, blocks) # This is a no-op in Julia 1.11+
+	Blocks(blocks)
 end
 tf_idf_matrix(X, idf, var_ind; kwargs...) = tf_idf_matrix(Float64, X, idf, var_ind; kwargs...)
