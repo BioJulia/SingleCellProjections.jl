@@ -95,6 +95,7 @@ makedocs(;
 		"Skills" => [
 			"skills/singlecellprojections-usage/SKILL.md",
 			"skills/singlecellprojections-usage/sample-tables.md",
+			"skills/singlecellprojections-usage/statistical-tests.md",
 		],
 	],
 	# pagesonly = true, # This restricts doc generation to the md files provided above
