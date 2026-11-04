@@ -18,6 +18,10 @@ There is no need to keep results around as variables in Julia, because previous 
 fetched quickly when needed (keeping them around can waste memory).
 Only `fetch!` what is needed: often an end result, or just its annotations (see below).
 
+This skill doesn't cover all of SCP yet.
+For functions and options not described here, read their docstrings (e.g. `@doc SCP.pseudobulk`),
+and inspect results instead of assuming.
+
 
 ## Abbreviations
 
