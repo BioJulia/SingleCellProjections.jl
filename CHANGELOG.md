@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-11-05
+
 ### Changed
 
 * Support CSV.jl 1.x (in addition to 0.10).
