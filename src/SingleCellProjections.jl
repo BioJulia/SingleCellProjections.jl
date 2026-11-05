@@ -2,6 +2,7 @@ module SingleCellProjections
 
 export
 	DataMatrix,
+	fetch!, # from ReproducibleJobs
 	categorical_covariate,
 	numerical_covariate,
 	twogroup_covariate,
