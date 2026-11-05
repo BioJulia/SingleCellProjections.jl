@@ -102,10 +102,12 @@ _has_kwargs_slurp(f) =
 """
 Public functions with a `kwargs...` slurp, i.e. the ones that can silently swallow a keyword
 unless they check. Derived from the module rather than listed, so a newly added one shows up.
+Reexported functions (e.g. `fetch!`) are left to the packages that define them.
 """
 public_kwargs_functions() =
 	Set(n for n in names(SCP) if n != nameof(SCP) && isdefined(SCP, n) &&
-	    getfield(SCP, n) isa Function && _has_kwargs_slurp(getfield(SCP, n)))
+	    getfield(SCP, n) isa Function && parentmodule(getfield(SCP, n)) === SCP &&
+	    _has_kwargs_slurp(getfield(SCP, n)))
 
 
 function run_kwargs_tests()
