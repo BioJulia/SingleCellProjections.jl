@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "julia"
+    directory: "/" # the workspace in Project.toml includes test/ and docs/
+    schedule:
+      interval: "daily"
+    groups:
+      all-julia-packages:
+        patterns:
+          - "*"
